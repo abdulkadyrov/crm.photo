@@ -286,6 +286,12 @@ p {
   color: var(--warning);
 }
 
+.status-pill.in-progress {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--line));
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  color: var(--primary);
+}
+
 .status-pill.error {
   color: var(--error);
 }
@@ -402,6 +408,28 @@ p {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
+}
+
+.quick-student-form {
+  margin-bottom: 14px;
+}
+
+.export-column-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px;
+  background: var(--card-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-weight: 700;
 }
 
 .student-card {

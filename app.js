@@ -8,6 +8,18 @@ const ORDER_TYPES = {
   video: "Видео",
   interview: "Интервью"
 };
+const ORDER_STATUSES = {
+  not_started: "Не начат",
+  shooting: "На съемке",
+  processing: "В обработке",
+  ready: "Готов",
+  delivered: "Выдан"
+};
+const STATUS_EXPORT_DEFAULT = {
+  id: "status-export-template",
+  title: "Статус заказов",
+  columns: ["number", "student", "class", "payment", "catalog", "orderStatus", "progress", "pending"]
+};
 
 const state = {
   route: "home",
@@ -252,13 +264,18 @@ function renderClasses() {
   const activeProject = state.projectId || projects[0]?.id || "";
   state.projectId = activeProject;
   const classes = activeProject ? classesByProject(activeProject) : [];
+  if (state.classId && !classes.some((klass) => klass.id === state.classId)) state.classId = null;
   view.innerHTML = `
     <section class="toolbar">
       <select class="select" data-project-select>
         ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
       </select>
-      <button class="primary-button" data-add-class="${activeProject}" type="button">Класс</button>
+      <div class="row">
+        <button class="secondary-button" data-export-status-project="${activeProject}" type="button">PDF статусов</button>
+        <button class="primary-button" data-add-class="${activeProject}" type="button">Класс</button>
+      </div>
     </section>
+    ${state.classId ? studentQuickForm(state.classId) : ""}
     <section class="grid project-grid">
       ${classes.map(classCard).join("") || empty("В проекте пока нет классов")}
     </section>
@@ -279,6 +296,7 @@ function classCard(klass) {
         </div>
         <div class="row">
           <button class="icon-button" data-add-student="${klass.id}" type="button" title="Добавить ученика"><span data-icon="plus"></span></button>
+          <button class="icon-button" data-export-status-class="${klass.id}" type="button" title="PDF статусов"><span data-icon="download"></span></button>
           <button class="icon-button danger-icon" data-delete-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span></button>
         </div>
       </div>
@@ -344,6 +362,52 @@ function renderScan() {
   bindViewActions();
 }
 
+function studentQuickForm(classId) {
+  const klass = classById(classId);
+  if (!klass) return "";
+  const selectedCatalogId = state.data.catalog[0]?.id || "";
+  return `
+    <form class="panel grid quick-student-form" data-student-form="${classId}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Добавить ученика: ${escapeHtml(klass.name)}</h2>
+          <p class="muted">Сохраните и сразу продолжайте ввод следующего ученика.</p>
+        </div>
+        <button class="icon-button" data-cancel-student-form type="button" title="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="form-grid">
+        <label class="field-label">
+          <span>ФИО</span>
+          <input class="input" name="fio" placeholder="Иванов Иван" required autocomplete="off" />
+        </label>
+        <label class="field-label">
+          <span>Заказ / услуга</span>
+          <select class="select" name="catalogId">
+            ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(item.title)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="field-label">
+          <span>Оплата</span>
+          <select class="select" name="paymentStatus">
+            <option value="unpaid">Не оплачено</option>
+            <option value="paid">Оплачено</option>
+          </select>
+        </label>
+        <label class="field-label">
+          <span>Статус заказа</span>
+          <select class="select" name="orderStatus">
+            ${Object.entries(ORDER_STATUSES).map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+      <div class="toolbar">
+        <button class="secondary-button" name="saveMode" value="open" type="submit">Сохранить и открыть</button>
+        <button class="primary-button" name="saveMode" value="next" type="submit">Сохранить и следующий</button>
+      </div>
+    </form>
+  `;
+}
+
 function renderStudent() {
   const student = studentById(state.studentId);
   if (!student) {
@@ -366,7 +430,10 @@ function renderStudent() {
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
               <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")} · ${escapeHtml(catalogItemById(selectedCatalogId)?.title || "Заказ не выбран")} · QR ${escapeHtml(student.qrId)}</p>
             </div>
-            <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
+            <div class="row">
+              <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
+              <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
+            </div>
           </div>
           <div class="action-grid">
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
@@ -400,6 +467,12 @@ function renderStudent() {
           <span>Заказ / услуга</span>
           <select class="select" data-student-catalog="${student.id}">
             ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(item.title)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="field-label">
+          <span>Статус заказа</span>
+          <select class="select" data-order-status="${student.id}">
+            ${Object.entries(ORDER_STATUSES).map(([value, label]) => `<option value="${value}" ${value === currentOrderStatus(student) ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
           </select>
         </label>
         <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
@@ -527,6 +600,7 @@ function renderSettings() {
   title.textContent = "Настройки";
   const template = state.data.templates[0] || { id: uid("template"), name: "Чеклист", items: Object.keys(ORDER_TYPES) };
   const items = templateItemsForSettings(template);
+  const exportTemplate = getStatusExportTemplate();
   view.innerHTML = `
     <section class="grid">
       <article class="panel grid">
@@ -542,6 +616,25 @@ function renderSettings() {
           ${items.map((item) => templateEditorRow(item)).join("")}
         </div>
         <button class="primary-button" data-save-template="${template.id}" type="button">Сохранить и применить ко всем заказам</button>
+      </article>
+      <article class="panel grid">
+        <div>
+          <h2 class="card-title">Шаблон PDF статусов</h2>
+          <p class="muted">Выберите, какие колонки попадут в таблицу по классам.</p>
+        </div>
+        <label class="field-label">
+          <span>Заголовок отчета</span>
+          <input class="input" data-status-export-title value="${escapeAttr(exportTemplate.title)}" />
+        </label>
+        <div class="export-column-grid">
+          ${statusExportColumns().map((column) => `
+            <label class="checkbox-row">
+              <input type="checkbox" data-status-export-column="${column.key}" ${exportTemplate.columns.includes(column.key) ? "checked" : ""} />
+              <span>${escapeHtml(column.label)}</span>
+            </label>
+          `).join("")}
+        </div>
+        <button class="primary-button" data-save-status-export-template type="button">Сохранить шаблон PDF</button>
       </article>
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
@@ -570,7 +663,8 @@ function studentCard(student) {
           <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
           <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
         </div>
-        <div class="row">
+      <div class="row">
+          <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
           <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
           <button class="icon-button danger-icon" data-delete-student="${student.id}" type="button" title="Удалить ученика"><span data-icon="trash"></span></button>
         </div>
@@ -599,10 +693,15 @@ function bindViewActions() {
     });
   });
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
-  view.querySelectorAll("[data-add-student]").forEach((node) => node.addEventListener("click", () => addStudent(node.dataset.addStudent)));
+  view.querySelectorAll("[data-add-student]").forEach((node) => node.addEventListener("click", () => showStudentForm(node.dataset.addStudent)));
   view.querySelectorAll("[data-delete-project]").forEach((node) => node.addEventListener("click", () => deleteProject(node.dataset.deleteProject)));
   view.querySelectorAll("[data-delete-class]").forEach((node) => node.addEventListener("click", () => deleteClass(node.dataset.deleteClass)));
   view.querySelectorAll("[data-delete-student]").forEach((node) => node.addEventListener("click", () => deleteStudent(node.dataset.deleteStudent)));
+  view.querySelector("[data-student-form]")?.addEventListener("submit", handleStudentFormSubmit);
+  view.querySelector("[data-cancel-student-form]")?.addEventListener("click", () => {
+    state.classId = null;
+    renderClasses();
+  });
   view.querySelectorAll("[data-open-student]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
@@ -627,6 +726,7 @@ function bindViewActions() {
   view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
   view.querySelector("[data-edit-student]")?.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent));
   view.querySelector("[data-student-catalog]")?.addEventListener("change", (event) => updateStudentCatalog(event.target.dataset.studentCatalog, event.target.value));
+  view.querySelector("[data-order-status]")?.addEventListener("change", (event) => updateOrderStatus(event.target.dataset.orderStatus, event.target.value));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
@@ -634,7 +734,10 @@ function bindViewActions() {
   view.querySelector("[data-import-zip]")?.addEventListener("click", () => zipInput.click());
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportZip()));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
+  view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
+  view.querySelectorAll("[data-export-status-project]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ projectId: node.dataset.exportStatusProject })));
   view.querySelector("[data-save-template]")?.addEventListener("click", saveTemplate);
+  view.querySelector("[data-save-status-export-template]")?.addEventListener("click", saveStatusExportTemplate);
   view.querySelector("[data-add-template-item]")?.addEventListener("click", addTemplateEditorItem);
   view.querySelectorAll("[data-remove-template-item]").forEach((node) => node.addEventListener("click", () => {
     node.closest(".template-item-row")?.remove();
@@ -679,16 +782,48 @@ async function addClass(projectId) {
   navigate("classes", { projectId });
 }
 
-async function addStudent(classId) {
-  const fio = prompt("ФИО ученика");
-  if (!fio) return;
-  const { firstName, lastName } = splitFullName(fio);
-  const catalogId = chooseCatalogId();
-  const id = uid("student");
-  await put("students", { id, classId, firstName, lastName, qrId: id, catalogId, paymentStatus: "unpaid", status: "not_started" });
-  await put("orders", { id: `order_${id}`, studentId: id, catalogId, items: orderItemsFromCatalog(catalogId) });
+function showStudentForm(classId) {
+  state.classId = classId;
+  renderClasses();
+  requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
+}
+
+async function handleStudentFormSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submitter = event.submitter;
+  const student = await addStudent({
+    classId: form.dataset.studentForm,
+    fio: new FormData(form).get("fio"),
+    catalogId: new FormData(form).get("catalogId"),
+    paymentStatus: new FormData(form).get("paymentStatus"),
+    orderStatus: new FormData(form).get("orderStatus")
+  });
+  if (!student) return;
+  if (submitter?.value === "open") {
+    state.classId = null;
+    navigate("student", { studentId: student.id });
+    return;
+  }
   await refreshData();
-  navigate("student", { studentId: id });
+  notify("Ученик сохранен.");
+  renderClasses();
+  requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
+}
+
+async function addStudent({ classId, fio, catalogId = "", paymentStatus = "unpaid", orderStatus = "not_started" }) {
+  if (!classId) return null;
+  if (!String(fio || "").trim()) {
+    notify("Введите ФИО ученика.");
+    return null;
+  }
+  const { firstName, lastName } = splitFullName(fio);
+  const selectedCatalogId = catalogId || state.data.catalog[0]?.id || "";
+  const id = uid("student");
+  const student = { id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, paymentStatus, orderStatus, status: "not_started" };
+  await put("students", student);
+  await put("orders", { id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, status: orderStatus, items: orderItemsFromCatalog(selectedCatalogId) });
+  return student;
 }
 
 async function editStudent(studentId) {
@@ -904,7 +1039,9 @@ async function attachFileToOrder(studentId, type, fileId) {
   const item = order.items.find((entry) => entry.type === type) || order.items[0];
   item.fileIds = Array.from(new Set([...item.fileIds, fileId]));
   item.status = "done";
-  await put("orders", order);
+  await put("orders", { ...order, status: order.status === "delivered" ? order.status : "processing" });
+  const student = studentById(studentId);
+  if (student && currentOrderStatus(student) !== "delivered") await put("students", { ...student, orderStatus: "processing" });
 }
 
 async function markTaskDone(studentId, type) {
@@ -912,7 +1049,7 @@ async function markTaskDone(studentId, type) {
   const order = orderByStudent(studentId);
   const item = order.items.find((entry) => entry.type === type);
   if (item) item.status = "done";
-  await put("orders", order);
+  await saveOrderWithAutoStatus(studentId, order);
   await refreshData();
   renderStudent();
 }
@@ -921,7 +1058,7 @@ async function toggleTask(studentId, type) {
   const order = orderByStudent(studentId);
   const item = order.items.find((entry) => entry.type === type);
   if (item) item.status = item.status === "done" ? "pending" : "done";
-  await put("orders", order);
+  await saveOrderWithAutoStatus(studentId, order);
   await refreshData();
   renderStudent();
 }
@@ -942,7 +1079,28 @@ async function togglePayment(studentId) {
 async function resetOrder(studentId) {
   const order = orderByStudent(studentId);
   order.items = order.items.map((item) => ({ ...item, status: "pending", fileIds: [] }));
+  order.status = "not_started";
+  const student = studentById(studentId);
+  if (student) await put("students", { ...student, orderStatus: "not_started" });
   await put("orders", order);
+  await refreshData();
+  renderStudent();
+}
+
+async function saveOrderWithAutoStatus(studentId, order) {
+  const done = order.items.length > 0 && order.items.every((item) => item.status === "done");
+  const nextStatus = done ? "ready" : (order.status === "delivered" ? "delivered" : "processing");
+  await put("orders", { ...order, status: nextStatus });
+  const student = studentById(studentId);
+  if (student && currentOrderStatus(student) !== "delivered") await put("students", { ...student, orderStatus: nextStatus });
+}
+
+async function updateOrderStatus(studentId, orderStatus) {
+  const student = studentById(studentId);
+  if (!student || !ORDER_STATUSES[orderStatus]) return;
+  const order = orderByStudent(studentId);
+  await put("students", { ...student, orderStatus });
+  await put("orders", { ...order, status: orderStatus });
   await refreshData();
   renderStudent();
 }
@@ -1084,6 +1242,68 @@ async function exportZip(studentId = null) {
   notify("ZIP экспортирован.");
 }
 
+function exportStatusPdf({ classId = "", projectId = "" } = {}) {
+  const exportTemplate = getStatusExportTemplate();
+  const columns = statusExportColumns().filter((column) => exportTemplate.columns.includes(column.key));
+  if (!columns.length) return notify("В шаблоне PDF нет выбранных колонок.");
+  const students = studentsForStatusExport({ classId, projectId });
+  if (!students.length) return notify("Нет учеников для PDF отчета.");
+  const klass = classById(classId);
+  const project = projectById(projectId || klass?.projectId);
+  const subtitle = [
+    project?.name,
+    klass?.name || (projectId ? "Все классы проекта" : "Все проекты"),
+    new Date().toLocaleDateString("ru-RU")
+  ].filter(Boolean).join(" · ");
+  const rows = students.map((student, index) => {
+    const cells = columns.map((column) => `<td>${escapeHtml(column.value(student, index))}</td>`).join("");
+    return `<tr>${cells}</tr>`;
+  }).join("");
+  const win = window.open("", "_blank", "width=1100,height=800");
+  if (!win) {
+    notify("Браузер заблокировал окно PDF.");
+    return;
+  }
+  win.document.write(`
+    <!doctype html>
+    <html lang="ru">
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(exportTemplate.title)}</title>
+        <style>
+          @page { size: A4 landscape; margin: 12mm; }
+          * { box-sizing: border-box; }
+          body { margin: 0; color: #111827; font-family: Arial, sans-serif; }
+          header { margin-bottom: 14px; }
+          h1 { margin: 0 0 6px; font-size: 22px; }
+          p { margin: 0; color: #4b5563; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th, td { padding: 7px 8px; border: 1px solid #d1d5db; text-align: left; vertical-align: top; }
+          th { background: #eef2ff; font-weight: 700; }
+          tr:nth-child(even) td { background: #f9fafb; }
+          .actions { margin-top: 14px; }
+          button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; }
+          @media print { .actions { display: none; } }
+        </style>
+      </head>
+      <body>
+        <header>
+          <h1>${escapeHtml(exportTemplate.title)}</h1>
+          <p>${escapeHtml(subtitle)}</p>
+        </header>
+        <table>
+          <thead><tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="actions"><button onclick="window.print()">Сохранить в PDF</button></div>
+      </body>
+    </html>
+  `);
+  win.document.close();
+  win.focus();
+  notify("PDF отчет открыт.");
+}
+
 async function buildExportFiles(studentId) {
   const files = [];
   const selectedStudents = studentId ? state.data.students.filter((student) => student.id === studentId) : state.data.students;
@@ -1094,6 +1314,7 @@ async function buildExportFiles(studentId) {
     students: selectedStudents,
     orders: state.data.orders.filter((order) => selectedStudents.some((student) => student.id === order.studentId)),
     templates: state.data.templates,
+    settings: state.data.settings,
     catalog: state.data.catalog,
     media: state.data.media
       .filter((item) => selectedStudents.some((student) => student.id === item.studentId))
@@ -1122,7 +1343,7 @@ async function handleZipInput(event) {
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-data.json"));
     if (!dataEntry) throw new Error("spf-data.json not found");
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
-    for (const store of ["projects", "classes", "students", "orders", "templates", "catalog"]) {
+    for (const store of ["projects", "classes", "students", "orders", "templates", "settings", "catalog"]) {
       for (const record of meta[store] || []) await put(store, record);
     }
     const mediaRecords = meta.media || [];
@@ -1243,6 +1464,63 @@ function filteredStudents() {
   });
 }
 
+function studentsForStatusExport({ classId = "", projectId = "" } = {}) {
+  if (classId) return state.data.students.filter((student) => student.classId === classId);
+  if (projectId) {
+    const classIds = new Set(classesByProject(projectId).map((klass) => klass.id));
+    return state.data.students.filter((student) => classIds.has(student.classId));
+  }
+  return state.data.students;
+}
+
+function statusExportColumns() {
+  return [
+    { key: "number", label: "#", value: (_student, index) => index + 1 },
+    { key: "student", label: "Ученик", value: (student) => `${student.lastName} ${student.firstName}`.trim() },
+    { key: "class", label: "Класс", value: (student) => classById(student.classId)?.name || "" },
+    { key: "payment", label: "Оплата", value: (student) => paymentLabel(student.paymentStatus) },
+    { key: "catalog", label: "Заказ", value: (student) => catalogItemById(student.catalogId || orderByStudent(student.id).catalogId)?.title || "Не выбран" },
+    { key: "orderStatus", label: "Статус заказа", value: (student) => orderStatusLabel(student) },
+    { key: "progress", label: "Готовность", value: (student) => {
+      const c = completion(student.id);
+      return `${c.doneCount}/${c.total}`;
+    } },
+    { key: "pending", label: "Что осталось", value: (student) => pendingOrderLabels(student).join(", ") || "Готово" },
+    { key: "qr", label: "QR ID", value: (student) => student.qrId || student.id }
+  ];
+}
+
+function pendingOrderLabels(student) {
+  return orderByStudent(student.id).items
+    .filter((item) => item.status !== "done")
+    .map(orderItemLabel);
+}
+
+function getStatusExportTemplate() {
+  const saved = state.data.settings.find((item) => item.id === STATUS_EXPORT_DEFAULT.id);
+  const validColumns = new Set(statusExportColumns().map((column) => column.key));
+  const columns = (saved?.columns || STATUS_EXPORT_DEFAULT.columns).filter((key) => validColumns.has(key));
+  return {
+    ...STATUS_EXPORT_DEFAULT,
+    ...saved,
+    columns: columns.length ? columns : STATUS_EXPORT_DEFAULT.columns
+  };
+}
+
+async function saveStatusExportTemplate() {
+  const titleValue = view.querySelector("[data-status-export-title]")?.value.trim();
+  const columns = Array.from(view.querySelectorAll("[data-status-export-column]:checked")).map((input) => input.dataset.statusExportColumn);
+  if (!columns.length) return notify("Выберите хотя бы одну колонку для PDF.");
+  await put("settings", {
+    id: STATUS_EXPORT_DEFAULT.id,
+    title: titleValue || STATUS_EXPORT_DEFAULT.title,
+    columns
+  });
+  await refreshData();
+  notify("Шаблон PDF сохранен.");
+  renderSettings();
+}
+
 function matchesFilter(student) {
   if (state.filter === "all") return true;
   if (state.filter === "paid") return student.paymentStatus === "paid";
@@ -1261,10 +1539,7 @@ function completion(studentId) {
 }
 
 function statusLabel(student) {
-  const c = completion(student.id);
-  if (c.done) return "готово";
-  if (mediaByStudent(student.id).length) return "в обработке";
-  return "не снято";
+  return orderStatusLabel(student).toLowerCase();
 }
 
 function orderByStudent(studentId) {
@@ -1350,6 +1625,28 @@ function templateItemsForSettings(template) {
 
 function paymentLabel(status) {
   return status === "paid" ? "Оплачено" : "Не оплачено";
+}
+
+function currentOrderStatus(student) {
+  const order = orderByStudent(student.id);
+  if (order.status && ORDER_STATUSES[order.status]) return order.status;
+  if (student.orderStatus && ORDER_STATUSES[student.orderStatus]) return student.orderStatus;
+  const c = completion(student.id);
+  if (c.done) return "ready";
+  if (mediaByStudent(student.id).length) return "processing";
+  return "not_started";
+}
+
+function orderStatusLabel(studentOrStatus) {
+  const status = typeof studentOrStatus === "string" ? studentOrStatus : currentOrderStatus(studentOrStatus);
+  return ORDER_STATUSES[status] || ORDER_STATUSES.not_started;
+}
+
+function orderStatusClass(studentOrStatus) {
+  const status = typeof studentOrStatus === "string" ? studentOrStatus : currentOrderStatus(studentOrStatus);
+  if (status === "ready" || status === "delivered") return "paid";
+  if (status === "processing" || status === "shooting") return "in-progress";
+  return "unpaid";
 }
 
 function mediaKindLabel(kind) {
@@ -1695,6 +1992,8 @@ function injectIcons() {
     theme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 1 0 9 6 8 8 0 1 1-9-6Z"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',
+    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h4l2-3h4l2 3h4v11H4z"/><circle cx="12" cy="13" r="3"/></svg>',
     video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m20 6-11 11-5-5"/></svg>'
