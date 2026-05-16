@@ -231,7 +231,10 @@ function projectCard(project) {
           <h2 class="card-title">${escapeHtml(project.name)}</h2>
           <p class="muted">${classes.length} классов · ${students.length} учеников</p>
         </div>
-        <button class="icon-button" data-add-class="${project.id}" type="button" title="Добавить класс"><span data-icon="plus"></span></button>
+        <div class="row">
+          <button class="icon-button" data-add-class="${project.id}" type="button" title="Добавить класс"><span data-icon="plus"></span></button>
+          <button class="icon-button danger-icon" data-delete-project="${project.id}" type="button" title="Удалить проект"><span data-icon="trash"></span></button>
+        </div>
       </div>
       <div class="stats">
         <div class="stat"><strong>${done}</strong><span class="muted">готово</span></div>
@@ -274,7 +277,10 @@ function classCard(klass) {
           <h2 class="card-title">${escapeHtml(klass.name)}</h2>
           <p class="muted">${students.length} учеников</p>
         </div>
-        <button class="icon-button" data-add-student="${klass.id}" type="button" title="Добавить ученика"><span data-icon="plus"></span></button>
+        <div class="row">
+          <button class="icon-button" data-add-student="${klass.id}" type="button" title="Добавить ученика"><span data-icon="plus"></span></button>
+          <button class="icon-button danger-icon" data-delete-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span></button>
+        </div>
       </div>
       <div class="progress"><span style="width:${pct}%"></span></div>
       <div class="grid" style="margin-top:14px">
@@ -401,6 +407,7 @@ function renderStudent() {
         </button>
         <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
         <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
+        <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
       </aside>
     </section>
   `;
@@ -415,9 +422,9 @@ function taskRow(item, studentId) {
   return `
     <div class="task-row ${item.status === "done" ? "done" : ""}">
       <div class="task-main">
-        ${reference}
+          ${reference}
         <div>
-          <strong>${escapeHtml(orderTypeLabel(item.type))}</strong>
+          <strong>${escapeHtml(orderItemLabel(item))}</strong>
           <p class="muted">${item.fileIds.length} файлов${angle?.details ? ` · ${escapeHtml(angle.details)}` : ""}</p>
         </div>
       </div>
@@ -433,7 +440,7 @@ function queueList(order) {
   if (!pending.length) return '<p class="status-pill paid">Чеклист закрыт</p>';
   return pending.map((item, index) => `
     <div class="task-row">
-      <strong>${index + 1}. ${escapeHtml(orderTypeLabel(item.type))}</strong>
+      <strong>${index + 1}. ${escapeHtml(orderItemLabel(item))}</strong>
       <span class="muted">ожидает</span>
     </div>
   `).join("");
@@ -519,13 +526,22 @@ function catalogAngleRow(item, angle) {
 function renderSettings() {
   title.textContent = "Настройки";
   const template = state.data.templates[0] || { id: uid("template"), name: "Чеклист", items: Object.keys(ORDER_TYPES) };
+  const items = templateItemsForSettings(template);
   view.innerHTML = `
     <section class="grid">
       <article class="panel grid">
-        <h2 class="card-title">Шаблон чеклиста</h2>
-        <input class="input" data-template-name value="${escapeAttr(template.name)}" />
-        <textarea class="textarea" data-template-items>${template.items.map((item) => ORDER_TYPES[item] || item).join("\n")}</textarea>
-        <button class="primary-button" data-save-template="${template.id}" type="button">Сохранить шаблон</button>
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Шаблон чеклиста</h2>
+            <p class="muted">Эти пункты будут у каждого заказа ученика.</p>
+          </div>
+          <button class="secondary-button compact" data-add-template-item type="button">Добавить</button>
+        </div>
+        <input class="input" data-template-name value="${escapeAttr(template.name)}" placeholder="Название шаблона" />
+        <div class="checklist-editor" data-template-items>
+          ${items.map((item) => templateEditorRow(item)).join("")}
+        </div>
+        <button class="primary-button" data-save-template="${template.id}" type="button">Сохранить и применить ко всем заказам</button>
       </article>
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
@@ -548,17 +564,29 @@ function studentCard(student) {
   const project = projectById(klass?.projectId);
   const c = completion(student.id);
   return `
-    <button class="student-card" data-open-student="${student.id}" type="button">
+    <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
       <div class="student-line">
         <div>
           <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
           <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
         </div>
-        <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
+        <div class="row">
+          <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
+          <button class="icon-button danger-icon" data-delete-student="${student.id}" type="button" title="Удалить ученика"><span data-icon="trash"></span></button>
+        </div>
       </div>
       <div class="progress"><span style="width:${c.percent}%"></span></div>
       <p class="muted">${c.doneCount}/${c.total} задач · ${statusLabel(student)}</p>
-    </button>
+    </article>
+  `;
+}
+
+function templateEditorRow(item) {
+  return `
+    <div class="template-item-row">
+      <input class="input" data-template-item value="${escapeAttr(item.label)}" placeholder="Например: Photoshop" />
+      <button class="icon-button danger-icon" data-remove-template-item type="button" title="Удалить пункт"><span data-icon="trash"></span></button>
+    </div>
   `;
 }
 
@@ -566,13 +594,25 @@ function bindViewActions() {
   injectIcons();
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
-      if (event.target.closest("button[data-add-class]")) return;
+      if (event.target.closest("button")) return;
       navigate("classes", { projectId: node.dataset.openProject });
     });
   });
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
   view.querySelectorAll("[data-add-student]").forEach((node) => node.addEventListener("click", () => addStudent(node.dataset.addStudent)));
-  view.querySelectorAll("[data-open-student]").forEach((node) => node.addEventListener("click", () => navigate("student", { studentId: node.dataset.openStudent })));
+  view.querySelectorAll("[data-delete-project]").forEach((node) => node.addEventListener("click", () => deleteProject(node.dataset.deleteProject)));
+  view.querySelectorAll("[data-delete-class]").forEach((node) => node.addEventListener("click", () => deleteClass(node.dataset.deleteClass)));
+  view.querySelectorAll("[data-delete-student]").forEach((node) => node.addEventListener("click", () => deleteStudent(node.dataset.deleteStudent)));
+  view.querySelectorAll("[data-open-student]").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      navigate("student", { studentId: node.dataset.openStudent });
+    });
+    node.addEventListener("keydown", (event) => {
+      if (event.target.closest("button")) return;
+      if (event.key === "Enter" || event.key === " ") navigate("student", { studentId: node.dataset.openStudent });
+    });
+  });
   view.querySelectorAll("[data-filter]").forEach((node) => node.addEventListener("click", () => {
     state.filter = node.dataset.filter;
     render();
@@ -595,6 +635,10 @@ function bindViewActions() {
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportZip()));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelector("[data-save-template]")?.addEventListener("click", saveTemplate);
+  view.querySelector("[data-add-template-item]")?.addEventListener("click", addTemplateEditorItem);
+  view.querySelectorAll("[data-remove-template-item]").forEach((node) => node.addEventListener("click", () => {
+    node.closest(".template-item-row")?.remove();
+  }));
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelector("[data-generate-qr]")?.addEventListener("click", () => showQrPayload(state.studentId));
@@ -658,14 +702,62 @@ async function editStudent(studentId) {
   renderStudent();
 }
 
+async function deleteProject(projectId) {
+  const project = projectById(projectId);
+  if (!project) return;
+  const classes = classesByProject(projectId);
+  const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
+  if (!confirm(`Удалить проект "${project.name}" вместе с ${classes.length} классами и ${students.length} учениками?`)) return;
+  for (const student of students) await deleteStudentRecords(student.id);
+  for (const klass of classes) await del("classes", klass.id);
+  await del("projects", projectId);
+  await refreshData();
+  notify("Проект удален.");
+  navigate("home");
+}
+
+async function deleteClass(classId) {
+  const klass = classById(classId);
+  if (!klass) return;
+  const students = state.data.students.filter((student) => student.classId === classId);
+  if (!confirm(`Удалить класс "${klass.name}" вместе с ${students.length} учениками?`)) return;
+  for (const student of students) await deleteStudentRecords(student.id);
+  await del("classes", classId);
+  await refreshData();
+  notify("Класс удален.");
+  navigate("classes", { projectId: klass.projectId });
+}
+
+async function deleteStudent(studentId) {
+  const student = studentById(studentId);
+  if (!student) return;
+  const fullName = `${student.lastName} ${student.firstName}`.trim();
+  if (!confirm(`Удалить ученика "${fullName}" вместе с заказом и медиа?`)) return;
+  await deleteStudentRecords(studentId);
+  await refreshData();
+  notify("Ученик удален.");
+  if (state.route === "student") {
+    navigate("classes", { projectId: classById(student.classId)?.projectId });
+  } else {
+    render();
+  }
+}
+
+async function deleteStudentRecords(studentId) {
+  for (const item of state.data.media.filter((media) => media.studentId === studentId)) await del("media", item.id);
+  for (const order of state.data.orders.filter((entry) => entry.studentId === studentId)) await del("orders", order.id);
+  await del("students", studentId);
+}
+
 async function updateStudentCatalog(studentId, catalogId) {
   const student = studentById(studentId);
   const catalog = catalogItemById(catalogId);
   if (!student || !catalog) return;
   const order = orderByStudent(studentId);
   const nextTypes = catalogAngleTypes(catalog);
+  const labels = Object.fromEntries((catalog.angles || []).map((angle) => [angle.id, angle.name]));
   await put("students", { ...student, catalogId });
-  await put("orders", { ...order, catalogId, items: mergeOrderItems(order.items || [], nextTypes) });
+  await put("orders", { ...order, catalogId, items: mergeOrderItems(order.items || [], nextTypes, labels) });
   await refreshData();
   notify("Заказ и ракурсы ученика обновлены.");
   renderStudent();
@@ -857,13 +949,37 @@ async function resetOrder(studentId) {
 
 async function saveTemplate() {
   const name = view.querySelector("[data-template-name]").value.trim() || "Чеклист";
-  const items = view.querySelector("[data-template-items]").value.split("\n").map(normalizeOrderType).filter(Boolean);
-  if (!items.length) return notify("Добавьте хотя бы один пункт чеклиста.");
+  const rows = Array.from(view.querySelectorAll("[data-template-item]"))
+    .map((input) => input.value.trim())
+    .filter(Boolean)
+    .map((label) => ({ type: normalizeOrderType(label), label }));
+  const uniqueRows = [];
+  const used = new Set();
+  rows.forEach((row) => {
+    if (used.has(row.type)) return;
+    used.add(row.type);
+    uniqueRows.push(row);
+  });
+  if (!uniqueRows.length) return notify("Добавьте хотя бы один пункт чеклиста.");
   const id = view.querySelector("[data-save-template]").dataset.saveTemplate;
-  await put("templates", { id, name, items: Array.from(new Set(items)), scope: "default" });
+  const labels = Object.fromEntries(uniqueRows.map((row) => [row.type, row.label]));
+  await put("templates", { id, name, items: uniqueRows.map((row) => row.type), labels, scope: "default" });
+  for (const order of state.data.orders) {
+    await put("orders", { ...order, items: mergeOrderItems(order.items || [], uniqueRows.map((row) => row.type), labels) });
+  }
   await refreshData();
-  notify("Шаблон сохранен.");
+  notify("Шаблон сохранен и применен.");
   renderSettings();
+}
+
+function addTemplateEditorItem() {
+  const name = prompt("Название пункта чеклиста", "");
+  if (!name?.trim()) return;
+  const list = view.querySelector("[data-template-items]");
+  list?.insertAdjacentHTML("beforeend", templateEditorRow({ label: name.trim() }));
+  const row = list?.lastElementChild;
+  injectIcons();
+  row?.querySelector("[data-remove-template-item]")?.addEventListener("click", () => row.remove());
 }
 
 async function applyCatalogAsTemplate(itemId) {
@@ -871,9 +987,10 @@ async function applyCatalogAsTemplate(itemId) {
   const items = catalogAngleTypes(item);
   if (!items.length) return notify("В услуге нет ракурсов.");
   const current = state.data.templates[0] || { id: uid("template"), name: "Чеклист", scope: "default" };
-  await put("templates", { ...current, name: item.title, items });
+  const labels = Object.fromEntries((item.angles || []).map((angle) => [angle.id, angle.name]));
+  await put("templates", { ...current, name: item.title, items, labels });
   for (const order of state.data.orders) {
-    await put("orders", { ...order, catalogId: itemId, items: mergeOrderItems(order.items || [], items) });
+    await put("orders", { ...order, catalogId: itemId, items: mergeOrderItems(order.items || [], items, labels) });
   }
   for (const student of state.data.students) {
     await put("students", { ...student, catalogId: itemId });
@@ -1192,19 +1309,23 @@ function defaultOrderItems() {
 
 function orderItemsFromTemplate() {
   const items = state.data.templates[0]?.items || Object.keys(ORDER_TYPES);
-  return items.map((type) => ({ type, status: "pending", fileIds: [] }));
+  const labels = state.data.templates[0]?.labels || {};
+  return items.map((type) => ({ type, label: labels[type] || orderTypeLabel(type), status: "pending", fileIds: [] }));
 }
 
 function orderItemsFromCatalog(catalogId) {
   const catalog = catalogItemById(catalogId) || state.data.catalog[0];
   const items = catalogAngleTypes(catalog);
-  return (items.length ? items : state.data.templates[0]?.items || Object.keys(ORDER_TYPES)).map((type) => ({ type, status: "pending", fileIds: [] }));
+  const labels = items.length
+    ? Object.fromEntries((catalog?.angles || []).map((angle) => [angle.id, angle.name]))
+    : state.data.templates[0]?.labels || {};
+  return (items.length ? items : state.data.templates[0]?.items || Object.keys(ORDER_TYPES)).map((type) => ({ type, label: labels[type] || orderTypeLabel(type), status: "pending", fileIds: [] }));
 }
 
-function mergeOrderItems(existingItems, nextTypes) {
+function mergeOrderItems(existingItems, nextTypes, labels = {}) {
   return nextTypes.map((type) => {
     const existing = existingItems.find((item) => item.type === type);
-    return existing || { type, status: "pending", fileIds: [] };
+    return existing ? { ...existing, label: labels[type] || existing.label || orderTypeLabel(type) } : { type, label: labels[type] || orderTypeLabel(type), status: "pending", fileIds: [] };
   });
 }
 
@@ -1216,6 +1337,15 @@ function normalizeOrderType(value) {
 
 function orderTypeLabel(type) {
   return catalogAngleByType(type)?.name || ORDER_TYPES[type] || type;
+}
+
+function orderItemLabel(item) {
+  return item?.label || orderTypeLabel(item?.type || "");
+}
+
+function templateItemsForSettings(template) {
+  const labels = template.labels || {};
+  return (template.items || Object.keys(ORDER_TYPES)).map((type) => ({ type, label: labels[type] || orderTypeLabel(type) }));
 }
 
 function paymentLabel(status) {
@@ -1564,6 +1694,7 @@ function injectIcons() {
     settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V20h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L6.6 16.6l.1-.1A1.7 1.7 0 0 0 7 14.6a1.7 1.7 0 0 0-1.5-1H5v-3h.5A1.7 1.7 0 0 0 7 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V4h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1A1.7 1.7 0 0 0 17 9a1.7 1.7 0 0 0 1.5 1h.5v3h-.5a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
     theme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 1 0 9 6 8 8 0 1 1-9-6Z"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',
     camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h4l2-3h4l2 3h4v11H4z"/><circle cx="12" cy="13" r="3"/></svg>',
     video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m20 6-11 11-5-5"/></svg>'
