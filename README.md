@@ -1,24 +1,25 @@
-# School Photo Flow
+# Фото CRM
 
-Offline-first PWA MVP for managing school photo and video shoots.
+Офлайн PWA для управления школьными фото- и видеосъемками.
 
-## Run
+## Запуск
 
 ```bash
 npm run dev
 ```
 
-Open http://127.0.0.1:4173/
+Откройте http://127.0.0.1:4173/
 
-## MVP Scope
+## Возможности
 
-- Projects, classes, students
-- Editable checklist template
-- QR flow with `{ "studentId": "..." }`
-- Student shooting screen with photo/video capture
-- Automatic file naming
-- Queue and checklist completion
-- Payment status and filters
-- IndexedDB offline storage
-- ZIP export/import with project/class/student folders and `meta.json`
-- PWA manifest and service worker
+- Проекты, классы и ученики
+- Каталог услуг с ценой, требованиями, ракурсами и фото-референсами
+- Редактируемый шаблон чеклиста
+- QR-поиск по ID ученика
+- Экран съемки ученика с фото/видео и референсами ракурсов
+- Автоматические имена файлов
+- Очередь и закрытие чеклиста
+- Статус оплаты и фильтры
+- Офлайн-хранилище IndexedDB
+- ZIP экспорт/импорт с папками проекта, класса, ученика и `meta.json`
+- PWA manifest и service worker

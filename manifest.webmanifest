@@ -1,7 +1,7 @@
 {
-  "name": "School Photo Flow",
-  "short_name": "SPF",
-  "description": "Offline-first PWA for school photo and video shoots.",
+  "name": "Фото CRM",
+  "short_name": "Фото CRM",
+  "description": "Офлайн PWA для школьных фото- и видеосъемок.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#F7F7F7",

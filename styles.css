@@ -117,7 +117,7 @@ p {
   left: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   min-height: var(--nav-h);
   padding: 8px max(10px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
   background: var(--card);
@@ -308,7 +308,9 @@ p {
   color: #fff;
 }
 
-.primary-button.compact {
+.primary-button.compact,
+.secondary-button.compact,
+.danger-button.compact {
   min-height: 40px;
 }
 
@@ -414,6 +416,51 @@ p {
   border-radius: var(--radius);
 }
 
+.task-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.reference-thumb,
+.reference-empty {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.reference-thumb {
+  object-fit: cover;
+}
+
+.reference-empty {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.reference-thumb.large,
+.reference-empty.large {
+  width: 74px;
+  height: 74px;
+}
+
+.catalog-details {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  background: var(--card-strong);
+  border-radius: var(--radius);
+}
+
 .task-row.done {
   border-color: color-mix(in srgb, var(--success) 55%, var(--line));
 }
@@ -515,7 +562,7 @@ p {
     width: 92px;
     height: 100vh;
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(5, 86px);
+    grid-template-rows: repeat(6, 82px);
     border-top: 0;
     border-right: 1px solid var(--line);
   }
@@ -538,6 +585,11 @@ p {
   .action-grid,
   .stats {
     grid-template-columns: 1fr;
+  }
+
+  .task-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .topbar-actions {

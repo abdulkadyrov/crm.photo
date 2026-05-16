@@ -1,12 +1,12 @@
 const DB_NAME = "school-photo-flow";
-const DB_VERSION = 1;
-const STORE_NAMES = ["projects", "classes", "students", "orders", "media", "templates", "settings"];
+const DB_VERSION = 2;
+const STORE_NAMES = ["projects", "classes", "students", "orders", "media", "templates", "settings", "catalog"];
 const ORDER_TYPES = {
-  portrait: "Portrait",
-  full: "Full body",
-  side: "Side",
-  video: "Video",
-  interview: "Interview"
+  portrait: "Портрет",
+  full: "Полный рост",
+  side: "Профиль",
+  video: "Видео",
+  interview: "Интервью"
 };
 
 const state = {
@@ -19,6 +19,7 @@ const state = {
   db: null,
   data: emptyData(),
   currentCapture: null,
+  currentReference: null,
   qrStream: null
 };
 
@@ -26,6 +27,7 @@ const view = document.querySelector("#view");
 const title = document.querySelector("#screen-title");
 const toast = document.querySelector("#toast");
 const mediaInput = document.querySelector("#media-input");
+const referenceInput = document.querySelector("#reference-input");
 const zipInput = document.querySelector("#zip-input");
 
 init();
@@ -35,6 +37,7 @@ async function init() {
   document.documentElement.dataset.theme = localStorage.getItem("spf-theme") || "light";
   state.db = await openDb();
   await seedIfNeeded();
+  await seedCatalogIfNeeded();
   await refreshData();
   bindShell();
   navigate("home");
@@ -49,7 +52,8 @@ function emptyData() {
     orders: [],
     media: [],
     templates: [],
-    settings: []
+    settings: [],
+    catalog: []
   };
 }
 
@@ -119,7 +123,7 @@ async function seedIfNeeded() {
   const templateId = uid("template");
   await put("templates", {
     id: templateId,
-    name: "MVP checklist",
+    name: "Базовый чеклист",
     items: ["portrait", "full", "side", "video", "interview"],
     scope: "default"
   });
@@ -138,6 +142,26 @@ async function seedIfNeeded() {
   }
 }
 
+async function seedCatalogIfNeeded() {
+  const catalog = await getAll("catalog");
+  if (catalog.length) return;
+  await put("catalog", {
+    id: uid("catalog"),
+    title: "Стандартный школьный пакет",
+    mediaKind: "both",
+    price: "0",
+    orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
+    requirements: "Ровный свет, чистый фон, готовый список учеников и место для съемки.",
+    angles: [
+      { id: "portrait", name: "Портрет", details: "Лицо и плечи, взгляд в камеру.", refDataUrl: "", refName: "" },
+      { id: "full", name: "Полный рост", details: "Ученик полностью в кадре.", refDataUrl: "", refName: "" },
+      { id: "side", name: "Профиль", details: "Ракурс сбоку.", refDataUrl: "", refName: "" },
+      { id: "video", name: "Видео", details: "Короткий проход или приветствие.", refDataUrl: "", refName: "" },
+      { id: "interview", name: "Интервью", details: "Ответ на вопрос в камеру.", refDataUrl: "", refName: "" }
+    ]
+  });
+}
+
 function bindShell() {
   document.querySelectorAll("[data-route]").forEach((button) => {
     button.addEventListener("click", () => navigate(button.dataset.route));
@@ -149,6 +173,7 @@ function bindShell() {
   });
   document.querySelector("#add-project").addEventListener("click", addProject);
   mediaInput.addEventListener("change", handleMediaInput);
+  referenceInput.addEventListener("change", handleReferenceInput);
   zipInput.addEventListener("change", handleZipInput);
 }
 
@@ -165,6 +190,7 @@ function render() {
     search: renderSearch,
     scan: renderScan,
     classes: renderClasses,
+    catalog: renderCatalog,
     settings: renderSettings,
     student: renderStudent
   };
@@ -287,14 +313,14 @@ function renderSearch() {
 }
 
 function renderScan() {
-  title.textContent = "Scan QR";
+  title.textContent = "Сканер QR";
   view.innerHTML = `
     <section class="split">
       <div class="panel">
         <div class="qr-box" id="qr-box">
           <div>
             <p class="card-title">QR → ученик → чеклист</p>
-            <p class="muted">Наведите камеру на QR или введите studentId/qrId вручную.</p>
+            <p class="muted">Наведите камеру на QR или введите ID ученика вручную.</p>
           </div>
         </div>
         <div class="toolbar" style="margin-top:12px">
@@ -304,7 +330,7 @@ function renderScan() {
       </div>
       <form class="panel grid" data-manual-qr>
         <h2 class="card-title">Ручной ввод</h2>
-        <input class="input" name="qr" placeholder="studentId или qrId" required />
+        <input class="input" name="qr" placeholder="ID ученика или QR ID" required />
         <button class="primary-button" type="submit">Открыть ученика</button>
       </form>
     </section>
@@ -333,7 +359,7 @@ function renderStudent() {
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
               <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")} · QR ${escapeHtml(student.qrId)}</p>
             </div>
-            <span class="status-pill ${student.paymentStatus}">${student.paymentStatus === "paid" ? "paid" : "unpaid"}</span>
+            <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
           </div>
           <div class="action-grid">
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
@@ -363,11 +389,10 @@ function renderStudent() {
       <aside class="panel grid">
         <h2 class="card-title">Очередь</h2>
         ${queueList(order)}
-        <select class="select" data-payment="${student.id}">
-          <option value="paid" ${student.paymentStatus === "paid" ? "selected" : ""}>paid</option>
-          <option value="unpaid" ${student.paymentStatus === "unpaid" ? "selected" : ""}>unpaid</option>
-        </select>
-        <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR payload</button>
+        <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
+          ${student.paymentStatus === "paid" ? "Отметить как не оплачено" : "Оплачено"}
+        </button>
+        <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR ID</button>
       </aside>
     </section>
   `;
@@ -375,14 +400,21 @@ function renderStudent() {
 }
 
 function taskRow(item, studentId) {
+  const angle = catalogAngleByType(item.type);
+  const reference = angle?.refDataUrl
+    ? `<img class="reference-thumb" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
+    : '<div class="reference-empty">Референс</div>';
   return `
     <div class="task-row ${item.status === "done" ? "done" : ""}">
-      <div>
-        <strong>${ORDER_TYPES[item.type] || item.type}</strong>
-        <p class="muted">${item.fileIds.length} файлов</p>
+      <div class="task-main">
+        ${reference}
+        <div>
+          <strong>${escapeHtml(orderTypeLabel(item.type))}</strong>
+          <p class="muted">${item.fileIds.length} файлов${angle?.details ? ` · ${escapeHtml(angle.details)}` : ""}</p>
+        </div>
       </div>
       <button class="${item.status === "done" ? "secondary-button" : "primary-button"} compact" data-toggle-task="${studentId}:${item.type}" type="button">
-        ${item.status === "done" ? "done" : "pending"}
+        ${item.status === "done" ? "Готово" : "Ожидает"}
       </button>
     </div>
   `;
@@ -393,8 +425,8 @@ function queueList(order) {
   if (!pending.length) return '<p class="status-pill paid">Чеклист закрыт</p>';
   return pending.map((item, index) => `
     <div class="task-row">
-      <strong>${index + 1}. ${ORDER_TYPES[item.type] || item.type}</strong>
-      <span class="muted">pending</span>
+      <strong>${index + 1}. ${escapeHtml(orderTypeLabel(item.type))}</strong>
+      <span class="muted">ожидает</span>
     </div>
   `).join("");
 }
@@ -407,9 +439,77 @@ function mediaTile(item) {
   return `<figure class="media-tile">${node}<p>${escapeHtml(item.fileName)}</p></figure>`;
 }
 
+function renderCatalog() {
+  title.textContent = "Каталог";
+  const catalog = state.data.catalog;
+  view.innerHTML = `
+    <section class="toolbar">
+      <div>
+        <h2 class="card-title">Услуги и ракурсы</h2>
+        <p class="muted">Настройте заказы, цену, требования и референсы для съемки.</p>
+      </div>
+      <button class="primary-button" data-add-catalog type="button">Добавить услугу</button>
+    </section>
+    <section class="grid">
+      ${catalog.map(catalogCard).join("") || empty("Добавьте первую услугу для съемки")}
+    </section>
+  `;
+  bindViewActions();
+}
+
+function catalogCard(item) {
+  return `
+    <article class="panel grid">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(item.title)}</h2>
+          <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))}</p>
+        </div>
+        <div class="row">
+          <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Изменить</button>
+          <button class="danger-button compact" data-delete-catalog="${item.id}" type="button">Удалить</button>
+        </div>
+      </div>
+      <div class="catalog-details">
+        <p><strong>Заказ:</strong> ${escapeHtml(item.orderInfo || "Не заполнено")}</p>
+        <p><strong>Что нужно:</strong> ${escapeHtml(item.requirements || "Не заполнено")}</p>
+      </div>
+      <div class="task-list">
+        ${(item.angles || []).map((angle) => catalogAngleRow(item, angle)).join("") || '<p class="muted">Ракурсы пока не добавлены.</p>'}
+      </div>
+      <div class="toolbar">
+        <button class="secondary-button" data-add-angle="${item.id}" type="button">Добавить ракурс</button>
+        <button class="primary-button" data-apply-template="${item.id}" type="button">Использовать в чеклисте</button>
+      </div>
+    </article>
+  `;
+}
+
+function catalogAngleRow(item, angle) {
+  const reference = angle.refDataUrl
+    ? `<img class="reference-thumb large" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
+    : '<div class="reference-empty large">Нет фото</div>';
+  return `
+    <div class="task-row">
+      <div class="task-main">
+        ${reference}
+        <div>
+          <strong>${escapeHtml(angle.name)}</strong>
+          <p class="muted">${escapeHtml(angle.details || "Описание ракурса не заполнено")}</p>
+        </div>
+      </div>
+      <div class="row">
+        <button class="secondary-button compact" data-upload-reference="${item.id}:${angle.id}" type="button">Референс</button>
+        <button class="secondary-button compact" data-edit-angle="${item.id}:${angle.id}" type="button">Изменить</button>
+        <button class="danger-button compact" data-delete-angle="${item.id}:${angle.id}" type="button">Удалить</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderSettings() {
-  title.textContent = "Settings";
-  const template = state.data.templates[0] || { id: uid("template"), name: "Checklist", items: Object.keys(ORDER_TYPES) };
+  title.textContent = "Настройки";
+  const template = state.data.templates[0] || { id: uid("template"), name: "Чеклист", items: Object.keys(ORDER_TYPES) };
   view.innerHTML = `
     <section class="grid">
       <article class="panel grid">
@@ -426,8 +526,8 @@ function renderSettings() {
         </div>
       </article>
       <article class="panel grid">
-        <h2 class="card-title">Данные MVP</h2>
-        <button class="danger-button" data-reset-demo type="button">Очистить и создать demo</button>
+        <h2 class="card-title">Демо-данные</h2>
+        <button class="danger-button" data-reset-demo type="button">Очистить и создать демо</button>
       </article>
     </section>
   `;
@@ -445,7 +545,7 @@ function studentCard(student) {
           <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
           <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
         </div>
-        <span class="status-pill ${student.paymentStatus}">${student.paymentStatus}</span>
+        <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
       </div>
       <div class="progress"><span style="width:${c.percent}%"></span></div>
       <p class="muted">${c.doneCount}/${c.total} задач · ${statusLabel(student)}</p>
@@ -475,6 +575,7 @@ function bindViewActions() {
     const [studentId, type] = node.dataset.toggleTask.split(":");
     toggleTask(studentId, type);
   }));
+  view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
@@ -486,6 +587,23 @@ function bindViewActions() {
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelector("[data-generate-qr]")?.addEventListener("click", () => showQrPayload(state.studentId));
+  view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
+  view.querySelectorAll("[data-edit-catalog]").forEach((node) => node.addEventListener("click", () => editCatalogItem(node.dataset.editCatalog)));
+  view.querySelectorAll("[data-delete-catalog]").forEach((node) => node.addEventListener("click", () => deleteCatalogItem(node.dataset.deleteCatalog)));
+  view.querySelectorAll("[data-add-angle]").forEach((node) => node.addEventListener("click", () => addCatalogAngle(node.dataset.addAngle)));
+  view.querySelectorAll("[data-edit-angle]").forEach((node) => node.addEventListener("click", () => {
+    const [itemId, angleId] = node.dataset.editAngle.split(":");
+    editCatalogAngle(itemId, angleId);
+  }));
+  view.querySelectorAll("[data-delete-angle]").forEach((node) => node.addEventListener("click", () => {
+    const [itemId, angleId] = node.dataset.deleteAngle.split(":");
+    deleteCatalogAngle(itemId, angleId);
+  }));
+  view.querySelectorAll("[data-upload-reference]").forEach((node) => node.addEventListener("click", () => {
+    const [itemId, angleId] = node.dataset.uploadReference.split(":");
+    uploadReference(itemId, angleId);
+  }));
+  view.querySelectorAll("[data-apply-template]").forEach((node) => node.addEventListener("click", () => applyCatalogAsTemplate(node.dataset.applyTemplate)));
 }
 
 async function addProject() {
@@ -506,14 +624,87 @@ async function addClass(projectId) {
 }
 
 async function addStudent(classId) {
-  const firstName = prompt("Имя ученика");
-  if (!firstName) return;
-  const lastName = prompt("Фамилия ученика") || "";
+  const fio = prompt("ФИО ученика");
+  if (!fio) return;
+  const { firstName, lastName } = splitFullName(fio);
   const id = uid("student");
-  await put("students", { id, classId, firstName: firstName.trim(), lastName: lastName.trim(), qrId: id, paymentStatus: "unpaid", status: "not_started" });
+  await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus: "unpaid", status: "not_started" });
   await put("orders", { id: `order_${id}`, studentId: id, items: orderItemsFromTemplate() });
   await refreshData();
   navigate("student", { studentId: id });
+}
+
+async function addCatalogItem() {
+  const title = prompt("Название услуги / пакета");
+  if (!title) return;
+  const mediaKind = normalizeMediaKind(prompt("Тип: фото, видео или оба", "оба"));
+  const price = prompt("Цена", "0") || "";
+  const orderInfo = prompt("Информация про заказ", "") || "";
+  const requirements = prompt("Что нужно для реализации", "") || "";
+  await put("catalog", { id: uid("catalog"), title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim(), angles: [] });
+  await refreshData();
+  renderCatalog();
+}
+
+async function editCatalogItem(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  const title = prompt("Название услуги / пакета", item.title);
+  if (!title) return;
+  const mediaKind = normalizeMediaKind(prompt("Тип: фото, видео или оба", mediaKindLabel(item.mediaKind)), item.mediaKind);
+  const price = prompt("Цена", item.price || "") || "";
+  const orderInfo = prompt("Информация про заказ", item.orderInfo || "") || "";
+  const requirements = prompt("Что нужно для реализации", item.requirements || "") || "";
+  await put("catalog", { ...item, title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim() });
+  await refreshData();
+  renderCatalog();
+}
+
+async function deleteCatalogItem(itemId) {
+  if (!confirm("Удалить услугу из каталога?")) return;
+  await del("catalog", itemId);
+  await refreshData();
+  renderCatalog();
+}
+
+async function addCatalogAngle(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  const name = prompt("Название ракурса");
+  if (!name) return;
+  const details = prompt("Описание ракурса", "") || "";
+  const id = normalizeOrderType(name);
+  const angles = [...(item.angles || []), { id: uniqueAngleId(item, id), name: name.trim(), details: details.trim(), refDataUrl: "", refName: "" }];
+  await put("catalog", { ...item, angles });
+  await refreshData();
+  renderCatalog();
+}
+
+async function editCatalogAngle(itemId, angleId) {
+  const item = catalogItemById(itemId);
+  const angle = item?.angles?.find((entry) => entry.id === angleId);
+  if (!item || !angle) return;
+  const name = prompt("Название ракурса", angle.name);
+  if (!name) return;
+  const details = prompt("Описание ракурса", angle.details || "") || "";
+  const angles = item.angles.map((entry) => entry.id === angleId ? { ...entry, name: name.trim(), details: details.trim() } : entry);
+  await put("catalog", { ...item, angles });
+  await refreshData();
+  renderCatalog();
+}
+
+async function deleteCatalogAngle(itemId, angleId) {
+  const item = catalogItemById(itemId);
+  if (!item || !confirm("Удалить ракурс?")) return;
+  await put("catalog", { ...item, angles: (item.angles || []).filter((entry) => entry.id !== angleId) });
+  await refreshData();
+  renderCatalog();
+}
+
+function uploadReference(itemId, angleId) {
+  state.currentReference = { itemId, angleId };
+  referenceInput.value = "";
+  referenceInput.click();
 }
 
 function captureMedia(type, orderType) {
@@ -545,6 +736,22 @@ async function handleMediaInput(event) {
   await refreshData();
   notify(`${fileName} привязан к ученику.`);
   navigate("student", { studentId: student.id });
+}
+
+async function handleReferenceInput(event) {
+  const file = event.target.files?.[0];
+  if (!file || !state.currentReference) return;
+  const { itemId, angleId } = state.currentReference;
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  const refDataUrl = await fileToDataUrl(file);
+  const angles = (item.angles || []).map((angle) => angle.id === angleId ? { ...angle, refDataUrl, refName: file.name } : angle);
+  await put("catalog", { ...item, angles });
+  state.currentReference = null;
+  event.target.value = "";
+  await refreshData();
+  notify("Референс сохранен.");
+  renderCatalog();
 }
 
 async function attachFileToOrder(studentId, type, fileId) {
@@ -581,6 +788,12 @@ async function updatePayment(studentId, paymentStatus) {
   renderStudent();
 }
 
+async function togglePayment(studentId) {
+  const student = studentById(studentId);
+  const paymentStatus = student.paymentStatus === "paid" ? "unpaid" : "paid";
+  await updatePayment(studentId, paymentStatus);
+}
+
 async function resetOrder(studentId) {
   const order = orderByStudent(studentId);
   order.items = order.items.map((item) => ({ ...item, status: "pending", fileIds: [] }));
@@ -590,7 +803,7 @@ async function resetOrder(studentId) {
 }
 
 async function saveTemplate() {
-  const name = view.querySelector("[data-template-name]").value.trim() || "Checklist";
+  const name = view.querySelector("[data-template-name]").value.trim() || "Чеклист";
   const items = view.querySelector("[data-template-items]").value.split("\n").map(normalizeOrderType).filter(Boolean);
   if (!items.length) return notify("Добавьте хотя бы один пункт чеклиста.");
   const id = view.querySelector("[data-save-template]").dataset.saveTemplate;
@@ -600,10 +813,25 @@ async function saveTemplate() {
   renderSettings();
 }
 
+async function applyCatalogAsTemplate(itemId) {
+  const item = catalogItemById(itemId);
+  const items = (item?.angles || []).map((angle) => angle.id);
+  if (!items.length) return notify("В услуге нет ракурсов.");
+  const current = state.data.templates[0] || { id: uid("template"), name: "Чеклист", scope: "default" };
+  await put("templates", { ...current, name: item.title, items });
+  for (const order of state.data.orders) {
+    await put("orders", { ...order, items: mergeOrderItems(order.items || [], items) });
+  }
+  await refreshData();
+  notify("Чеклист обновлен для всех учеников.");
+  renderCatalog();
+}
+
 async function resetDemo() {
-  if (!confirm("Очистить локальные данные и создать demo?")) return;
+  if (!confirm("Очистить локальные данные и создать демо?")) return;
   for (const store of STORE_NAMES) await clearStore(store);
   await seedIfNeeded();
+  await seedCatalogIfNeeded();
   await refreshData();
   navigate("home");
 }
@@ -688,6 +916,7 @@ async function buildExportFiles(studentId) {
     students: selectedStudents,
     orders: state.data.orders.filter((order) => selectedStudents.some((student) => student.id === order.studentId)),
     templates: state.data.templates,
+    catalog: state.data.catalog,
     media: state.data.media
       .filter((item) => selectedStudents.some((student) => student.id === item.studentId))
       .map(({ blob, ...item }) => item)
@@ -715,7 +944,7 @@ async function handleZipInput(event) {
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-data.json"));
     if (!dataEntry) throw new Error("spf-data.json not found");
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
-    for (const store of ["projects", "classes", "students", "orders", "templates"]) {
+    for (const store of ["projects", "classes", "students", "orders", "templates", "catalog"]) {
       for (const record of meta[store] || []) await put(store, record);
     }
     const mediaRecords = meta.media || [];
@@ -880,6 +1109,18 @@ function studentById(id) {
   return state.data.students.find((student) => student.id === id);
 }
 
+function catalogItemById(id) {
+  return state.data.catalog.find((item) => item.id === id);
+}
+
+function catalogAngleByType(type) {
+  for (const item of state.data.catalog) {
+    const angle = (item.angles || []).find((entry) => entry.id === type);
+    if (angle) return angle;
+  }
+  return null;
+}
+
 function defaultOrderItems() {
   return Object.keys(ORDER_TYPES).map((type) => ({ type, status: "pending", fileIds: [] }));
 }
@@ -889,10 +1130,61 @@ function orderItemsFromTemplate() {
   return items.map((type) => ({ type, status: "pending", fileIds: [] }));
 }
 
+function mergeOrderItems(existingItems, nextTypes) {
+  return nextTypes.map((type) => {
+    const existing = existingItems.find((item) => item.type === type);
+    return existing || { type, status: "pending", fileIds: [] };
+  });
+}
+
 function normalizeOrderType(value) {
   const text = value.trim().toLowerCase();
   const found = Object.entries(ORDER_TYPES).find(([key, label]) => key === text || label.toLowerCase() === text);
   return found?.[0] || text.replace(/\s+/g, "_");
+}
+
+function orderTypeLabel(type) {
+  return catalogAngleByType(type)?.name || ORDER_TYPES[type] || type;
+}
+
+function paymentLabel(status) {
+  return status === "paid" ? "Оплачено" : "Не оплачено";
+}
+
+function mediaKindLabel(kind) {
+  if (kind === "photo") return "Фото";
+  if (kind === "video") return "Видео";
+  return "Фото и видео";
+}
+
+function normalizeMediaKind(value, fallback = "both") {
+  const text = String(value || "").trim().toLowerCase();
+  if (["фото", "photo"].includes(text)) return "photo";
+  if (["видео", "video"].includes(text)) return "video";
+  if (["оба", "обе", "фото и видео", "both"].includes(text)) return "both";
+  return fallback || "both";
+}
+
+function formatPrice(value) {
+  const text = String(value || "").trim();
+  if (!text || text === "0") return "Цена не указана";
+  return text;
+}
+
+function uniqueAngleId(item, baseId) {
+  const used = new Set((item.angles || []).map((angle) => angle.id));
+  if (!used.has(baseId)) return baseId;
+  let index = 2;
+  while (used.has(`${baseId}_${index}`)) index += 1;
+  return `${baseId}_${index}`;
+}
+
+function splitFullName(value) {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  const lastName = parts[0];
+  const firstName = parts.slice(1).join(" ");
+  return { firstName, lastName };
 }
 
 function filterChip(filter, label) {
@@ -905,7 +1197,7 @@ function empty(text) {
 
 function showQrPayload(studentId) {
   const student = studentById(studentId);
-  prompt("QR payload", JSON.stringify({ studentId: student.id }));
+  prompt("QR ID ученика", student.qrId || student.id);
 }
 
 function notify(message) {
@@ -925,6 +1217,15 @@ function now() {
 
 function jsonBytes(value) {
   return new TextEncoder().encode(JSON.stringify(value, null, 2));
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 function safeFileName(value) {
@@ -964,6 +1265,7 @@ function injectIcons() {
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>',
     scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3"/><path d="M8 8h3v3H8zM13 8h3v3h-3zM8 13h3v3H8zM14 14h2v2h-2z"/></svg>',
     classes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14"/><path d="M8 9h8M8 13h5"/><path d="M2 19h20"/></svg>',
+    catalog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/><path d="M16 17h.01"/></svg>',
     settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V20h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L6.6 16.6l.1-.1A1.7 1.7 0 0 0 7 14.6a1.7 1.7 0 0 0-1.5-1H5v-3h.5A1.7 1.7 0 0 0 7 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V4h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1A1.7 1.7 0 0 0 17 9a1.7 1.7 0 0 0 1.5 1h.5v3h-.5a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
     theme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 1 0 9 6 8 8 0 1 1-9-6Z"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
