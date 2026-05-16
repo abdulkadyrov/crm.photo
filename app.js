@@ -349,6 +349,7 @@ function renderStudent() {
   const order = orderByStudent(student.id);
   const media = mediaByStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
+  const selectedCatalogId = student.catalogId || state.data.catalog[0]?.id || "";
   title.textContent = `${student.firstName} ${student.lastName}`;
   view.innerHTML = `
     <section class="split">
@@ -357,7 +358,7 @@ function renderStudent() {
           <div class="card-header">
             <div>
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
-              <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")} · QR ${escapeHtml(student.qrId)}</p>
+              <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")} · ${escapeHtml(catalogItemById(selectedCatalogId)?.title || "Заказ не выбран")} · QR ${escapeHtml(student.qrId)}</p>
             </div>
             <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
           </div>
@@ -389,10 +390,17 @@ function renderStudent() {
       <aside class="panel grid">
         <h2 class="card-title">Очередь</h2>
         ${queueList(order)}
+        <label class="field-label">
+          <span>Заказ / услуга</span>
+          <select class="select" data-student-catalog="${student.id}">
+            ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(item.title)}</option>`).join("")}
+          </select>
+        </label>
         <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
           ${student.paymentStatus === "paid" ? "Отметить как не оплачено" : "Оплачено"}
         </button>
-        <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR ID</button>
+        <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
+        <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
       </aside>
     </section>
   `;
@@ -467,6 +475,7 @@ function catalogCard(item) {
         </div>
         <div class="row">
           <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Изменить</button>
+          <button class="secondary-button compact" data-duplicate-catalog="${item.id}" type="button">Дублировать</button>
           <button class="danger-button compact" data-delete-catalog="${item.id}" type="button">Удалить</button>
         </div>
       </div>
@@ -576,6 +585,8 @@ function bindViewActions() {
     toggleTask(studentId, type);
   }));
   view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
+  view.querySelector("[data-edit-student]")?.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent));
+  view.querySelector("[data-student-catalog]")?.addEventListener("change", (event) => updateStudentCatalog(event.target.dataset.studentCatalog, event.target.value));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
@@ -589,6 +600,7 @@ function bindViewActions() {
   view.querySelector("[data-generate-qr]")?.addEventListener("click", () => showQrPayload(state.studentId));
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
   view.querySelectorAll("[data-edit-catalog]").forEach((node) => node.addEventListener("click", () => editCatalogItem(node.dataset.editCatalog)));
+  view.querySelectorAll("[data-duplicate-catalog]").forEach((node) => node.addEventListener("click", () => duplicateCatalogItem(node.dataset.duplicateCatalog)));
   view.querySelectorAll("[data-delete-catalog]").forEach((node) => node.addEventListener("click", () => deleteCatalogItem(node.dataset.deleteCatalog)));
   view.querySelectorAll("[data-add-angle]").forEach((node) => node.addEventListener("click", () => addCatalogAngle(node.dataset.addAngle)));
   view.querySelectorAll("[data-edit-angle]").forEach((node) => node.addEventListener("click", () => {
@@ -627,11 +639,36 @@ async function addStudent(classId) {
   const fio = prompt("ФИО ученика");
   if (!fio) return;
   const { firstName, lastName } = splitFullName(fio);
+  const catalogId = chooseCatalogId();
   const id = uid("student");
-  await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus: "unpaid", status: "not_started" });
-  await put("orders", { id: `order_${id}`, studentId: id, items: orderItemsFromTemplate() });
+  await put("students", { id, classId, firstName, lastName, qrId: id, catalogId, paymentStatus: "unpaid", status: "not_started" });
+  await put("orders", { id: `order_${id}`, studentId: id, catalogId, items: orderItemsFromCatalog(catalogId) });
   await refreshData();
   navigate("student", { studentId: id });
+}
+
+async function editStudent(studentId) {
+  const student = studentById(studentId);
+  if (!student) return;
+  const fio = prompt("ФИО ученика", `${student.lastName} ${student.firstName}`.trim());
+  if (!fio) return;
+  const { firstName, lastName } = splitFullName(fio);
+  await put("students", { ...student, firstName, lastName });
+  await refreshData();
+  renderStudent();
+}
+
+async function updateStudentCatalog(studentId, catalogId) {
+  const student = studentById(studentId);
+  const catalog = catalogItemById(catalogId);
+  if (!student || !catalog) return;
+  const order = orderByStudent(studentId);
+  const nextTypes = catalogAngleTypes(catalog);
+  await put("students", { ...student, catalogId });
+  await put("orders", { ...order, catalogId, items: mergeOrderItems(order.items || [], nextTypes) });
+  await refreshData();
+  notify("Заказ и ракурсы ученика обновлены.");
+  renderStudent();
 }
 
 async function addCatalogItem() {
@@ -657,6 +694,22 @@ async function editCatalogItem(itemId) {
   const requirements = prompt("Что нужно для реализации", item.requirements || "") || "";
   await put("catalog", { ...item, title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim() });
   await refreshData();
+  renderCatalog();
+}
+
+async function duplicateCatalogItem(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  const copyId = uid("catalog");
+  const copy = {
+    ...item,
+    id: copyId,
+    title: `${item.title} копия`,
+    angles: (item.angles || []).map((angle) => ({ ...angle }))
+  };
+  await put("catalog", copy);
+  await refreshData();
+  notify("Услуга продублирована.");
   renderCatalog();
 }
 
@@ -815,12 +868,15 @@ async function saveTemplate() {
 
 async function applyCatalogAsTemplate(itemId) {
   const item = catalogItemById(itemId);
-  const items = (item?.angles || []).map((angle) => angle.id);
+  const items = catalogAngleTypes(item);
   if (!items.length) return notify("В услуге нет ракурсов.");
   const current = state.data.templates[0] || { id: uid("template"), name: "Чеклист", scope: "default" };
   await put("templates", { ...current, name: item.title, items });
   for (const order of state.data.orders) {
-    await put("orders", { ...order, items: mergeOrderItems(order.items || [], items) });
+    await put("orders", { ...order, catalogId: itemId, items: mergeOrderItems(order.items || [], items) });
+  }
+  for (const student of state.data.students) {
+    await put("students", { ...student, catalogId: itemId });
   }
   await refreshData();
   notify("Чеклист обновлен для всех учеников.");
@@ -845,7 +901,7 @@ function openQrValue(value) {
   const parsed = parseQrPayload(value);
   const student = state.data.students.find((entry) => entry.id === parsed || entry.qrId === parsed);
   if (!student) {
-    notify("Ученик по QR не найден.");
+    notify(`Ученик по QR не найден: ${parsed || "пустой код"}`);
     return;
   }
   navigate("student", { studentId: student.id });
@@ -895,7 +951,12 @@ function parseQrPayload(value) {
     const json = JSON.parse(raw);
     return json.studentId || json.qrId || raw;
   } catch {
-    return raw;
+    try {
+      const url = new URL(raw);
+      return url.searchParams.get("studentId") || url.searchParams.get("qrId") || url.hash.replace(/^#/, "") || raw;
+    } catch {
+      return raw.replace(/^studentId=/, "").replace(/^qrId=/, "");
+    }
   }
 }
 
@@ -1121,6 +1182,10 @@ function catalogAngleByType(type) {
   return null;
 }
 
+function catalogAngleTypes(catalog) {
+  return (catalog?.angles || []).map((angle) => angle.id).filter(Boolean);
+}
+
 function defaultOrderItems() {
   return Object.keys(ORDER_TYPES).map((type) => ({ type, status: "pending", fileIds: [] }));
 }
@@ -1128,6 +1193,12 @@ function defaultOrderItems() {
 function orderItemsFromTemplate() {
   const items = state.data.templates[0]?.items || Object.keys(ORDER_TYPES);
   return items.map((type) => ({ type, status: "pending", fileIds: [] }));
+}
+
+function orderItemsFromCatalog(catalogId) {
+  const catalog = catalogItemById(catalogId) || state.data.catalog[0];
+  const items = catalogAngleTypes(catalog);
+  return (items.length ? items : state.data.templates[0]?.items || Object.keys(ORDER_TYPES)).map((type) => ({ type, status: "pending", fileIds: [] }));
 }
 
 function mergeOrderItems(existingItems, nextTypes) {
@@ -1179,6 +1250,15 @@ function uniqueAngleId(item, baseId) {
   return `${baseId}_${index}`;
 }
 
+function chooseCatalogId(currentId = "") {
+  if (!state.data.catalog.length) return "";
+  const labels = state.data.catalog.map((item, index) => `${index + 1}. ${item.title}`).join("\n");
+  const currentIndex = Math.max(0, state.data.catalog.findIndex((item) => item.id === currentId));
+  const answer = prompt(`Выберите услугу номером:\n${labels}`, String(currentIndex + 1));
+  const index = Number(answer) - 1;
+  return state.data.catalog[index]?.id || state.data.catalog[0].id;
+}
+
 function splitFullName(value) {
   const parts = value.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 1) return { firstName: parts[0], lastName: "" };
@@ -1197,7 +1277,38 @@ function empty(text) {
 
 function showQrPayload(studentId) {
   const student = studentById(studentId);
-  prompt("QR ID ученика", student.qrId || student.id);
+  const value = student.qrId || student.id;
+  const svg = createQrSvg(value, 7);
+  const win = window.open("", "_blank", "width=420,height=560");
+  if (!win) {
+    prompt("QR ID ученика", value);
+    return;
+  }
+  win.document.write(`
+    <!doctype html>
+    <html lang="ru">
+      <head>
+        <meta charset="utf-8" />
+        <title>QR ${escapeHtml(value)}</title>
+        <style>
+          body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: system-ui, sans-serif; background: #f7f7f7; color: #111827; }
+          main { width: min(360px, calc(100vw - 32px)); display: grid; gap: 14px; text-align: center; }
+          svg { width: 100%; height: auto; background: #fff; border: 1px solid #e5e7eb; }
+          code { overflow-wrap: anywhere; padding: 10px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+          button { min-height: 42px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 800; cursor: pointer; }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>QR ученика</h1>
+          ${svg}
+          <code>${escapeHtml(value)}</code>
+          <button onclick="window.print()">Печать</button>
+        </main>
+      </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function notify(message) {
@@ -1226,6 +1337,190 @@ function fileToDataUrl(file) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function createQrSvg(text, scale = 6) {
+  const modules = createQrModules(text);
+  const size = modules.length;
+  const quiet = 4;
+  const full = size + quiet * 2;
+  const rects = [];
+  modules.forEach((row, y) => row.forEach((dark, x) => {
+    if (dark) rects.push(`<rect x="${x + quiet}" y="${y + quiet}" width="1" height="1"/>`);
+  }));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${full} ${full}" width="${full * scale}" height="${full * scale}" role="img" aria-label="QR"><rect width="100%" height="100%" fill="#fff"/><g fill="#000">${rects.join("")}</g></svg>`;
+}
+
+function createQrModules(text) {
+  const version = 4;
+  const size = 33;
+  const dataCodewords = 80;
+  const eccCodewords = 20;
+  const modules = Array.from({ length: size }, () => Array(size).fill(false));
+  const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+  const set = (x, y, dark, reserve = true) => {
+    if (x < 0 || y < 0 || x >= size || y >= size) return;
+    modules[y][x] = Boolean(dark);
+    if (reserve) reserved[y][x] = true;
+  };
+  const finder = (x, y) => {
+    for (let dy = -1; dy <= 7; dy += 1) {
+      for (let dx = -1; dx <= 7; dx += 1) {
+        const xx = x + dx;
+        const yy = y + dy;
+        const dark = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6 && (dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+        set(xx, yy, dark);
+      }
+    }
+  };
+  finder(0, 0);
+  finder(size - 7, 0);
+  finder(0, size - 7);
+  for (let i = 8; i < size - 8; i += 1) {
+    set(i, 6, i % 2 === 0);
+    set(6, i, i % 2 === 0);
+  }
+  alignmentPattern(26, 26, set);
+  set(8, size - 8, true);
+  reserveFormatAreas(reserved);
+  const bytes = qrDataCodewords(text, dataCodewords);
+  const codewords = bytes.concat(reedSolomon(bytes, eccCodewords));
+  placeQrCodewords(modules, reserved, codewords);
+  applyQrMask(modules, reserved, 0);
+  drawFormatBits(modules, reserved, 1, 0);
+  return modules;
+}
+
+function alignmentPattern(cx, cy, set) {
+  for (let y = -2; y <= 2; y += 1) {
+    for (let x = -2; x <= 2; x += 1) {
+      set(cx + x, cy + y, Math.max(Math.abs(x), Math.abs(y)) !== 1);
+    }
+  }
+}
+
+function reserveFormatAreas(reserved) {
+  const size = reserved.length;
+  for (let i = 0; i < 9; i += 1) {
+    reserved[8][i] = true;
+    reserved[i][8] = true;
+    reserved[8][size - 1 - i] = true;
+    reserved[size - 1 - i][8] = true;
+  }
+}
+
+function qrDataCodewords(text, count) {
+  const bytes = Array.from(new TextEncoder().encode(text));
+  const bits = [0, 1, 0, 0];
+  pushBits(bits, bytes.length, 8);
+  bytes.forEach((byte) => pushBits(bits, byte, 8));
+  const capacity = count * 8;
+  for (let i = 0; i < 4 && bits.length < capacity; i += 1) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  const output = [];
+  for (let i = 0; i < bits.length; i += 8) output.push(bits.slice(i, i + 8).reduce((sum, bit) => (sum << 1) | bit, 0));
+  for (let pad = 0; output.length < count; pad += 1) output.push(pad % 2 ? 0x11 : 0xec);
+  return output.slice(0, count);
+}
+
+function pushBits(bits, value, length) {
+  for (let i = length - 1; i >= 0; i -= 1) bits.push((value >>> i) & 1);
+}
+
+function reedSolomon(data, degree) {
+  const generator = rsGenerator(degree);
+  const result = Array(degree).fill(0);
+  data.forEach((byte) => {
+    const factor = byte ^ result.shift();
+    result.push(0);
+    generator.forEach((coef, index) => {
+      result[index] ^= gfMul(coef, factor);
+    });
+  });
+  return result;
+}
+
+function rsGenerator(degree) {
+  let poly = [1];
+  for (let i = 0; i < degree; i += 1) {
+    const next = Array(poly.length + 1).fill(0);
+    poly.forEach((coef, index) => {
+      next[index] ^= gfMul(coef, 1);
+      next[index + 1] ^= gfMul(coef, gfPow(2, i));
+    });
+    poly = next;
+  }
+  return poly.slice(1);
+}
+
+function gfMul(a, b) {
+  let result = 0;
+  for (; b; b >>>= 1) {
+    if (b & 1) result ^= a;
+    a <<= 1;
+    if (a & 0x100) a ^= 0x11d;
+  }
+  return result;
+}
+
+function gfPow(value, power) {
+  let result = 1;
+  for (let i = 0; i < power; i += 1) result = gfMul(result, value);
+  return result;
+}
+
+function placeQrCodewords(modules, reserved, codewords) {
+  const size = modules.length;
+  const bits = codewords.flatMap((byte) => Array.from({ length: 8 }, (_, index) => (byte >>> (7 - index)) & 1));
+  let bitIndex = 0;
+  let upward = true;
+  for (let right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right -= 1;
+    for (let vertical = 0; vertical < size; vertical += 1) {
+      const y = upward ? size - 1 - vertical : vertical;
+      for (let dx = 0; dx < 2; dx += 1) {
+        const x = right - dx;
+        if (reserved[y][x]) continue;
+        modules[y][x] = Boolean(bits[bitIndex] || 0);
+        bitIndex += 1;
+      }
+    }
+    upward = !upward;
+  }
+}
+
+function applyQrMask(modules, reserved, mask) {
+  modules.forEach((row, y) => row.forEach((_, x) => {
+    if (!reserved[y][x] && qrMask(mask, x, y)) modules[y][x] = !modules[y][x];
+  }));
+}
+
+function qrMask(mask, x, y) {
+  if (mask === 0) return (x + y) % 2 === 0;
+  return false;
+}
+
+function drawFormatBits(modules, reserved, eccLevel, mask) {
+  const size = modules.length;
+  const bits = formatBits((eccLevel << 3) | mask);
+  const coordsA = [[8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8], [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8]];
+  const coordsB = [[size - 1, 8], [size - 2, 8], [size - 3, 8], [size - 4, 8], [size - 5, 8], [size - 6, 8], [size - 7, 8], [8, size - 8], [8, size - 7], [8, size - 6], [8, size - 5], [8, size - 4], [8, size - 3], [8, size - 2], [8, size - 1]];
+  coordsA.forEach(([x, y], index) => {
+    modules[y][x] = Boolean((bits >>> index) & 1);
+    reserved[y][x] = true;
+  });
+  coordsB.forEach(([x, y], index) => {
+    modules[y][x] = Boolean((bits >>> index) & 1);
+    reserved[y][x] = true;
+  });
+}
+
+function formatBits(value) {
+  let data = value << 10;
+  for (let i = 14; i >= 10; i -= 1) {
+    if ((data >>> i) & 1) data ^= 0x537 << (i - 10);
+  }
+  return ((value << 10) | data) ^ 0x5412;
 }
 
 function safeFileName(value) {

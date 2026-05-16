@@ -374,6 +374,14 @@ p {
   outline: none;
 }
 
+.field-label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .textarea {
   min-height: 92px;
   resize: vertical;
