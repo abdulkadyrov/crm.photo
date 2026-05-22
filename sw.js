@@ -1,9 +1,10 @@
-const CACHE_NAME = "spf-cache-v2";
+const CACHE_NAME = "spf-cache-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./vendor/jsQR.js",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"

@@ -207,6 +207,10 @@ p {
   gap: 12px;
 }
 
+.row {
+  flex-wrap: wrap;
+}
+
 .card-header {
   margin-bottom: 14px;
 }
@@ -218,6 +222,11 @@ p {
 
 .muted {
   color: var(--muted);
+}
+
+.student-order-summary,
+.scan-note {
+  margin-top: 6px;
 }
 
 .stats {
@@ -271,6 +280,7 @@ p {
   color: var(--text);
   font-size: 0.82rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .chip.active,
@@ -306,6 +316,7 @@ p {
   border-radius: var(--radius);
   border: 1px solid transparent;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .primary-button {
@@ -473,6 +484,10 @@ p {
   min-width: 0;
   align-items: center;
   gap: 10px;
+}
+
+.task-main > div {
+  min-width: 0;
 }
 
 .reference-thumb,

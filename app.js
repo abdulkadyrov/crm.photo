@@ -32,6 +32,7 @@ const state = {
   data: emptyData(),
   currentCapture: null,
   currentReference: null,
+  returnTarget: null,
   qrStream: null
 };
 
@@ -40,6 +41,7 @@ const title = document.querySelector("#screen-title");
 const toast = document.querySelector("#toast");
 const mediaInput = document.querySelector("#media-input");
 const referenceInput = document.querySelector("#reference-input");
+const shootImportInput = document.querySelector("#shoot-import-input");
 const zipInput = document.querySelector("#zip-input");
 
 init();
@@ -186,14 +188,28 @@ function bindShell() {
   document.querySelector("#add-project").addEventListener("click", addProject);
   mediaInput.addEventListener("change", handleMediaInput);
   referenceInput.addEventListener("change", handleReferenceInput);
+  shootImportInput.addEventListener("change", handleShootImport);
   zipInput.addEventListener("change", handleZipInput);
 }
 
 function navigate(route, params = {}) {
   stopQrStream();
+  if (route === "student" && state.route !== "student") {
+    state.returnTarget = routeSnapshot();
+  }
   Object.assign(state, params, { route });
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.route === route));
   render();
+}
+
+function routeSnapshot() {
+  return {
+    route: state.route,
+    projectId: state.projectId,
+    classId: state.classId,
+    query: state.query,
+    filter: state.filter
+  };
 }
 
 function render() {
@@ -349,8 +365,10 @@ function renderScan() {
         </div>
         <div class="toolbar" style="margin-top:12px">
           <button class="primary-button" data-start-scan type="button">Сканировать</button>
+          <button class="secondary-button" data-import-shoot type="button">Импорт съемки</button>
           <button class="secondary-button" data-stop-scan type="button">Стоп</button>
         </div>
+        <p class="muted scan-note">Импорт съемки распределяет фото по QR-разделителям: QR ученика, затем его снимки, потом QR следующего ученика.</p>
       </div>
       <form class="panel grid" data-manual-qr>
         <h2 class="card-title">Ручной ввод</h2>
@@ -420,6 +438,7 @@ function renderStudent() {
   const media = mediaByStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogId = student.catalogId || state.data.catalog[0]?.id || "";
+  const selectedCatalogTitle = catalogItemById(selectedCatalogId)?.title || "Заказ не выбран";
   title.textContent = `${student.firstName} ${student.lastName}`;
   view.innerHTML = `
     <section class="split">
@@ -428,9 +447,10 @@ function renderStudent() {
           <div class="card-header">
             <div>
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
-              <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")} · ${escapeHtml(catalogItemById(selectedCatalogId)?.title || "Заказ не выбран")} · QR ${escapeHtml(student.qrId)}</p>
+              <p class="muted student-order-summary">Заказ: ${escapeHtml(selectedCatalogTitle)}</p>
             </div>
             <div class="row">
+              <button class="secondary-button compact" data-back-from-student type="button">Назад</button>
               <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
               <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
             </div>
@@ -461,8 +481,8 @@ function renderStudent() {
         </article>
       </div>
       <aside class="panel grid">
-        <h2 class="card-title">Очередь</h2>
-        ${queueList(order)}
+        <h2 class="card-title">Заказ</h2>
+        <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
         <label class="field-label">
           <span>Заказ / услуга</span>
           <select class="select" data-student-catalog="${student.id}">
@@ -488,7 +508,7 @@ function renderStudent() {
 }
 
 function taskRow(item, studentId) {
-  const angle = catalogAngleByType(item.type);
+  const angle = catalogAngleForStudent(studentId, item.type);
   const reference = angle?.refDataUrl
     ? `<img class="reference-thumb" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
     : '<div class="reference-empty">Референс</div>';
@@ -724,12 +744,14 @@ function bindViewActions() {
     toggleTask(studentId, type);
   }));
   view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
+  view.querySelector("[data-back-from-student]")?.addEventListener("click", navigateBackFromStudent);
   view.querySelector("[data-edit-student]")?.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent));
   view.querySelector("[data-student-catalog]")?.addEventListener("change", (event) => updateStudentCatalog(event.target.dataset.studentCatalog, event.target.value));
   view.querySelector("[data-order-status]")?.addEventListener("change", (event) => updateOrderStatus(event.target.dataset.orderStatus, event.target.value));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
+  view.querySelector("[data-import-shoot]")?.addEventListener("click", () => shootImportInput.click());
   view.querySelector("[data-stop-scan]")?.addEventListener("click", stopQrStream);
   view.querySelector("[data-import-zip]")?.addEventListener("click", () => zipInput.click());
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportZip()));
@@ -1021,6 +1043,11 @@ async function handleMediaInput(event) {
 async function handleReferenceInput(event) {
   const file = event.target.files?.[0];
   if (!file || !state.currentReference) return;
+  if (!isReferenceImage(file)) {
+    notify("Выберите изображение: JPG, PNG, WebP, HEIC/HEIF или GIF.");
+    event.target.value = "";
+    return;
+  }
   const { itemId, angleId } = state.currentReference;
   const item = catalogItemById(itemId);
   if (!item) return;
@@ -1032,6 +1059,11 @@ async function handleReferenceInput(event) {
   await refreshData();
   notify("Референс сохранен.");
   renderCatalog();
+}
+
+function isReferenceImage(file) {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return file.type.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"].includes(ext);
 }
 
 async function attachFileToOrder(studentId, type, fileId) {
@@ -1174,7 +1206,7 @@ function handleManualQr(event) {
 
 function openQrValue(value) {
   const parsed = parseQrPayload(value);
-  const student = state.data.students.find((entry) => entry.id === parsed || entry.qrId === parsed);
+  const student = studentFromQrValue(parsed);
   if (!student) {
     notify(`Ученик по QR не найден: ${parsed || "пустой код"}`);
     return;
@@ -1184,12 +1216,18 @@ function openQrValue(value) {
 
 async function startQrScanner() {
   const box = view.querySelector("#qr-box");
-  if (!("BarcodeDetector" in window)) {
-    notify("BarcodeDetector недоступен в этом браузере. Используйте ручной ввод.");
+  const detector = "BarcodeDetector" in window ? new BarcodeDetector({ formats: ["qr_code"] }) : null;
+  if (!detector && !hasJsQr()) {
+    box.innerHTML = `
+      <div>
+        <p class="card-title">Сканер недоступен</p>
+        <p class="muted">Этот браузер не поддерживает распознавание QR. Введите QR ID вручную.</p>
+      </div>
+    `;
+    notify("Сканер QR недоступен в этом браузере. Используйте ручной ввод.");
     return;
   }
   try {
-    const detector = new BarcodeDetector({ formats: ["qr_code"] });
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
     state.qrStream = stream;
     const video = document.createElement("video");
@@ -1198,12 +1236,13 @@ async function startQrScanner() {
     video.playsInline = true;
     box.replaceChildren(video);
     await video.play();
+    const canvas = document.createElement("canvas");
     const scan = async () => {
       if (!state.qrStream) return;
-      const codes = await detector.detect(video).catch(() => []);
-      if (codes[0]?.rawValue) {
+      const rawValue = await detectQrFromVideo(video, detector, canvas);
+      if (rawValue) {
         stopQrStream();
-        openQrValue(codes[0].rawValue);
+        openQrValue(rawValue);
         return;
       }
       requestAnimationFrame(scan);
@@ -1214,10 +1253,137 @@ async function startQrScanner() {
   }
 }
 
+async function handleShootImport(event) {
+  const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith("image/"));
+  if (!files.length) return;
+  let currentStudent = null;
+  let qrCount = 0;
+  let assignedCount = 0;
+  let skippedCount = 0;
+  for (const file of files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))) {
+    const rawQr = await detectQrFromImageFile(file);
+    const qrStudent = rawQr ? studentFromQrValue(parseQrPayload(rawQr)) : null;
+    if (qrStudent) {
+      currentStudent = qrStudent;
+      qrCount += 1;
+      continue;
+    }
+    if (!currentStudent) {
+      skippedCount += 1;
+      continue;
+    }
+    await importShotForStudent(currentStudent, file);
+    assignedCount += 1;
+  }
+  event.target.value = "";
+  await refreshData();
+  notify(`Импорт: QR ${qrCount}, фото ${assignedCount}${skippedCount ? `, пропущено ${skippedCount}` : ""}.`);
+  if (currentStudent) navigate("student", { studentId: currentStudent.id });
+}
+
+async function importShotForStudent(student, file) {
+  const klass = classById(student.classId);
+  const orderType = nextImportOrderType(student.id);
+  const ext = extensionFor(file, "photo");
+  const baseName = file.name.replace(/\.[^.]+$/, "");
+  const fileName = safeFileName(`${klass?.name || "class"}_${student.lastName}_${student.firstName}_${orderType}_${baseName}.${ext}`);
+  const id = uid("media");
+  await put("media", {
+    id,
+    studentId: student.id,
+    type: "photo",
+    fileName,
+    orderType,
+    createdAt: now(),
+    blob: file
+  });
+  await attachFileToOrder(student.id, orderType, id);
+}
+
+function nextImportOrderType(studentId) {
+  const order = orderByStudent(studentId);
+  return (order.items.find((item) => item.status !== "done") || order.items[0])?.type || "portrait";
+}
+
+function studentFromQrValue(value) {
+  return state.data.students.find((entry) => entry.id === value || entry.qrId === value);
+}
+
 function stopQrStream() {
   if (!state.qrStream) return;
   state.qrStream.getTracks().forEach((track) => track.stop());
   state.qrStream = null;
+}
+
+function navigateBackFromStudent() {
+  const target = state.returnTarget;
+  if (target?.route && target.route !== "student") {
+    navigate(target.route, {
+      projectId: target.projectId,
+      classId: target.classId,
+      query: target.query,
+      filter: target.filter
+    });
+    return;
+  }
+  const student = studentById(state.studentId);
+  const klass = classById(student?.classId);
+  navigate("classes", { projectId: klass?.projectId || state.projectId, classId: null });
+}
+
+async function detectQrFromVideo(video, detector, canvas) {
+  if (detector) {
+    const codes = await detector.detect(video).catch(() => []);
+    if (codes[0]?.rawValue) return codes[0].rawValue;
+  }
+  if (!hasJsQr() || !video.videoWidth || !video.videoHeight) return "";
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return detectQrFromCanvas(canvas);
+}
+
+async function detectQrFromImageFile(file) {
+  if ("BarcodeDetector" in window && "createImageBitmap" in window) {
+    try {
+      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const bitmap = await createImageBitmap(file);
+      const codes = await detector.detect(bitmap).catch(() => []);
+      bitmap.close?.();
+      if (codes[0]?.rawValue) return codes[0].rawValue;
+    } catch {}
+  }
+  if (!hasJsQr()) return "";
+  const image = await loadImageFromFile(file).catch(() => null);
+  if (!image) return "";
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  URL.revokeObjectURL(image.src);
+  return detectQrFromCanvas(canvas);
+}
+
+function detectQrFromCanvas(canvas) {
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const result = window.jsQR(imageData.data, imageData.width, imageData.height);
+  return result?.data || "";
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = URL.createObjectURL(file);
+  });
+}
+
+function hasJsQr() {
+  return typeof window.jsQR === "function";
 }
 
 function parseQrPayload(value) {
@@ -1572,6 +1738,14 @@ function catalogAngleByType(type) {
     if (angle) return angle;
   }
   return null;
+}
+
+function catalogAngleForStudent(studentId, type) {
+  const student = studentById(studentId);
+  const order = orderByStudent(studentId);
+  const catalog = catalogItemById(student?.catalogId || order.catalogId);
+  const angle = (catalog?.angles || []).find((entry) => entry.id === type);
+  return angle || catalogAngleByType(type);
 }
 
 function catalogAngleTypes(catalog) {
