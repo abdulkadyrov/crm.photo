@@ -28,23 +28,19 @@
       <nav class="bottom-nav" aria-label="Основная навигация">
         <button class="nav-item active" type="button" data-route="home">
           <span data-icon="home"></span>
-          <span>Проекты</span>
+          <span>Главная</span>
         </button>
-        <button class="nav-item" type="button" data-route="search">
-          <span data-icon="search"></span>
-          <span>Поиск</span>
+        <button class="nav-item" type="button" data-route="classes">
+          <span data-icon="classes"></span>
+          <span>Проекты</span>
         </button>
         <button class="nav-item nav-scan" type="button" data-route="scan">
           <span data-icon="scan"></span>
           <span>QR</span>
         </button>
-        <button class="nav-item" type="button" data-route="classes">
-          <span data-icon="classes"></span>
-          <span>Классы</span>
-        </button>
-        <button class="nav-item" type="button" data-route="catalog">
+        <button class="nav-item" type="button" data-route="albums">
           <span data-icon="catalog"></span>
-          <span>Каталог</span>
+          <span>Альбомы</span>
         </button>
         <button class="nav-item" type="button" data-route="settings">
           <span data-icon="settings"></span>
@@ -57,6 +53,8 @@
     <input id="reference-input" class="visually-hidden" type="file" accept="image/*,.heic,.heif" />
     <input id="shoot-import-input" class="visually-hidden" type="file" accept="image/*" multiple />
     <input id="zip-input" class="visually-hidden" type="file" accept=".zip,application/zip" />
+    <input id="album-media-input" class="visually-hidden" type="file" accept="image/*,video/*" />
+    <input id="album-zip-input" class="visually-hidden" type="file" accept=".zip,application/zip" />
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="./vendor/jsQR.js"></script>
     <script src="./app.js" type="module"></script>

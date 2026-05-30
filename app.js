@@ -1,6 +1,21 @@
 const DB_NAME = "school-photo-flow";
-const DB_VERSION = 2;
-const STORE_NAMES = ["projects", "classes", "students", "orders", "media", "templates", "settings", "catalog"];
+const DB_VERSION = 3;
+const STORE_NAMES = [
+  "projects",
+  "classes",
+  "students",
+  "orders",
+  "media",
+  "templates",
+  "settings",
+  "catalog",
+  "albumProjects",
+  "albumClasses",
+  "albumStudents",
+  "albumGroupMedia",
+  "albumTeachers",
+  "albumMedia"
+];
 const ORDER_TYPES = {
   portrait: "Портрет",
   full: "Полный рост",
@@ -14,6 +29,32 @@ const ORDER_STATUSES = {
   processing: "В обработке",
   ready: "Готов",
   delivered: "Выдан"
+};
+const ALBUM_TYPES = {
+  budget: "Бюджет",
+  standard: "Стандарт",
+  premium: "Премиум",
+  custom: "Индивидуальный"
+};
+const ALBUM_CLASS_STATUSES = {
+  not_started: "Не начат",
+  shooting: "Съемка",
+  editing: "Верстка",
+  ready: "Готов",
+  printing: "Печать",
+  delivered: "Выдан"
+};
+const ALBUM_STUDENT_STATUSES = {
+  not_shot: "Не снят",
+  shot: "Снято",
+  editing: "В обработке",
+  ready: "Готов"
+};
+const ALBUM_GROUP_TYPES = {
+  class_photo: "Общее фото класса",
+  boys: "Фото мальчиков",
+  girls: "Фото девочек",
+  custom: "Другое"
 };
 const STATUS_EXPORT_DEFAULT = {
   id: "status-export-template",
@@ -32,6 +73,10 @@ const state = {
   data: emptyData(),
   currentCapture: null,
   currentReference: null,
+  currentAlbumMedia: null,
+  albumProjectId: null,
+  albumClassId: null,
+  albumTab: "students",
   returnTarget: null,
   qrStream: null,
   qrScanFrame: 0,
@@ -73,6 +118,8 @@ const mediaInput = document.querySelector("#media-input");
 const referenceInput = document.querySelector("#reference-input");
 const shootImportInput = document.querySelector("#shoot-import-input");
 const zipInput = document.querySelector("#zip-input");
+const albumMediaInput = document.querySelector("#album-media-input");
+const albumZipInput = document.querySelector("#album-zip-input");
 
 init();
 
@@ -84,8 +131,17 @@ async function init() {
   await seedCatalogIfNeeded();
   await refreshData();
   bindShell();
-  navigate("home");
+  navigateFromUrl() || navigate("home");
   registerServiceWorker();
+}
+
+function navigateFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const studentId = params.get("studentId") || params.get("qrId") || location.hash.replace(/^#/, "");
+  const student = studentFromQrValue(parseQrPayload(studentId));
+  if (!student) return false;
+  navigate("student", { studentId: student.id });
+  return true;
 }
 
 function emptyData() {
@@ -220,6 +276,8 @@ function bindShell() {
   referenceInput.addEventListener("change", handleReferenceInput);
   shootImportInput.addEventListener("change", handleShootImport);
   zipInput.addEventListener("change", handleZipInput);
+  albumMediaInput.addEventListener("change", handleAlbumMediaInput);
+  albumZipInput.addEventListener("change", handleAlbumZipInput);
 }
 
 function navigate(route, params = {}) {
@@ -228,7 +286,10 @@ function navigate(route, params = {}) {
     state.returnTarget = routeSnapshot();
   }
   Object.assign(state, params, { route });
-  document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.route === route));
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    const itemRoute = item.dataset.route;
+    item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")));
+  });
   render();
 }
 
@@ -249,6 +310,9 @@ function render() {
     scan: renderScan,
     classes: renderClasses,
     catalog: renderCatalog,
+    albums: renderAlbums,
+    albumProject: renderAlbumProject,
+    albumClass: renderAlbumClass,
     settings: renderSettings,
     student: renderStudent
   };
@@ -408,6 +472,279 @@ function renderScan() {
     </section>
   `;
   bindViewActions();
+}
+
+function renderAlbums() {
+  title.textContent = "Альбомы";
+  const projects = state.data.albumProjects;
+  view.innerHTML = `
+    <section class="toolbar">
+      <div>
+        <h2 class="card-title">Выпускные альбомы</h2>
+        <p class="muted">Школа → класс → ученики, общие фото, учителя и экспорт дизайнеру.</p>
+      </div>
+      <button class="primary-button" data-add-album-project type="button">Школа</button>
+    </section>
+    <section class="grid project-grid">
+      ${projects.map(albumProjectCard).join("") || empty("Создайте первую школу для альбомов")}
+    </section>
+  `;
+  bindViewActions();
+}
+
+function albumProjectCard(project) {
+  const classes = albumClassesByProject(project.id);
+  const students = classes.flatMap((klass) => albumStudentsByClass(klass.id));
+  const ready = classes.filter((klass) => ["ready", "printing", "delivered"].includes(klass.status)).length;
+  const pct = classes.length ? Math.round((ready / classes.length) * 100) : 0;
+  return `
+    <article class="card card-button" data-open-album-project="${project.id}" tabindex="0">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(project.schoolName)}</h2>
+          <p class="muted">${classes.length} классов · ${students.length} учеников</p>
+        </div>
+        <div class="row">
+          <button class="icon-button" data-add-album-class="${project.id}" type="button" title="Добавить класс"><span data-icon="plus"></span></button>
+          <button class="icon-button danger-icon" data-delete-album-project="${project.id}" type="button" title="Удалить школу"><span data-icon="trash"></span></button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><strong>${classes.length}</strong><span class="muted">классов</span></div>
+        <div class="stat"><strong>${ready}</strong><span class="muted">готово</span></div>
+        <div class="stat"><strong>${students.length}</strong><span class="muted">учеников</span></div>
+      </div>
+      <div class="progress"><span style="width:${pct}%"></span></div>
+    </article>
+  `;
+}
+
+function renderAlbumProject() {
+  const project = albumProjectById(state.albumProjectId);
+  if (!project) {
+    navigate("albums");
+    return;
+  }
+  title.textContent = project.schoolName;
+  const classes = albumClassesByProject(project.id);
+  view.innerHTML = `
+    <section class="toolbar">
+      <div>
+        <h2 class="card-title">${escapeHtml(project.schoolName)}</h2>
+        <p class="muted">Классы выпускных альбомов</p>
+      </div>
+      <div class="row">
+        <button class="secondary-button" data-back-to-albums type="button">Назад</button>
+        <button class="primary-button" data-add-album-class="${project.id}" type="button">Класс</button>
+      </div>
+    </section>
+    <section class="grid project-grid">
+      ${classes.map(albumClassCard).join("") || empty("Добавьте первый класс")}
+    </section>
+  `;
+  bindViewActions();
+}
+
+function albumClassCard(klass) {
+  const stats = albumClassStats(klass.id);
+  return `
+    <article class="card card-button" data-open-album-class="${klass.id}" tabindex="0">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(klass.name)}</h2>
+          <p class="muted">${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц</p>
+        </div>
+        <div class="row">
+          <span class="status-pill ${albumStatusClass(klass.status)}">${albumClassStatusLabel(klass.status)}</span>
+          <button class="icon-button danger-icon" data-delete-album-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span></button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><strong>${stats.students}</strong><span class="muted">учеников</span></div>
+        <div class="stat"><strong>${stats.portraits}/${stats.students}</strong><span class="muted">портреты</span></div>
+        <div class="stat"><strong>${stats.readyPercent}%</strong><span class="muted">готовность</span></div>
+      </div>
+      <div class="progress"><span style="width:${stats.readyPercent}%"></span></div>
+    </article>
+  `;
+}
+
+function renderAlbumClass() {
+  const klass = albumClassById(state.albumClassId);
+  if (!klass) {
+    navigate("albums");
+    return;
+  }
+  const project = albumProjectById(klass.albumProjectId);
+  const tab = state.albumTab || "students";
+  const stats = albumClassStats(klass.id);
+  title.textContent = klass.name;
+  view.innerHTML = `
+    <section class="album-class-head">
+      <div class="toolbar">
+        <div>
+          <h2 class="card-title">${escapeHtml(klass.name)}</h2>
+          <p class="muted">${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц · ${escapeHtml(project?.schoolName || "")}</p>
+        </div>
+        <div class="row">
+          <button class="secondary-button" data-back-to-album-project="${klass.albumProjectId}" type="button">Назад</button>
+          <button class="secondary-button" data-edit-album-class="${klass.id}" type="button">Изменить</button>
+        </div>
+      </div>
+      <div class="stats album-stats">
+        <div class="stat"><strong>${stats.students}</strong><span class="muted">Ученики</span></div>
+        <div class="stat"><strong>${stats.portraits}/${stats.students}</strong><span class="muted">Портреты</span></div>
+        <div class="stat"><strong>${stats.videos}</strong><span class="muted">Видео</span></div>
+        <div class="stat"><strong>${stats.teachers}</strong><span class="muted">Учителя</span></div>
+        <div class="stat"><strong>${stats.groups}</strong><span class="muted">Общие фото</span></div>
+        <div class="stat"><strong>${stats.readyPercent}%</strong><span class="muted">Готовность</span></div>
+      </div>
+      <div class="progress"><span style="width:${stats.readyPercent}%"></span></div>
+      <div class="chip-row album-tabs">
+        ${albumTabButton("students", "Ученики", tab)}
+        ${albumTabButton("groups", "Общие фото", tab)}
+        ${albumTabButton("teachers", "Учителя", tab)}
+        ${albumTabButton("export", "Экспорт", tab)}
+      </div>
+    </section>
+    ${albumTabContent(klass, tab)}
+  `;
+  bindViewActions();
+}
+
+function albumTabButton(key, label, active) {
+  return `<button class="chip ${key === active ? "active" : ""}" data-album-tab="${key}" type="button">${label}</button>`;
+}
+
+function albumTabContent(klass, tab) {
+  if (tab === "groups") return albumGroupsTab(klass);
+  if (tab === "teachers") return albumTeachersTab(klass);
+  if (tab === "export") return albumExportTab(klass);
+  return albumStudentsTab(klass);
+}
+
+function albumStudentsTab(klass) {
+  const students = albumStudentsByClass(klass.id);
+  return `
+    <section class="toolbar">
+      <h2 class="card-title">Ученики</h2>
+      <button class="primary-button" data-add-album-student="${klass.id}" type="button">Ученик</button>
+    </section>
+    <section class="grid project-grid">
+      ${students.map(albumStudentCard).join("") || empty("Добавьте учеников для альбома")}
+    </section>
+  `;
+}
+
+function albumStudentCard(student) {
+  const portrait = albumMediaById(student.portraitMediaId);
+  const video = albumMediaById(student.videoMediaId);
+  return `
+    <article class="student-card">
+      <div class="student-line">
+        <div>
+          <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
+          <p class="muted">Портрет: ${portrait ? "OK" : "-"} · Видео: ${video ? "OK" : "-"} · Статус: ${albumStudentStatusLabel(student.status)}</p>
+        </div>
+        <span class="status-pill ${albumStatusClass(student.status)}">${albumStudentStatusLabel(student.status)}</span>
+      </div>
+      ${student.comment ? `<p class="muted">${escapeHtml(student.comment)}</p>` : ""}
+      <div class="toolbar">
+        <button class="secondary-button compact" data-album-media="student:${student.id}:portrait" type="button">Добавить портрет</button>
+        <button class="secondary-button compact" data-album-media="student:${student.id}:video" type="button">Добавить видео</button>
+        <button class="secondary-button compact" data-edit-album-student="${student.id}" type="button">Изменить данные</button>
+        <button class="danger-button compact" data-delete-album-student="${student.id}" type="button">Удалить</button>
+      </div>
+    </article>
+  `;
+}
+
+function albumGroupsTab(klass) {
+  const items = albumGroupsByClass(klass.id);
+  return `
+    <section class="toolbar">
+      <h2 class="card-title">Общие фото</h2>
+      <button class="primary-button" data-add-album-group="${klass.id}" type="button">Общее фото</button>
+    </section>
+    <section class="grid project-grid">
+      ${items.map(albumGroupCard).join("") || empty("Добавьте фото, которые относятся ко всему классу")}
+    </section>
+  `;
+}
+
+function albumGroupCard(item) {
+  const media = albumMediaById(item.mediaId);
+  const video = albumMediaById(item.videoMediaId);
+  return `
+    <article class="student-card">
+      <div class="student-line">
+        <div>
+          <h3>${escapeHtml(item.title)}</h3>
+          <p class="muted">${albumGroupTypeLabel(item.type)} · Фото: ${media ? "OK" : "-"} · Видео: ${video ? "OK" : "-"}</p>
+        </div>
+        <span class="status-pill in-progress">${albumGroupTypeLabel(item.type)}</span>
+      </div>
+      ${item.comment ? `<p class="muted">${escapeHtml(item.comment)}</p>` : ""}
+      <div class="toolbar">
+        <button class="secondary-button compact" data-album-media="group:${item.id}:image" type="button">Добавить фото</button>
+        <button class="secondary-button compact" data-album-media="group:${item.id}:video" type="button">Добавить видео</button>
+        <button class="secondary-button compact" data-edit-album-group="${item.id}" type="button">Изменить</button>
+        <button class="danger-button compact" data-delete-album-group="${item.id}" type="button">Удалить</button>
+      </div>
+    </article>
+  `;
+}
+
+function albumTeachersTab(klass) {
+  const teachers = albumTeachersByClass(klass.id);
+  return `
+    <section class="toolbar">
+      <h2 class="card-title">Учителя</h2>
+      <button class="primary-button" data-add-album-teacher="${klass.id}" type="button">Учитель</button>
+    </section>
+    <section class="grid project-grid">
+      ${teachers.map(albumTeacherCard).join("") || empty("Добавьте классного руководителя, директора или сотрудников")}
+    </section>
+  `;
+}
+
+function albumTeacherCard(teacher) {
+  const portrait = albumMediaById(teacher.portraitMediaId);
+  const video = albumMediaById(teacher.videoMediaId);
+  return `
+    <article class="student-card">
+      <div class="student-line">
+        <div>
+          <h3>${escapeHtml(teacher.fullName)}</h3>
+          <p class="muted">${escapeHtml(teacher.role || "Учитель")} · Фото: ${portrait ? "OK" : "-"} · Видео: ${video ? "OK" : "-"}</p>
+        </div>
+      </div>
+      ${teacher.comment ? `<p class="muted">${escapeHtml(teacher.comment)}</p>` : ""}
+      <div class="toolbar">
+        <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:portrait" type="button">Добавить фото</button>
+        <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:video" type="button">Добавить видео</button>
+        <button class="secondary-button compact" data-edit-album-teacher="${teacher.id}" type="button">Изменить</button>
+        <button class="danger-button compact" data-delete-album-teacher="${teacher.id}" type="button">Удалить</button>
+      </div>
+    </article>
+  `;
+}
+
+function albumExportTab(klass) {
+  return `
+    <section class="grid">
+      <article class="panel grid">
+        <div>
+          <h2 class="card-title">Экспорт дизайнеру</h2>
+          <p class="muted">ZIP содержит учеников, общие фото, учителей, видео и JSON-метаданные.</p>
+        </div>
+        <div class="toolbar">
+          <button class="primary-button" data-export-album-class="${klass.id}" type="button">Экспорт ZIP</button>
+          <button class="secondary-button" data-import-album-zip type="button">Импорт ZIP</button>
+        </div>
+      </article>
+    </section>
+  `;
 }
 
 function studentQuickForm(classId) {
@@ -817,6 +1154,41 @@ function bindViewActions() {
   }));
   view.querySelectorAll("[data-generate-references]").forEach((node) => node.addEventListener("click", () => generateReferenceSet(node.dataset.generateReferences)));
   view.querySelectorAll("[data-apply-template]").forEach((node) => node.addEventListener("click", () => applyCatalogAsTemplate(node.dataset.applyTemplate)));
+  view.querySelector("[data-add-album-project]")?.addEventListener("click", addAlbumProject);
+  view.querySelectorAll("[data-open-album-project]").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      navigate("albumProject", { albumProjectId: node.dataset.openAlbumProject });
+    });
+  });
+  view.querySelectorAll("[data-add-album-class]").forEach((node) => node.addEventListener("click", () => addAlbumClass(node.dataset.addAlbumClass)));
+  view.querySelectorAll("[data-delete-album-project]").forEach((node) => node.addEventListener("click", () => deleteAlbumProject(node.dataset.deleteAlbumProject)));
+  view.querySelectorAll("[data-open-album-class]").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      navigate("albumClass", { albumClassId: node.dataset.openAlbumClass, albumTab: "students" });
+    });
+  });
+  view.querySelectorAll("[data-delete-album-class]").forEach((node) => node.addEventListener("click", () => deleteAlbumClass(node.dataset.deleteAlbumClass)));
+  view.querySelector("[data-back-to-albums]")?.addEventListener("click", () => navigate("albums"));
+  view.querySelectorAll("[data-back-to-album-project]").forEach((node) => node.addEventListener("click", () => navigate("albumProject", { albumProjectId: node.dataset.backToAlbumProject })));
+  view.querySelectorAll("[data-edit-album-class]").forEach((node) => node.addEventListener("click", () => editAlbumClass(node.dataset.editAlbumClass)));
+  view.querySelectorAll("[data-album-tab]").forEach((node) => node.addEventListener("click", () => {
+    state.albumTab = node.dataset.albumTab;
+    renderAlbumClass();
+  }));
+  view.querySelectorAll("[data-add-album-student]").forEach((node) => node.addEventListener("click", () => addAlbumStudent(node.dataset.addAlbumStudent)));
+  view.querySelectorAll("[data-edit-album-student]").forEach((node) => node.addEventListener("click", () => editAlbumStudent(node.dataset.editAlbumStudent)));
+  view.querySelectorAll("[data-delete-album-student]").forEach((node) => node.addEventListener("click", () => deleteAlbumStudent(node.dataset.deleteAlbumStudent)));
+  view.querySelectorAll("[data-add-album-group]").forEach((node) => node.addEventListener("click", () => addAlbumGroup(node.dataset.addAlbumGroup)));
+  view.querySelectorAll("[data-edit-album-group]").forEach((node) => node.addEventListener("click", () => editAlbumGroup(node.dataset.editAlbumGroup)));
+  view.querySelectorAll("[data-delete-album-group]").forEach((node) => node.addEventListener("click", () => deleteAlbumGroup(node.dataset.deleteAlbumGroup)));
+  view.querySelectorAll("[data-add-album-teacher]").forEach((node) => node.addEventListener("click", () => addAlbumTeacher(node.dataset.addAlbumTeacher)));
+  view.querySelectorAll("[data-edit-album-teacher]").forEach((node) => node.addEventListener("click", () => editAlbumTeacher(node.dataset.editAlbumTeacher)));
+  view.querySelectorAll("[data-delete-album-teacher]").forEach((node) => node.addEventListener("click", () => deleteAlbumTeacher(node.dataset.deleteAlbumTeacher)));
+  view.querySelectorAll("[data-album-media]").forEach((node) => node.addEventListener("click", () => selectAlbumMedia(node.dataset.albumMedia)));
+  view.querySelectorAll("[data-export-album-class]").forEach((node) => node.addEventListener("click", () => exportAlbumClassZip(node.dataset.exportAlbumClass)));
+  view.querySelector("[data-import-album-zip]")?.addEventListener("click", () => albumZipInput.click());
 }
 
 async function addProject() {
@@ -962,6 +1334,209 @@ async function addCatalogItem() {
   await put("catalog", { id: uid("catalog"), title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim(), angles: [] });
   await refreshData();
   renderCatalog();
+}
+
+async function addAlbumProject() {
+  const schoolName = prompt("Название школы");
+  if (!schoolName?.trim()) return;
+  const project = { id: uid("album_project"), schoolName: schoolName.trim(), createdAt: now() };
+  await put("albumProjects", project);
+  await refreshData();
+  navigate("albumProject", { albumProjectId: project.id });
+}
+
+async function deleteAlbumProject(projectId) {
+  const project = albumProjectById(projectId);
+  if (!project || !confirm(`Удалить школу "${project.schoolName}" вместе со всеми альбомными классами?`)) return;
+  for (const klass of albumClassesByProject(projectId)) await deleteAlbumClassRecords(klass.id);
+  await del("albumProjects", projectId);
+  await refreshData();
+  navigate("albums");
+}
+
+async function addAlbumClass(albumProjectId) {
+  const project = albumProjectById(albumProjectId);
+  if (!project) return;
+  const name = prompt("Название класса", "11А");
+  if (!name?.trim()) return;
+  const albumType = normalizeAlbumType(prompt("Тип альбома: budget, standard, premium или custom", "standard"));
+  const pagesCount = Math.max(0, Number.parseInt(prompt("Количество страниц", "20") || "20", 10) || 0);
+  const klass = {
+    id: uid("album_class"),
+    albumProjectId,
+    name: name.trim(),
+    albumType,
+    pagesCount,
+    status: "not_started",
+    createdAt: now()
+  };
+  await put("albumClasses", klass);
+  await refreshData();
+  navigate("albumClass", { albumClassId: klass.id, albumTab: "students" });
+}
+
+async function editAlbumClass(classId) {
+  const klass = albumClassById(classId);
+  if (!klass) return;
+  const name = prompt("Название класса", klass.name);
+  if (!name?.trim()) return;
+  const albumType = normalizeAlbumType(prompt("Тип альбома", klass.albumType), klass.albumType);
+  const pagesCount = Math.max(0, Number.parseInt(prompt("Количество страниц", String(klass.pagesCount || 20)) || String(klass.pagesCount || 20), 10) || 0);
+  const status = normalizeAlbumClassStatus(prompt("Статус", klass.status), klass.status);
+  await put("albumClasses", { ...klass, name: name.trim(), albumType, pagesCount, status });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function deleteAlbumClass(classId) {
+  const klass = albumClassById(classId);
+  if (!klass || !confirm(`Удалить альбомный класс "${klass.name}"?`)) return;
+  const projectId = klass.albumProjectId;
+  await deleteAlbumClassRecords(classId);
+  await refreshData();
+  navigate("albumProject", { albumProjectId: projectId });
+}
+
+async function deleteAlbumClassRecords(classId) {
+  const ownerIds = [
+    ...albumStudentsByClass(classId).map((item) => item.id),
+    ...albumGroupsByClass(classId).map((item) => item.id),
+    ...albumTeachersByClass(classId).map((item) => item.id)
+  ];
+  for (const media of state.data.albumMedia.filter((item) => ownerIds.includes(item.ownerId))) await del("albumMedia", media.id);
+  for (const item of albumStudentsByClass(classId)) await del("albumStudents", item.id);
+  for (const item of albumGroupsByClass(classId)) await del("albumGroupMedia", item.id);
+  for (const item of albumTeachersByClass(classId)) await del("albumTeachers", item.id);
+  await del("albumClasses", classId);
+}
+
+async function addAlbumStudent(classId) {
+  const fio = prompt("ФИО ученика");
+  if (!fio?.trim()) return;
+  const { firstName, lastName } = splitFullName(fio);
+  await put("albumStudents", {
+    id: uid("album_student"),
+    albumClassId: classId,
+    firstName,
+    lastName,
+    portraitMediaId: "",
+    videoMediaId: "",
+    comment: "",
+    status: "not_shot",
+    createdAt: now()
+  });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function editAlbumStudent(studentId) {
+  const student = albumStudentById(studentId);
+  if (!student) return;
+  const fio = prompt("ФИО ученика", `${student.lastName} ${student.firstName}`.trim());
+  if (!fio?.trim()) return;
+  const { firstName, lastName } = splitFullName(fio);
+  const status = normalizeAlbumStudentStatus(prompt("Статус: not_shot, shot, editing или ready", student.status), student.status);
+  const comment = prompt("Комментарий", student.comment || "") || "";
+  await put("albumStudents", { ...student, firstName, lastName, status, comment: comment.trim() });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function deleteAlbumStudent(studentId) {
+  const student = albumStudentById(studentId);
+  if (!student || !confirm(`Удалить ученика "${student.lastName} ${student.firstName}"?`)) return;
+  for (const media of state.data.albumMedia.filter((item) => item.ownerId === studentId)) await del("albumMedia", media.id);
+  await del("albumStudents", studentId);
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function addAlbumGroup(classId) {
+  const title = prompt("Название общего фото", "Общее фото класса");
+  if (!title?.trim()) return;
+  const type = normalizeAlbumGroupType(prompt("Тип: class_photo, boys, girls или custom", "class_photo"));
+  const comment = prompt("Комментарий", "") || "";
+  await put("albumGroupMedia", {
+    id: uid("album_group"),
+    albumClassId: classId,
+    title: title.trim(),
+    type,
+    mediaId: "",
+    videoMediaId: "",
+    comment: comment.trim(),
+    createdAt: now()
+  });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function editAlbumGroup(groupId) {
+  const item = albumGroupById(groupId);
+  if (!item) return;
+  const title = prompt("Название общего фото", item.title);
+  if (!title?.trim()) return;
+  const type = normalizeAlbumGroupType(prompt("Тип", item.type), item.type);
+  const comment = prompt("Комментарий", item.comment || "") || "";
+  await put("albumGroupMedia", { ...item, title: title.trim(), type, comment: comment.trim() });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function deleteAlbumGroup(groupId) {
+  const item = albumGroupById(groupId);
+  if (!item || !confirm(`Удалить "${item.title}"?`)) return;
+  for (const media of state.data.albumMedia.filter((entry) => entry.ownerId === groupId)) await del("albumMedia", media.id);
+  await del("albumGroupMedia", groupId);
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function addAlbumTeacher(classId) {
+  const fullName = prompt("ФИО учителя");
+  if (!fullName?.trim()) return;
+  const role = prompt("Роль", "Классный руководитель") || "";
+  const comment = prompt("Комментарий", "") || "";
+  await put("albumTeachers", {
+    id: uid("album_teacher"),
+    albumClassId: classId,
+    fullName: fullName.trim(),
+    role: role.trim(),
+    portraitMediaId: "",
+    videoMediaId: "",
+    comment: comment.trim(),
+    createdAt: now()
+  });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function editAlbumTeacher(teacherId) {
+  const teacher = albumTeacherById(teacherId);
+  if (!teacher) return;
+  const fullName = prompt("ФИО учителя", teacher.fullName);
+  if (!fullName?.trim()) return;
+  const role = prompt("Роль", teacher.role || "") || "";
+  const comment = prompt("Комментарий", teacher.comment || "") || "";
+  await put("albumTeachers", { ...teacher, fullName: fullName.trim(), role: role.trim(), comment: comment.trim() });
+  await refreshData();
+  renderAlbumClass();
+}
+
+async function deleteAlbumTeacher(teacherId) {
+  const teacher = albumTeacherById(teacherId);
+  if (!teacher || !confirm(`Удалить "${teacher.fullName}"?`)) return;
+  for (const media of state.data.albumMedia.filter((entry) => entry.ownerId === teacherId)) await del("albumMedia", media.id);
+  await del("albumTeachers", teacherId);
+  await refreshData();
+  renderAlbumClass();
+}
+
+function selectAlbumMedia(payload) {
+  const [ownerType, ownerId, slot] = payload.split(":");
+  state.currentAlbumMedia = { ownerType, ownerId, slot };
+  albumMediaInput.accept = slot === "video" ? "video/*" : "image/*";
+  albumMediaInput.value = "";
+  albumMediaInput.click();
 }
 
 async function editCatalogItem(itemId) {
@@ -1192,6 +1767,47 @@ async function handleMediaInput(event) {
   await refreshData();
   notify(`${fileName} привязан к ученику.`);
   navigate("student", { studentId: student.id });
+}
+
+async function handleAlbumMediaInput(event) {
+  const file = event.target.files?.[0];
+  const target = state.currentAlbumMedia;
+  if (!file || !target) return;
+  const fileType = file.type.startsWith("video/") ? "video" : "image";
+  const fileName = safeFileName(file.name || `album_media.${extensionFor(file, fileType === "video" ? "video" : "photo")}`);
+  const media = {
+    id: uid("album_media"),
+    ownerType: target.ownerType,
+    ownerId: target.ownerId,
+    fileName,
+    fileType,
+    blobId: uid("blob"),
+    blob: file,
+    createdAt: now()
+  };
+  await put("albumMedia", media);
+  if (target.ownerType === "student") {
+    const student = albumStudentById(target.ownerId);
+    if (student) {
+      const patch = target.slot === "video"
+        ? { videoMediaId: media.id }
+        : { portraitMediaId: media.id, status: student.status === "not_shot" ? "shot" : student.status };
+      await put("albumStudents", { ...student, ...patch });
+    }
+  }
+  if (target.ownerType === "group") {
+    const group = albumGroupById(target.ownerId);
+    if (group) await put("albumGroupMedia", { ...group, [target.slot === "video" ? "videoMediaId" : "mediaId"]: media.id });
+  }
+  if (target.ownerType === "teacher") {
+    const teacher = albumTeacherById(target.ownerId);
+    if (teacher) await put("albumTeachers", { ...teacher, [target.slot === "video" ? "videoMediaId" : "portraitMediaId"]: media.id });
+  }
+  state.currentAlbumMedia = null;
+  event.target.value = "";
+  await refreshData();
+  notify("Медиа альбома сохранено.");
+  renderAlbumClass();
 }
 
 async function handleReferenceInput(event) {
@@ -1755,6 +2371,153 @@ async function handleZipInput(event) {
   }
 }
 
+async function exportAlbumClassZip(classId) {
+  const klass = albumClassById(classId);
+  if (!klass) return;
+  const files = await buildAlbumExportFiles(klass);
+  const blob = createZip(files);
+  downloadBlob(blob, `${safeFileName(`${klass.name}_album_export`)}.zip`);
+  notify("ZIP альбома экспортирован.");
+}
+
+async function buildAlbumExportFiles(klass) {
+  const project = albumProjectById(klass.albumProjectId);
+  const base = `${safePath(`${klass.name}_album_export`)}`;
+  const students = albumStudentsByClass(klass.id);
+  const groups = albumGroupsByClass(klass.id);
+  const teachers = albumTeachersByClass(klass.id);
+  const files = [];
+  const exportNames = new Map();
+  const classInfo = {
+    schoolName: project?.schoolName || "",
+    className: klass.name,
+    albumType: klass.albumType,
+    pagesCount: klass.pagesCount,
+    studentsCount: students.length,
+    exportedAt: now()
+  };
+  files.push({ path: `${base}/class_info.json`, data: jsonBytes(classInfo) });
+  for (const student of students) {
+    const folder = `${base}/students/${safePath(`${student.lastName}_${student.firstName}`)}`;
+    const portrait = albumMediaById(student.portraitMediaId);
+    const video = albumMediaById(student.videoMediaId);
+    files.push({ path: `${folder}/meta.json`, data: jsonBytes({ ...student, portraitFileName: portrait?.fileName || "", videoFileName: video?.fileName || "" }) });
+    if (portrait?.blob) {
+      const exportName = albumExportMediaName("portrait", portrait);
+      exportNames.set(portrait.id, exportName);
+      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await portrait.blob.arrayBuffer()) });
+    }
+    if (video?.blob) {
+      const exportName = albumExportMediaName("video", video);
+      exportNames.set(video.id, exportName);
+      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await video.blob.arrayBuffer()) });
+    }
+  }
+  const groupMeta = [];
+  for (const group of groups) {
+    const media = albumMediaById(group.mediaId);
+    const video = albumMediaById(group.videoMediaId);
+    groupMeta.push({ ...group, mediaFileName: media?.fileName || "", videoFileName: video?.fileName || "" });
+    if (media?.blob) {
+      const exportName = albumGroupExportName(group, media);
+      exportNames.set(media.id, exportName);
+      files.push({ path: `${base}/group_photos/${exportName}`, data: new Uint8Array(await media.blob.arrayBuffer()) });
+    }
+    if (video?.blob) {
+      const exportName = albumGroupExportName(group, video, "video");
+      exportNames.set(video.id, exportName);
+      files.push({ path: `${base}/group_photos/${exportName}`, data: new Uint8Array(await video.blob.arrayBuffer()) });
+    }
+  }
+  files.push({ path: `${base}/group_photos/meta.json`, data: jsonBytes(groupMeta) });
+  for (const teacher of teachers) {
+    const folder = `${base}/teachers/${safePath(teacher.fullName)}`;
+    const portrait = albumMediaById(teacher.portraitMediaId);
+    const video = albumMediaById(teacher.videoMediaId);
+    files.push({ path: `${folder}/meta.json`, data: jsonBytes({ ...teacher, portraitFileName: portrait?.fileName || "", videoFileName: video?.fileName || "" }) });
+    if (portrait?.blob) {
+      const exportName = albumExportMediaName("portrait", portrait);
+      exportNames.set(portrait.id, exportName);
+      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await portrait.blob.arrayBuffer()) });
+    }
+    if (video?.blob) {
+      const exportName = albumExportMediaName("video", video);
+      exportNames.set(video.id, exportName);
+      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await video.blob.arrayBuffer()) });
+    }
+  }
+  const restore = {
+    kind: "spf_album_export",
+    version: 1,
+    project,
+    klass,
+    students: students.map(stripAlbumBlobRefs),
+    groups: groupMeta,
+    teachers: teachers.map(stripAlbumBlobRefs),
+    media: state.data.albumMedia
+      .filter((media) => [klass.id, ...students.map((item) => item.id), ...groups.map((item) => item.id), ...teachers.map((item) => item.id)].includes(media.ownerId))
+      .map(({ blob, ...media }) => ({ ...media, exportFileName: exportNames.get(media.id) || media.fileName }))
+  };
+  files.push({ path: `${base}/spf-album-data.json`, data: jsonBytes(restore) });
+  return files;
+}
+
+async function handleAlbumZipInput(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const entries = parseZip(new Uint8Array(await file.arrayBuffer()));
+    const dataEntry = entries.find((entry) => entry.path.endsWith("spf-album-data.json"));
+    if (!dataEntry) throw new Error("spf-album-data.json not found");
+    const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
+    const project = meta.project || { id: uid("album_project"), schoolName: meta.classInfo?.schoolName || "Импортированный альбом", createdAt: now() };
+    const klass = meta.klass || { id: uid("album_class"), albumProjectId: project.id, name: meta.classInfo?.className || "Класс", albumType: "standard", pagesCount: 0, status: "not_started", createdAt: now() };
+    await put("albumProjects", project);
+    await put("albumClasses", { ...klass, albumProjectId: project.id });
+    for (const student of meta.students || []) await put("albumStudents", student);
+    for (const group of meta.groups || []) await put("albumGroupMedia", group);
+    for (const teacher of meta.teachers || []) await put("albumTeachers", teacher);
+    for (const media of meta.media || []) {
+      const entry = findAlbumMediaEntry(entries, media);
+      const blob = new Blob(entry ? [entry.data] : [], { type: albumMimeType(media) });
+      await put("albumMedia", { ...media, blob });
+    }
+    await refreshData();
+    notify("ZIP альбома импортирован.");
+    navigate("albumClass", { albumClassId: klass.id, albumProjectId: project.id, albumTab: "students" });
+  } catch (error) {
+    notify("Не удалось импортировать ZIP альбома.");
+  } finally {
+    event.target.value = "";
+  }
+}
+
+function albumExportMediaName(prefix, media) {
+  return safeFileName(`${prefix}.${extensionFor({ name: media.fileName, type: albumMimeType(media) }, media.fileType === "video" ? "video" : "photo")}`);
+}
+
+function albumGroupExportName(group, media, prefix = "") {
+  const base = prefix || group.type || "custom";
+  return safeFileName(`${base}.${extensionFor({ name: media.fileName, type: albumMimeType(media) }, media.fileType === "video" ? "video" : "photo")}`);
+}
+
+function stripAlbumBlobRefs(item) {
+  return { ...item };
+}
+
+function findAlbumMediaEntry(entries, media) {
+  const expected = [media.exportFileName, media.fileName, albumExportMediaName(media.fileType === "video" ? "video" : "portrait", media)].filter(Boolean);
+  return entries.find((entry) => expected.some((name) => entry.path.endsWith(`/${name}`)));
+}
+
+function albumMimeType(media) {
+  if (media.fileType === "video") return "video/mp4";
+  const ext = String(media.fileName || "").split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  return "image/jpeg";
+}
+
 function createZip(files) {
   const localParts = [];
   const centralParts = [];
@@ -1837,6 +2600,108 @@ function concatBytes(parts) {
     offset += part.length;
   }
   return output;
+}
+
+function albumProjectById(id) {
+  return state.data.albumProjects.find((project) => project.id === id);
+}
+
+function albumClassById(id) {
+  return state.data.albumClasses.find((klass) => klass.id === id);
+}
+
+function albumStudentById(id) {
+  return state.data.albumStudents.find((student) => student.id === id);
+}
+
+function albumGroupById(id) {
+  return state.data.albumGroupMedia.find((item) => item.id === id);
+}
+
+function albumTeacherById(id) {
+  return state.data.albumTeachers.find((teacher) => teacher.id === id);
+}
+
+function albumMediaById(id) {
+  return state.data.albumMedia.find((media) => media.id === id);
+}
+
+function albumClassesByProject(projectId) {
+  return state.data.albumClasses.filter((klass) => klass.albumProjectId === projectId);
+}
+
+function albumStudentsByClass(classId) {
+  return state.data.albumStudents.filter((student) => student.albumClassId === classId);
+}
+
+function albumGroupsByClass(classId) {
+  return state.data.albumGroupMedia.filter((item) => item.albumClassId === classId);
+}
+
+function albumTeachersByClass(classId) {
+  return state.data.albumTeachers.filter((teacher) => teacher.albumClassId === classId);
+}
+
+function albumClassStats(classId) {
+  const students = albumStudentsByClass(classId);
+  const groups = albumGroupsByClass(classId);
+  const teachers = albumTeachersByClass(classId);
+  const portraits = students.filter((student) => student.portraitMediaId).length;
+  const videos = students.filter((student) => student.videoMediaId).length;
+  const ready = students.filter((student) => student.status === "ready").length;
+  const readyPercent = students.length ? Math.round(((portraits + ready) / (students.length * 2)) * 100) : 0;
+  return {
+    students: students.length,
+    portraits,
+    videos,
+    teachers: teachers.length,
+    groups: groups.length,
+    readyPercent
+  };
+}
+
+function albumTypeLabel(type) {
+  return ALBUM_TYPES[type] || ALBUM_TYPES.standard;
+}
+
+function albumClassStatusLabel(status) {
+  return ALBUM_CLASS_STATUSES[status] || ALBUM_CLASS_STATUSES.not_started;
+}
+
+function albumStudentStatusLabel(status) {
+  return ALBUM_STUDENT_STATUSES[status] || ALBUM_STUDENT_STATUSES.not_shot;
+}
+
+function albumGroupTypeLabel(type) {
+  return ALBUM_GROUP_TYPES[type] || ALBUM_GROUP_TYPES.custom;
+}
+
+function albumStatusClass(status) {
+  if (["ready", "printing", "delivered"].includes(status)) return "paid";
+  if (["shot", "shooting", "editing"].includes(status)) return "in-progress";
+  return "unpaid";
+}
+
+function normalizeAlbumType(value, fallback = "standard") {
+  const text = String(value || "").trim().toLowerCase();
+  const byLabel = Object.entries(ALBUM_TYPES).find(([key, label]) => key === text || label.toLowerCase() === text);
+  return byLabel?.[0] || fallback;
+}
+
+function normalizeAlbumClassStatus(value, fallback = "not_started") {
+  const text = String(value || "").trim().toLowerCase();
+  return ALBUM_CLASS_STATUSES[text] ? text : fallback;
+}
+
+function normalizeAlbumStudentStatus(value, fallback = "not_shot") {
+  const text = String(value || "").trim().toLowerCase();
+  return ALBUM_STUDENT_STATUSES[text] ? text : fallback;
+}
+
+function normalizeAlbumGroupType(value, fallback = "custom") {
+  const text = String(value || "").trim().toLowerCase();
+  const byLabel = Object.entries(ALBUM_GROUP_TYPES).find(([key, label]) => key === text || label.toLowerCase() === text);
+  return byLabel?.[0] || fallback;
 }
 
 function classesByProject(projectId) {
@@ -2105,7 +2970,7 @@ function empty(text) {
 
 function showQrPayload(studentId) {
   const student = studentById(studentId);
-  const value = student.qrId || student.id;
+  const value = studentQrPayload(student);
   const svg = createQrSvg(value, 7);
   const win = window.open("", "_blank", "width=420,height=560");
   if (!win) {
@@ -2130,13 +2995,28 @@ function showQrPayload(studentId) {
         <main>
           <h1>QR ученика</h1>
           ${svg}
-          <code>${escapeHtml(value)}</code>
+          <code>${escapeHtml(student.qrId || student.id)}</code>
           <button onclick="window.print()">Печать</button>
         </main>
       </body>
     </html>
   `);
   win.document.close();
+}
+
+function studentQrPayload(student) {
+  const id = student.qrId || student.id;
+  const base = location.origin === "null"
+    ? location.href.split("#")[0].split("?")[0]
+    : `${location.origin}${location.pathname}`;
+  try {
+    const url = new URL(base);
+    url.searchParams.set("studentId", id);
+    const payload = url.toString();
+    return new TextEncoder().encode(payload).length <= 100 ? payload : `studentId=${id}`;
+  } catch {
+    return `studentId=${id}`;
+  }
 }
 
 function notify(message) {
@@ -2180,10 +3060,10 @@ function createQrSvg(text, scale = 6) {
 }
 
 function createQrModules(text) {
-  const version = 4;
-  const size = 33;
-  const dataCodewords = 80;
-  const eccCodewords = 20;
+  const version = 5;
+  const size = 37;
+  const dataCodewords = 108;
+  const eccCodewords = 26;
   const modules = Array.from({ length: size }, () => Array(size).fill(false));
   const reserved = Array.from({ length: size }, () => Array(size).fill(false));
   const set = (x, y, dark, reserve = true) => {
@@ -2208,7 +3088,7 @@ function createQrModules(text) {
     set(i, 6, i % 2 === 0);
     set(6, i, i % 2 === 0);
   }
-  alignmentPattern(26, 26, set);
+  alignmentPattern(30, 30, set);
   set(8, size - 8, true);
   reserveFormatAreas(reserved);
   const bytes = qrDataCodewords(text, dataCodewords);
@@ -2232,9 +3112,9 @@ function reserveFormatAreas(reserved) {
   for (let i = 0; i < 9; i += 1) {
     reserved[8][i] = true;
     reserved[i][8] = true;
-    reserved[8][size - 1 - i] = true;
-    reserved[size - 1 - i][8] = true;
   }
+  for (let i = 0; i < 8; i += 1) reserved[8][size - 1 - i] = true;
+  for (let i = 0; i < 7; i += 1) reserved[size - 1 - i][8] = true;
 }
 
 function qrDataCodewords(text, count) {
@@ -2332,7 +3212,7 @@ function drawFormatBits(modules, reserved, eccLevel, mask) {
   const size = modules.length;
   const bits = formatBits((eccLevel << 3) | mask);
   const coordsA = [[8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8], [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8]];
-  const coordsB = [[size - 1, 8], [size - 2, 8], [size - 3, 8], [size - 4, 8], [size - 5, 8], [size - 6, 8], [size - 7, 8], [8, size - 8], [8, size - 7], [8, size - 6], [8, size - 5], [8, size - 4], [8, size - 3], [8, size - 2], [8, size - 1]];
+  const coordsB = [[size - 1, 8], [size - 2, 8], [size - 3, 8], [size - 4, 8], [size - 5, 8], [size - 6, 8], [size - 7, 8], [size - 8, 8], [8, size - 7], [8, size - 6], [8, size - 5], [8, size - 4], [8, size - 3], [8, size - 2], [8, size - 1]];
   coordsA.forEach(([x, y], index) => {
     modules[y][x] = Boolean((bits >>> index) & 1);
     reserved[y][x] = true;

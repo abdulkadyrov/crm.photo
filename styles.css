@@ -117,7 +117,7 @@ p {
   left: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   min-height: var(--nav-h);
   padding: 8px max(10px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
   background: var(--card);
@@ -684,7 +684,7 @@ p {
     width: 92px;
     height: 100vh;
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(6, 82px);
+    grid-template-rows: repeat(5, 82px);
     border-top: 0;
     border-right: 1px solid var(--line);
   }
@@ -693,6 +693,20 @@ p {
     padding-bottom: 0;
     padding-left: 92px;
   }
+}
+
+.album-class-head {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.album-stats {
+  grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
+}
+
+.album-tabs {
+  padding-top: 2px;
 }
 
 @media (max-width: 760px) {
