@@ -74,6 +74,7 @@ const state = {
   currentCapture: null,
   currentReference: null,
   currentAlbumMedia: null,
+  zipImportMode: "auto",
   albumProjectId: null,
   albumClassId: null,
   albumTab: "students",
@@ -535,6 +536,7 @@ function renderAlbumProject() {
       </div>
       <div class="row">
         <button class="secondary-button" data-back-to-albums type="button">Назад</button>
+        <button class="secondary-button" data-export-album-status-project="${project.id}" type="button">PDF статистики</button>
         <button class="primary-button" data-add-album-class="${project.id}" type="button">Класс</button>
       </div>
     </section>
@@ -588,6 +590,7 @@ function renderAlbumClass() {
         </div>
         <div class="row">
           <button class="secondary-button" data-back-to-album-project="${klass.albumProjectId}" type="button">Назад</button>
+          <button class="secondary-button" data-export-album-status-class="${klass.id}" type="button">PDF</button>
           <button class="secondary-button" data-edit-album-class="${klass.id}" type="button">Изменить</button>
         </div>
       </div>
@@ -648,6 +651,10 @@ function albumStudentCard(student) {
         </div>
         <span class="status-pill ${albumStatusClass(student.status)}">${albumStudentStatusLabel(student.status)}</span>
       </div>
+      <div class="album-media-strip">
+        ${albumMediaPreview(portrait, "Портрет")}
+        ${albumMediaPreview(video, "Видео")}
+      </div>
       ${student.comment ? `<p class="muted">${escapeHtml(student.comment)}</p>` : ""}
       <div class="toolbar">
         <button class="secondary-button compact" data-album-media="student:${student.id}:portrait" type="button">Добавить портрет</button>
@@ -684,6 +691,10 @@ function albumGroupCard(item) {
         </div>
         <span class="status-pill in-progress">${albumGroupTypeLabel(item.type)}</span>
       </div>
+      <div class="album-media-strip">
+        ${albumMediaPreview(media, "Фото")}
+        ${albumMediaPreview(video, "Видео")}
+      </div>
       ${item.comment ? `<p class="muted">${escapeHtml(item.comment)}</p>` : ""}
       <div class="toolbar">
         <button class="secondary-button compact" data-album-media="group:${item.id}:image" type="button">Добавить фото</button>
@@ -719,6 +730,10 @@ function albumTeacherCard(teacher) {
           <p class="muted">${escapeHtml(teacher.role || "Учитель")} · Фото: ${portrait ? "OK" : "-"} · Видео: ${video ? "OK" : "-"}</p>
         </div>
       </div>
+      <div class="album-media-strip">
+        ${albumMediaPreview(portrait, "Фото")}
+        ${albumMediaPreview(video, "Видео")}
+      </div>
       ${teacher.comment ? `<p class="muted">${escapeHtml(teacher.comment)}</p>` : ""}
       <div class="toolbar">
         <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:portrait" type="button">Добавить фото</button>
@@ -728,6 +743,15 @@ function albumTeacherCard(teacher) {
       </div>
     </article>
   `;
+}
+
+function albumMediaPreview(media, label) {
+  if (!media?.blob) return `<div class="album-media-empty">${escapeHtml(label)}</div>`;
+  const url = URL.createObjectURL(media.blob);
+  const node = media.fileType === "video"
+    ? `<video src="${url}" controls muted playsinline></video>`
+    : `<img src="${url}" alt="${escapeAttr(media.fileName)}" loading="lazy" />`;
+  return `<figure class="album-media-preview">${node}<figcaption>${escapeHtml(label)}</figcaption></figure>`;
 }
 
 function albumExportTab(klass) {
@@ -740,6 +764,7 @@ function albumExportTab(klass) {
         </div>
         <div class="toolbar">
           <button class="primary-button" data-export-album-class="${klass.id}" type="button">Экспорт ZIP</button>
+          <button class="secondary-button" data-export-album-status-class="${klass.id}" type="button">PDF статистики</button>
           <button class="secondary-button" data-import-album-zip type="button">Импорт ZIP</button>
         </div>
       </article>
@@ -1027,8 +1052,12 @@ function renderSettings() {
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
         <div class="toolbar">
-          <button class="secondary-button" data-import-zip type="button">Импорт ZIP</button>
-          <button class="primary-button" data-action="export-all" type="button">Экспорт ZIP</button>
+          <button class="secondary-button" data-import-settings type="button">Импорт настроек</button>
+          <button class="secondary-button" data-export-settings type="button">Экспорт настроек</button>
+        </div>
+        <div class="toolbar">
+          <button class="secondary-button" data-import-zip type="button">Импорт данных</button>
+          <button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button>
         </div>
       </article>
       <article class="panel grid">
@@ -1121,7 +1150,15 @@ function bindViewActions() {
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
   view.querySelector("[data-import-shoot]")?.addEventListener("click", () => shootImportInput.click());
   view.querySelector("[data-stop-scan]")?.addEventListener("click", stopQrStream);
-  view.querySelector("[data-import-zip]")?.addEventListener("click", () => zipInput.click());
+  view.querySelector("[data-import-zip]")?.addEventListener("click", () => {
+    state.zipImportMode = "full";
+    zipInput.click();
+  });
+  view.querySelector("[data-import-settings]")?.addEventListener("click", () => {
+    state.zipImportMode = "settings";
+    zipInput.click();
+  });
+  view.querySelector("[data-export-settings]")?.addEventListener("click", exportSettingsZip);
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportZip()));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
@@ -1188,6 +1225,8 @@ function bindViewActions() {
   view.querySelectorAll("[data-delete-album-teacher]").forEach((node) => node.addEventListener("click", () => deleteAlbumTeacher(node.dataset.deleteAlbumTeacher)));
   view.querySelectorAll("[data-album-media]").forEach((node) => node.addEventListener("click", () => selectAlbumMedia(node.dataset.albumMedia)));
   view.querySelectorAll("[data-export-album-class]").forEach((node) => node.addEventListener("click", () => exportAlbumClassZip(node.dataset.exportAlbumClass)));
+  view.querySelectorAll("[data-export-album-status-class]").forEach((node) => node.addEventListener("click", () => exportAlbumStatusPdf({ classId: node.dataset.exportAlbumStatusClass })));
+  view.querySelectorAll("[data-export-album-status-project]").forEach((node) => node.addEventListener("click", () => exportAlbumStatusPdf({ albumProjectId: node.dataset.exportAlbumStatusProject })));
   view.querySelector("[data-import-album-zip]")?.addEventListener("click", () => albumZipInput.click());
 }
 
@@ -1974,14 +2013,62 @@ function handleManualQr(event) {
   openQrValue(new FormData(event.currentTarget).get("qr"));
 }
 
-function openQrValue(value) {
+async function openQrValue(value) {
   const parsed = parseQrPayload(value);
   const student = studentFromQrValue(value);
   if (!student) {
-    notify(`Ученик по QR не найден: ${parsed || "пустой код"}. Проверьте, что он есть в этом браузере.`);
+    await createStudentFromMissingQr(parsed);
     return;
   }
   navigate("student", { studentId: student.id });
+}
+
+async function createStudentFromMissingQr(qrId) {
+  if (!qrId || !qrId.startsWith("student_")) {
+    notify(`Ученик по QR не найден: ${qrId || "пустой код"}.`);
+    return;
+  }
+  const fio = prompt(`Этот QR есть, но ученика нет в локальной базе. Создать ученика для QR?\n${qrId}`, "");
+  if (!fio?.trim()) {
+    notify(`Ученик по QR не найден: ${qrId}.`);
+    return;
+  }
+  const classId = await ensureQrFallbackClass();
+  const { firstName, lastName } = splitFullName(fio);
+  const selectedCatalogId = state.data.catalog[0]?.id || "";
+  const student = {
+    id: qrId,
+    classId,
+    firstName,
+    lastName,
+    qrId,
+    catalogId: selectedCatalogId,
+    paymentStatus: "unpaid",
+    orderStatus: "not_started",
+    status: "not_started"
+  };
+  await put("students", student);
+  await put("orders", {
+    id: `order_${qrId}`,
+    studentId: qrId,
+    catalogId: selectedCatalogId,
+    status: "not_started",
+    items: orderItemsFromCatalog(selectedCatalogId)
+  });
+  await refreshData();
+  notify("Ученик создан из QR.");
+  navigate("student", { studentId: qrId });
+}
+
+async function ensureQrFallbackClass() {
+  const existing = state.classId || state.data.classes.find((klass) => klass.projectId === state.projectId)?.id || state.data.classes[0]?.id;
+  if (existing) return existing;
+  const projectId = uid("project");
+  const classId = uid("class");
+  await put("projects", { id: projectId, name: "QR импорт", createdAt: now(), templateId: state.data.templates[0]?.id });
+  await put("classes", { id: classId, projectId, name: "Без класса" });
+  await refreshData();
+  return classId;
 }
 
 async function startQrScanner() {
@@ -2280,10 +2367,26 @@ function normalizeQrToken(value) {
 }
 
 async function exportZip(studentId = null) {
-  const files = await buildExportFiles(studentId);
+  const files = studentId ? await buildExportFiles(studentId) : await buildFullExportFiles();
   const blob = createZip(files);
-  downloadBlob(blob, `SPF_export_${new Date().toISOString().slice(0, 10)}.zip`);
+  downloadBlob(blob, `SPF_${studentId ? "student" : "full"}_${new Date().toISOString().slice(0, 10)}.zip`);
   notify("ZIP экспортирован.");
+}
+
+async function exportSettingsZip() {
+  const blob = createZip([{
+    path: "spf-settings.json",
+    data: jsonBytes({
+      kind: "spf_settings",
+      version: 1,
+      exportedAt: now(),
+      templates: state.data.templates,
+      settings: state.data.settings,
+      catalog: state.data.catalog
+    })
+  }]);
+  downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
+  notify("Настройки экспортированы.");
 }
 
 function exportStatusPdf({ classId = "", projectId = "" } = {}) {
@@ -2348,6 +2451,95 @@ function exportStatusPdf({ classId = "", projectId = "" } = {}) {
   notify("PDF отчет открыт.");
 }
 
+function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
+  const classes = classId
+    ? state.data.albumClasses.filter((klass) => klass.id === classId)
+    : albumClassesByProject(albumProjectId);
+  if (!classes.length) return notify("Нет классов для PDF статистики.");
+  const project = albumProjectById(albumProjectId || classes[0]?.albumProjectId);
+  const subtitle = [
+    project?.schoolName,
+    classId ? classes[0]?.name : "Все классы школы",
+    new Date().toLocaleDateString("ru-RU")
+  ].filter(Boolean).join(" · ");
+  const classRows = classes.map((klass) => {
+    const stats = albumClassStats(klass.id);
+    return `
+      <tr>
+        <td>${escapeHtml(klass.name)}</td>
+        <td>${escapeHtml(albumTypeLabel(klass.albumType))}</td>
+        <td>${klass.pagesCount || 0}</td>
+        <td>${escapeHtml(albumClassStatusLabel(klass.status))}</td>
+        <td>${stats.students}</td>
+        <td>${stats.portraits}/${stats.students}</td>
+        <td>${stats.videos}</td>
+        <td>${stats.teachers}</td>
+        <td>${stats.groups}</td>
+        <td>${stats.readyPercent}%</td>
+      </tr>
+    `;
+  }).join("");
+  const studentRows = classId ? albumStudentsByClass(classId).map((student, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${escapeHtml(`${student.lastName} ${student.firstName}`.trim())}</td>
+      <td>${student.portraitMediaId ? "Да" : "Нет"}</td>
+      <td>${student.videoMediaId ? "Да" : "Нет"}</td>
+      <td>${escapeHtml(albumStudentStatusLabel(student.status))}</td>
+      <td>${escapeHtml(student.comment || "")}</td>
+    </tr>
+  `).join("") : "";
+  const win = window.open("", "_blank", "width=1100,height=800");
+  if (!win) return notify("Браузер заблокировал окно PDF.");
+  win.document.write(`
+    <!doctype html>
+    <html lang="ru">
+      <head>
+        <meta charset="utf-8" />
+        <title>Статистика альбомов</title>
+        <style>
+          @page { size: A4 landscape; margin: 12mm; }
+          * { box-sizing: border-box; }
+          body { margin: 0; color: #111827; font-family: Arial, sans-serif; }
+          header { margin-bottom: 14px; }
+          h1 { margin: 0 0 6px; font-size: 22px; }
+          h2 { margin: 18px 0 8px; font-size: 16px; }
+          p { margin: 0; color: #4b5563; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th, td { padding: 7px 8px; border: 1px solid #d1d5db; text-align: left; vertical-align: top; }
+          th { background: #eef2ff; font-weight: 700; }
+          tr:nth-child(even) td { background: #f9fafb; }
+          button { min-height: 38px; margin-top: 14px; padding: 0 14px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; }
+          @media print { button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <header>
+          <h1>Статистика выпускных альбомов</h1>
+          <p>${escapeHtml(subtitle)}</p>
+        </header>
+        <table>
+          <thead>
+            <tr><th>Класс</th><th>Тип</th><th>Страниц</th><th>Статус</th><th>Ученики</th><th>Портреты</th><th>Видео</th><th>Учителя</th><th>Общие фото</th><th>Готовность</th></tr>
+          </thead>
+          <tbody>${classRows}</tbody>
+        </table>
+        ${classId ? `
+          <h2>Ученики</h2>
+          <table>
+            <thead><tr><th>#</th><th>Ученик</th><th>Портрет</th><th>Видео</th><th>Статус</th><th>Комментарий</th></tr></thead>
+            <tbody>${studentRows}</tbody>
+          </table>
+        ` : ""}
+        <button onclick="window.print()">Сохранить в PDF</button>
+      </body>
+    </html>
+  `);
+  win.document.close();
+  win.focus();
+  notify("PDF статистики альбомов открыт.");
+}
+
 async function buildExportFiles(studentId) {
   const files = [];
   const selectedStudents = studentId ? state.data.students.filter((student) => student.id === studentId) : state.data.students;
@@ -2379,11 +2571,56 @@ async function buildExportFiles(studentId) {
   return files;
 }
 
+async function buildFullExportFiles() {
+  const files = [];
+  const meta = {
+    kind: "spf_full_export",
+    version: 1,
+    exportedAt: now()
+  };
+  STORE_NAMES.forEach((store) => {
+    meta[store] = state.data[store].map((record) => {
+      if (store === "media" || store === "albumMedia") {
+        const { blob, ...rest } = record;
+        return rest;
+      }
+      return record;
+    });
+  });
+  files.push({ path: "spf-full-data.json", data: jsonBytes(meta) });
+  for (const item of state.data.media) {
+    if (!item.blob) continue;
+    files.push({ path: `media/${item.id}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
+  }
+  for (const item of state.data.albumMedia) {
+    if (!item.blob) continue;
+    files.push({ path: `album_media/${item.id}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
+  }
+  return files;
+}
+
 async function handleZipInput(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
     const entries = parseZip(new Uint8Array(await file.arrayBuffer()));
+    const settingsEntry = entries.find((entry) => entry.path.endsWith("spf-settings.json"));
+    const fullEntry = entries.find((entry) => entry.path.endsWith("spf-full-data.json"));
+    if (settingsEntry || state.zipImportMode === "settings") {
+      if (!settingsEntry) throw new Error("spf-settings.json not found");
+      await importSettingsMeta(JSON.parse(new TextDecoder().decode(settingsEntry.data)));
+      await refreshData();
+      notify("Настройки импортированы.");
+      renderSettings();
+      return;
+    }
+    if (fullEntry) {
+      await importFullMeta(JSON.parse(new TextDecoder().decode(fullEntry.data)), entries);
+      await refreshData();
+      notify("Все данные импортированы.");
+      navigate("home");
+      return;
+    }
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-data.json"));
     if (!dataEntry) throw new Error("spf-data.json not found");
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
@@ -2402,7 +2639,31 @@ async function handleZipInput(event) {
   } catch (error) {
     notify("Не удалось импортировать ZIP.");
   } finally {
+    state.zipImportMode = "auto";
     event.target.value = "";
+  }
+}
+
+async function importSettingsMeta(meta) {
+  for (const store of ["templates", "settings", "catalog"]) {
+    for (const record of meta[store] || []) await put(store, record);
+  }
+}
+
+async function importFullMeta(meta, entries) {
+  for (const store of STORE_NAMES) {
+    if (store === "media" || store === "albumMedia") continue;
+    for (const record of meta[store] || []) await put(store, record);
+  }
+  for (const record of meta.media || []) {
+    const entry = entries.find((item) => item.path.endsWith(`media/${record.id}/${record.fileName}`) || item.path.endsWith(`/${record.fileName}`));
+    const blob = new Blob(entry ? [entry.data] : [], { type: record.type === "video" ? "video/mp4" : "image/jpeg" });
+    await put("media", { ...record, blob });
+  }
+  for (const record of meta.albumMedia || []) {
+    const entry = entries.find((item) => item.path.endsWith(`album_media/${record.id}/${record.fileName}`) || item.path.endsWith(`/${record.fileName}`));
+    const blob = new Blob(entry ? [entry.data] : [], { type: albumMimeType(record) });
+    await put("albumMedia", { ...record, blob });
   }
 }
 
@@ -3301,10 +3562,10 @@ function injectIcons() {
   const icons = {
     home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>',
-    scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3"/><path d="M8 8h3v3H8zM13 8h3v3h-3zM8 13h3v3H8zM14 14h2v2h-2z"/></svg>',
-    classes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14"/><path d="M8 9h8M8 13h5"/><path d="M2 19h20"/></svg>',
-    catalog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/><path d="M16 17h.01"/></svg>',
-    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V20h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L6.6 16.6l.1-.1A1.7 1.7 0 0 0 7 14.6a1.7 1.7 0 0 0-1.5-1H5v-3h.5A1.7 1.7 0 0 0 7 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V4h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1A1.7 1.7 0 0 0 17 9a1.7 1.7 0 0 0 1.5 1h.5v3h-.5a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
+    scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M9 9h2v2H9zM13 9h2v2h-2zM9 13h2v2H9zM14 14h1v1h-1z"/></svg>',
+    classes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
+    catalog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h10a4 4 0 0 1 4 4v12H8a3 3 0 0 1-3-3Z"/><path d="M8 4v13a3 3 0 0 0 3 3"/><path d="M11 8h5M11 12h5"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h2"/><path d="M10 17h10"/><circle cx="8" cy="17" r="2"/><path d="M4 12h5"/><path d="M13 12h7"/><circle cx="11" cy="12" r="2"/></svg>',
     theme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 1 0 9 6 8 8 0 1 1-9-6Z"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',

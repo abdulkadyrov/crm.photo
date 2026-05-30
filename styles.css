@@ -561,6 +561,45 @@ p {
   color: var(--muted);
 }
 
+.album-media-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.album-media-preview,
+.album-media-empty {
+  overflow: hidden;
+  min-height: 122px;
+  margin: 0;
+  background: var(--card-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.album-media-preview img,
+.album-media-preview video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #000;
+}
+
+.album-media-preview figcaption {
+  padding: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.album-media-empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .qr-box {
   display: grid;
   min-height: 260px;
