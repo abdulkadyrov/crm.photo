@@ -1978,7 +1978,7 @@ function openQrValue(value) {
   const parsed = parseQrPayload(value);
   const student = studentFromQrValue(value);
   if (!student) {
-    notify(`Ученик по QR не найден: ${parsed || "пустой код"}`);
+    notify(`Ученик по QR не найден: ${parsed || "пустой код"}. Проверьте, что он есть в этом браузере.`);
     return;
   }
   navigate("student", { studentId: student.id });
@@ -2104,8 +2104,8 @@ function nextImportOrderType(studentId) {
 function studentFromQrValue(value) {
   const candidates = qrPayloadCandidates(value);
   return state.data.students.find((entry) => {
-    const ids = [entry.id, entry.qrId].filter(Boolean).map(String);
-    return ids.some((id) => candidates.has(id) || candidates.has(id.toLowerCase()));
+    const ids = [entry.id, entry.qrId].filter(Boolean).map(normalizeQrToken);
+    return ids.some((id) => candidates.has(id));
   });
 }
 
@@ -2234,26 +2234,25 @@ function hasJsQr() {
 }
 
 function parseQrPayload(value) {
-  return Array.from(qrPayloadCandidates(value))[0] || "";
+  const candidates = Array.from(qrPayloadCandidates(value));
+  return candidates.find((item) => item.startsWith("student_")) || candidates[0] || "";
 }
 
 function qrPayloadCandidates(value) {
   const raw = String(value || "").trim();
   const candidates = new Set();
   const add = (entry) => {
-    const text = String(entry || "").trim();
+    const text = normalizeQrToken(entry);
     if (!text) return;
     candidates.add(text);
-    candidates.add(text.toLowerCase());
     try {
-      const decoded = decodeURIComponent(text).trim();
-      if (decoded) {
-        candidates.add(decoded);
-        candidates.add(decoded.toLowerCase());
-      }
+      const decoded = normalizeQrToken(decodeURIComponent(text));
+      if (decoded) candidates.add(decoded);
     } catch {}
   };
   add(raw);
+  const keyValueMatch = raw.match(/(?:studentId|qrId|id)=([^&#\s]+)/i);
+  add(keyValueMatch?.[1]);
   try {
     const json = JSON.parse(raw);
     add(json.studentId);
@@ -2270,6 +2269,14 @@ function qrPayloadCandidates(value) {
   } catch {}
   add(raw.replace(/^studentId=/i, "").replace(/^qrId=/i, "").replace(/^id=/i, ""));
   return candidates;
+}
+
+function normalizeQrToken(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\/+$/g, "")
+    .toLowerCase();
 }
 
 async function exportZip(studentId = null) {
