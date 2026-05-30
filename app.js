@@ -790,10 +790,15 @@ function studentQuickForm(classId) {
           <input class="input" name="fio" placeholder="Иванов Иван" required autocomplete="off" />
         </label>
         <label class="field-label">
-          <span>Заказ / услуга</span>
-          <select class="select" name="catalogId">
-            ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(item.title)}</option>`).join("")}
-          </select>
+          <span>Услуги</span>
+          <div class="service-picker">
+            ${state.data.catalog.map((item) => `
+              <label class="checkbox-row">
+                <input type="checkbox" name="catalogIds" value="${item.id}" ${item.id === selectedCatalogId ? "checked" : ""} />
+                <span>${escapeHtml(item.title)}</span>
+              </label>
+            `).join("") || '<p class="muted">Сначала добавьте услугу.</p>'}
+          </div>
         </label>
         <label class="field-label">
           <span>Оплата</span>
@@ -828,8 +833,8 @@ function renderStudent() {
   const order = orderByStudent(student.id);
   const media = mediaByStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
-  const selectedCatalogId = student.catalogId || state.data.catalog[0]?.id || "";
-  const selectedCatalogTitle = catalogItemById(selectedCatalogId)?.title || "Заказ не выбран";
+  const selectedCatalogIds = selectedCatalogIdsForStudent(student);
+  const selectedCatalogTitle = selectedCatalogIds.map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Услуги не выбраны";
   title.textContent = `${student.firstName} ${student.lastName}`;
   view.innerHTML = `
     <section class="split">
@@ -874,12 +879,17 @@ function renderStudent() {
       <aside class="panel grid">
         <h2 class="card-title">Заказ</h2>
         <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
-        <label class="field-label">
-          <span>Заказ / услуга</span>
-          <select class="select" data-student-catalog="${student.id}">
-            ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(item.title)}</option>`).join("")}
-          </select>
-        </label>
+        <div class="field-label">
+          <span>Услуги ученика</span>
+          <div class="service-picker">
+            ${state.data.catalog.map((item) => `
+              <label class="checkbox-row">
+                <input type="checkbox" data-student-service="${student.id}" value="${item.id}" ${selectedCatalogIds.includes(item.id) ? "checked" : ""} />
+                <span>${escapeHtml(item.title)}</span>
+              </label>
+            `).join("") || '<p class="muted">Добавьте услуги в разделе настроек.</p>'}
+          </div>
+        </div>
         <label class="field-label">
           <span>Статус заказа</span>
           <select class="select" data-order-status="${student.id}">
@@ -984,7 +994,7 @@ function catalogCard(item) {
       <div class="toolbar">
         <button class="secondary-button" data-add-angle="${item.id}" type="button">Добавить ракурс</button>
         <button class="secondary-button" data-generate-references="${item.id}" type="button">AI-референсы</button>
-        <button class="primary-button" data-apply-template="${item.id}" type="button">Использовать в чеклисте</button>
+        <button class="primary-button" data-apply-template="${item.id}" type="button">Назначить всем</button>
       </div>
     </article>
   `;
@@ -1151,7 +1161,11 @@ function bindViewActions() {
   view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
   view.querySelector("[data-back-from-student]")?.addEventListener("click", navigateBackFromStudent);
   view.querySelector("[data-edit-student]")?.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent));
-  view.querySelector("[data-student-catalog]")?.addEventListener("change", (event) => updateStudentCatalog(event.target.dataset.studentCatalog, event.target.value));
+  view.querySelectorAll("[data-student-service]").forEach((node) => node.addEventListener("change", () => {
+    const studentId = node.dataset.studentService;
+    const catalogIds = Array.from(view.querySelectorAll(`[data-student-service="${studentId}"]:checked`)).map((input) => input.value);
+    updateStudentServices(studentId, catalogIds);
+  }));
   view.querySelector("[data-order-status]")?.addEventListener("change", (event) => updateOrderStatus(event.target.dataset.orderStatus, event.target.value));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
@@ -1269,7 +1283,7 @@ async function handleStudentFormSubmit(event) {
   const student = await addStudent({
     classId: form.dataset.studentForm,
     fio: new FormData(form).get("fio"),
-    catalogId: new FormData(form).get("catalogId"),
+    catalogIds: new FormData(form).getAll("catalogIds"),
     paymentStatus: new FormData(form).get("paymentStatus"),
     orderStatus: new FormData(form).get("orderStatus")
   });
@@ -1285,18 +1299,19 @@ async function handleStudentFormSubmit(event) {
   requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
 }
 
-async function addStudent({ classId, fio, catalogId = "", paymentStatus = "unpaid", orderStatus = "not_started" }) {
+async function addStudent({ classId, fio, catalogId = "", catalogIds = [], paymentStatus = "unpaid", orderStatus = "not_started" }) {
   if (!classId) return null;
   if (!String(fio || "").trim()) {
     notify("Введите ФИО ученика.");
     return null;
   }
   const { firstName, lastName } = splitFullName(fio);
-  const selectedCatalogId = catalogId || state.data.catalog[0]?.id || "";
+  const selectedCatalogIds = normalizeCatalogIds(catalogIds.length ? catalogIds : [catalogId || state.data.catalog[0]?.id || ""]);
+  const selectedCatalogId = selectedCatalogIds[0] || "";
   const id = uid("student");
-  const student = { id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, paymentStatus, orderStatus, status: "not_started" };
+  const student = { id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus, status: "not_started" };
   await put("students", student);
-  await put("orders", { id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, status: orderStatus, items: orderItemsFromCatalog(selectedCatalogId) });
+  await put("orders", { id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: orderStatus, items: orderItemsFromCatalogs(selectedCatalogIds) });
   return student;
 }
 
@@ -1359,16 +1374,20 @@ async function deleteStudentRecords(studentId) {
 }
 
 async function updateStudentCatalog(studentId, catalogId) {
+  return updateStudentServices(studentId, [catalogId]);
+}
+
+async function updateStudentServices(studentId, catalogIds) {
   const student = studentById(studentId);
-  const catalog = catalogItemById(catalogId);
-  if (!student || !catalog) return;
+  if (!student) return;
+  const selectedCatalogIds = normalizeCatalogIds(catalogIds);
+  if (!selectedCatalogIds.length) return notify("Выберите хотя бы одну услугу.");
   const order = orderByStudent(studentId);
-  const nextTypes = catalogAngleTypes(catalog);
-  const labels = Object.fromEntries((catalog.angles || []).map((angle) => [angle.id, angle.name]));
-  await put("students", { ...student, catalogId });
-  await put("orders", { ...order, catalogId, items: mergeOrderItems(order.items || [], nextTypes, labels) });
+  const nextItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
+  await put("students", { ...student, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds });
+  await put("orders", { ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems });
   await refreshData();
-  notify("Заказ и ракурсы ученика обновлены.");
+  notify("Услуги и чеклист ученика обновлены.");
   renderStudent();
 }
 
@@ -1994,18 +2013,15 @@ async function applyCatalogAsTemplate(itemId) {
   const item = catalogItemById(itemId);
   const items = catalogAngleTypes(item);
   if (!items.length) return notify("В услуге нет ракурсов.");
-  const current = state.data.templates[0] || { id: uid("template"), name: "Чеклист", scope: "default" };
-  const labels = Object.fromEntries((item.angles || []).map((angle) => [angle.id, angle.name]));
-  await put("templates", { ...current, name: item.title, items, labels });
   for (const order of state.data.orders) {
-    await put("orders", { ...order, catalogId: itemId, items: mergeOrderItems(order.items || [], items, labels) });
+    await put("orders", { ...order, catalogId: itemId, catalogIds: [itemId], items: orderItemsFromCatalogs([itemId], order.items || []) });
   }
   for (const student of state.data.students) {
-    await put("students", { ...student, catalogId: itemId });
+    await put("students", { ...student, catalogId: itemId, catalogIds: [itemId] });
   }
   await refreshData();
-  notify("Чеклист обновлен для всех учеников.");
-  renderCatalog();
+  notify("Услуга назначена всем ученикам.");
+  renderServices();
 }
 
 async function resetDemo() {
@@ -2045,6 +2061,7 @@ async function createStudentFromMissingQr(qrId) {
   const classId = await ensureQrFallbackClass();
   const { firstName, lastName } = splitFullName(fio);
   const selectedCatalogId = state.data.catalog[0]?.id || "";
+  const selectedCatalogIds = selectedCatalogId ? [selectedCatalogId] : [];
   const student = {
     id: qrId,
     classId,
@@ -2052,6 +2069,7 @@ async function createStudentFromMissingQr(qrId) {
     lastName,
     qrId,
     catalogId: selectedCatalogId,
+    catalogIds: selectedCatalogIds,
     paymentStatus: "unpaid",
     orderStatus: "not_started",
     status: "not_started"
@@ -2061,8 +2079,9 @@ async function createStudentFromMissingQr(qrId) {
     id: `order_${qrId}`,
     studentId: qrId,
     catalogId: selectedCatalogId,
+    catalogIds: selectedCatalogIds,
     status: "not_started",
-    items: orderItemsFromCatalog(selectedCatalogId)
+    items: orderItemsFromCatalogs(selectedCatalogIds)
   });
   await refreshData();
   notify("Ученик создан из QR.");
@@ -3046,7 +3065,7 @@ function statusExportColumns() {
     { key: "student", label: "Ученик", value: (student) => `${student.lastName} ${student.firstName}`.trim() },
     { key: "class", label: "Класс", value: (student) => classById(student.classId)?.name || "" },
     { key: "payment", label: "Оплата", value: (student) => paymentLabel(student.paymentStatus) },
-    { key: "catalog", label: "Заказ", value: (student) => catalogItemById(student.catalogId || orderByStudent(student.id).catalogId)?.title || "Не выбран" },
+    { key: "catalog", label: "Услуги", value: (student) => selectedCatalogIdsForStudent(student).map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Не выбраны" },
     { key: "orderStatus", label: "Статус заказа", value: (student) => orderStatusLabel(student) },
     { key: "progress", label: "Готовность", value: (student) => {
       const c = completion(student.id);
@@ -3142,6 +3161,8 @@ function catalogAngleByType(type) {
 }
 
 function catalogAngleForStudent(studentId, type) {
+  const parsed = parseServiceTaskType(type);
+  if (parsed) return catalogItemById(parsed.catalogId)?.angles?.find((entry) => entry.id === parsed.angleId) || null;
   const student = studentById(studentId);
   const order = orderByStudent(studentId);
   const catalog = catalogItemById(student?.catalogId || order.catalogId);
@@ -3164,12 +3185,24 @@ function orderItemsFromTemplate() {
 }
 
 function orderItemsFromCatalog(catalogId) {
-  const catalog = catalogItemById(catalogId) || state.data.catalog[0];
-  const items = catalogAngleTypes(catalog);
-  const labels = items.length
-    ? Object.fromEntries((catalog?.angles || []).map((angle) => [angle.id, angle.name]))
-    : state.data.templates[0]?.labels || {};
-  return (items.length ? items : state.data.templates[0]?.items || Object.keys(ORDER_TYPES)).map((type) => ({ type, label: labels[type] || orderTypeLabel(type), status: "pending", fileIds: [] }));
+  return orderItemsFromCatalogs([catalogId]);
+}
+
+function orderItemsFromCatalogs(catalogIds, existingItems = []) {
+  const selected = normalizeCatalogIds(catalogIds);
+  const items = [];
+  selected.forEach((catalogId) => {
+    const catalog = catalogItemById(catalogId);
+    (catalog?.angles || []).forEach((angle) => {
+      const type = serviceTaskType(catalogId, angle.id);
+      const existing = existingItems.find((item) => item.type === type);
+      items.push(existing
+        ? { ...existing, label: serviceTaskLabel(catalog, angle) }
+        : { type, label: serviceTaskLabel(catalog, angle), status: "pending", fileIds: [] });
+    });
+  });
+  if (items.length) return items;
+  return orderItemsFromTemplate();
 }
 
 function mergeOrderItems(existingItems, nextTypes, labels = {}) {
@@ -3186,6 +3219,12 @@ function normalizeOrderType(value) {
 }
 
 function orderTypeLabel(type) {
+  const parsed = parseServiceTaskType(type);
+  if (parsed) {
+    const catalog = catalogItemById(parsed.catalogId);
+    const angle = catalog?.angles?.find((entry) => entry.id === parsed.angleId);
+    if (catalog && angle) return serviceTaskLabel(catalog, angle);
+  }
   return catalogAngleByType(type)?.name || ORDER_TYPES[type] || type;
 }
 
@@ -3196,6 +3235,30 @@ function orderItemLabel(item) {
 function templateItemsForSettings(template) {
   const labels = template.labels || {};
   return (template.items || Object.keys(ORDER_TYPES)).map((type) => ({ type, label: labels[type] || orderTypeLabel(type) }));
+}
+
+function selectedCatalogIdsForStudent(student) {
+  return normalizeCatalogIds(student?.catalogIds?.length ? student.catalogIds : [student?.catalogId || state.data.catalog[0]?.id || ""]);
+}
+
+function normalizeCatalogIds(catalogIds) {
+  const ids = Array.from(new Set((catalogIds || []).map(String).map((id) => id.trim()).filter(Boolean)));
+  return ids.filter((id) => catalogItemById(id));
+}
+
+function serviceTaskType(catalogId, angleId) {
+  return `${catalogId}__${angleId}`;
+}
+
+function parseServiceTaskType(type) {
+  const text = String(type || "");
+  if (!text.includes("__")) return null;
+  const [catalogId, ...rest] = text.split("__");
+  return { catalogId, angleId: rest.join("__") };
+}
+
+function serviceTaskLabel(catalog, angle) {
+  return `${catalog.title}: ${angle.name}`;
 }
 
 function paymentLabel(status) {
