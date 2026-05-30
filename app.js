@@ -1976,7 +1976,7 @@ function handleManualQr(event) {
 
 function openQrValue(value) {
   const parsed = parseQrPayload(value);
-  const student = studentFromQrValue(parsed);
+  const student = studentFromQrValue(value);
   if (!student) {
     notify(`Ученик по QR не найден: ${parsed || "пустой код"}`);
     return;
@@ -2102,7 +2102,11 @@ function nextImportOrderType(studentId) {
 }
 
 function studentFromQrValue(value) {
-  return state.data.students.find((entry) => entry.id === value || entry.qrId === value);
+  const candidates = qrPayloadCandidates(value);
+  return state.data.students.find((entry) => {
+    const ids = [entry.id, entry.qrId].filter(Boolean).map(String);
+    return ids.some((id) => candidates.has(id) || candidates.has(id.toLowerCase()));
+  });
 }
 
 function stopQrStream() {
@@ -2230,18 +2234,42 @@ function hasJsQr() {
 }
 
 function parseQrPayload(value) {
+  return Array.from(qrPayloadCandidates(value))[0] || "";
+}
+
+function qrPayloadCandidates(value) {
   const raw = String(value || "").trim();
+  const candidates = new Set();
+  const add = (entry) => {
+    const text = String(entry || "").trim();
+    if (!text) return;
+    candidates.add(text);
+    candidates.add(text.toLowerCase());
+    try {
+      const decoded = decodeURIComponent(text).trim();
+      if (decoded) {
+        candidates.add(decoded);
+        candidates.add(decoded.toLowerCase());
+      }
+    } catch {}
+  };
+  add(raw);
   try {
     const json = JSON.parse(raw);
-    return json.studentId || json.qrId || raw;
-  } catch {
-    try {
-      const url = new URL(raw);
-      return url.searchParams.get("studentId") || url.searchParams.get("qrId") || url.hash.replace(/^#/, "") || raw;
-    } catch {
-      return raw.replace(/^studentId=/, "").replace(/^qrId=/, "");
-    }
-  }
+    add(json.studentId);
+    add(json.qrId);
+    add(json.id);
+  } catch {}
+  try {
+    const url = new URL(raw);
+    add(url.searchParams.get("studentId"));
+    add(url.searchParams.get("qrId"));
+    add(url.searchParams.get("id"));
+    add(url.hash.replace(/^#/, ""));
+    add(url.pathname.split("/").filter(Boolean).pop());
+  } catch {}
+  add(raw.replace(/^studentId=/i, "").replace(/^qrId=/i, "").replace(/^id=/i, ""));
+  return candidates;
 }
 
 async function exportZip(studentId = null) {
