@@ -298,6 +298,7 @@ function bindShell() {
     document.documentElement.dataset.theme = next;
     localStorage.setItem("spf-theme", next);
   });
+  document.querySelector("#cache-refresh")?.addEventListener("click", refreshApp);
   document.querySelector("#add-project").addEventListener("click", addProject);
   mediaInput.addEventListener("change", handleMediaInput);
   referenceInput.addEventListener("change", handleReferenceInput);
@@ -371,7 +372,7 @@ function renderHome() {
   const done = students.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const total = students.reduce((sum, student) => sum + completion(student.id).total, 0);
   setShell({
-    heading: "Добро пожаловать 👋",
+    heading: "Проекты",
     context: projects[0]?.name || "School Photo Flow",
     summary: `${classes.length} класса · ${students.length} ученика · ${done} из ${total} задач выполнено`
   });
@@ -431,8 +432,8 @@ function renderClasses() {
   const totalTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).total, 0);
   if (state.classId && !classes.some((klass) => klass.id === state.classId)) state.classId = null;
   setShell({
-    heading: "Добро пожаловать 👋",
-    context: project?.name || "Проект",
+    heading: project?.name || "Классы",
+    context: "Классы",
     summary: `${classes.length} класса · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
@@ -3957,6 +3958,8 @@ function injectIcons() {
     camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h4l2-3h4l2 3h4v11H4z"/><circle cx="12" cy="13" r="3"/></svg>',
     video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m20 6-11 11-5-5"/></svg>'
+    ,
+    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 16v5h5"/><path d="M3 12A9 9 0 0 1 18.3 5.6L21 8"/><path d="M21 8V3h-5"/></svg>'
   };
   document.querySelectorAll("[data-icon]").forEach((node) => {
     node.innerHTML = icons[node.dataset.icon] || "";
