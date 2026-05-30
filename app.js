@@ -467,53 +467,36 @@ function renderClasses() {
     summary: `${classes.length} класса · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
-    <section class="crm-overview">
-      <label class="search-box">
-        <span data-icon="search"></span>
-        <input data-query placeholder="Поиск школы, класса или ученика" value="${escapeAttr(state.query)}" />
-      </label>
-      <div class="metric-grid">
-        <article class="metric-card">
-          <span class="metric-icon metric-blue" data-icon="classes"></span>
-          <div><strong>${classes.length} класса</strong><span>в проекте</span></div>
-        </article>
-        <article class="metric-card">
-          <span class="metric-icon metric-green" data-icon="check"></span>
-          <div><strong>${allProjectStudents.length} ученика</strong><span>${doneTasks} из ${totalTasks} задач выполнено</span></div>
-        </article>
-      </div>
-      <div class="chip-row quick-filters">
-        ${filterChip("all", "Все")}
-        ${filterChip("unpaid", "Не оплачено")}
-        ${filterChip("todo", "Не снято")}
-        ${filterChip("processing", "В работе")}
-        ${filterChip("ready", "Готово")}
-      </div>
-      <div class="toolbar action-toolbar">
-        <select class="select project-select" data-project-select aria-label="Проект">
-          ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
-        </select>
-        <div class="row">
-          <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
-          <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Класс</button>
-        </div>
+    <section class="projects-actions">
+      <select class="select project-select" data-project-select aria-label="Проект">
+        ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
+      </select>
+      <div class="project-button-row">
+        <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
+        <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Класс</button>
       </div>
     </section>
     ${state.classId ? studentQuickForm(state.classId) : ""}
-    <section class="class-stack">
-      ${classes.map(classCard).join("") || empty("В проекте пока нет классов")}
+    <section class="project-feed">
+      ${classes.map(classSection).join("") || empty("В проекте пока нет классов")}
     </section>
   `;
   bindViewActions();
-  const input = view.querySelector("[data-query]");
-  input?.addEventListener("input", (event) => {
-    state.query = event.target.value;
-    renderClasses();
-  });
+}
+
+function classSection(klass) {
+  const students = studentsForClassView(klass.id);
+  return `
+    <section class="class-section">
+      ${classCard(klass)}
+      <div class="student-list">
+        ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в класс.</p>'}
+      </div>
+    </section>
+  `;
 }
 
 function classCard(klass) {
-  const students = studentsForClassView(klass.id);
   const allStudents = state.data.students.filter((student) => student.classId === klass.id);
   const done = allStudents.filter((student) => completion(student.id).done).length;
   const pct = allStudents.length ? Math.round((done / allStudents.length) * 100) : 0;
@@ -543,9 +526,6 @@ function classCard(klass) {
           <strong>${pct}%</strong>
         </div>
         <div class="progress"><span style="width:${pct}%"></span></div>
-        <div class="student-list">
-          ${students.map(studentCard).join("") || '<p class="muted">Добавьте учеников в класс.</p>'}
-        </div>
       </div>
     </article>
   `;
@@ -3378,7 +3358,7 @@ function studentsByClass(classId) {
 function studentsForClassView(classId) {
   const query = state.query.trim().toLowerCase();
   return state.data.students.filter((student) => {
-    if (student.classId !== classId || !matchesFilter(student)) return false;
+    if (student.classId !== classId) return false;
     if (!query) return true;
     const klass = classById(student.classId);
     const project = projectById(klass?.projectId);
@@ -3622,7 +3602,7 @@ function studentServicePreviewUrl(student) {
 }
 
 function studentAvatarUrl(student) {
-  const photo = mediaByStudent(student.id).find((item) => item.type === "image");
+  const photo = mediaByStudent(student.id).find((item) => item.type === "photo" || item.type === "image");
   if (photo?.blob) return URL.createObjectURL(photo.blob);
   return "";
 }

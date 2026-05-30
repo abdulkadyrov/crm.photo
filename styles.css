@@ -419,11 +419,37 @@ p {
 }
 
 .class-stack,
+.project-feed,
+.class-section,
 .student-list,
 .compact-stack,
 .settings-list {
   display: grid;
   gap: 12px;
+}
+
+.projects-actions {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.project-button-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.project-button-row .equal-button {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 10px;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+}
+
+.class-section {
+  gap: 8px;
 }
 
 .list-card,
@@ -538,7 +564,7 @@ p {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 12px;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
   border-radius: 18px;
   background: var(--card);
@@ -844,15 +870,14 @@ p {
 
 .student-card {
   display: block;
-  min-height: 120px;
-  max-height: 150px;
-  padding: 14px;
+  min-height: 96px;
+  padding: 12px 14px;
   cursor: pointer;
 }
 
 .student-card-grid {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 40px;
+  grid-template-columns: 56px minmax(0, 1fr) 40px;
   align-items: start;
   gap: 10px;
 }
@@ -875,9 +900,9 @@ p {
 
 .student-thumb {
   flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
   border: 1px solid var(--line);
   object-fit: cover;
   background: var(--card);
@@ -890,13 +915,13 @@ p {
   align-content: center;
   background: var(--card-strong);
   color: var(--muted);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 800;
   text-align: center;
 }
 
 .student-thumb.empty small {
-  display: block;
+  display: none;
   font-size: 0.58rem;
   line-height: 1;
 }
@@ -928,7 +953,7 @@ p {
 }
 
 .student-progress {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .student-statuses {
@@ -936,7 +961,7 @@ p {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .status-dot {
@@ -1371,7 +1396,7 @@ p {
   }
 
   .student-card-grid {
-    grid-template-columns: 64px minmax(0, 1fr) 40px;
+    grid-template-columns: 56px minmax(0, 1fr) 40px;
   }
 
   .student-statuses {
@@ -1429,5 +1454,13 @@ p {
   .student-thumb {
     width: 56px;
     height: 56px;
+  }
+
+  .project-button-row {
+    gap: 8px;
+  }
+
+  .project-button-row .equal-button {
+    font-size: 0.82rem;
   }
 }
