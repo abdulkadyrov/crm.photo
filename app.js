@@ -33,8 +33,38 @@ const state = {
   currentCapture: null,
   currentReference: null,
   returnTarget: null,
-  qrStream: null
+  qrStream: null,
+  qrScanFrame: 0,
+  qrScanActive: false
 };
+
+const QR_SCAN_INTERVAL = 120;
+const REFERENCE_AI_SET = [
+  {
+    id: "portrait_waist",
+    name: "Портрет до пояса",
+    details: "Фронтально, кадр до пояса, естественная поза и ровный свет.",
+    composition: "waist"
+  },
+  {
+    id: "face_front",
+    name: "Лицо анфас",
+    details: "Крупно лицо и голова спереди, взгляд в камеру.",
+    composition: "face"
+  },
+  {
+    id: "head_right",
+    name: "Голова справа",
+    details: "Профиль головы с правой стороны, чистый контур лица.",
+    composition: "side"
+  },
+  {
+    id: "full_front",
+    name: "Полный рост",
+    details: "Фронтально во весь рост, фигура полностью в кадре.",
+    composition: "full"
+  }
+];
 
 const view = document.querySelector("#view");
 const title = document.querySelector("#screen-title");
@@ -588,6 +618,7 @@ function catalogCard(item) {
       </div>
       <div class="toolbar">
         <button class="secondary-button" data-add-angle="${item.id}" type="button">Добавить ракурс</button>
+        <button class="secondary-button" data-generate-references="${item.id}" type="button">AI-референсы</button>
         <button class="primary-button" data-apply-template="${item.id}" type="button">Использовать в чеклисте</button>
       </div>
     </article>
@@ -784,6 +815,7 @@ function bindViewActions() {
     const [itemId, angleId] = node.dataset.uploadReference.split(":");
     uploadReference(itemId, angleId);
   }));
+  view.querySelectorAll("[data-generate-references]").forEach((node) => node.addEventListener("click", () => generateReferenceSet(node.dataset.generateReferences)));
   view.querySelectorAll("[data-apply-template]").forEach((node) => node.addEventListener("click", () => applyCatalogAsTemplate(node.dataset.applyTemplate)));
 }
 
@@ -1009,6 +1041,128 @@ function uploadReference(itemId, angleId) {
   referenceInput.click();
 }
 
+async function generateReferenceSet(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  const subject = prompt("Кого сделать в референсах?", "человек, современный нейтральный образ, студийный свет");
+  if (!subject?.trim()) return;
+  const cleanSubject = subject.trim();
+  const promptText = buildReferenceAiPrompt(cleanSubject);
+  const nextAngles = mergeReferenceAngles(item.angles || [], cleanSubject);
+  await put("catalog", {
+    ...item,
+    angles: nextAngles,
+    orderInfo: item.orderInfo || "Набор референсов для портретной съемки.",
+    requirements: item.requirements || "Одинаковый свет, чистый фон, спокойная поза, без лишних предметов в кадре."
+  });
+  const copied = await copyText(promptText);
+  if (!copied) prompt("Скопируйте промпт для ChatGPT / генератора изображений", promptText);
+  await refreshData();
+  notify(copied ? "AI-референсы добавлены. Промпт для генерации скопирован." : "AI-референсы добавлены. Промпт показан для копирования.");
+  renderCatalog();
+}
+
+function mergeReferenceAngles(currentAngles, subject) {
+  const byId = new Map(currentAngles.map((angle) => [angle.id, angle]));
+  REFERENCE_AI_SET.forEach((preset) => {
+    const previous = byId.get(preset.id) || {};
+    byId.set(preset.id, {
+      ...previous,
+      id: preset.id,
+      name: preset.name,
+      details: preset.details,
+      refDataUrl: createReferenceSvgDataUrl(preset, subject),
+      refName: `ai-reference-${preset.id}.svg`
+    });
+  });
+  return Array.from(byId.values());
+}
+
+function buildReferenceAiPrompt(subject) {
+  const shots = REFERENCE_AI_SET.map((preset, index) => `${index + 1}. ${preset.name}: ${preset.details}`).join("\n");
+  return [
+    `Создай 4 отдельные фотореалистичные референс-фотографии для одного и того же персонажа: ${subject}.`,
+    "Стиль: современная студийная портретная съемка, мягкий ровный свет, чистый нейтральный фон, натуральная кожа, реалистичная оптика 50-85mm, без текста и логотипов.",
+    "Важно: один и тот же человек, одинаковая одежда, одинаковый свет и фон во всех кадрах.",
+    shots,
+    "Формат: четыре отдельных изображения, вертикальные, пригодные как референсы для фотографа."
+  ].join("\n");
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard?.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function createReferenceSvgDataUrl(preset, subject) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+      <defs>
+        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#f8fafc"/>
+          <stop offset="0.52" stop-color="#dbeafe"/>
+          <stop offset="1" stop-color="#ecfeff"/>
+        </linearGradient>
+        <linearGradient id="ink" x1="0" x2="1">
+          <stop offset="0" stop-color="#111827"/>
+          <stop offset="1" stop-color="#2563eb"/>
+        </linearGradient>
+      </defs>
+      <rect width="900" height="1200" fill="url(#bg)"/>
+      <rect x="70" y="70" width="760" height="1060" rx="34" fill="rgba(255,255,255,.66)" stroke="#bfdbfe" stroke-width="3"/>
+      ${referenceFigureSvg(preset.composition)}
+      <text x="450" y="965" text-anchor="middle" fill="#111827" font-family="Arial, sans-serif" font-size="52" font-weight="800">${escapeSvg(preset.name)}</text>
+      <text x="450" y="1028" text-anchor="middle" fill="#475569" font-family="Arial, sans-serif" font-size="27">${escapeSvg(subject.slice(0, 42))}</text>
+      <text x="450" y="1085" text-anchor="middle" fill="#2563eb" font-family="Arial, sans-serif" font-size="24" font-weight="700">AI prompt ready</text>
+    </svg>
+  `.trim();
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function referenceFigureSvg(composition) {
+  if (composition === "face") {
+    return `
+      <circle cx="450" cy="410" r="185" fill="#f3c7a2" stroke="#111827" stroke-width="10"/>
+      <path d="M292 360c40-142 274-142 316 0-62-38-254-38-316 0Z" fill="url(#ink)"/>
+      <path d="M378 430h1M522 430h1" stroke="#111827" stroke-width="22" stroke-linecap="round"/>
+      <path d="M420 510c22 18 55 18 78 0" fill="none" stroke="#111827" stroke-width="10" stroke-linecap="round"/>
+      <path d="M310 690h280" stroke="#2563eb" stroke-width="20" stroke-linecap="round"/>
+    `;
+  }
+  if (composition === "side") {
+    return `
+      <path d="M360 575c-88-44-110-202-38-300 74-101 236-83 282 36 26 66-5 146-63 178-20 11-34 31-36 54l-6 75H378Z" fill="#f3c7a2" stroke="#111827" stroke-width="10"/>
+      <path d="M320 341c38-132 232-153 310-34-71 8-148 50-190 124-39-22-79-49-120-90Z" fill="url(#ink)"/>
+      <path d="M548 398h1" stroke="#111827" stroke-width="20" stroke-linecap="round"/>
+      <path d="M606 462c33 14 27 55-8 62" fill="none" stroke="#111827" stroke-width="9" stroke-linecap="round"/>
+      <path d="M310 710h330" stroke="#2563eb" stroke-width="20" stroke-linecap="round"/>
+    `;
+  }
+  if (composition === "full") {
+    return `
+      <circle cx="450" cy="210" r="82" fill="#f3c7a2" stroke="#111827" stroke-width="8"/>
+      <path d="M360 320h180l50 310H310Z" fill="#2563eb" stroke="#111827" stroke-width="9"/>
+      <path d="M330 380 225 570M570 380l105 190" stroke="#111827" stroke-width="24" stroke-linecap="round"/>
+      <path d="M385 630 350 870M515 630l35 240" stroke="#111827" stroke-width="28" stroke-linecap="round"/>
+      <path d="M302 884h104M494 884h104" stroke="#111827" stroke-width="20" stroke-linecap="round"/>
+    `;
+  }
+  return `
+    <circle cx="450" cy="265" r="108" fill="#f3c7a2" stroke="#111827" stroke-width="9"/>
+    <path d="M345 244c38-111 177-118 214-3-55-24-153-23-214 3Z" fill="url(#ink)"/>
+    <path d="M380 410h140c76 0 138 62 138 138v176H242V548c0-76 62-138 138-138Z" fill="#2563eb" stroke="#111827" stroke-width="10"/>
+    <path d="M345 720h210" stroke="#111827" stroke-width="18" stroke-linecap="round"/>
+  `;
+}
+
+function escapeSvg(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[char]));
+}
+
 function captureMedia(type, orderType) {
   state.currentCapture = { studentId: state.studentId, type, orderType };
   mediaInput.accept = type === "video" ? "video/*" : "image/*";
@@ -1216,7 +1370,8 @@ function openQrValue(value) {
 
 async function startQrScanner() {
   const box = view.querySelector("#qr-box");
-  const detector = "BarcodeDetector" in window ? new BarcodeDetector({ formats: ["qr_code"] }) : null;
+  if (state.qrScanActive) return;
+  const detector = await createQrDetector();
   if (!detector && !hasJsQr()) {
     box.innerHTML = `
       <div>
@@ -1228,27 +1383,52 @@ async function startQrScanner() {
     return;
   }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
     state.qrStream = stream;
+    state.qrScanActive = true;
     const video = document.createElement("video");
     video.className = "video-preview";
     video.srcObject = stream;
     video.playsInline = true;
-    box.replaceChildren(video);
+    video.muted = true;
+    box.innerHTML = `
+      <div class="scanner-frame">
+        <div class="scanner-video-slot"></div>
+        <div class="scanner-target" aria-hidden="true"></div>
+      </div>
+      <p class="scanner-status">Ищу QR-код...</p>
+    `;
+    box.querySelector(".scanner-video-slot").append(video);
     await video.play();
     const canvas = document.createElement("canvas");
-    const scan = async () => {
-      if (!state.qrStream) return;
-      const rawValue = await detectQrFromVideo(video, detector, canvas);
+    const status = box.querySelector(".scanner-status");
+    let lastScanAt = 0;
+    const scan = async (time = 0) => {
+      if (!state.qrScanActive || !state.qrStream) return;
+      if (time - lastScanAt < QR_SCAN_INTERVAL) {
+        state.qrScanFrame = requestAnimationFrame(scan);
+        return;
+      }
+      lastScanAt = time;
+      const rawValue = await detectQrFromVideo(video, detector, canvas).catch(() => "");
       if (rawValue) {
+        status.textContent = "QR найден. Открываю ученика...";
         stopQrStream();
         openQrValue(rawValue);
         return;
       }
-      requestAnimationFrame(scan);
+      state.qrScanFrame = requestAnimationFrame(scan);
     };
-    scan();
+    state.qrScanFrame = requestAnimationFrame(scan);
   } catch (error) {
+    stopQrStream();
     notify("Камера недоступна. Проверьте разрешения браузера.");
   }
 }
@@ -1310,6 +1490,9 @@ function studentFromQrValue(value) {
 }
 
 function stopQrStream() {
+  if (state.qrScanFrame) cancelAnimationFrame(state.qrScanFrame);
+  state.qrScanFrame = 0;
+  state.qrScanActive = false;
   if (!state.qrStream) return;
   state.qrStream.getTracks().forEach((track) => track.stop());
   state.qrStream = null;
@@ -1332,16 +1515,22 @@ function navigateBackFromStudent() {
 }
 
 async function detectQrFromVideo(video, detector, canvas) {
+  if (!video.videoWidth || !video.videoHeight) return "";
+  if (hasJsQr()) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const fromCenter = detectQrFromCanvas(canvas, centerScanArea(canvas.width, canvas.height));
+    if (fromCenter) return fromCenter;
+    const fromFullFrame = detectQrFromCanvas(canvas);
+    if (fromFullFrame) return fromFullFrame;
+  }
   if (detector) {
     const codes = await detector.detect(video).catch(() => []);
     if (codes[0]?.rawValue) return codes[0].rawValue;
   }
-  if (!hasJsQr() || !video.videoWidth || !video.videoHeight) return "";
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  return detectQrFromCanvas(canvas);
+  return "";
 }
 
 async function detectQrFromImageFile(file) {
@@ -1363,14 +1552,52 @@ async function detectQrFromImageFile(file) {
   const context = canvas.getContext("2d", { willReadFrequently: true });
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   URL.revokeObjectURL(image.src);
-  return detectQrFromCanvas(canvas);
+  return detectQrFromCanvas(canvas) || detectQrFromCanvas(canvas, centerScanArea(canvas.width, canvas.height));
 }
 
-function detectQrFromCanvas(canvas) {
+function detectQrFromCanvas(canvas, area = null) {
   const context = canvas.getContext("2d", { willReadFrequently: true });
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const result = window.jsQR(imageData.data, imageData.width, imageData.height);
-  return result?.data || "";
+  const source = area || { x: 0, y: 0, width: canvas.width, height: canvas.height };
+  const imageData = context.getImageData(source.x, source.y, source.width, source.height);
+  return decodeQrImageData(imageData);
+}
+
+function decodeQrImageData(imageData) {
+  const result = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
+  if (result?.data) return result.data;
+  boostImageContrast(imageData.data);
+  return window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" })?.data || "";
+}
+
+function boostImageContrast(data) {
+  for (let index = 0; index < data.length; index += 4) {
+    const gray = (data[index] * 0.299) + (data[index + 1] * 0.587) + (data[index + 2] * 0.114);
+    const value = gray > 138 ? 255 : 0;
+    data[index] = value;
+    data[index + 1] = value;
+    data[index + 2] = value;
+  }
+}
+
+function centerScanArea(width, height) {
+  const size = Math.floor(Math.min(width, height) * 0.78);
+  return {
+    x: Math.max(0, Math.floor((width - size) / 2)),
+    y: Math.max(0, Math.floor((height - size) / 2)),
+    width: size,
+    height: size
+  };
+}
+
+async function createQrDetector() {
+  if (!("BarcodeDetector" in window)) return null;
+  try {
+    const supported = await BarcodeDetector.getSupportedFormats?.();
+    if (supported && !supported.includes("qr_code")) return null;
+    return new BarcodeDetector({ formats: ["qr_code"] });
+  } catch {
+    return null;
+  }
 }
 
 function loadImageFromFile(file) {
