@@ -227,7 +227,7 @@ p {
 .student-card:hover,
 .class-card:hover,
 .metric-card:hover {
-  transform: scale(1.02);
+  transform: translateY(-2px);
   box-shadow: 0 22px 56px rgba(17, 24, 39, 0.12);
 }
 
@@ -427,19 +427,19 @@ p {
 .class-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 14px;
-  padding: 14px;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--card);
   box-shadow: var(--shadow);
 }
 
 .class-cover {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   margin-top: 2px;
-  border-radius: 999px;
+  border-radius: 14px;
 }
 
 .cover-green {
@@ -469,33 +469,30 @@ p {
   gap: 16px;
 }
 
-.class-actions {
-  display: flex;
-  gap: 8px;
+.item-menu {
+  position: relative;
 }
 
-.icon-action {
+.item-menu summary {
   display: grid;
   place-items: center;
-  gap: 4px;
-  min-width: 56px;
-  min-height: 54px;
-  padding: 6px;
+  width: 40px;
+  height: 40px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--card);
   color: var(--text);
-  font-size: 0.72rem;
-  font-weight: 800;
-  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.06);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+  list-style: none;
 }
 
-.icon-action svg {
-  width: 21px;
-  height: 21px;
+.item-menu summary::-webkit-details-marker {
+  display: none;
 }
 
-.icon-action:hover,
+.item-menu summary:hover,
 .primary-button:hover,
 .secondary-button:hover,
 .icon-button:hover {
@@ -507,9 +504,9 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 8px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 800;
 }
 
@@ -526,8 +523,8 @@ p {
 
 .progress {
   overflow: hidden;
-  height: 8px;
-  margin: 8px 0 0;
+  height: 6px;
+  margin: 6px 0 0;
   background: var(--card-strong);
   border-radius: 999px;
 }
@@ -550,14 +547,15 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
-  padding: 7px 11px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   border-radius: 999px;
   background: var(--card);
   color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.8125rem;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -736,29 +734,40 @@ p {
 
 .student-card {
   display: block;
-  padding: 12px;
+  min-height: 120px;
+  max-height: 150px;
+  padding: 14px;
   cursor: pointer;
 }
 
 .student-card-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: 64px minmax(0, 1fr) 40px;
+  align-items: start;
   gap: 10px;
 }
 
 .student-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: contents;
+}
+
+.student-copy {
+  min-width: 0;
+}
+
+.student-main-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: start;
   min-width: 0;
 }
 
 .student-thumb {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   border: 1px solid var(--line);
   object-fit: cover;
   background: var(--card);
@@ -766,34 +775,58 @@ p {
 
 .student-thumb.empty {
   display: grid;
+  gap: 2px;
   place-items: center;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, var(--card)), var(--card-strong));
-  color: var(--primary);
-  font-weight: 900;
+  align-content: center;
+  background: var(--card-strong);
+  color: var(--muted);
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.student-thumb.empty small {
+  display: block;
+  font-size: 0.58rem;
+  line-height: 1;
 }
 
 .student-line h3,
-.student-title-row h3 {
+.student-title-row h3,
+.student-copy h3 {
   margin: 0;
-  font-size: 1rem;
+  overflow: hidden;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .student-identity {
   min-width: 0;
 }
 
+.student-copy p {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .student-progress {
-  max-width: 360px;
-  margin-left: 54px;
+  margin-top: 12px;
 }
 
 .student-statuses {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .status-dot {
@@ -812,28 +845,6 @@ p {
 
 .dot-blue {
   background: var(--primary);
-}
-
-.student-menu {
-  position: relative;
-}
-
-.student-menu summary {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  border-radius: 14px;
-  background: var(--card);
-  color: var(--text);
-  font-size: 1.4rem;
-  font-weight: 900;
-  list-style: none;
-}
-
-.student-menu summary::-webkit-details-marker {
-  display: none;
 }
 
 .menu-panel {
@@ -1220,15 +1231,12 @@ p {
     border-radius: 14px;
   }
 
-  .action-toolbar,
-  .student-card-grid,
-  .student-statuses {
+  .action-toolbar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .action-toolbar .row,
-  .student-statuses {
+  .action-toolbar .row {
     width: 100%;
   }
 
@@ -1247,38 +1255,26 @@ p {
     height: 48px;
   }
 
-  .class-actions {
-    display: grid;
-    grid-template-columns: repeat(3, 54px);
-    width: auto;
-  }
-
-  .icon-action {
-    min-width: 0;
-    min-height: 50px;
-  }
-
   .student-progress {
     max-width: none;
     margin-left: 0;
   }
 
   .student-card-grid {
-    grid-template-columns: 1fr;
-    align-items: start;
+    grid-template-columns: 64px minmax(0, 1fr) 40px;
   }
 
   .student-statuses {
-    display: grid;
-    grid-template-columns: 1fr 1fr 48px;
+    display: flex;
     align-items: center;
   }
 
   .student-statuses .status-pill {
     width: fit-content;
     max-width: 100%;
-    min-height: 30px;
-    padding: 5px 9px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 10px;
     font-size: 0.78rem;
   }
 
@@ -1308,12 +1304,20 @@ p {
 
 @media (max-width: 380px) {
   .metric-grid,
-  .action-toolbar .row,
-  .student-statuses {
+  .action-toolbar .row {
     grid-template-columns: 1fr;
   }
 
-  .student-menu summary {
-    width: 100%;
+  .student-card {
+    max-height: none;
+  }
+
+  .student-card-grid {
+    grid-template-columns: 56px minmax(0, 1fr) 40px;
+  }
+
+  .student-thumb {
+    width: 56px;
+    height: 56px;
   }
 }

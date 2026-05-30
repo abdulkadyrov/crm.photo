@@ -498,14 +498,19 @@ function classCard(klass) {
             <h2 class="card-title">${escapeHtml(klass.name)}</h2>
             <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
           </div>
-          <div class="class-actions">
-            <button class="icon-action" data-add-student="${klass.id}" type="button" title="Добавить ученика"><span data-icon="plus"></span><small>Добавить</small></button>
-            <button class="icon-action" data-export-status-class="${klass.id}" type="button" title="PDF статусов"><span data-icon="download"></span><small>Экспорт</small></button>
-            <button class="icon-action danger-icon" data-delete-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span><small>Удалить</small></button>
-          </div>
+          <details class="item-menu class-menu">
+            <summary aria-label="Меню класса">...</summary>
+            <div class="menu-panel">
+              <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
+              <button data-export-status-class="${klass.id}" type="button">Экспорт класса</button>
+              <button data-rename-class="${klass.id}" type="button">Переименовать</button>
+              <button class="danger-text" data-delete-class="${klass.id}" type="button">Удалить класс</button>
+            </div>
+          </details>
         </div>
         <div class="progress-label">
           <span>Прогресс: ${pct}%</span>
+          <strong>${pct}%</strong>
         </div>
         <div class="progress"><span style="width:${pct}%"></span></div>
         <div class="student-list">
@@ -1203,18 +1208,18 @@ function studentCard(student) {
   const project = projectById(klass?.projectId);
   const c = completion(student.id);
   const previewUrl = studentAvatarUrl(student);
-  const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "SP";
-  const preview = previewUrl ? `<img class="student-thumb" src="${previewUrl}" alt="" loading="lazy" />` : `<div class="student-thumb empty">${escapeHtml(initials)}</div>`;
+  const fullName = `${student.lastName} ${student.firstName}`.trim();
+  const preview = previewUrl
+    ? `<img class="student-thumb" src="${previewUrl}" alt="${escapeAttr(fullName)}" loading="lazy" />`
+    : '<div class="student-thumb empty"><span>👤</span><small>Нет фото</small></div>';
   return `
     <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
       <div class="student-card-grid">
+        ${preview}
         <div class="student-identity">
-          <div class="student-title-row">
-            ${preview}
-            <div>
-              <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
-              <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
-            </div>
+          <div class="student-copy">
+            <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
+            <p class="muted">${escapeHtml(project?.name || "")} • ${escapeHtml(klass?.name || "")}</p>
           </div>
           <div class="student-progress">
             <div class="progress-label">
@@ -1223,21 +1228,21 @@ function studentCard(student) {
             </div>
             <div class="progress"><span style="width:${c.percent}%"></span></div>
           </div>
+          <div class="student-statuses">
+            <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
+            <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
+          </div>
         </div>
-        <div class="student-statuses">
-          <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
-          <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
-          <details class="student-menu">
-            <summary aria-label="Меню ученика">...</summary>
-            <div class="menu-panel">
-              <button data-open-student-action="${student.id}" type="button">Открыть</button>
-              <button data-edit-student="${student.id}" type="button">Редактировать</button>
-              <button data-generate-qr="${student.id}" type="button">QR</button>
-              <button data-export-student="${student.id}" type="button">Экспорт</button>
-              <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
-            </div>
-          </details>
-        </div>
+        <details class="item-menu student-menu">
+          <summary aria-label="Меню ученика">...</summary>
+          <div class="menu-panel">
+            <button data-open-student-action="${student.id}" type="button">Открыть</button>
+            <button data-edit-student="${student.id}" type="button">Редактировать</button>
+            <button data-generate-qr="${student.id}" type="button">QR</button>
+            <button data-export-student="${student.id}" type="button">Экспорт</button>
+            <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
+          </div>
+        </details>
       </div>
     </article>
   `;
@@ -1274,10 +1279,12 @@ function bindViewActions() {
   view.querySelectorAll("[data-open-student]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
+      if (event.target.closest("details")) return;
       navigate("student", { studentId: node.dataset.openStudent });
     });
     node.addEventListener("keydown", (event) => {
       if (event.target.closest("button")) return;
+      if (event.target.closest("details")) return;
       if (event.key === "Enter" || event.key === " ") navigate("student", { studentId: node.dataset.openStudent });
     });
   });
@@ -1321,6 +1328,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportZip()));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
+  view.querySelectorAll("[data-rename-class]").forEach((node) => node.addEventListener("click", () => renameClass(node.dataset.renameClass)));
   view.querySelectorAll("[data-export-status-project]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ projectId: node.dataset.exportStatusProject })));
   view.querySelector("[data-save-template]")?.addEventListener("click", saveTemplate);
   view.querySelector("[data-save-status-export-template]")?.addEventListener("click", saveStatusExportTemplate);
@@ -1490,6 +1498,17 @@ async function deleteClass(classId) {
   await del("classes", classId);
   await refreshData();
   notify("Класс удален.");
+  navigate("classes", { projectId: klass.projectId });
+}
+
+async function renameClass(classId) {
+  const klass = classById(classId);
+  if (!klass) return;
+  const name = prompt("Название класса", klass.name);
+  if (!name?.trim()) return;
+  await put("classes", { ...klass, name: name.trim() });
+  await refreshData();
+  notify("Класс переименован.");
   navigate("classes", { projectId: klass.projectId });
 }
 
@@ -3529,7 +3548,7 @@ function studentServicePreviewUrl(student) {
 function studentAvatarUrl(student) {
   const photo = mediaByStudent(student.id).find((item) => item.type === "image");
   if (photo?.blob) return URL.createObjectURL(photo.blob);
-  return studentServicePreviewUrl(student);
+  return "";
 }
 
 function classCoverClass(name) {
