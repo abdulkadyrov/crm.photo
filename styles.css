@@ -41,11 +41,15 @@ html,
 body {
   min-height: 100%;
   margin: 0;
+  overflow-x: hidden;
+  touch-action: pan-y;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
+  overflow-x: hidden;
+  touch-action: pan-y;
 }
 
 button,
@@ -108,6 +112,8 @@ p {
   width: min(1180px, 100%);
   margin: 0 auto;
   padding: 18px clamp(16px, 4vw, 40px) 26px;
+  overflow-x: hidden;
+  touch-action: pan-y;
 }
 
 .bottom-nav {
@@ -211,6 +217,11 @@ p {
   flex-wrap: wrap;
 }
 
+.status-row {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
 .card-header {
   margin-bottom: 14px;
 }
@@ -218,6 +229,31 @@ p {
 .card-title {
   margin: 0;
   font-size: 1.08rem;
+}
+
+.service-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.service-preview {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  object-fit: cover;
+  background: var(--card);
+}
+
+.service-preview.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .muted {
@@ -281,6 +317,8 @@ p {
   font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip.active,
@@ -448,6 +486,27 @@ p {
   gap: 10px;
   padding: 14px;
   cursor: pointer;
+}
+
+.student-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.student-thumb {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+  background: var(--card);
+}
+
+.student-thumb.empty {
+  background: var(--card-strong);
 }
 
 .student-line h3 {
@@ -711,6 +770,28 @@ p {
 .toast.show {
   transform: translateY(0);
   opacity: 1;
+}
+
+.fab-back {
+  position: fixed;
+  left: 14px;
+  bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  touch-action: manipulation;
+}
+
+.fab-back svg {
+  width: 22px;
+  height: 22px;
 }
 
 .visually-hidden {

@@ -61,6 +61,9 @@ const STATUS_EXPORT_DEFAULT = {
   title: "Статус заказов",
   columns: ["number", "student", "class", "payment", "catalog", "orderStatus", "progress", "pending"]
 };
+const SETTING_IDS = {
+  initialized: "spf-initialized"
+};
 
 const state = {
   route: "home",
@@ -73,6 +76,7 @@ const state = {
   data: emptyData(),
   currentCapture: null,
   currentReference: null,
+  currentPreview: null,
   currentAlbumMedia: null,
   zipImportMode: "auto",
   albumProjectId: null,
@@ -81,7 +85,8 @@ const state = {
   returnTarget: null,
   qrStream: null,
   qrScanFrame: 0,
-  qrScanActive: false
+  qrScanActive: false,
+  lastRenderedRoute: null
 };
 
 const QR_SCAN_INTERVAL = 120;
@@ -117,6 +122,7 @@ const title = document.querySelector("#screen-title");
 const toast = document.querySelector("#toast");
 const mediaInput = document.querySelector("#media-input");
 const referenceInput = document.querySelector("#reference-input");
+const previewInput = document.querySelector("#preview-input");
 const shootImportInput = document.querySelector("#shoot-import-input");
 const zipInput = document.querySelector("#zip-input");
 const albumMediaInput = document.querySelector("#album-media-input");
@@ -126,6 +132,7 @@ init();
 
 async function init() {
   injectIcons();
+  lockGestures();
   document.documentElement.dataset.theme = localStorage.getItem("spf-theme") || "light";
   state.db = await openDb();
   await seedIfNeeded();
@@ -134,6 +141,12 @@ async function init() {
   bindShell();
   navigateFromUrl() || navigate("home");
   registerServiceWorker();
+}
+
+function lockGestures() {
+  document.addEventListener("gesturestart", (event) => event.preventDefault(), { passive: false });
+  document.addEventListener("gesturechange", (event) => event.preventDefault(), { passive: false });
+  document.addEventListener("gestureend", (event) => event.preventDefault(), { passive: false });
 }
 
 function navigateFromUrl() {
@@ -216,18 +229,27 @@ async function refreshData() {
 }
 
 async function seedIfNeeded() {
+  const settings = await getAll("settings");
+  const initialized = settings.some((item) => item?.id === SETTING_IDS.initialized && item?.value === true);
   const projects = await getAll("projects");
-  if (projects.length) return;
+  if (projects.length) {
+    if (!initialized) await put("settings", { id: SETTING_IDS.initialized, value: true });
+    return;
+  }
+  const templates = await getAll("templates");
+  const templateId = templates[0]?.id || uid("template");
+  if (!templates.length) {
+    await put("templates", {
+      id: templateId,
+      name: "Базовый чеклист",
+      items: ["portrait", "full", "side", "video", "interview"],
+      scope: "default"
+    });
+  }
+  if (initialized) return;
   const projectId = uid("project");
   const classA = uid("class");
   const classB = uid("class");
-  const templateId = uid("template");
-  await put("templates", {
-    id: templateId,
-    name: "Базовый чеклист",
-    items: ["portrait", "full", "side", "video", "interview"],
-    scope: "default"
-  });
   await put("projects", { id: projectId, name: "Гимназия 12", createdAt: now(), templateId });
   await put("classes", { id: classA, projectId, name: "4A" });
   await put("classes", { id: classB, projectId, name: "4B" });
@@ -236,11 +258,13 @@ async function seedIfNeeded() {
     ["Максим", "Иванов", classA, "unpaid"],
     ["София", "Петрова", classB, "paid"]
   ];
+  const catalogId = (await getAll("catalog"))[0]?.id || "";
   for (const [firstName, lastName, classId, paymentStatus] of students) {
     const id = uid("student");
-    await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus, status: "not_started" });
-    await put("orders", { id: `order_${id}`, studentId: id, items: defaultOrderItems() });
+    await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus, orderStatus: "not_started", catalogId, status: "not_started" });
+    await put("orders", { id: `order_${id}`, studentId: id, status: "not_started", catalogId, items: catalogId ? orderItemsFromCatalog(catalogId) : defaultOrderItems() });
   }
+  await put("settings", { id: SETTING_IDS.initialized, value: true });
 }
 
 async function seedCatalogIfNeeded() {
@@ -275,6 +299,7 @@ function bindShell() {
   document.querySelector("#add-project").addEventListener("click", addProject);
   mediaInput.addEventListener("change", handleMediaInput);
   referenceInput.addEventListener("change", handleReferenceInput);
+  previewInput.addEventListener("change", handlePreviewInput);
   shootImportInput.addEventListener("change", handleShootImport);
   zipInput.addEventListener("change", handleZipInput);
   albumMediaInput.addEventListener("change", handleAlbumMediaInput);
@@ -283,6 +308,8 @@ function bindShell() {
 
 function navigate(route, params = {}) {
   stopQrStream();
+  const prevRoute = state.route;
+  const prevScrollY = window.scrollY;
   if (route === "student" && state.route !== "student") {
     state.returnTarget = routeSnapshot();
   }
@@ -292,6 +319,8 @@ function navigate(route, params = {}) {
     item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")));
   });
   render();
+  if (prevRoute !== route) window.scrollTo(0, 0);
+  else window.scrollTo(0, prevScrollY);
 }
 
 function routeSnapshot() {
@@ -305,6 +334,8 @@ function routeSnapshot() {
 }
 
 function render() {
+  const prevScrollY = window.scrollY;
+  const prevRoute = state.lastRenderedRoute;
   const renderers = {
     home: renderHome,
     search: renderSearch,
@@ -320,6 +351,9 @@ function render() {
   };
   (renderers[state.route] || renderHome)();
   view.focus({ preventScroll: true });
+  if (state.preserveScroll || prevRoute === state.route) window.scrollTo(0, prevScrollY);
+  state.preserveScroll = false;
+  state.lastRenderedRoute = state.route;
 }
 
 function renderHome() {
@@ -845,8 +879,7 @@ function renderStudent() {
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
               <p class="muted student-order-summary">Заказ: ${escapeHtml(selectedCatalogTitle)}</p>
             </div>
-            <div class="row">
-              <button class="secondary-button compact" data-back-from-student type="button">Назад</button>
+            <div class="row status-row">
               <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
               <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
             </div>
@@ -904,6 +937,7 @@ function renderStudent() {
         <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
       </aside>
     </section>
+    <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
   bindViewActions();
 }
@@ -971,14 +1005,21 @@ function renderServices() {
 }
 
 function catalogCard(item) {
+  const preview = item.previewDataUrl
+    ? `<img class="service-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
+    : '<div class="service-preview empty">Нет превью</div>';
   return `
     <article class="panel grid">
       <div class="card-header">
-        <div>
+        <div class="service-head">
+          ${preview}
+          <div>
           <h2 class="card-title">${escapeHtml(item.title)}</h2>
           <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))}</p>
+          </div>
         </div>
         <div class="row">
+          <button class="secondary-button compact" data-upload-catalog-preview="${item.id}" type="button">Превью</button>
           <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Изменить</button>
           <button class="secondary-button compact" data-duplicate-catalog="${item.id}" type="button">Дублировать</button>
           <button class="danger-button compact" data-delete-catalog="${item.id}" type="button">Удалить</button>
@@ -1079,8 +1120,16 @@ function renderSettings() {
         </div>
       </article>
       <article class="panel grid">
+        <h2 class="card-title">Обновление</h2>
+        <p class="muted">Если на телефоне не видны новые функции, обновите кеш PWA.</p>
+        <button class="secondary-button" data-refresh-app type="button">Обновить приложение</button>
+      </article>
+      <article class="panel grid">
         <h2 class="card-title">Демо-данные</h2>
-        <button class="danger-button" data-reset-demo type="button">Очистить и создать демо</button>
+        <div class="toolbar">
+          <button class="danger-button" data-clear-all type="button">Очистить все данные</button>
+          <button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button>
+        </div>
       </article>
     </section>
   `;
@@ -1091,14 +1140,19 @@ function studentCard(student) {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
   const c = completion(student.id);
+  const previewUrl = studentServicePreviewUrl(student);
+  const preview = previewUrl ? `<img class="student-thumb" src="${previewUrl}" alt="" loading="lazy" />` : '<div class="student-thumb empty"></div>';
   return `
     <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
       <div class="student-line">
         <div>
-          <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
+          <div class="student-title-row">
+            ${preview}
+            <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
+          </div>
           <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
         </div>
-      <div class="row">
+      <div class="row status-row">
           <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
           <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
           <button class="icon-button danger-icon" data-delete-student="${student.id}" type="button" title="Удалить ученика"><span data-icon="trash"></span></button>
@@ -1121,6 +1175,7 @@ function templateEditorRow(item) {
 
 function bindViewActions() {
   injectIcons();
+  fitStatusPills();
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
@@ -1191,7 +1246,9 @@ function bindViewActions() {
   view.querySelectorAll("[data-remove-template-item]").forEach((node) => node.addEventListener("click", () => {
     node.closest(".template-item-row")?.remove();
   }));
+  view.querySelector("[data-clear-all]")?.addEventListener("click", clearAllData);
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
+  view.querySelector("[data-refresh-app]")?.addEventListener("click", refreshApp);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelector("[data-generate-qr]")?.addEventListener("click", () => showQrPayload(state.studentId));
   view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
@@ -1212,6 +1269,7 @@ function bindViewActions() {
     const [itemId, angleId] = node.dataset.uploadReference.split(":");
     uploadReference(itemId, angleId);
   }));
+  view.querySelectorAll("[data-upload-catalog-preview]").forEach((node) => node.addEventListener("click", () => uploadCatalogPreview(node.dataset.uploadCatalogPreview)));
   view.querySelectorAll("[data-generate-references]").forEach((node) => node.addEventListener("click", () => generateReferenceSet(node.dataset.generateReferences)));
   view.querySelectorAll("[data-apply-template]").forEach((node) => node.addEventListener("click", () => applyCatalogAsTemplate(node.dataset.applyTemplate)));
   view.querySelector("[data-add-album-project]")?.addEventListener("click", addAlbumProject);
@@ -1323,6 +1381,7 @@ async function editStudent(studentId) {
   const { firstName, lastName } = splitFullName(fio);
   await put("students", { ...student, firstName, lastName });
   await refreshData();
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -1363,6 +1422,7 @@ async function deleteStudent(studentId) {
   if (state.route === "student") {
     navigate("classes", { projectId: classById(student.classId)?.projectId });
   } else {
+    state.preserveScroll = true;
     render();
   }
 }
@@ -1388,6 +1448,7 @@ async function updateStudentServices(studentId, catalogIds) {
   await put("orders", { ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems });
   await refreshData();
   notify("Услуги и чеклист ученика обновлены.");
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -1683,6 +1744,12 @@ function uploadReference(itemId, angleId) {
   referenceInput.click();
 }
 
+function uploadCatalogPreview(itemId) {
+  state.currentPreview = { kind: "catalog", itemId };
+  previewInput.value = "";
+  previewInput.click();
+}
+
 async function generateReferenceSet(itemId) {
   const item = catalogItemById(itemId);
   if (!item) return;
@@ -1903,6 +1970,44 @@ function isReferenceImage(file) {
   return file.type.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"].includes(ext);
 }
 
+function fitStatusPills() {
+  const nodes = Array.from(view.querySelectorAll(".status-pill"));
+  for (const node of nodes) {
+    node.style.fontSize = "";
+    const maxSteps = 6;
+    const minPx = 10;
+    let current = parseFloat(getComputedStyle(node).fontSize) || 13;
+    let steps = 0;
+    while (node.scrollWidth > node.clientWidth && steps < maxSteps && current > minPx) {
+      current = Math.max(minPx, current - 1);
+      node.style.fontSize = `${current}px`;
+      steps += 1;
+    }
+  }
+}
+
+async function handlePreviewInput(event) {
+  const file = event.target.files?.[0];
+  if (!file || !state.currentPreview) return;
+  if (!isReferenceImage(file)) {
+    notify("Выберите изображение: JPG, PNG, WebP, HEIC/HEIF или GIF.");
+    event.target.value = "";
+    return;
+  }
+  const task = state.currentPreview;
+  state.currentPreview = null;
+  event.target.value = "";
+  if (task.kind === "catalog") {
+    const item = catalogItemById(task.itemId);
+    if (!item) return;
+    const previewDataUrl = await fileToDataUrl(file);
+    await put("catalog", { ...item, previewDataUrl, previewName: file.name || "preview" });
+    await refreshData();
+    notify("Превью услуги сохранено.");
+    renderServices();
+  }
+}
+
 async function attachFileToOrder(studentId, type, fileId) {
   const order = orderByStudent(studentId);
   const item = order.items.find((entry) => entry.type === type) || order.items[0];
@@ -1920,6 +2025,7 @@ async function markTaskDone(studentId, type) {
   if (item) item.status = "done";
   await saveOrderWithAutoStatus(studentId, order);
   await refreshData();
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -1929,6 +2035,7 @@ async function toggleTask(studentId, type) {
   if (item) item.status = item.status === "done" ? "pending" : "done";
   await saveOrderWithAutoStatus(studentId, order);
   await refreshData();
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -1936,6 +2043,7 @@ async function updatePayment(studentId, paymentStatus) {
   const student = studentById(studentId);
   await put("students", { ...student, paymentStatus });
   await refreshData();
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -1953,6 +2061,7 @@ async function resetOrder(studentId) {
   if (student) await put("students", { ...student, orderStatus: "not_started" });
   await put("orders", order);
   await refreshData();
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -1971,6 +2080,7 @@ async function updateOrderStatus(studentId, orderStatus) {
   await put("students", { ...student, orderStatus });
   await put("orders", { ...order, status: orderStatus });
   await refreshData();
+  state.preserveScroll = true;
   renderStudent();
 }
 
@@ -2027,10 +2137,40 @@ async function applyCatalogAsTemplate(itemId) {
 async function resetDemo() {
   if (!confirm("Очистить локальные данные и создать демо?")) return;
   for (const store of STORE_NAMES) await clearStore(store);
+  await put("settings", { id: SETTING_IDS.initialized, value: false });
   await seedIfNeeded();
   await seedCatalogIfNeeded();
   await refreshData();
   navigate("home");
+}
+
+async function clearAllData() {
+  if (!confirm("Очистить локальные данные? Демо не будет создано автоматически.")) return;
+  for (const store of STORE_NAMES) await clearStore(store);
+  await put("settings", { id: SETTING_IDS.initialized, value: true });
+  await seedCatalogIfNeeded();
+  await refreshData();
+  state.projectId = null;
+  state.classId = null;
+  state.studentId = null;
+  navigate("home");
+}
+
+async function refreshApp() {
+  if (!confirm("Обновить приложение и очистить кеш?")) return;
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((reg) => reg.unregister()));
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  } catch {
+    // ignore
+  }
+  location.reload();
 }
 
 function handleManualQr(event) {
@@ -2590,7 +2730,18 @@ async function buildExportFiles(studentId) {
     const project = projectById(klass?.projectId);
     const base = `${safePath(project?.name || "Project")}/${safePath(klass?.name || "Class")}/${safePath(`${student.lastName}_${student.firstName}`)}`;
     const order = orderByStudent(student.id);
-    files.push({ path: `${base}/meta.json`, data: jsonBytes({ student, order }) });
+    const selectedServices = selectedCatalogIdsForStudent(student).map((id) => {
+      const item = catalogItemById(id);
+      return item ? { id: item.id, title: item.title, previewFile: item.previewDataUrl ? safeFileName(`${item.title}.${dataUrlExtension(item.previewDataUrl)}`) : "" } : null;
+    }).filter(Boolean);
+    files.push({ path: `${base}/meta.json`, data: jsonBytes({ student, order, services: selectedServices }) });
+    for (const service of selectedServices) {
+      if (!service.previewFile) continue;
+      const item = catalogItemById(service.id);
+      const parsed = item?.previewDataUrl ? dataUrlToBytes(item.previewDataUrl) : null;
+      if (!parsed) continue;
+      files.push({ path: `${base}/services/${service.previewFile}`, data: parsed.bytes });
+    }
     for (const item of mediaByStudent(student.id)) {
       const folder = item.type === "video" ? "videos" : "photos";
       files.push({ path: `${base}/${folder}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
@@ -2623,6 +2774,13 @@ async function buildFullExportFiles() {
   for (const item of state.data.albumMedia) {
     if (!item.blob) continue;
     files.push({ path: `album_media/${item.id}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
+  }
+  for (const item of state.data.catalog) {
+    if (!item.previewDataUrl) continue;
+    const parsed = dataUrlToBytes(item.previewDataUrl);
+    if (!parsed) continue;
+    const ext = dataUrlExtension(item.previewDataUrl);
+    files.push({ path: `catalog_previews/${item.id}.${ext}`, data: parsed.bytes });
   }
   return files;
 }
@@ -3265,6 +3423,15 @@ function paymentLabel(status) {
   return status === "paid" ? "Оплачено" : "Не оплачено";
 }
 
+function studentServicePreviewUrl(student) {
+  const ids = selectedCatalogIdsForStudent(student);
+  for (const id of ids) {
+    const item = catalogItemById(id);
+    if (item?.previewDataUrl) return item.previewDataUrl;
+  }
+  return "";
+}
+
 function currentOrderStatus(student) {
   const order = orderByStudent(student.id);
   if (order.status && ORDER_STATUSES[order.status]) return order.status;
@@ -3417,6 +3584,24 @@ function fileToDataUrl(file) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+function dataUrlExtension(dataUrl) {
+  const mime = String(dataUrl || "").slice(0, 64);
+  if (mime.includes("image/png")) return "png";
+  if (mime.includes("image/webp")) return "webp";
+  if (mime.includes("image/gif")) return "gif";
+  return "jpg";
+}
+
+function dataUrlToBytes(dataUrl) {
+  const text = String(dataUrl || "");
+  const match = text.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return { mime: match[1], bytes };
 }
 
 function createQrSvg(text, scale = 6) {
@@ -3647,6 +3832,7 @@ function injectIcons() {
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',
     download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18 9 12l6-6"/><path d="M9 12h12"/><path d="M3 12h6"/></svg>',
     camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h4l2-3h4l2 3h4v11H4z"/><circle cx="12" cy="13" r="3"/></svg>',
     video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m20 6-11 11-5-5"/></svg>'
