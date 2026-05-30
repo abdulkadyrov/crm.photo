@@ -11,9 +11,9 @@
   --text: #111827;
   --muted: #6b7280;
   --line: #e5e7eb;
-  --shadow: 0 16px 44px rgba(17, 24, 39, 0.08);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   --radius: 20px;
-  --nav-h: 90px;
+  --nav-h: 72px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -145,7 +145,7 @@ p {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   min-height: var(--nav-h);
-  padding: 10px max(12px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right));
+  padding: 6px max(10px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
   background: color-mix(in srgb, var(--card) 94%, transparent);
   border-top: 0;
   box-shadow: 0 -12px 34px rgba(17, 24, 39, 0.08);
@@ -159,7 +159,7 @@ p {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 68px;
+  min-height: 58px;
   border: 0;
   border-radius: 16px;
   background: transparent;
@@ -176,7 +176,7 @@ p {
 }
 
 .nav-item.active {
-  background: var(--primary-soft);
+  background: rgba(37, 99, 235, 0.1);
   color: var(--primary);
 }
 
@@ -419,9 +419,119 @@ p {
 }
 
 .class-stack,
-.student-list {
+.student-list,
+.compact-stack,
+.settings-list {
   display: grid;
   gap: 12px;
+}
+
+.list-card,
+.settings-row {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.list-card:hover,
+.settings-row:hover {
+  transform: translateY(-2px);
+}
+
+.list-card-main,
+.settings-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.list-copy {
+  min-width: 0;
+}
+
+.list-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: #fff;
+}
+
+.list-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.settings-row {
+  border: 0;
+  cursor: pointer;
+}
+
+.settings-row > span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--card-strong);
+  font-size: 1.25rem;
+}
+
+.settings-row strong,
+.settings-row small {
+  display: block;
+}
+
+.settings-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.settings-row b {
+  color: var(--muted);
+  font-size: 1.45rem;
+}
+
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.detail-stat {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--card-strong);
+}
+
+.detail-stat span,
+.detail-stat strong {
+  display: block;
+}
+
+.detail-stat span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detail-stat strong {
+  margin-top: 4px;
+  overflow: hidden;
+  font-size: 0.94rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .class-card {
@@ -1172,17 +1282,17 @@ p {
   .bottom-nav {
     right: auto;
     top: 0;
-    width: 104px;
+    width: 92px;
     height: 100vh;
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(5, 90px);
+    grid-template-rows: repeat(5, 72px);
     border-top: 0;
     border-right: 1px solid var(--line);
   }
 
   .app-shell {
     padding-bottom: 0;
-    padding-left: 104px;
+    padding-left: 92px;
   }
 }
 

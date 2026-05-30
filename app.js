@@ -70,6 +70,7 @@ const state = {
   projectId: null,
   classId: null,
   studentId: null,
+  catalogId: null,
   filter: "all",
   query: "",
   db: null,
@@ -345,6 +346,7 @@ function render() {
     scan: renderScan,
     classes: renderClasses,
     catalog: renderCatalog,
+    serviceDetail: renderServiceDetail,
     albums: renderAlbums,
     albumProject: renderAlbumProject,
     albumClass: renderAlbumClass,
@@ -372,53 +374,81 @@ function renderHome() {
   const done = students.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const total = students.reduce((sum, student) => sum + completion(student.id).total, 0);
   setShell({
-    heading: "Проекты",
+    heading: "Добро пожаловать 👋",
     context: projects[0]?.name || "School Photo Flow",
-    summary: `${classes.length} класса · ${students.length} ученика · ${done} из ${total} задач выполнено`
+    summary: `${classes.length} класса • ${students.length} учеников · ${done} из ${total} задач выполнено`
   });
   view.innerHTML = `
-    <section class="toolbar">
-      <div class="chip-row">
-        ${filterChip("all", "Все")}
-        ${filterChip("todo", "Не снято")}
-        ${filterChip("done", "Снято")}
-        ${filterChip("paid", "Оплачено")}
+    <section class="crm-overview">
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span class="metric-icon metric-blue" data-icon="classes"></span>
+          <div><strong>${classes.length} класса</strong><span>в работе</span></div>
+        </article>
+        <article class="metric-card">
+          <span class="metric-icon metric-green" data-icon="check"></span>
+          <div><strong>${students.length} учеников</strong><span>${done} из ${total} задач</span></div>
+        </article>
       </div>
-      <button class="secondary-button" data-action="export-all" type="button">Экспорт ZIP</button>
+      <label class="search-box">
+        <span data-icon="search"></span>
+        <input data-query placeholder="Поиск школы, класса или ученика" value="${escapeAttr(state.query)}" />
+      </label>
+      <div class="chip-row quick-filters">
+        ${filterChip("all", "Все")}
+        ${filterChip("unpaid", "Не оплачено")}
+        ${filterChip("todo", "Не снято")}
+        ${filterChip("processing", "В работе")}
+        ${filterChip("ready", "Готово")}
+      </div>
     </section>
-    <section class="grid project-grid">
+    <section class="compact-stack">
       ${projects.map(projectCard).join("") || empty("Создайте первый проект для школы")}
     </section>
   `;
   bindViewActions();
+  const input = view.querySelector("[data-query]");
+  input?.addEventListener("input", (event) => {
+    state.query = event.target.value;
+    renderHome();
+  });
 }
 
 function projectCard(project) {
   const classes = classesByProject(project.id);
-  const students = classes.flatMap((klass) => studentsByClass(klass.id));
+  const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id)).filter(matchesFilter).filter(matchesSearch);
   const done = students.filter((student) => completion(student.id).done).length;
-  const paid = students.filter((student) => student.paymentStatus === "paid").length;
   const pct = students.length ? Math.round((done / students.length) * 100) : 0;
   return `
-    <article class="card card-button" data-open-project="${project.id}">
-      <div class="card-header">
-        <div>
+    <article class="list-card card-button" data-open-project="${project.id}">
+      <div class="list-card-main">
+        <span class="list-icon metric-blue" data-icon="classes"></span>
+        <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.name)}</h2>
-          <p class="muted">${classes.length} классов · ${students.length} учеников</p>
+          <p class="muted">${classes.length} класса · ${students.length} учеников</p>
+          <div class="progress-label"><span>Прогресс ${pct}%</span></div>
+          <div class="progress"><span style="width:${pct}%"></span></div>
         </div>
-        <div class="row">
-          <button class="icon-button" data-add-class="${project.id}" type="button" title="Добавить класс"><span data-icon="plus"></span></button>
-          <button class="icon-button danger-icon" data-delete-project="${project.id}" type="button" title="Удалить проект"><span data-icon="trash"></span></button>
-        </div>
+        <details class="item-menu">
+          <summary aria-label="Меню проекта">...</summary>
+          <div class="menu-panel">
+            <button data-open-project-action="${project.id}" type="button">Открыть</button>
+            <button data-export-status-project="${project.id}" type="button">Экспорт</button>
+            <button data-rename-project="${project.id}" type="button">Переименовать</button>
+            <button class="danger-text" data-delete-project="${project.id}" type="button">Удалить</button>
+          </div>
+        </details>
       </div>
-      <div class="stats">
-        <div class="stat"><strong>${done}</strong><span class="muted">готово</span></div>
-        <div class="stat"><strong>${students.length - done}</strong><span class="muted">в очереди</span></div>
-        <div class="stat"><strong>${paid}</strong><span class="muted">оплачено</span></div>
-      </div>
-      <div class="progress"><span style="width:${pct}%"></span></div>
     </article>
   `;
+}
+
+function matchesSearch(student) {
+  const query = state.query.trim().toLowerCase();
+  if (!query) return true;
+  const klass = classById(student.classId);
+  const project = projectById(klass?.projectId);
+  return [student.firstName, student.lastName, student.qrId, klass?.name, project?.name].join(" ").toLowerCase().includes(query);
 }
 
 function renderClasses() {
@@ -601,23 +631,24 @@ function albumProjectCard(project) {
   const ready = classes.filter((klass) => ["ready", "printing", "delivered"].includes(klass.status)).length;
   const pct = classes.length ? Math.round((ready / classes.length) * 100) : 0;
   return `
-    <article class="card card-button" data-open-album-project="${project.id}" tabindex="0">
-      <div class="card-header">
-        <div>
+    <article class="list-card card-button" data-open-album-project="${project.id}" tabindex="0">
+      <div class="list-card-main">
+        <span class="list-icon metric-blue" data-icon="catalog"></span>
+        <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.schoolName)}</h2>
-          <p class="muted">${classes.length} классов · ${students.length} учеников</p>
+          <p class="muted">${classes.length} класса · ${students.length} учеников</p>
+          <div class="progress-label"><span>Готовность ${pct}%</span></div>
+          <div class="progress"><span style="width:${pct}%"></span></div>
         </div>
-        <div class="row">
-          <button class="icon-button" data-add-album-class="${project.id}" type="button" title="Добавить класс"><span data-icon="plus"></span></button>
-          <button class="icon-button danger-icon" data-delete-album-project="${project.id}" type="button" title="Удалить школу"><span data-icon="trash"></span></button>
-        </div>
+        <details class="item-menu">
+          <summary aria-label="Меню школы">...</summary>
+          <div class="menu-panel">
+            <button data-add-album-class="${project.id}" type="button">Добавить класс</button>
+            <button data-open-album-project-action="${project.id}" type="button">Открыть</button>
+            <button class="danger-text" data-delete-album-project="${project.id}" type="button">Удалить школу</button>
+          </div>
+        </details>
       </div>
-      <div class="stats">
-        <div class="stat"><strong>${classes.length}</strong><span class="muted">классов</span></div>
-        <div class="stat"><strong>${ready}</strong><span class="muted">готово</span></div>
-        <div class="stat"><strong>${students.length}</strong><span class="muted">учеников</span></div>
-      </div>
-      <div class="progress"><span style="width:${pct}%"></span></div>
     </article>
   `;
 }
@@ -652,23 +683,24 @@ function renderAlbumProject() {
 function albumClassCard(klass) {
   const stats = albumClassStats(klass.id);
   return `
-    <article class="card card-button" data-open-album-class="${klass.id}" tabindex="0">
-      <div class="card-header">
-        <div>
+    <article class="list-card card-button" data-open-album-class="${klass.id}" tabindex="0">
+      <div class="list-card-main">
+        <span class="list-icon ${classCoverClass(klass.name)}" data-icon="classes"></span>
+        <div class="list-copy">
           <h2 class="card-title">${escapeHtml(klass.name)}</h2>
           <p class="muted">${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц</p>
+          <div class="progress-label"><span>Готовность ${stats.readyPercent}%</span></div>
+          <div class="progress"><span style="width:${stats.readyPercent}%"></span></div>
         </div>
-        <div class="row">
-          <span class="status-pill ${albumStatusClass(klass.status)}">${albumClassStatusLabel(klass.status)}</span>
-          <button class="icon-button danger-icon" data-delete-album-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span></button>
-        </div>
+        <details class="item-menu">
+          <summary aria-label="Меню класса">...</summary>
+          <div class="menu-panel">
+            <button data-open-album-class-action="${klass.id}" type="button">Открыть</button>
+            <button data-edit-album-class="${klass.id}" type="button">Изменить</button>
+            <button class="danger-text" data-delete-album-class="${klass.id}" type="button">Удалить класс</button>
+          </div>
+        </details>
       </div>
-      <div class="stats">
-        <div class="stat"><strong>${stats.students}</strong><span class="muted">учеников</span></div>
-        <div class="stat"><strong>${stats.portraits}/${stats.students}</strong><span class="muted">портреты</span></div>
-        <div class="stat"><strong>${stats.readyPercent}%</strong><span class="muted">готовность</span></div>
-      </div>
-      <div class="progress"><span style="width:${stats.readyPercent}%"></span></div>
     </article>
   `;
 }
@@ -936,6 +968,7 @@ function renderStudent() {
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Услуги не выбраны";
+  const c = completion(student.id);
   setShell({ heading: `${student.firstName} ${student.lastName}`, context: project?.name || "Ученик", summary: klass?.name || "" });
   view.innerHTML = `
     <section class="split">
@@ -950,6 +983,12 @@ function renderStudent() {
               <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
               <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
             </div>
+          </div>
+          <div class="detail-stats">
+            <div class="detail-stat"><span>Статус</span><strong>${orderStatusLabel(student)}</strong></div>
+            <div class="detail-stat"><span>Оплата</span><strong>${paymentLabel(student.paymentStatus)}</strong></div>
+            <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(selectedCatalogTitle)}</strong></div>
+            <div class="detail-stat"><span>Прогресс</span><strong>${c.percent}%</strong></div>
           </div>
           <div class="action-grid">
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
@@ -1059,12 +1098,12 @@ function renderServices() {
   view.innerHTML = `
     <section class="toolbar">
       <div>
-        <h2 class="card-title">Услуги и референсы</h2>
-        <p class="muted">Сохраняйте пакеты: пират, принцесса, интервью, видео и другие сценарии.</p>
+        <h2 class="card-title">Пакеты съемки</h2>
+        <p class="muted">Услуги, стоимость и набор ракурсов.</p>
       </div>
-      <button class="primary-button" data-add-catalog type="button">Услуга</button>
+      <button class="primary-button" data-add-catalog type="button"><span data-icon="plus"></span>Услуга</button>
     </section>
-    <section class="grid">
+    <section class="compact-stack">
       ${catalog.map(catalogCard).join("") || empty("Добавьте первую услугу для съемки")}
     </section>
   `;
@@ -1076,36 +1115,66 @@ function catalogCard(item) {
     ? `<img class="service-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
     : '<div class="service-preview empty">Нет превью</div>';
   return `
-    <article class="panel grid">
-      <div class="card-header">
+    <article class="list-card card-button" data-open-catalog="${item.id}" tabindex="0">
+      <div class="list-card-main">
         <div class="service-head">
           ${preview}
-          <div>
-          <h2 class="card-title">${escapeHtml(item.title)}</h2>
-          <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))}</p>
+          <div class="list-copy">
+            <h2 class="card-title">${escapeHtml(item.title)}</h2>
+            <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))} · ${(item.angles || []).length} ракурсов</p>
           </div>
         </div>
-        <div class="row">
-          <button class="secondary-button compact" data-upload-catalog-preview="${item.id}" type="button">Превью</button>
-          <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Изменить</button>
-          <button class="secondary-button compact" data-duplicate-catalog="${item.id}" type="button">Дублировать</button>
-          <button class="danger-button compact" data-delete-catalog="${item.id}" type="button">Удалить</button>
-        </div>
-      </div>
-      <div class="catalog-details">
-        <p><strong>Заказ:</strong> ${escapeHtml(item.orderInfo || "Не заполнено")}</p>
-        <p><strong>Что нужно:</strong> ${escapeHtml(item.requirements || "Не заполнено")}</p>
-      </div>
-      <div class="task-list">
-        ${(item.angles || []).map((angle) => catalogAngleRow(item, angle)).join("") || '<p class="muted">Ракурсы пока не добавлены.</p>'}
-      </div>
-      <div class="toolbar">
-        <button class="secondary-button" data-add-angle="${item.id}" type="button">Добавить ракурс</button>
-        <button class="secondary-button" data-generate-references="${item.id}" type="button">AI-референсы</button>
-        <button class="primary-button" data-apply-template="${item.id}" type="button">Назначить всем</button>
+        <details class="item-menu">
+          <summary aria-label="Меню услуги">...</summary>
+          <div class="menu-panel">
+            <button data-open-catalog-action="${item.id}" type="button">Открыть</button>
+            <button data-edit-catalog="${item.id}" type="button">Редактировать</button>
+            <button data-duplicate-catalog="${item.id}" type="button">Дублировать</button>
+            <button data-upload-catalog-preview="${item.id}" type="button">Превью</button>
+            <button class="danger-text" data-delete-catalog="${item.id}" type="button">Удалить</button>
+          </div>
+        </details>
       </div>
     </article>
   `;
+}
+
+function renderServiceDetail() {
+  const item = catalogItemById(state.catalogId);
+  if (!item) {
+    navigate("services");
+    return;
+  }
+  setShell({ heading: item.title, context: mediaKindLabel(item.mediaKind), summary: formatPrice(item.price) });
+  view.innerHTML = `
+    <section class="grid">
+      <article class="panel grid">
+        <div class="catalog-details">
+          <p><strong>Что получает клиент:</strong> ${escapeHtml(item.orderInfo || "Не заполнено")}</p>
+          <p><strong>Что требуется:</strong> ${escapeHtml(item.requirements || "Не заполнено")}</p>
+        </div>
+      </article>
+      <section class="toolbar">
+        <h2 class="card-title">Ракурсы</h2>
+        <button class="primary-button" data-add-angle="${item.id}" type="button"><span data-icon="plus"></span>Ракурс</button>
+      </section>
+      <section class="compact-stack">
+        ${(item.angles || []).map((angle) => catalogAngleRow(item, angle)).join("") || empty("Ракурсы пока не добавлены")}
+      </section>
+      <article class="panel grid">
+        <div>
+          <h2 class="card-title">✨ AI-инструменты</h2>
+          <p class="muted">Быстро подготовьте референсы и идеи для съемки.</p>
+        </div>
+        <div class="settings-list">
+          <button class="settings-row" data-generate-references="${item.id}" type="button"><span>✨</span><div><strong>Сгенерировать референс</strong><small>Набор базовых кадров</small></div><b>›</b></button>
+          <button class="settings-row" data-edit-catalog="${item.id}" type="button"><span>✍️</span><div><strong>Создать описание</strong><small>Заполнить детали пакета</small></div><b>›</b></button>
+          <button class="settings-row" data-add-angle="${item.id}" type="button"><span>🎯</span><div><strong>Предложить ракурс</strong><small>Добавить новый сценарий</small></div><b>›</b></button>
+        </div>
+      </article>
+    </section>
+  `;
+  bindViewActions();
 }
 
 function catalogAngleRow(item, angle) {
@@ -1113,93 +1182,67 @@ function catalogAngleRow(item, angle) {
     ? `<img class="reference-thumb large" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
     : '<div class="reference-empty large">Нет фото</div>';
   return `
-    <div class="task-row">
-      <div class="task-main">
+    <article class="list-card">
+      <div class="list-card-main">
         ${reference}
-        <div>
+        <div class="list-copy">
           <strong>${escapeHtml(angle.name)}</strong>
           <p class="muted">${escapeHtml(angle.details || "Описание ракурса не заполнено")}</p>
         </div>
+        <details class="item-menu">
+          <summary aria-label="Меню ракурса">...</summary>
+          <div class="menu-panel">
+            <button data-upload-reference="${item.id}:${angle.id}" type="button">Референс</button>
+            <button data-edit-angle="${item.id}:${angle.id}" type="button">Изменить</button>
+            <button class="danger-text" data-delete-angle="${item.id}:${angle.id}" type="button">Удалить</button>
+          </div>
+        </details>
       </div>
-      <div class="row">
-        <button class="secondary-button compact" data-upload-reference="${item.id}:${angle.id}" type="button">Референс</button>
-        <button class="secondary-button compact" data-edit-angle="${item.id}:${angle.id}" type="button">Изменить</button>
-        <button class="danger-button compact" data-delete-angle="${item.id}:${angle.id}" type="button">Удалить</button>
-      </div>
-    </div>
+    </article>
   `;
 }
 
 function renderSettings() {
   setShell({ heading: "Настройки", context: "School Photo Flow", summary: "Шаблоны · PDF · импорт и экспорт" });
+  view.innerHTML = `
+    <section class="settings-list">
+      <button class="settings-row" data-settings-detail="checklists" type="button"><span>📋</span><div><strong>Шаблоны чеклистов</strong><small>Настройка задач заказа</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>PDF статусы</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>
+      <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
+      <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
+    </section>
+  `;
+  bindViewActions();
+}
+
+function showSettingsDetail(section) {
   const template = state.data.templates[0] || { id: uid("template"), name: "Чеклист", items: Object.keys(ORDER_TYPES) };
   const items = templateItemsForSettings(template);
   const exportTemplate = getStatusExportTemplate();
-  view.innerHTML = `
-    <section class="grid">
+  const content = {
+    checklists: `
       <article class="panel grid">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Шаблон чеклиста</h2>
-            <p class="muted">Эти пункты будут у каждого заказа ученика.</p>
-          </div>
-          <button class="secondary-button compact" data-add-template-item type="button">Добавить</button>
-        </div>
+        <div class="card-header"><div><h2 class="card-title">Шаблон чеклиста</h2><p class="muted">Эти пункты будут у каждого заказа ученика.</p></div><button class="secondary-button compact" data-add-template-item type="button">Добавить</button></div>
         <input class="input" data-template-name value="${escapeAttr(template.name)}" placeholder="Название шаблона" />
-        <div class="checklist-editor" data-template-items>
-          ${items.map((item) => templateEditorRow(item)).join("")}
-        </div>
-        <button class="primary-button" data-save-template="${template.id}" type="button">Сохранить и применить ко всем заказам</button>
-      </article>
+        <div class="checklist-editor" data-template-items>${items.map((item) => templateEditorRow(item)).join("")}</div>
+        <button class="primary-button" data-save-template="${template.id}" type="button">Сохранить и применить</button>
+      </article>`,
+    pdf: `
       <article class="panel grid">
-        <div>
-          <h2 class="card-title">Шаблон PDF статусов</h2>
-          <p class="muted">Выберите, какие колонки попадут в таблицу по классам.</p>
-        </div>
-        <label class="field-label">
-          <span>Заголовок отчета</span>
-          <input class="input" data-status-export-title value="${escapeAttr(exportTemplate.title)}" />
-        </label>
-        <div class="export-column-grid">
-          ${statusExportColumns().map((column) => `
-            <label class="checkbox-row">
-              <input type="checkbox" data-status-export-column="${column.key}" ${exportTemplate.columns.includes(column.key) ? "checked" : ""} />
-              <span>${escapeHtml(column.label)}</span>
-            </label>
-          `).join("")}
-        </div>
-        <button class="primary-button" data-save-status-export-template type="button">Сохранить шаблон PDF</button>
-      </article>
-      <article class="panel grid">
-        <h2 class="card-title">Услуги</h2>
-        <p class="muted">Пакеты съемки, чек-листы, референсы и сценарии: пират, принцесса, интервью, видео.</p>
-        <button class="primary-button" data-open-services type="button">Открыть услуги</button>
-      </article>
-      <article class="panel grid">
-        <h2 class="card-title">Импорт / экспорт</h2>
-        <div class="toolbar">
-          <button class="secondary-button" data-import-settings type="button">Импорт настроек</button>
-          <button class="secondary-button" data-export-settings type="button">Экспорт настроек</button>
-        </div>
-        <div class="toolbar">
-          <button class="secondary-button" data-import-zip type="button">Импорт данных</button>
-          <button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button>
-        </div>
-      </article>
-      <article class="panel grid">
-        <h2 class="card-title">Обновление</h2>
-        <p class="muted">Если на телефоне не видны новые функции, обновите кеш PWA.</p>
-        <button class="secondary-button" data-refresh-app type="button">Обновить приложение</button>
-      </article>
-      <article class="panel grid">
-        <h2 class="card-title">Демо-данные</h2>
-        <div class="toolbar">
-          <button class="danger-button" data-clear-all type="button">Очистить все данные</button>
-          <button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button>
-        </div>
-      </article>
-    </section>
-  `;
+        <div><h2 class="card-title">Шаблон PDF статусов</h2><p class="muted">Выберите колонки отчета.</p></div>
+        <label class="field-label"><span>Заголовок отчета</span><input class="input" data-status-export-title value="${escapeAttr(exportTemplate.title)}" /></label>
+        <div class="export-column-grid">${statusExportColumns().map((column) => `<label class="checkbox-row"><input type="checkbox" data-status-export-column="${column.key}" ${exportTemplate.columns.includes(column.key) ? "checked" : ""} /><span>${escapeHtml(column.label)}</span></label>`).join("")}</div>
+        <button class="primary-button" data-save-status-export-template type="button">Сохранить PDF</button>
+      </article>`,
+    transfer: `
+      <article class="panel grid"><h2 class="card-title">Импорт / экспорт</h2><button class="secondary-button" data-import-settings type="button">Импорт настроек</button><button class="secondary-button" data-export-settings type="button">Экспорт настроек</button><button class="secondary-button" data-import-zip type="button">Импорт данных</button><button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button></article>`,
+    demo: `
+      <article class="panel grid"><h2 class="card-title">Демо-данные</h2><button class="danger-button" data-clear-all type="button">Очистить все данные</button><button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button></article>`
+  }[section];
+  if (!content) return;
+  view.innerHTML = `<section class="grid"><button class="secondary-button compact" data-back-settings type="button">Назад</button>${content}</section>`;
   bindViewActions();
 }
 
@@ -1263,12 +1306,17 @@ function bindViewActions() {
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
+      if (event.target.closest("details")) return;
       navigate("classes", { projectId: node.dataset.openProject });
     });
+  });
+  view.querySelectorAll("[data-open-project-action]").forEach((node) => {
+    node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction }));
   });
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
   view.querySelectorAll("[data-add-student]").forEach((node) => node.addEventListener("click", () => showStudentForm(node.dataset.addStudent)));
   view.querySelectorAll("[data-delete-project]").forEach((node) => node.addEventListener("click", () => deleteProject(node.dataset.deleteProject)));
+  view.querySelectorAll("[data-rename-project]").forEach((node) => node.addEventListener("click", () => renameProject(node.dataset.renameProject)));
   view.querySelectorAll("[data-delete-class]").forEach((node) => node.addEventListener("click", () => deleteClass(node.dataset.deleteClass)));
   view.querySelectorAll("[data-delete-student]").forEach((node) => node.addEventListener("click", () => deleteStudent(node.dataset.deleteStudent)));
   view.querySelector("[data-student-form]")?.addEventListener("submit", handleStudentFormSubmit);
@@ -1342,7 +1390,16 @@ function bindViewActions() {
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelectorAll("[data-generate-qr]").forEach((node) => node.addEventListener("click", (event) => showQrPayload(event.currentTarget.dataset.generateQr || state.studentId)));
   view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
+  view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
+  view.querySelector("[data-back-settings]")?.addEventListener("click", () => renderSettings());
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
+  view.querySelectorAll("[data-open-catalog], [data-open-catalog-action]").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      if (event.target.closest("button") && !node.dataset.openCatalogAction) return;
+      if (event.target.closest("details") && !node.dataset.openCatalogAction) return;
+      navigate("serviceDetail", { catalogId: node.dataset.openCatalog || node.dataset.openCatalogAction });
+    });
+  });
   view.querySelectorAll("[data-edit-catalog]").forEach((node) => node.addEventListener("click", () => editCatalogItem(node.dataset.editCatalog)));
   view.querySelectorAll("[data-duplicate-catalog]").forEach((node) => node.addEventListener("click", () => duplicateCatalogItem(node.dataset.duplicateCatalog)));
   view.querySelectorAll("[data-delete-catalog]").forEach((node) => node.addEventListener("click", () => deleteCatalogItem(node.dataset.deleteCatalog)));
@@ -1366,16 +1423,24 @@ function bindViewActions() {
   view.querySelectorAll("[data-open-album-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
+      if (event.target.closest("details")) return;
       navigate("albumProject", { albumProjectId: node.dataset.openAlbumProject });
     });
+  });
+  view.querySelectorAll("[data-open-album-project-action]").forEach((node) => {
+    node.addEventListener("click", () => navigate("albumProject", { albumProjectId: node.dataset.openAlbumProjectAction }));
   });
   view.querySelectorAll("[data-add-album-class]").forEach((node) => node.addEventListener("click", () => addAlbumClass(node.dataset.addAlbumClass)));
   view.querySelectorAll("[data-delete-album-project]").forEach((node) => node.addEventListener("click", () => deleteAlbumProject(node.dataset.deleteAlbumProject)));
   view.querySelectorAll("[data-open-album-class]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
+      if (event.target.closest("details")) return;
       navigate("albumClass", { albumClassId: node.dataset.openAlbumClass, albumTab: "students" });
     });
+  });
+  view.querySelectorAll("[data-open-album-class-action]").forEach((node) => {
+    node.addEventListener("click", () => navigate("albumClass", { albumClassId: node.dataset.openAlbumClassAction, albumTab: "students" }));
   });
   view.querySelectorAll("[data-delete-album-class]").forEach((node) => node.addEventListener("click", () => deleteAlbumClass(node.dataset.deleteAlbumClass)));
   view.querySelector("[data-back-to-albums]")?.addEventListener("click", () => navigate("albums"));
@@ -1486,6 +1551,17 @@ async function deleteProject(projectId) {
   await del("projects", projectId);
   await refreshData();
   notify("Проект удален.");
+  navigate("home");
+}
+
+async function renameProject(projectId) {
+  const project = projectById(projectId);
+  if (!project) return;
+  const name = prompt("Название проекта", project.name);
+  if (!name?.trim()) return;
+  await put("projects", { ...project, name: name.trim() });
+  await refreshData();
+  notify("Проект переименован.");
   navigate("home");
 }
 
