@@ -132,7 +132,6 @@ p {
   width: min(1180px, 100%);
   margin: 0 auto;
   padding: 10px clamp(16px, 4vw, 40px) 34px;
-  overflow-x: hidden;
   touch-action: pan-y;
 }
 
@@ -260,29 +259,26 @@ p {
   font-size: 1.08rem;
 }
 
-.service-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
 .service-preview {
   flex: 0 0 auto;
   width: 56px;
   height: 56px;
-  border-radius: var(--radius);
+  align-self: start;
+  border-radius: 999px;
   border: 1px solid var(--line);
   object-fit: cover;
   background: var(--card);
+  overflow: hidden;
 }
 
 .service-preview.empty {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
 }
 
 .muted {
@@ -478,6 +474,16 @@ p {
   gap: 12px;
 }
 
+.service-card {
+  min-height: 96px;
+}
+
+.service-card .list-card-main {
+  grid-template-columns: 56px minmax(0, 1fr) 40px;
+  align-items: start;
+  gap: 10px;
+}
+
 .list-copy {
   min-width: 0;
 }
@@ -607,6 +613,7 @@ p {
 
 .item-menu {
   position: relative;
+  z-index: 2;
 }
 
 .item-menu summary {
@@ -902,10 +909,17 @@ p {
   flex: 0 0 auto;
   width: 56px;
   height: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  min-height: 56px;
+  max-height: 56px;
+  aspect-ratio: 1;
+  align-self: start;
   border-radius: 999px;
   border: 1px solid var(--line);
   object-fit: cover;
   background: var(--card);
+  overflow: hidden;
 }
 
 .student-thumb.empty {
@@ -986,7 +1000,7 @@ p {
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  z-index: 6;
+  z-index: 60;
   display: grid;
   min-width: 170px;
   padding: 8px;
@@ -994,6 +1008,15 @@ p {
   border-radius: 16px;
   background: var(--card);
   box-shadow: var(--shadow);
+}
+
+.item-menu.menu-up .menu-panel {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.item-menu[open] {
+  z-index: 60;
 }
 
 .menu-panel button {
@@ -1327,6 +1350,15 @@ p {
   margin-bottom: 16px;
 }
 
+.album-action-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, max-content);
+  justify-content: end;
+  align-items: center;
+  gap: 10px;
+}
+
 .album-stats {
   grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
 }
@@ -1378,6 +1410,26 @@ p {
   .action-toolbar .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .album-action-row {
+    flex: 1 1 100%;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .album-action-row .primary-button,
+  .album-action-row .secondary-button {
+    width: 100%;
+    min-width: 0;
+    padding-right: 10px;
+    padding-left: 10px;
   }
 
   .class-card {

@@ -300,7 +300,7 @@ function bindShell() {
     localStorage.setItem("spf-theme", next);
   });
   document.querySelector("#cache-refresh")?.addEventListener("click", refreshApp);
-  document.querySelector("#add-project").addEventListener("click", addProject);
+  document.querySelector("#add-project")?.addEventListener("click", addProject);
   mediaInput.addEventListener("change", handleMediaInput);
   referenceInput.addEventListener("change", handleReferenceInput);
   previewInput.addEventListener("change", handlePreviewInput);
@@ -374,7 +374,7 @@ function renderHome() {
   const done = students.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const total = students.reduce((sum, student) => sum + completion(student.id).total, 0);
   setShell({
-    heading: "Добро пожаловать 👋",
+    heading: "Главная",
     context: projects[0]?.name || "School Photo Flow",
     summary: `${classes.length} класса • ${students.length} учеников · ${done} из ${total} задач выполнено`
   });
@@ -647,12 +647,12 @@ function renderAlbumProject() {
         <h2 class="card-title">${escapeHtml(project.schoolName)}</h2>
         <p class="muted">Классы выпускных альбомов</p>
       </div>
-      <div class="row">
-        <button class="secondary-button" data-back-to-albums type="button">Назад</button>
+      <div class="row album-action-row">
         <button class="secondary-button" data-export-album-status-project="${project.id}" type="button">PDF статистики</button>
         <button class="primary-button" data-add-album-class="${project.id}" type="button">Класс</button>
       </div>
     </section>
+    <button class="fab-back" data-back-to-albums type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
     <section class="grid project-grid">
       ${classes.map(albumClassCard).join("") || empty("Добавьте первый класс")}
     </section>
@@ -702,12 +702,12 @@ function renderAlbumClass() {
           <h2 class="card-title">${escapeHtml(klass.name)}</h2>
           <p class="muted">${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц · ${escapeHtml(project?.schoolName || "")}</p>
         </div>
-        <div class="row">
-          <button class="secondary-button" data-back-to-album-project="${klass.albumProjectId}" type="button">Назад</button>
+        <div class="row album-action-row">
           <button class="secondary-button" data-export-album-status-class="${klass.id}" type="button">PDF</button>
           <button class="secondary-button" data-edit-album-class="${klass.id}" type="button">Изменить</button>
         </div>
       </div>
+      <button class="fab-back" data-back-to-album-project="${klass.albumProjectId}" type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
       <div class="stats album-stats">
         <div class="stat"><strong>${stats.students}</strong><span class="muted">Ученики</span></div>
         <div class="stat"><strong>${stats.portraits}/${stats.students}</strong><span class="muted">Портреты</span></div>
@@ -1095,14 +1095,12 @@ function catalogCard(item) {
     ? `<img class="service-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
     : '<div class="service-preview empty">Нет превью</div>';
   return `
-    <article class="list-card card-button" data-open-catalog="${item.id}" tabindex="0">
+    <article class="list-card card-button service-card" data-open-catalog="${item.id}" tabindex="0">
       <div class="list-card-main">
-        <div class="service-head">
-          ${preview}
-          <div class="list-copy">
-            <h2 class="card-title">${escapeHtml(item.title)}</h2>
-            <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))} · ${(item.angles || []).length} ракурсов</p>
-          </div>
+        ${preview}
+        <div class="list-copy">
+          <h2 class="card-title">${escapeHtml(item.title)}</h2>
+          <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))} · ${(item.angles || []).length} ракурсов</p>
         </div>
         <details class="item-menu">
           <summary aria-label="Меню услуги">...</summary>
@@ -1282,6 +1280,7 @@ function templateEditorRow(item) {
 
 function bindViewActions() {
   injectIcons();
+  bindDetailsMenus();
   fitStatusPills();
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
@@ -1444,6 +1443,28 @@ function bindViewActions() {
   view.querySelectorAll("[data-export-album-status-class]").forEach((node) => node.addEventListener("click", () => exportAlbumStatusPdf({ classId: node.dataset.exportAlbumStatusClass })));
   view.querySelectorAll("[data-export-album-status-project]").forEach((node) => node.addEventListener("click", () => exportAlbumStatusPdf({ albumProjectId: node.dataset.exportAlbumStatusProject })));
   view.querySelector("[data-import-album-zip]")?.addEventListener("click", () => albumZipInput.click());
+}
+
+function bindDetailsMenus() {
+  const menus = Array.from(view.querySelectorAll(".item-menu"));
+  menus.forEach((menu) => {
+    menu.addEventListener("toggle", () => {
+      if (!menu.open) {
+        menu.classList.remove("menu-up");
+        return;
+      }
+      menus.forEach((other) => {
+        if (other !== menu) other.open = false;
+      });
+      const panel = menu.querySelector(".menu-panel");
+      const summary = menu.querySelector("summary");
+      const panelHeight = panel?.offsetHeight || 190;
+      const navReserve = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 72;
+      const summaryRect = summary?.getBoundingClientRect();
+      const freeBelow = summaryRect ? window.innerHeight - summaryRect.bottom - navReserve - 14 : panelHeight;
+      menu.classList.toggle("menu-up", freeBelow < panelHeight);
+    });
+  });
 }
 
 async function addProject() {
