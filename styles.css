@@ -561,18 +561,21 @@ p {
   color: var(--muted);
 }
 
-.album-media-strip {
+.album-media-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: var(--card-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .album-media-preview,
 .album-media-empty {
   overflow: hidden;
-  min-height: 122px;
   margin: 0;
-  background: var(--card-strong);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
@@ -581,7 +584,7 @@ p {
 .album-media-preview video {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
   object-fit: cover;
   background: #000;
 }
@@ -595,8 +598,11 @@ p {
 
 .album-media-empty {
   display: grid;
+  min-height: 92px;
   place-items: center;
+  padding: 12px;
   color: var(--muted);
+  text-align: center;
   font-weight: 800;
 }
 

@@ -314,6 +314,7 @@ function render() {
     albums: renderAlbums,
     albumProject: renderAlbumProject,
     albumClass: renderAlbumClass,
+    services: renderServices,
     settings: renderSettings,
     student: renderStudent
   };
@@ -640,24 +641,22 @@ function albumStudentsTab(klass) {
 }
 
 function albumStudentCard(student) {
-  const portrait = albumMediaById(student.portraitMediaId);
-  const video = albumMediaById(student.videoMediaId);
+  const mediaItems = albumMediaByOwner("student", student.id);
+  const portraitCount = mediaItems.filter((item) => item.fileType === "image").length;
+  const videoCount = mediaItems.filter((item) => item.fileType === "video").length;
   return `
     <article class="student-card">
       <div class="student-line">
         <div>
           <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
-          <p class="muted">Портрет: ${portrait ? "OK" : "-"} · Видео: ${video ? "OK" : "-"} · Статус: ${albumStudentStatusLabel(student.status)}</p>
+          <p class="muted">Фото: ${portraitCount} · Видео: ${videoCount} · Статус: ${albumStudentStatusLabel(student.status)}</p>
         </div>
         <span class="status-pill ${albumStatusClass(student.status)}">${albumStudentStatusLabel(student.status)}</span>
       </div>
-      <div class="album-media-strip">
-        ${albumMediaPreview(portrait, "Портрет")}
-        ${albumMediaPreview(video, "Видео")}
-      </div>
+      ${albumMediaGallery(mediaItems, "Фото и видео появятся внутри этой ячейки")}
       ${student.comment ? `<p class="muted">${escapeHtml(student.comment)}</p>` : ""}
       <div class="toolbar">
-        <button class="secondary-button compact" data-album-media="student:${student.id}:portrait" type="button">Добавить портрет</button>
+        <button class="secondary-button compact" data-album-media="student:${student.id}:portrait" type="button">Добавить фото</button>
         <button class="secondary-button compact" data-album-media="student:${student.id}:video" type="button">Добавить видео</button>
         <button class="secondary-button compact" data-edit-album-student="${student.id}" type="button">Изменить данные</button>
         <button class="danger-button compact" data-delete-album-student="${student.id}" type="button">Удалить</button>
@@ -680,21 +679,19 @@ function albumGroupsTab(klass) {
 }
 
 function albumGroupCard(item) {
-  const media = albumMediaById(item.mediaId);
-  const video = albumMediaById(item.videoMediaId);
+  const mediaItems = albumMediaByOwner("group", item.id);
+  const photoCount = mediaItems.filter((entry) => entry.fileType === "image").length;
+  const videoCount = mediaItems.filter((entry) => entry.fileType === "video").length;
   return `
     <article class="student-card">
       <div class="student-line">
         <div>
           <h3>${escapeHtml(item.title)}</h3>
-          <p class="muted">${albumGroupTypeLabel(item.type)} · Фото: ${media ? "OK" : "-"} · Видео: ${video ? "OK" : "-"}</p>
+          <p class="muted">${albumGroupTypeLabel(item.type)} · Фото: ${photoCount} · Видео: ${videoCount}</p>
         </div>
         <span class="status-pill in-progress">${albumGroupTypeLabel(item.type)}</span>
       </div>
-      <div class="album-media-strip">
-        ${albumMediaPreview(media, "Фото")}
-        ${albumMediaPreview(video, "Видео")}
-      </div>
+      ${albumMediaGallery(mediaItems, "Общие фото появятся внутри этой ячейки")}
       ${item.comment ? `<p class="muted">${escapeHtml(item.comment)}</p>` : ""}
       <div class="toolbar">
         <button class="secondary-button compact" data-album-media="group:${item.id}:image" type="button">Добавить фото</button>
@@ -720,20 +717,18 @@ function albumTeachersTab(klass) {
 }
 
 function albumTeacherCard(teacher) {
-  const portrait = albumMediaById(teacher.portraitMediaId);
-  const video = albumMediaById(teacher.videoMediaId);
+  const mediaItems = albumMediaByOwner("teacher", teacher.id);
+  const photoCount = mediaItems.filter((item) => item.fileType === "image").length;
+  const videoCount = mediaItems.filter((item) => item.fileType === "video").length;
   return `
     <article class="student-card">
       <div class="student-line">
         <div>
           <h3>${escapeHtml(teacher.fullName)}</h3>
-          <p class="muted">${escapeHtml(teacher.role || "Учитель")} · Фото: ${portrait ? "OK" : "-"} · Видео: ${video ? "OK" : "-"}</p>
+          <p class="muted">${escapeHtml(teacher.role || "Учитель")} · Фото: ${photoCount} · Видео: ${videoCount}</p>
         </div>
       </div>
-      <div class="album-media-strip">
-        ${albumMediaPreview(portrait, "Фото")}
-        ${albumMediaPreview(video, "Видео")}
-      </div>
+      ${albumMediaGallery(mediaItems, "Фото и видео учителя появятся внутри этой ячейки")}
       ${teacher.comment ? `<p class="muted">${escapeHtml(teacher.comment)}</p>` : ""}
       <div class="toolbar">
         <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:portrait" type="button">Добавить фото</button>
@@ -745,13 +740,17 @@ function albumTeacherCard(teacher) {
   `;
 }
 
-function albumMediaPreview(media, label) {
-  if (!media?.blob) return `<div class="album-media-empty">${escapeHtml(label)}</div>`;
+function albumMediaGallery(items, emptyText) {
+  if (!items.length) return `<div class="album-media-empty">${escapeHtml(emptyText)}</div>`;
+  return `<div class="album-media-grid">${items.map((item, index) => albumMediaPreview(item, index + 1)).join("")}</div>`;
+}
+
+function albumMediaPreview(media, number) {
   const url = URL.createObjectURL(media.blob);
   const node = media.fileType === "video"
     ? `<video src="${url}" controls muted playsinline></video>`
     : `<img src="${url}" alt="${escapeAttr(media.fileName)}" loading="lazy" />`;
-  return `<figure class="album-media-preview">${node}<figcaption>${escapeHtml(label)}</figcaption></figure>`;
+  return `<figure class="album-media-preview">${node}<figcaption>${media.fileType === "video" ? "Видео" : "Фото"} ${number}</figcaption></figure>`;
 }
 
 function albumExportTab(klass) {
@@ -940,15 +939,19 @@ function mediaTile(item) {
 }
 
 function renderCatalog() {
-  title.textContent = "Каталог";
+  renderServices();
+}
+
+function renderServices() {
+  title.textContent = "Услуги";
   const catalog = state.data.catalog;
   view.innerHTML = `
     <section class="toolbar">
       <div>
-        <h2 class="card-title">Услуги и ракурсы</h2>
-        <p class="muted">Настройте заказы, цену, требования и референсы для съемки.</p>
+        <h2 class="card-title">Услуги и референсы</h2>
+        <p class="muted">Сохраняйте пакеты: пират, принцесса, интервью, видео и другие сценарии.</p>
       </div>
-      <button class="primary-button" data-add-catalog type="button">Добавить услугу</button>
+      <button class="primary-button" data-add-catalog type="button">Услуга</button>
     </section>
     <section class="grid">
       ${catalog.map(catalogCard).join("") || empty("Добавьте первую услугу для съемки")}
@@ -1048,6 +1051,11 @@ function renderSettings() {
           `).join("")}
         </div>
         <button class="primary-button" data-save-status-export-template type="button">Сохранить шаблон PDF</button>
+      </article>
+      <article class="panel grid">
+        <h2 class="card-title">Услуги</h2>
+        <p class="muted">Пакеты съемки, чек-листы, референсы и сценарии: пират, принцесса, интервью, видео.</p>
+        <button class="primary-button" data-open-services type="button">Открыть услуги</button>
       </article>
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
@@ -1172,6 +1180,7 @@ function bindViewActions() {
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelector("[data-generate-qr]")?.addEventListener("click", () => showQrPayload(state.studentId));
+  view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
   view.querySelectorAll("[data-edit-catalog]").forEach((node) => node.addEventListener("click", () => editCatalogItem(node.dataset.editCatalog)));
   view.querySelectorAll("[data-duplicate-catalog]").forEach((node) => node.addEventListener("click", () => duplicateCatalogItem(node.dataset.duplicateCatalog)));
@@ -1364,15 +1373,15 @@ async function updateStudentCatalog(studentId, catalogId) {
 }
 
 async function addCatalogItem() {
-  const title = prompt("Название услуги / пакета");
+  const title = prompt("Название услуги / пакета", "Пират");
   if (!title) return;
   const mediaKind = normalizeMediaKind(prompt("Тип: фото, видео или оба", "оба"));
   const price = prompt("Цена", "0") || "";
-  const orderInfo = prompt("Информация про заказ", "") || "";
-  const requirements = prompt("Что нужно для реализации", "") || "";
+  const orderInfo = prompt("Описание услуги", "Образ, позы, фон, реквизит и нужные кадры.") || "";
+  const requirements = prompt("Что нужно для реализации", "Реквизит, чистый фон, свет, референсы.") || "";
   await put("catalog", { id: uid("catalog"), title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim(), angles: [] });
   await refreshData();
-  renderCatalog();
+  renderServices();
 }
 
 async function addAlbumProject() {
@@ -2695,51 +2704,36 @@ async function buildAlbumExportFiles(klass) {
   files.push({ path: `${base}/class_info.json`, data: jsonBytes(classInfo) });
   for (const student of students) {
     const folder = `${base}/students/${safePath(`${student.lastName}_${student.firstName}`)}`;
-    const portrait = albumMediaById(student.portraitMediaId);
-    const video = albumMediaById(student.videoMediaId);
-    files.push({ path: `${folder}/meta.json`, data: jsonBytes({ ...student, portraitFileName: portrait?.fileName || "", videoFileName: video?.fileName || "" }) });
-    if (portrait?.blob) {
-      const exportName = albumExportMediaName("portrait", portrait);
-      exportNames.set(portrait.id, exportName);
-      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await portrait.blob.arrayBuffer()) });
-    }
-    if (video?.blob) {
-      const exportName = albumExportMediaName("video", video);
-      exportNames.set(video.id, exportName);
-      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await video.blob.arrayBuffer()) });
+    const ownerMedia = albumMediaByOwner("student", student.id);
+    files.push({ path: `${folder}/meta.json`, data: jsonBytes({ ...student, mediaFileNames: ownerMedia.map((item) => item.fileName) }) });
+    for (const item of ownerMedia) {
+      if (!item.blob) continue;
+      const prefix = item.fileType === "video" ? "video" : "photo";
+      const exportName = uniqueAlbumExportName(exportNames, item, prefix);
+      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
     }
   }
   const groupMeta = [];
   for (const group of groups) {
-    const media = albumMediaById(group.mediaId);
-    const video = albumMediaById(group.videoMediaId);
-    groupMeta.push({ ...group, mediaFileName: media?.fileName || "", videoFileName: video?.fileName || "" });
-    if (media?.blob) {
-      const exportName = albumGroupExportName(group, media);
-      exportNames.set(media.id, exportName);
-      files.push({ path: `${base}/group_photos/${exportName}`, data: new Uint8Array(await media.blob.arrayBuffer()) });
-    }
-    if (video?.blob) {
-      const exportName = albumGroupExportName(group, video, "video");
-      exportNames.set(video.id, exportName);
-      files.push({ path: `${base}/group_photos/${exportName}`, data: new Uint8Array(await video.blob.arrayBuffer()) });
+    const ownerMedia = albumMediaByOwner("group", group.id);
+    groupMeta.push({ ...group, mediaFileNames: ownerMedia.map((item) => item.fileName) });
+    for (const item of ownerMedia) {
+      if (!item.blob) continue;
+      const prefix = item.fileType === "video" ? "video" : group.type || "photo";
+      const exportName = uniqueAlbumExportName(exportNames, item, prefix);
+      files.push({ path: `${base}/group_photos/${exportName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
     }
   }
   files.push({ path: `${base}/group_photos/meta.json`, data: jsonBytes(groupMeta) });
   for (const teacher of teachers) {
     const folder = `${base}/teachers/${safePath(teacher.fullName)}`;
-    const portrait = albumMediaById(teacher.portraitMediaId);
-    const video = albumMediaById(teacher.videoMediaId);
-    files.push({ path: `${folder}/meta.json`, data: jsonBytes({ ...teacher, portraitFileName: portrait?.fileName || "", videoFileName: video?.fileName || "" }) });
-    if (portrait?.blob) {
-      const exportName = albumExportMediaName("portrait", portrait);
-      exportNames.set(portrait.id, exportName);
-      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await portrait.blob.arrayBuffer()) });
-    }
-    if (video?.blob) {
-      const exportName = albumExportMediaName("video", video);
-      exportNames.set(video.id, exportName);
-      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await video.blob.arrayBuffer()) });
+    const ownerMedia = albumMediaByOwner("teacher", teacher.id);
+    files.push({ path: `${folder}/meta.json`, data: jsonBytes({ ...teacher, mediaFileNames: ownerMedia.map((item) => item.fileName) }) });
+    for (const item of ownerMedia) {
+      if (!item.blob) continue;
+      const prefix = item.fileType === "video" ? "video" : "photo";
+      const exportName = uniqueAlbumExportName(exportNames, item, prefix);
+      files.push({ path: `${folder}/${exportName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
     }
   }
   const restore = {
@@ -2790,6 +2784,19 @@ async function handleAlbumZipInput(event) {
 
 function albumExportMediaName(prefix, media) {
   return safeFileName(`${prefix}.${extensionFor({ name: media.fileName, type: albumMimeType(media) }, media.fileType === "video" ? "video" : "photo")}`);
+}
+
+function uniqueAlbumExportName(map, media, prefix) {
+  const extension = extensionFor({ name: media.fileName, type: albumMimeType(media) }, media.fileType === "video" ? "video" : "photo");
+  const taken = new Set(map.values());
+  let index = 1;
+  let name = safeFileName(`${prefix}.${extension}`);
+  while (taken.has(name)) {
+    index += 1;
+    name = safeFileName(`${prefix}_${index}.${extension}`);
+  }
+  map.set(media.id, name);
+  return name;
 }
 
 function albumGroupExportName(group, media, prefix = "") {
@@ -2920,6 +2927,12 @@ function albumTeacherById(id) {
 
 function albumMediaById(id) {
   return state.data.albumMedia.find((media) => media.id === id);
+}
+
+function albumMediaByOwner(ownerType, ownerId) {
+  return state.data.albumMedia
+    .filter((media) => media.ownerType === ownerType && media.ownerId === ownerId)
+    .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
 }
 
 function albumClassesByProject(projectId) {

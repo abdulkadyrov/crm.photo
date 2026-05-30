@@ -1,4 +1,4 @@
-const CACHE_NAME = "spf-cache-v10";
+const CACHE_NAME = "spf-cache-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
