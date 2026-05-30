@@ -119,6 +119,8 @@ const REFERENCE_AI_SET = [
 
 const view = document.querySelector("#view");
 const title = document.querySelector("#screen-title");
+const screenContext = document.querySelector("#screen-context");
+const screenSummary = document.querySelector("#screen-summary");
 const toast = document.querySelector("#toast");
 const mediaInput = document.querySelector("#media-input");
 const referenceInput = document.querySelector("#reference-input");
@@ -250,7 +252,7 @@ async function seedIfNeeded() {
   const projectId = uid("project");
   const classA = uid("class");
   const classB = uid("class");
-  await put("projects", { id: projectId, name: "Гимназия 12", createdAt: now(), templateId });
+  await put("projects", { id: projectId, name: "Гимназия №12", createdAt: now(), templateId });
   await put("classes", { id: classA, projectId, name: "4A" });
   await put("classes", { id: classB, projectId, name: "4B" });
   const students = [
@@ -356,9 +358,23 @@ function render() {
   state.lastRenderedRoute = state.route;
 }
 
+function setShell({ heading, context = "Фото CRM", summary = "" }) {
+  title.textContent = heading;
+  screenContext.textContent = context;
+  screenSummary.textContent = summary;
+}
+
 function renderHome() {
-  title.textContent = "Проекты";
   const projects = state.data.projects;
+  const classes = state.data.classes;
+  const students = state.data.students;
+  const done = students.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
+  const total = students.reduce((sum, student) => sum + completion(student.id).total, 0);
+  setShell({
+    heading: "Добро пожаловать 👋",
+    context: projects[0]?.name || "School Photo Flow",
+    summary: `${classes.length} класса · ${students.length} ученика · ${done} из ${total} задач выполнено`
+  });
   view.innerHTML = `
     <section class="toolbar">
       <div class="chip-row">
@@ -405,57 +421,102 @@ function projectCard(project) {
 }
 
 function renderClasses() {
-  title.textContent = "Классы";
   const projects = state.data.projects;
   const activeProject = state.projectId || projects[0]?.id || "";
   state.projectId = activeProject;
+  const project = projectById(activeProject);
   const classes = activeProject ? classesByProject(activeProject) : [];
+  const allProjectStudents = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
+  const doneTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
+  const totalTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).total, 0);
   if (state.classId && !classes.some((klass) => klass.id === state.classId)) state.classId = null;
+  setShell({
+    heading: "Добро пожаловать 👋",
+    context: project?.name || "Проект",
+    summary: `${classes.length} класса · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
+  });
   view.innerHTML = `
-    <section class="toolbar">
-      <select class="select" data-project-select>
-        ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
-      </select>
-      <div class="row">
-        <button class="secondary-button" data-export-status-project="${activeProject}" type="button">PDF статусов</button>
-        <button class="primary-button" data-add-class="${activeProject}" type="button">Класс</button>
+    <section class="crm-overview">
+      <label class="search-box">
+        <span data-icon="search"></span>
+        <input data-query placeholder="Поиск школы, класса или ученика" value="${escapeAttr(state.query)}" />
+      </label>
+      <div class="metric-grid">
+        <article class="metric-card">
+          <span class="metric-icon metric-blue" data-icon="classes"></span>
+          <div><strong>${classes.length} класса</strong><span>в проекте</span></div>
+        </article>
+        <article class="metric-card">
+          <span class="metric-icon metric-green" data-icon="check"></span>
+          <div><strong>${allProjectStudents.length} ученика</strong><span>${doneTasks} из ${totalTasks} задач выполнено</span></div>
+        </article>
+      </div>
+      <div class="chip-row quick-filters">
+        ${filterChip("all", "Все")}
+        ${filterChip("unpaid", "Не оплачено")}
+        ${filterChip("todo", "Не снято")}
+        ${filterChip("processing", "В работе")}
+        ${filterChip("ready", "Готово")}
+      </div>
+      <div class="toolbar action-toolbar">
+        <select class="select project-select" data-project-select aria-label="Проект">
+          ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
+        </select>
+        <div class="row">
+          <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
+          <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Класс</button>
+        </div>
       </div>
     </section>
     ${state.classId ? studentQuickForm(state.classId) : ""}
-    <section class="grid project-grid">
+    <section class="class-stack">
       ${classes.map(classCard).join("") || empty("В проекте пока нет классов")}
     </section>
   `;
   bindViewActions();
+  const input = view.querySelector("[data-query]");
+  input?.addEventListener("input", (event) => {
+    state.query = event.target.value;
+    renderClasses();
+  });
 }
 
 function classCard(klass) {
-  const students = studentsByClass(klass.id);
-  const done = students.filter((student) => completion(student.id).done).length;
-  const pct = students.length ? Math.round((done / students.length) * 100) : 0;
+  const students = studentsForClassView(klass.id);
+  const allStudents = state.data.students.filter((student) => student.classId === klass.id);
+  const done = allStudents.filter((student) => completion(student.id).done).length;
+  const pct = allStudents.length ? Math.round((done / allStudents.length) * 100) : 0;
   return `
-    <article class="card">
-      <div class="card-header">
-        <div>
-          <h2 class="card-title">${escapeHtml(klass.name)}</h2>
-          <p class="muted">${students.length} учеников</p>
-        </div>
-        <div class="row">
-          <button class="icon-button" data-add-student="${klass.id}" type="button" title="Добавить ученика"><span data-icon="plus"></span></button>
-          <button class="icon-button" data-export-status-class="${klass.id}" type="button" title="PDF статусов"><span data-icon="download"></span></button>
-          <button class="icon-button danger-icon" data-delete-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span></button>
-        </div>
+    <article class="class-card">
+      <div class="class-cover ${classCoverClass(klass.name)}">
+        <span data-icon="classes"></span>
       </div>
-      <div class="progress"><span style="width:${pct}%"></span></div>
-      <div class="grid" style="margin-top:14px">
-        ${students.map(studentCard).join("") || '<p class="muted">Добавьте учеников в класс.</p>'}
+      <div class="class-main">
+        <div class="class-head">
+          <div>
+            <h2 class="card-title">${escapeHtml(klass.name)}</h2>
+            <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
+          </div>
+          <div class="class-actions">
+            <button class="icon-action" data-add-student="${klass.id}" type="button" title="Добавить ученика"><span data-icon="plus"></span><small>Добавить</small></button>
+            <button class="icon-action" data-export-status-class="${klass.id}" type="button" title="PDF статусов"><span data-icon="download"></span><small>Экспорт</small></button>
+            <button class="icon-action danger-icon" data-delete-class="${klass.id}" type="button" title="Удалить класс"><span data-icon="trash"></span><small>Удалить</small></button>
+          </div>
+        </div>
+        <div class="progress-label">
+          <span>Прогресс: ${pct}%</span>
+        </div>
+        <div class="progress"><span style="width:${pct}%"></span></div>
+        <div class="student-list">
+          ${students.map(studentCard).join("") || '<p class="muted">Добавьте учеников в класс.</p>'}
+        </div>
       </div>
     </article>
   `;
 }
 
 function renderSearch() {
-  title.textContent = "Поиск";
+  setShell({ heading: "Поиск", context: "Глобальный поиск", summary: "Школы · классы · ученики" });
   const results = filteredStudents();
   view.innerHTML = `
     <section class="grid">
@@ -483,7 +544,7 @@ function renderSearch() {
 }
 
 function renderScan() {
-  title.textContent = "Сканер QR";
+  setShell({ heading: "QR", context: "Сканер", summary: "Быстрое открытие ученика по QR" });
   view.innerHTML = `
     <section class="split">
       <div class="panel">
@@ -511,7 +572,7 @@ function renderScan() {
 }
 
 function renderAlbums() {
-  title.textContent = "Альбомы";
+  setShell({ heading: "Альбомы", context: "Выпускные проекты", summary: "Классы · общие фото · экспорт дизайнеру" });
   const projects = state.data.albumProjects;
   view.innerHTML = `
     <section class="toolbar">
@@ -561,7 +622,7 @@ function renderAlbumProject() {
     navigate("albums");
     return;
   }
-  title.textContent = project.schoolName;
+  setShell({ heading: project.schoolName, context: "Альбомы", summary: "Классы выпускных альбомов" });
   const classes = albumClassesByProject(project.id);
   view.innerHTML = `
     <section class="toolbar">
@@ -615,7 +676,7 @@ function renderAlbumClass() {
   const project = albumProjectById(klass.albumProjectId);
   const tab = state.albumTab || "students";
   const stats = albumClassStats(klass.id);
-  title.textContent = klass.name;
+  setShell({ heading: klass.name, context: project?.schoolName || "Альбом", summary: `${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц` });
   view.innerHTML = `
     <section class="album-class-head">
       <div class="toolbar">
@@ -869,7 +930,7 @@ function renderStudent() {
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Услуги не выбраны";
-  title.textContent = `${student.firstName} ${student.lastName}`;
+  setShell({ heading: `${student.firstName} ${student.lastName}`, context: project?.name || "Ученик", summary: klass?.name || "" });
   view.innerHTML = `
     <section class="split">
       <div class="grid">
@@ -987,7 +1048,7 @@ function renderCatalog() {
 }
 
 function renderServices() {
-  title.textContent = "Услуги";
+  setShell({ heading: "Услуги", context: "Настройки съемки", summary: "Пакеты · чек-листы · референсы" });
   const catalog = state.data.catalog;
   view.innerHTML = `
     <section class="toolbar">
@@ -1064,7 +1125,7 @@ function catalogAngleRow(item, angle) {
 }
 
 function renderSettings() {
-  title.textContent = "Настройки";
+  setShell({ heading: "Настройки", context: "School Photo Flow", summary: "Шаблоны · PDF · импорт и экспорт" });
   const template = state.data.templates[0] || { id: uid("template"), name: "Чеклист", items: Object.keys(ORDER_TYPES) };
   const items = templateItemsForSettings(template);
   const exportTemplate = getStatusExportTemplate();
@@ -1140,26 +1201,43 @@ function studentCard(student) {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
   const c = completion(student.id);
-  const previewUrl = studentServicePreviewUrl(student);
-  const preview = previewUrl ? `<img class="student-thumb" src="${previewUrl}" alt="" loading="lazy" />` : '<div class="student-thumb empty"></div>';
+  const previewUrl = studentAvatarUrl(student);
+  const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "SP";
+  const preview = previewUrl ? `<img class="student-thumb" src="${previewUrl}" alt="" loading="lazy" />` : `<div class="student-thumb empty">${escapeHtml(initials)}</div>`;
   return `
     <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
-      <div class="student-line">
-        <div>
+      <div class="student-card-grid">
+        <div class="student-identity">
           <div class="student-title-row">
             ${preview}
-            <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
+            <div>
+              <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
+              <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
+            </div>
           </div>
-          <p class="muted">${escapeHtml(project?.name || "")} · ${escapeHtml(klass?.name || "")}</p>
+          <div class="student-progress">
+            <div class="progress-label">
+              <span>${c.doneCount} из ${c.total} задач</span>
+              <strong>${c.percent}%</strong>
+            </div>
+            <div class="progress"><span style="width:${c.percent}%"></span></div>
+          </div>
         </div>
-      <div class="row status-row">
-          <span class="status-pill ${orderStatusClass(student)}">${orderStatusLabel(student)}</span>
-          <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
-          <button class="icon-button danger-icon" data-delete-student="${student.id}" type="button" title="Удалить ученика"><span data-icon="trash"></span></button>
+        <div class="student-statuses">
+          <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
+          <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
+          <details class="student-menu">
+            <summary aria-label="Меню ученика">...</summary>
+            <div class="menu-panel">
+              <button data-open-student-action="${student.id}" type="button">Открыть</button>
+              <button data-edit-student="${student.id}" type="button">Редактировать</button>
+              <button data-generate-qr="${student.id}" type="button">QR</button>
+              <button data-export-student="${student.id}" type="button">Экспорт</button>
+              <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
+            </div>
+          </details>
         </div>
       </div>
-      <div class="progress"><span style="width:${c.percent}%"></span></div>
-      <p class="muted">${c.doneCount}/${c.total} задач · ${statusLabel(student)}</p>
     </article>
   `;
 }
@@ -1202,6 +1280,9 @@ function bindViewActions() {
       if (event.key === "Enter" || event.key === " ") navigate("student", { studentId: node.dataset.openStudent });
     });
   });
+  view.querySelectorAll("[data-open-student-action]").forEach((node) => {
+    node.addEventListener("click", () => navigate("student", { studentId: node.dataset.openStudentAction }));
+  });
   view.querySelectorAll("[data-filter]").forEach((node) => node.addEventListener("click", () => {
     state.filter = node.dataset.filter;
     render();
@@ -1215,7 +1296,7 @@ function bindViewActions() {
   }));
   view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
   view.querySelector("[data-back-from-student]")?.addEventListener("click", navigateBackFromStudent);
-  view.querySelector("[data-edit-student]")?.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent));
+  view.querySelectorAll("[data-edit-student]").forEach((node) => node.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent)));
   view.querySelectorAll("[data-student-service]").forEach((node) => node.addEventListener("change", () => {
     const studentId = node.dataset.studentService;
     const catalogIds = Array.from(view.querySelectorAll(`[data-student-service="${studentId}"]:checked`)).map((input) => input.value);
@@ -1250,7 +1331,7 @@ function bindViewActions() {
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
   view.querySelector("[data-refresh-app]")?.addEventListener("click", refreshApp);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
-  view.querySelector("[data-generate-qr]")?.addEventListener("click", () => showQrPayload(state.studentId));
+  view.querySelectorAll("[data-generate-qr]").forEach((node) => node.addEventListener("click", (event) => showQrPayload(event.currentTarget.dataset.generateQr || state.studentId)));
   view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
   view.querySelectorAll("[data-edit-catalog]").forEach((node) => node.addEventListener("click", () => editCatalogItem(node.dataset.editCatalog)));
@@ -3198,6 +3279,17 @@ function studentsByClass(classId) {
   return state.data.students.filter((student) => student.classId === classId).filter(matchesFilter);
 }
 
+function studentsForClassView(classId) {
+  const query = state.query.trim().toLowerCase();
+  return state.data.students.filter((student) => {
+    if (student.classId !== classId || !matchesFilter(student)) return false;
+    if (!query) return true;
+    const klass = classById(student.classId);
+    const project = projectById(klass?.projectId);
+    return [student.firstName, student.lastName, student.qrId, klass?.name, project?.name].join(" ").toLowerCase().includes(query);
+  });
+}
+
 function filteredStudents() {
   const query = state.query.trim().toLowerCase();
   return state.data.students.filter((student) => {
@@ -3268,6 +3360,7 @@ async function saveStatusExportTemplate() {
 function matchesFilter(student) {
   if (state.filter === "all") return true;
   if (state.filter === "paid") return student.paymentStatus === "paid";
+  if (state.filter === "unpaid") return student.paymentStatus !== "paid";
   if (state.filter === "todo") return !completion(student.id).done;
   if (state.filter === "done") return completion(student.id).done;
   if (state.filter === "processing") return mediaByStudent(student.id).length > 0 && !completion(student.id).done;
@@ -3430,6 +3523,34 @@ function studentServicePreviewUrl(student) {
     if (item?.previewDataUrl) return item.previewDataUrl;
   }
   return "";
+}
+
+function studentAvatarUrl(student) {
+  const photo = mediaByStudent(student.id).find((item) => item.type === "image");
+  if (photo?.blob) return URL.createObjectURL(photo.blob);
+  return studentServicePreviewUrl(student);
+}
+
+function classCoverClass(name) {
+  const normalized = String(name || "").toUpperCase();
+  if (normalized.includes("4А") || normalized.includes("4A")) return "cover-green";
+  if (normalized.includes("4Б") || normalized.includes("4B")) return "cover-blue";
+  if (normalized.includes("9А") || normalized.includes("9A")) return "cover-purple";
+  if (normalized.includes("11А") || normalized.includes("11A")) return "cover-gold";
+  return "cover-blue";
+}
+
+function pluralizeRu(count, one, few, many) {
+  const mod10 = Math.abs(count) % 10;
+  const mod100 = Math.abs(count) % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+function statusDot(status) {
+  const colorClass = status === "paid" || status === "ready" || status === "delivered" ? "dot-green" : status === "processing" || status === "shooting" ? "dot-blue" : "dot-yellow";
+  return `<span class="status-dot ${colorClass}"></span>`;
 }
 
 function currentOrderStatus(student) {
