@@ -83,6 +83,7 @@ const state = {
   albumProjectId: null,
   albumClassId: null,
   albumTab: "students",
+  classStatsId: null,
   returnTarget: null,
   qrStream: null,
   qrScanFrame: 0,
@@ -518,6 +519,7 @@ function renderClasses() {
     <section class="group-card-grid">
       ${classes.map(classCard).join("") || empty("В проекте пока нет групп")}
     </section>
+    ${state.classStatsId ? classStatsPanel(state.classStatsId) : ""}
     ${state.classId ? classStudentSection(state.classId) : ""}
   `;
   bindViewActions();
@@ -558,7 +560,7 @@ function classCard(klass) {
             <summary aria-label="Меню группы">...</summary>
             <div class="menu-panel">
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
-              <button data-show-class-students="${klass.id}" type="button">Статистика</button>
+              <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
               <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
               <button class="danger-text" data-delete-class="${klass.id}" type="button">Удалить</button>
@@ -573,6 +575,48 @@ function classCard(klass) {
         <div class="progress"><span style="width:${pct}%"></span></div>
       </div>
     </article>
+  `;
+}
+
+function classStatsPanel(classId) {
+  const klass = classById(classId);
+  if (!klass) return "";
+  const stats = classFinancialStats(classId);
+  const project = projectById(klass.projectId);
+  const projectStats = projectFinancialStats(klass.projectId);
+  return `
+    <section class="panel class-stats-panel">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Статистика группы ${escapeHtml(klass.name)}</h2>
+          <p class="muted">${escapeHtml(project?.name || "Проект")} · оплаты, долг и прогресс работ.</p>
+        </div>
+        <button class="icon-button" data-close-class-stats type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <h3 class="mini-heading">По группе</h3>
+      <div class="stats finance-stats">
+        <div class="stat"><strong>${formatMoney(stats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
+        <div class="stat"><strong>${formatMoney(stats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
+        <div class="stat"><strong>${formatMoney(stats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
+        <div class="stat"><strong>${stats.paidStudents}/${stats.students}</strong><span class="muted">Оплатили</span></div>
+      </div>
+      <div class="finance-progress">
+        <div class="progress-label"><span>Оплата ${stats.paymentPercent}%</span><strong>${formatMoney(stats.remainingAmount)}</strong></div>
+        <div class="progress"><span style="width:${stats.paymentPercent}%"></span></div>
+      </div>
+      <div class="finance-progress">
+        <div class="progress-label"><span>Работы сделано ${stats.doneTasks} из ${stats.totalTasks}</span><strong>${stats.workPercent}%</strong></div>
+        <div class="progress"><span style="width:${stats.workPercent}%"></span></div>
+        <p class="muted">Осталось задач: ${Math.max(0, stats.totalTasks - stats.doneTasks)}</p>
+      </div>
+      <h3 class="mini-heading">По проекту</h3>
+      <div class="stats finance-stats">
+        <div class="stat"><strong>${formatMoney(projectStats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
+        <div class="stat"><strong>${formatMoney(projectStats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
+        <div class="stat"><strong>${formatMoney(projectStats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
+        <div class="stat"><strong>${projectStats.workPercent}%</strong><span class="muted">Работы готово</span></div>
+      </div>
+    </section>
   `;
 }
 
@@ -1148,10 +1192,14 @@ function catalogCard(item) {
   return `
     <article class="list-card card-button service-card" data-open-catalog="${item.id}" tabindex="0">
       <div class="list-card-main">
-        ${preview}
+        <div class="service-preview-frame">${preview}</div>
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(item.title)}</h2>
-          <p class="muted">${mediaKindLabel(item.mediaKind)} · ${escapeHtml(formatPrice(item.price))} · ${(item.angles || []).length} ракурсов</p>
+          <div class="service-card-meta">
+            <span>${escapeHtml(mediaKindLabel(item.mediaKind))}</span>
+            <span>${escapeHtml(formatPrice(item.price))}</span>
+            <span>${(item.angles || []).length} ракурсов</span>
+          </div>
         </div>
         <details class="item-menu">
           <summary aria-label="Меню услуги">...</summary>
@@ -1356,6 +1404,16 @@ function bindViewActions() {
   });
   view.querySelector("[data-close-class-students]")?.addEventListener("click", () => {
     state.classId = null;
+    state.preserveScroll = true;
+    renderClasses();
+  });
+  view.querySelectorAll("[data-show-class-stats]").forEach((node) => node.addEventListener("click", () => {
+    state.classStatsId = node.dataset.showClassStats;
+    state.preserveScroll = true;
+    renderClasses();
+  }));
+  view.querySelector("[data-close-class-stats]")?.addEventListener("click", () => {
+    state.classStatsId = null;
     state.preserveScroll = true;
     renderClasses();
   });
@@ -2599,12 +2657,28 @@ async function importShootEntries(entries) {
   let skippedCount = 0;
   let lastStudentId = "";
   const pendingBeforeQr = [];
-  const mediaEntries = entries.filter(isImageZipEntry).sort(sortZipEntries);
-  for (const entry of mediaEntries) {
+  const items = [];
+  for (const entry of entries.filter(isImageZipEntry).sort(sortZipEntries)) {
     const file = zipEntryToFile(entry, "photo");
     const rawQr = await detectQrFromImageFile(file);
     const qrStudent = rawQr ? studentFromQrValue(parseQrPayload(rawQr)) : null;
-    if (qrStudent) {
+    items.push({ file, qrStudent });
+  }
+  const markers = items.filter((item) => item.qrStudent);
+  if (markers.length === 1) {
+    currentStudent = markers[0].qrStudent;
+    qrCount = 1;
+    lastStudentId = currentStudent.id;
+    for (const item of items) {
+      if (item.qrStudent) continue;
+      await importShotForStudent(currentStudent, item.file);
+      assignedCount += 1;
+    }
+    return { qrCount, assignedCount, skippedCount: 0, lastStudentId };
+  }
+  for (const item of items) {
+    if (item.qrStudent) {
+      const qrStudent = item.qrStudent;
       currentStudent = qrStudent;
       lastStudentId = qrStudent.id;
       qrCount += 1;
@@ -2615,10 +2689,10 @@ async function importShootEntries(entries) {
       continue;
     }
     if (!currentStudent) {
-      pendingBeforeQr.push(file);
+      pendingBeforeQr.push(item.file);
       continue;
     }
-    await importShotForStudent(currentStudent, file);
+    await importShotForStudent(currentStudent, item.file);
     assignedCount += 1;
   }
   skippedCount = pendingBeforeQr.length;
@@ -2650,28 +2724,43 @@ async function importAlbumShootEntries(entries) {
   let assignedCount = 0;
   let skippedCount = 0;
   const pendingBeforeQr = [];
-  const mediaEntries = entries.filter(isAlbumMediaZipEntry).sort(sortZipEntries);
-  for (const entry of mediaEntries) {
+  const items = [];
+  for (const entry of entries.filter(isAlbumMediaZipEntry).sort(sortZipEntries)) {
     const fileType = isVideoZipEntry(entry) ? "video" : "photo";
     const file = zipEntryToFile(entry, fileType);
+    let qrOwner = null;
     if (isImageZipEntry(entry)) {
       const rawQr = await detectQrFromImageFile(file);
-      const qrOwner = rawQr ? albumOwnerFromQrValue(rawQr) : null;
-      if (qrOwner) {
-        currentOwner = qrOwner;
-        qrCount += 1;
-        while (pendingBeforeQr.length) {
-          await importAlbumShotForOwner(currentOwner, pendingBeforeQr.shift());
-          assignedCount += 1;
-        }
-        continue;
-      }
+      qrOwner = rawQr ? albumOwnerFromQrValue(rawQr) : null;
     }
-    if (!currentOwner) {
-      pendingBeforeQr.push(file);
+    items.push({ file, qrOwner });
+  }
+  const markers = items.filter((item) => item.qrOwner);
+  if (markers.length === 1) {
+    currentOwner = markers[0].qrOwner;
+    qrCount = 1;
+    for (const item of items) {
+      if (item.qrOwner) continue;
+      await importAlbumShotForOwner(currentOwner, item.file);
+      assignedCount += 1;
+    }
+    return { qrCount, assignedCount, skippedCount: 0 };
+  }
+  for (const item of items) {
+    if (item.qrOwner) {
+      currentOwner = item.qrOwner;
+      qrCount += 1;
+      while (pendingBeforeQr.length) {
+        await importAlbumShotForOwner(currentOwner, pendingBeforeQr.shift());
+        assignedCount += 1;
+      }
       continue;
     }
-    await importAlbumShotForOwner(currentOwner, file);
+    if (!currentOwner) {
+      pendingBeforeQr.push(item.file);
+      continue;
+    }
+    await importAlbumShotForOwner(currentOwner, item.file);
     assignedCount += 1;
   }
   skippedCount = pendingBeforeQr.length;
@@ -3403,7 +3492,7 @@ function createZip(files) {
 }
 
 function isImageZipEntry(entry) {
-  return !isIgnoredZipEntry(entry) && /\.(jpe?g|png|webp|gif)$/i.test(entry.path);
+  return !isIgnoredZipEntry(entry) && /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(entry.path);
 }
 
 function isVideoZipEntry(entry) {
@@ -3709,6 +3798,54 @@ function studentsForStatusExport({ classId = "", projectId = "" } = {}) {
     return state.data.students.filter((student) => classIds.has(student.classId));
   }
   return state.data.students;
+}
+
+function classFinancialStats(classId) {
+  const students = state.data.students.filter((student) => student.classId === classId);
+  return financialStatsForStudents(students);
+}
+
+function projectFinancialStats(projectId) {
+  const classIds = new Set(classesByProject(projectId).map((klass) => klass.id));
+  const students = state.data.students.filter((student) => classIds.has(student.classId));
+  return financialStatsForStudents(students);
+}
+
+function financialStatsForStudents(students) {
+  const totals = students.reduce((acc, student) => {
+    const amount = studentTotalPrice(student);
+    const done = completion(student.id).doneCount;
+    const total = completion(student.id).total;
+    acc.totalAmount += amount;
+    acc.totalTasks += total;
+    acc.doneTasks += done;
+    if (student.paymentStatus === "paid") {
+      acc.paidAmount += amount;
+      acc.paidStudents += 1;
+    }
+    return acc;
+  }, { students: students.length, totalAmount: 0, paidAmount: 0, paidStudents: 0, totalTasks: 0, doneTasks: 0 });
+  const remainingAmount = Math.max(0, totals.totalAmount - totals.paidAmount);
+  return {
+    ...totals,
+    remainingAmount,
+    paymentPercent: totals.totalAmount ? Math.round((totals.paidAmount / totals.totalAmount) * 100) : 0,
+    workPercent: totals.totalTasks ? Math.round((totals.doneTasks / totals.totalTasks) * 100) : 0
+  };
+}
+
+function studentTotalPrice(student) {
+  return selectedCatalogIdsForStudent(student).reduce((sum, id) => sum + parseMoney(catalogItemById(id)?.price), 0);
+}
+
+function parseMoney(value) {
+  const text = String(value || "").replace(/\s+/g, "").replace(",", ".");
+  const match = text.match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function formatMoney(value) {
+  return `${Math.round(Number(value || 0)).toLocaleString("ru-RU")} ₽`;
 }
 
 function statusExportColumns() {
