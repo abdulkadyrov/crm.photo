@@ -484,6 +484,26 @@ p {
   gap: 10px;
 }
 
+.album-work-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 318px;
+}
+
+.album-card-head {
+  align-items: start;
+}
+
+.album-work-card .toolbar {
+  margin-top: auto;
+}
+
+.album-work-card .secondary-button,
+.album-work-card .danger-button {
+  flex: 1 1 88px;
+}
+
 .list-copy {
   min-width: 0;
 }
@@ -1293,6 +1313,52 @@ p {
 .toast.show {
   transform: translateY(0);
   opacity: 1;
+}
+
+.qr-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+.qr-panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: calc(var(--radius) + 8px);
+  background: var(--card);
+  box-shadow: 0 26px 90px rgba(15, 23, 42, 0.28);
+}
+
+.qr-panel-code {
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.qr-panel-code svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.qr-panel code {
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-strong);
+  color: var(--text);
+  font-weight: 800;
 }
 
 .fab-back {

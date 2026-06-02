@@ -299,8 +299,6 @@ function bindShell() {
     document.documentElement.dataset.theme = next;
     localStorage.setItem("spf-theme", next);
   });
-  document.querySelector("#cache-refresh")?.addEventListener("click", refreshApp);
-  document.querySelector("#add-project")?.addEventListener("click", addProject);
   mediaInput.addEventListener("change", handleMediaInput);
   referenceInput.addEventListener("change", handleReferenceInput);
   previewInput.addEventListener("change", handlePreviewInput);
@@ -380,6 +378,13 @@ function renderHome() {
   });
   view.innerHTML = `
     <section class="crm-overview">
+      <div class="toolbar home-toolbar">
+        <div>
+          <h2 class="card-title">Проекты съемки</h2>
+          <p class="muted">Школы, классы, ученики и статусы заказов.</p>
+        </div>
+        <button class="primary-button" data-add-project="home" type="button"><span data-icon="plus"></span>Школа</button>
+      </div>
       <div class="metric-grid">
         <article class="metric-card">
           <span class="metric-icon metric-blue" data-icon="classes"></span>
@@ -472,6 +477,7 @@ function renderClasses() {
         ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
       </select>
       <div class="project-button-row">
+        <button class="primary-button equal-button" data-add-project="classes" type="button"><span data-icon="plus"></span>Школа</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Класс</button>
       </div>
@@ -704,6 +710,7 @@ function renderAlbumClass() {
         </div>
         <div class="row album-action-row">
           <button class="secondary-button" data-export-album-status-class="${klass.id}" type="button">PDF</button>
+          <button class="secondary-button" data-import-album-zip type="button">Импорт ZIP</button>
           <button class="secondary-button" data-edit-album-class="${klass.id}" type="button">Изменить</button>
         </div>
       </div>
@@ -758,20 +765,21 @@ function albumStudentCard(student) {
   const portraitCount = mediaItems.filter((item) => item.fileType === "image").length;
   const videoCount = mediaItems.filter((item) => item.fileType === "video").length;
   return `
-    <article class="student-card">
-      <div class="student-line">
+    <article class="student-card album-work-card">
+      <div class="student-line album-card-head">
         <div>
           <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
-          <p class="muted">Фото: ${portraitCount} · Видео: ${videoCount} · Статус: ${albumStudentStatusLabel(student.status)}</p>
+          <p class="muted">Индивидуальная папка · Фото: ${portraitCount} · Видео: ${videoCount}</p>
         </div>
         <span class="status-pill ${albumStatusClass(student.status)}">${albumStudentStatusLabel(student.status)}</span>
       </div>
       ${albumMediaGallery(mediaItems, "Фото и видео появятся внутри этой ячейки")}
       ${student.comment ? `<p class="muted">${escapeHtml(student.comment)}</p>` : ""}
       <div class="toolbar">
-        <button class="secondary-button compact" data-album-media="student:${student.id}:portrait" type="button">Добавить фото</button>
-        <button class="secondary-button compact" data-album-media="student:${student.id}:video" type="button">Добавить видео</button>
-        <button class="secondary-button compact" data-edit-album-student="${student.id}" type="button">Изменить данные</button>
+        <button class="secondary-button compact" data-album-media="student:${student.id}:portrait" type="button">Фото</button>
+        <button class="secondary-button compact" data-album-media="student:${student.id}:video" type="button">Видео</button>
+        <button class="secondary-button compact" data-show-album-qr="student:${student.id}" type="button">QR</button>
+        <button class="secondary-button compact" data-edit-album-student="${student.id}" type="button">Изменить</button>
         <button class="danger-button compact" data-delete-album-student="${student.id}" type="button">Удалить</button>
       </div>
     </article>
@@ -796,19 +804,20 @@ function albumGroupCard(item) {
   const photoCount = mediaItems.filter((entry) => entry.fileType === "image").length;
   const videoCount = mediaItems.filter((entry) => entry.fileType === "video").length;
   return `
-    <article class="student-card">
-      <div class="student-line">
+    <article class="student-card album-work-card">
+      <div class="student-line album-card-head">
         <div>
           <h3>${escapeHtml(item.title)}</h3>
-          <p class="muted">${albumGroupTypeLabel(item.type)} · Фото: ${photoCount} · Видео: ${videoCount}</p>
+          <p class="muted">Папка общих фото · ${albumGroupTypeLabel(item.type)} · Фото: ${photoCount} · Видео: ${videoCount}</p>
         </div>
         <span class="status-pill in-progress">${albumGroupTypeLabel(item.type)}</span>
       </div>
       ${albumMediaGallery(mediaItems, "Общие фото появятся внутри этой ячейки")}
       ${item.comment ? `<p class="muted">${escapeHtml(item.comment)}</p>` : ""}
       <div class="toolbar">
-        <button class="secondary-button compact" data-album-media="group:${item.id}:image" type="button">Добавить фото</button>
-        <button class="secondary-button compact" data-album-media="group:${item.id}:video" type="button">Добавить видео</button>
+        <button class="secondary-button compact" data-album-media="group:${item.id}:image" type="button">Фото</button>
+        <button class="secondary-button compact" data-album-media="group:${item.id}:video" type="button">Видео</button>
+        <button class="secondary-button compact" data-show-album-qr="group:${item.id}" type="button">QR</button>
         <button class="secondary-button compact" data-edit-album-group="${item.id}" type="button">Изменить</button>
         <button class="danger-button compact" data-delete-album-group="${item.id}" type="button">Удалить</button>
       </div>
@@ -834,18 +843,20 @@ function albumTeacherCard(teacher) {
   const photoCount = mediaItems.filter((item) => item.fileType === "image").length;
   const videoCount = mediaItems.filter((item) => item.fileType === "video").length;
   return `
-    <article class="student-card">
-      <div class="student-line">
+    <article class="student-card album-work-card">
+      <div class="student-line album-card-head">
         <div>
           <h3>${escapeHtml(teacher.fullName)}</h3>
-          <p class="muted">${escapeHtml(teacher.role || "Учитель")} · Фото: ${photoCount} · Видео: ${videoCount}</p>
+          <p class="muted">Папка учителя · ${escapeHtml(teacher.role || "Учитель")} · Фото: ${photoCount} · Видео: ${videoCount}</p>
         </div>
+        <span class="status-pill ${photoCount || videoCount ? "paid" : "unpaid"}">${photoCount || videoCount ? "Есть материалы" : "Не снят"}</span>
       </div>
       ${albumMediaGallery(mediaItems, "Фото и видео учителя появятся внутри этой ячейки")}
       ${teacher.comment ? `<p class="muted">${escapeHtml(teacher.comment)}</p>` : ""}
       <div class="toolbar">
-        <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:portrait" type="button">Добавить фото</button>
-        <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:video" type="button">Добавить видео</button>
+        <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:portrait" type="button">Фото</button>
+        <button class="secondary-button compact" data-album-media="teacher:${teacher.id}:video" type="button">Видео</button>
+        <button class="secondary-button compact" data-show-album-qr="teacher:${teacher.id}" type="button">QR</button>
         <button class="secondary-button compact" data-edit-album-teacher="${teacher.id}" type="button">Изменить</button>
         <button class="danger-button compact" data-delete-album-teacher="${teacher.id}" type="button">Удалить</button>
       </div>
@@ -1292,6 +1303,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-open-project-action]").forEach((node) => {
     node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction }));
   });
+  view.querySelectorAll("[data-add-project]").forEach((node) => node.addEventListener("click", () => addProject(node.dataset.addProject)));
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
   view.querySelectorAll("[data-add-student]").forEach((node) => node.addEventListener("click", () => showStudentForm(node.dataset.addStudent)));
   view.querySelectorAll("[data-delete-project]").forEach((node) => node.addEventListener("click", () => deleteProject(node.dataset.deleteProject)));
@@ -1439,6 +1451,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-edit-album-teacher]").forEach((node) => node.addEventListener("click", () => editAlbumTeacher(node.dataset.editAlbumTeacher)));
   view.querySelectorAll("[data-delete-album-teacher]").forEach((node) => node.addEventListener("click", () => deleteAlbumTeacher(node.dataset.deleteAlbumTeacher)));
   view.querySelectorAll("[data-album-media]").forEach((node) => node.addEventListener("click", () => selectAlbumMedia(node.dataset.albumMedia)));
+  view.querySelectorAll("[data-show-album-qr]").forEach((node) => node.addEventListener("click", () => showAlbumQrPayload(node.dataset.showAlbumQr)));
   view.querySelectorAll("[data-export-album-class]").forEach((node) => node.addEventListener("click", () => exportAlbumClassZip(node.dataset.exportAlbumClass)));
   view.querySelectorAll("[data-export-album-status-class]").forEach((node) => node.addEventListener("click", () => exportAlbumStatusPdf({ classId: node.dataset.exportAlbumStatusClass })));
   view.querySelectorAll("[data-export-album-status-project]").forEach((node) => node.addEventListener("click", () => exportAlbumStatusPdf({ albumProjectId: node.dataset.exportAlbumStatusProject })));
@@ -1467,12 +1480,13 @@ function bindDetailsMenus() {
   });
 }
 
-async function addProject() {
+async function addProject(targetRoute = "home") {
   const name = prompt("Название школы / проекта");
   if (!name) return;
-  await put("projects", { id: uid("project"), name: name.trim(), createdAt: now(), templateId: state.data.templates[0]?.id });
+  const projectId = uid("project");
+  await put("projects", { id: projectId, name: name.trim(), createdAt: now(), templateId: state.data.templates[0]?.id });
   await refreshData();
-  navigate("home");
+  navigate(targetRoute === "classes" ? "classes" : "home", { projectId });
 }
 
 async function addClass(projectId) {
@@ -2098,28 +2112,32 @@ async function handleAlbumMediaInput(event) {
     createdAt: now()
   };
   await put("albumMedia", media);
-  if (target.ownerType === "student") {
-    const student = albumStudentById(target.ownerId);
-    if (student) {
-      const patch = target.slot === "video"
-        ? { videoMediaId: media.id }
-        : { portraitMediaId: media.id, status: student.status === "not_shot" ? "shot" : student.status };
-      await put("albumStudents", { ...student, ...patch });
-    }
-  }
-  if (target.ownerType === "group") {
-    const group = albumGroupById(target.ownerId);
-    if (group) await put("albumGroupMedia", { ...group, [target.slot === "video" ? "videoMediaId" : "mediaId"]: media.id });
-  }
-  if (target.ownerType === "teacher") {
-    const teacher = albumTeacherById(target.ownerId);
-    if (teacher) await put("albumTeachers", { ...teacher, [target.slot === "video" ? "videoMediaId" : "portraitMediaId"]: media.id });
-  }
+  await attachAlbumMediaToOwner(target, media);
   state.currentAlbumMedia = null;
   event.target.value = "";
   await refreshData();
   notify("Медиа альбома сохранено.");
   renderAlbumClass();
+}
+
+async function attachAlbumMediaToOwner(target, media) {
+  const isVideo = media.fileType === "video" || target.slot === "video";
+  if (target.ownerType === "student") {
+    const student = albumStudentById(target.ownerId);
+    if (!student) return;
+    const patch = isVideo
+      ? { videoMediaId: media.id }
+      : { portraitMediaId: media.id, status: student.status === "not_shot" ? "shot" : student.status };
+    await put("albumStudents", { ...student, ...patch });
+  }
+  if (target.ownerType === "group") {
+    const group = albumGroupById(target.ownerId);
+    if (group) await put("albumGroupMedia", { ...group, [isVideo ? "videoMediaId" : "mediaId"]: media.id });
+  }
+  if (target.ownerType === "teacher") {
+    const teacher = albumTeacherById(target.ownerId);
+    if (teacher) await put("albumTeachers", { ...teacher, [isVideo ? "videoMediaId" : "portraitMediaId"]: media.id });
+  }
 }
 
 async function handleReferenceInput(event) {
@@ -2510,6 +2528,33 @@ async function handleShootImport(event) {
   if (currentStudent) navigate("student", { studentId: currentStudent.id });
 }
 
+async function importShootEntries(entries) {
+  let currentStudent = null;
+  let qrCount = 0;
+  let assignedCount = 0;
+  let skippedCount = 0;
+  let lastStudentId = "";
+  const mediaEntries = entries.filter(isImageZipEntry).sort(sortZipEntries);
+  for (const entry of mediaEntries) {
+    const file = zipEntryToFile(entry, "photo");
+    const rawQr = await detectQrFromImageFile(file);
+    const qrStudent = rawQr ? studentFromQrValue(parseQrPayload(rawQr)) : null;
+    if (qrStudent) {
+      currentStudent = qrStudent;
+      lastStudentId = qrStudent.id;
+      qrCount += 1;
+      continue;
+    }
+    if (!currentStudent) {
+      skippedCount += 1;
+      continue;
+    }
+    await importShotForStudent(currentStudent, file);
+    assignedCount += 1;
+  }
+  return { qrCount, assignedCount, skippedCount, lastStudentId };
+}
+
 async function importShotForStudent(student, file) {
   const klass = classById(student.classId);
   const orderType = nextImportOrderType(student.id);
@@ -2527,6 +2572,51 @@ async function importShotForStudent(student, file) {
     blob: file
   });
   await attachFileToOrder(student.id, orderType, id);
+}
+
+async function importAlbumShootEntries(entries) {
+  let currentOwner = null;
+  let qrCount = 0;
+  let assignedCount = 0;
+  let skippedCount = 0;
+  const mediaEntries = entries.filter(isAlbumMediaZipEntry).sort(sortZipEntries);
+  for (const entry of mediaEntries) {
+    const fileType = isVideoZipEntry(entry) ? "video" : "photo";
+    const file = zipEntryToFile(entry, fileType);
+    if (isImageZipEntry(entry)) {
+      const rawQr = await detectQrFromImageFile(file);
+      const qrOwner = rawQr ? albumOwnerFromQrValue(rawQr) : null;
+      if (qrOwner) {
+        currentOwner = qrOwner;
+        qrCount += 1;
+        continue;
+      }
+    }
+    if (!currentOwner) {
+      skippedCount += 1;
+      continue;
+    }
+    await importAlbumShotForOwner(currentOwner, file);
+    assignedCount += 1;
+  }
+  return { qrCount, assignedCount, skippedCount };
+}
+
+async function importAlbumShotForOwner(owner, file) {
+  const fileType = file.type.startsWith("video/") ? "video" : "image";
+  const fileName = safeFileName(file.name || `album_media.${extensionFor(file, fileType === "video" ? "video" : "photo")}`);
+  const media = {
+    id: uid("album_media"),
+    ownerType: owner.ownerType,
+    ownerId: owner.ownerId,
+    fileName,
+    fileType,
+    blobId: uid("blob"),
+    blob: file,
+    createdAt: now()
+  };
+  await put("albumMedia", media);
+  await attachAlbumMediaToOwner(owner, media);
 }
 
 function nextImportOrderType(studentId) {
@@ -2908,9 +2998,10 @@ async function buildExportFiles(studentId) {
     const project = projectById(klass?.projectId);
     const base = `${safePath(project?.name || "Project")}/${safePath(klass?.name || "Class")}/${safePath(`${student.lastName}_${student.firstName}`)}`;
     const order = orderByStudent(student.id);
+    const previewNames = new Set();
     const selectedServices = selectedCatalogIdsForStudent(student).map((id) => {
       const item = catalogItemById(id);
-      return item ? { id: item.id, title: item.title, previewFile: item.previewDataUrl ? safeFileName(`${item.title}.${dataUrlExtension(item.previewDataUrl)}`) : "" } : null;
+      return item ? { id: item.id, title: item.title, previewFile: item.previewDataUrl ? uniqueServicePreviewFile(item, previewNames) : "" } : null;
     }).filter(Boolean);
     files.push({ path: `${base}/meta.json`, data: jsonBytes({ student, order, services: selectedServices }) });
     for (const service of selectedServices) {
@@ -2918,7 +3009,7 @@ async function buildExportFiles(studentId) {
       const item = catalogItemById(service.id);
       const parsed = item?.previewDataUrl ? dataUrlToBytes(item.previewDataUrl) : null;
       if (!parsed) continue;
-      files.push({ path: `${base}/services/${service.previewFile}`, data: parsed.bytes });
+      files.push({ path: `${base}/${service.previewFile}`, data: parsed.bytes });
     }
     for (const item of mediaByStudent(student.id)) {
       const folder = item.type === "video" ? "videos" : "photos";
@@ -2926,6 +3017,19 @@ async function buildExportFiles(studentId) {
     }
   }
   return files;
+}
+
+function uniqueServicePreviewFile(item, taken) {
+  const ext = dataUrlExtension(item.previewDataUrl);
+  const base = safePath(item.title || "service");
+  let fileName = `${base}.${ext}`;
+  let index = 2;
+  while (taken.has(fileName)) {
+    fileName = `${base}_${index}.${ext}`;
+    index += 1;
+  }
+  taken.add(fileName);
+  return fileName;
 }
 
 async function buildFullExportFiles() {
@@ -2967,7 +3071,7 @@ async function handleZipInput(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
-    const entries = parseZip(new Uint8Array(await file.arrayBuffer()));
+    const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
     const settingsEntry = entries.find((entry) => entry.path.endsWith("spf-settings.json"));
     const fullEntry = entries.find((entry) => entry.path.endsWith("spf-full-data.json"));
     if (settingsEntry || state.zipImportMode === "settings") {
@@ -2986,7 +3090,14 @@ async function handleZipInput(event) {
       return;
     }
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-data.json"));
-    if (!dataEntry) throw new Error("spf-data.json not found");
+    if (!dataEntry) {
+      const result = await importShootEntries(entries);
+      if (!result.assignedCount && !result.qrCount) throw new Error("spf-data.json not found");
+      await refreshData();
+      notify(`ZIP съемки: QR ${result.qrCount}, фото ${result.assignedCount}${result.skippedCount ? `, пропущено ${result.skippedCount}` : ""}.`);
+      if (result.lastStudentId) navigate("student", { studentId: result.lastStudentId });
+      return;
+    }
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
     for (const store of ["projects", "classes", "students", "orders", "templates", "settings", "catalog"]) {
       for (const record of meta[store] || []) await put(store, record);
@@ -3111,9 +3222,16 @@ async function handleAlbumZipInput(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
-    const entries = parseZip(new Uint8Array(await file.arrayBuffer()));
+    const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-album-data.json"));
-    if (!dataEntry) throw new Error("spf-album-data.json not found");
+    if (!dataEntry) {
+      const result = await importAlbumShootEntries(entries);
+      if (!result.assignedCount && !result.qrCount) throw new Error("spf-album-data.json not found");
+      await refreshData();
+      notify(`ZIP альбомной съемки: QR ${result.qrCount}, файлов ${result.assignedCount}${result.skippedCount ? `, пропущено ${result.skippedCount}` : ""}.`);
+      if (state.albumClassId) renderAlbumClass();
+      return;
+    }
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
     const project = meta.project || { id: uid("album_project"), schoolName: meta.classInfo?.schoolName || "Импортированный альбом", createdAt: now() };
     const klass = meta.klass || { id: uid("album_class"), albumProjectId: project.id, name: meta.classInfo?.className || "Класс", albumType: "standard", pagesCount: 0, status: "not_started", createdAt: now() };
@@ -3200,7 +3318,40 @@ function createZip(files) {
   return new Blob([...localParts, central, end], { type: "application/zip" });
 }
 
-function parseZip(bytes) {
+function isImageZipEntry(entry) {
+  return /\.(jpe?g|png|webp|gif)$/i.test(entry.path);
+}
+
+function isVideoZipEntry(entry) {
+  return /\.(mp4|mov|m4v|webm)$/i.test(entry.path);
+}
+
+function isAlbumMediaZipEntry(entry) {
+  return isImageZipEntry(entry) || isVideoZipEntry(entry);
+}
+
+function sortZipEntries(a, b) {
+  return a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" });
+}
+
+function zipEntryToFile(entry, fallbackType = "photo") {
+  const mime = mimeForPath(entry.path, fallbackType);
+  const name = entry.path.split("/").filter(Boolean).pop() || `import.${fallbackType === "video" ? "mp4" : "jpg"}`;
+  return new File([entry.data], name, { type: mime });
+}
+
+function mimeForPath(path, fallbackType = "photo") {
+  const ext = String(path || "").split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "gif") return "image/gif";
+  if (ext === "mp4" || ext === "m4v") return "video/mp4";
+  if (ext === "mov") return "video/quicktime";
+  if (ext === "webm") return "video/webm";
+  return fallbackType === "video" ? "video/mp4" : "image/jpeg";
+}
+
+async function parseZip(bytes) {
   const entries = [];
   let offset = 0;
   while (offset < bytes.length - 4) {
@@ -3212,11 +3363,23 @@ function parseZip(bytes) {
     const nameStart = offset + 30;
     const dataStart = nameStart + nameLength + extraLength;
     const path = new TextDecoder().decode(bytes.slice(nameStart, nameStart + nameLength));
-    if (method !== 0) throw new Error("Only stored ZIP entries are supported");
-    entries.push({ path, data: bytes.slice(dataStart, dataStart + compressedSize) });
+    const compressed = bytes.slice(dataStart, dataStart + compressedSize);
+    const data = method === 0 ? compressed : await decompressZipEntry(compressed, method);
+    entries.push({ path, data });
     offset = dataStart + compressedSize;
   }
   return entries;
+}
+
+async function decompressZipEntry(bytes, method) {
+  if (method !== 8 || !("DecompressionStream" in window)) throw new Error("Unsupported ZIP compression");
+  for (const format of ["deflate-raw", "deflate"]) {
+    try {
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(format));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    } catch {}
+  }
+  throw new Error("Unable to decompress ZIP entry");
 }
 
 function crc32(bytes) {
@@ -3288,6 +3451,57 @@ function albumMediaByOwner(ownerType, ownerId) {
   return state.data.albumMedia
     .filter((media) => media.ownerType === ownerType && media.ownerId === ownerId)
     .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+}
+
+function albumQrOwner(ownerType, ownerId) {
+  if (ownerType === "student") {
+    const student = albumStudentById(ownerId);
+    if (!student) return null;
+    const klass = albumClassById(student.albumClassId);
+    return {
+      title: "QR ученика альбома",
+      subtitle: `${student.lastName} ${student.firstName}`.trim() || klass?.name || "Ученик"
+    };
+  }
+  if (ownerType === "teacher") {
+    const teacher = albumTeacherById(ownerId);
+    if (!teacher) return null;
+    return {
+      title: "QR учителя",
+      subtitle: [teacher.fullName, teacher.role].filter(Boolean).join(" · ")
+    };
+  }
+  if (ownerType === "group") {
+    const group = albumGroupById(ownerId);
+    if (!group) return null;
+    return {
+      title: "QR общих фото",
+      subtitle: [group.title, albumGroupTypeLabel(group.type)].filter(Boolean).join(" · ")
+    };
+  }
+  return null;
+}
+
+function albumQrPayload(ownerType, ownerId) {
+  return `album:${ownerType}:${ownerId}`;
+}
+
+function albumOwnerFromQrValue(value) {
+  const text = String(value || "").trim();
+  let ownerType = "";
+  let ownerId = "";
+  try {
+    const parsed = JSON.parse(text);
+    ownerType = parsed.albumOwnerType || parsed.ownerType || "";
+    ownerId = parsed.albumOwnerId || parsed.ownerId || "";
+  } catch {}
+  const match = text.match(/album:(student|teacher|group):([^#\s]+)/i);
+  if (match) {
+    ownerType = match[1].toLowerCase();
+    ownerId = match[2];
+  }
+  if (!ownerType || !ownerId || !albumQrOwner(ownerType, ownerId)) return null;
+  return { ownerType, ownerId };
 }
 
 function albumClassesByProject(projectId) {
@@ -3727,38 +3941,60 @@ function empty(text) {
 
 function showQrPayload(studentId) {
   const student = studentById(studentId);
+  if (!student) return notify("Ученик не найден.");
   const value = studentQrPayload(student);
+  const name = `${student.lastName} ${student.firstName}`.trim() || "Ученик";
+  showQrPanel({
+    value,
+    title: "QR ученика",
+    subtitle: name,
+    codeLabel: student.qrId || student.id
+  });
+}
+
+function showAlbumQrPayload(payload) {
+  const [ownerType, ownerId] = String(payload || "").split(":");
+  const owner = albumQrOwner(ownerType, ownerId);
+  if (!owner) return notify("Объект альбома не найден.");
+  showQrPanel({
+    value: albumQrPayload(ownerType, ownerId),
+    title: owner.title,
+    subtitle: owner.subtitle,
+    codeLabel: `${ownerType}:${ownerId}`
+  });
+}
+
+function showQrPanel({ value, title: panelTitle, subtitle = "", codeLabel = value }) {
   const svg = createQrSvg(value, 7);
-  const win = window.open("", "_blank", "width=420,height=560");
-  if (!win) {
-    prompt("QR ID ученика", value);
-    return;
-  }
-  win.document.write(`
-    <!doctype html>
-    <html lang="ru">
-      <head>
-        <meta charset="utf-8" />
-        <title>QR ${escapeHtml(value)}</title>
-        <style>
-          body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: system-ui, sans-serif; background: #f7f7f7; color: #111827; }
-          main { width: min(360px, calc(100vw - 32px)); display: grid; gap: 14px; text-align: center; }
-          svg { width: 100%; height: auto; background: #fff; border: 1px solid #e5e7eb; }
-          code { overflow-wrap: anywhere; padding: 10px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
-          button { min-height: 42px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 800; cursor: pointer; }
-        </style>
-      </head>
-      <body>
-        <main>
-          <h1>QR ученика</h1>
-          ${svg}
-          <code>${escapeHtml(student.qrId || student.id)}</code>
-          <button onclick="window.print()">Печать</button>
-        </main>
-      </body>
-    </html>
-  `);
-  win.document.close();
+  document.querySelector(".qr-panel-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(panelTitle)}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(panelTitle)}</h2>
+          ${subtitle ? `<p class="muted">${escapeHtml(subtitle)}</p>` : ""}
+        </div>
+        <button class="icon-button" data-close-qr-panel type="button" aria-label="Закрыть">x</button>
+      </div>
+      <div class="qr-panel-code">${svg}</div>
+      <code>${escapeHtml(codeLabel)}</code>
+      <div class="toolbar">
+        <button class="secondary-button" data-copy-qr-value type="button">Скопировать ID</button>
+        <button class="primary-button" data-close-qr-panel type="button">Готово</button>
+      </div>
+    </section>
+  `;
+  const close = () => panel.remove();
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-qr-panel]")) close();
+  });
+  panel.querySelector("[data-copy-qr-value]")?.addEventListener("click", async () => {
+    await navigator.clipboard?.writeText(codeLabel).catch(() => {});
+    notify("QR ID скопирован.");
+  });
+  document.body.append(panel);
 }
 
 function studentQrPayload(student) {
