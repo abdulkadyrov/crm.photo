@@ -51,7 +51,7 @@ const ALBUM_STUDENT_STATUSES = {
   ready: "Готов"
 };
 const ALBUM_GROUP_TYPES = {
-  class_photo: "Общее фото класса",
+  class_photo: "Общее фото группы",
   boys: "Фото мальчиков",
   girls: "Фото девочек",
   custom: "Другое"
@@ -275,7 +275,7 @@ async function seedCatalogIfNeeded() {
   if (catalog.length) return;
   await put("catalog", {
     id: uid("catalog"),
-    title: "Стандартный школьный пакет",
+    title: "Стандартный проектный пакет",
     mediaKind: "both",
     price: "0",
     orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
@@ -353,10 +353,42 @@ function render() {
     student: renderStudent
   };
   (renderers[state.route] || renderHome)();
+  addContextBackButton();
   view.focus({ preventScroll: true });
   if (state.preserveScroll || prevRoute === state.route) window.scrollTo(0, prevScrollY);
   state.preserveScroll = false;
   state.lastRenderedRoute = state.route;
+}
+
+function addContextBackButton() {
+  const mainRoutes = new Set(["home", "classes", "scan", "albums", "settings"]);
+  const nestedMainRoute = state.route === "classes" && state.classId;
+  if ((mainRoutes.has(state.route) && !nestedMainRoute) || view.querySelector(".fab-back")) return;
+  const button = document.createElement("button");
+  button.className = "fab-back";
+  button.type = "button";
+  button.setAttribute("aria-label", "Назад");
+  button.title = "Назад";
+  button.innerHTML = '<span data-icon="back"></span>';
+  button.addEventListener("click", navigateContextBack);
+  view.append(button);
+  injectIcons(button);
+}
+
+function navigateContextBack() {
+  if (state.route === "classes" && state.classId) {
+    state.classId = null;
+    return renderClasses();
+  }
+  if (state.route === "student") return navigateBackFromStudent();
+  if (state.route === "services") return navigate("settings");
+  if (state.route === "serviceDetail") return navigate("services");
+  if (state.route === "albumProject") return navigate("albums");
+  if (state.route === "albumClass") {
+    const klass = albumClassById(state.albumClassId);
+    return navigate("albumProject", { albumProjectId: klass?.albumProjectId || state.albumProjectId });
+  }
+  return history.length > 1 ? history.back() : navigate("home");
 }
 
 function setShell({ heading, context = "Фото CRM", summary = "" }) {
@@ -374,21 +406,21 @@ function renderHome() {
   setShell({
     heading: "Главная",
     context: projects[0]?.name || "School Photo Flow",
-    summary: `${classes.length} класса • ${students.length} учеников · ${done} из ${total} задач выполнено`
+    summary: `${classes.length} групп • ${students.length} учеников · ${done} из ${total} задач выполнено`
   });
   view.innerHTML = `
     <section class="crm-overview">
       <div class="toolbar home-toolbar">
         <div>
           <h2 class="card-title">Проекты съемки</h2>
-          <p class="muted">Школы, классы, ученики и статусы заказов.</p>
+          <p class="muted">Проекты, группы, ученики и статусы заказов.</p>
         </div>
-        <button class="primary-button" data-add-project="home" type="button"><span data-icon="plus"></span>Школа</button>
+        <button class="primary-button" data-add-project="home" type="button"><span data-icon="plus"></span>Проект</button>
       </div>
       <div class="metric-grid">
         <article class="metric-card">
           <span class="metric-icon metric-blue" data-icon="classes"></span>
-          <div><strong>${classes.length} класса</strong><span>в работе</span></div>
+          <div><strong>${classes.length} групп</strong><span>в работе</span></div>
         </article>
         <article class="metric-card">
           <span class="metric-icon metric-green" data-icon="check"></span>
@@ -397,7 +429,7 @@ function renderHome() {
       </div>
       <label class="search-box">
         <span data-icon="search"></span>
-        <input data-query placeholder="Поиск школы, класса или ученика" value="${escapeAttr(state.query)}" />
+        <input data-query placeholder="Поиск проекта, группы или ученика" value="${escapeAttr(state.query)}" />
       </label>
       <div class="chip-row quick-filters">
         ${filterChip("all", "Все")}
@@ -408,7 +440,7 @@ function renderHome() {
       </div>
     </section>
     <section class="compact-stack">
-      ${projects.map(projectCard).join("") || empty("Создайте первый проект для школы")}
+      ${projects.map(projectCard).join("") || empty("Создайте первый проект")}
     </section>
   `;
   bindViewActions();
@@ -430,7 +462,7 @@ function projectCard(project) {
         <span class="list-icon metric-blue" data-icon="classes"></span>
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.name)}</h2>
-          <p class="muted">${classes.length} класса · ${students.length} учеников</p>
+          <p class="muted">${classes.length} групп · ${students.length} учеников</p>
           <div class="progress-label"><span>Прогресс ${pct}%</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
         </div>
@@ -467,9 +499,9 @@ function renderClasses() {
   const totalTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).total, 0);
   if (state.classId && !classes.some((klass) => klass.id === state.classId)) state.classId = null;
   setShell({
-    heading: project?.name || "Классы",
-    context: "Классы",
-    summary: `${classes.length} класса · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
+    heading: project?.name || "Группы",
+    context: "Проекты",
+    summary: `${classes.length} групп · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
     <section class="projects-actions">
@@ -477,26 +509,32 @@ function renderClasses() {
         ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
       </select>
       <div class="project-button-row">
-        <button class="primary-button equal-button" data-add-project="classes" type="button"><span data-icon="plus"></span>Школа</button>
+        <button class="primary-button equal-button" data-add-project="classes" type="button"><span data-icon="plus"></span>Проект</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
-        <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Класс</button>
+        <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
       </div>
     </section>
     ${state.classId ? studentQuickForm(state.classId) : ""}
-    <section class="project-feed">
-      ${classes.map(classSection).join("") || empty("В проекте пока нет классов")}
+    <section class="group-card-grid">
+      ${classes.map(classCard).join("") || empty("В проекте пока нет групп")}
     </section>
+    ${state.classId ? classStudentSection(state.classId) : ""}
   `;
   bindViewActions();
 }
 
-function classSection(klass) {
+function classStudentSection(classId) {
+  const klass = classById(classId);
+  if (!klass) return "";
   const students = studentsForClassView(klass.id);
   return `
     <section class="class-section">
-      ${classCard(klass)}
+      <div class="toolbar">
+        <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
+        <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
+      </div>
       <div class="student-list">
-        ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в класс.</p>'}
+        ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в группу.</p>'}
       </div>
     </section>
   `;
@@ -507,7 +545,7 @@ function classCard(klass) {
   const done = allStudents.filter((student) => completion(student.id).done).length;
   const pct = allStudents.length ? Math.round((done / allStudents.length) * 100) : 0;
   return `
-    <article class="class-card">
+    <article class="class-card group-card card-button" data-open-class="${klass.id}" tabindex="0">
       <div class="class-cover ${classCoverClass(klass.name)}">
         <span data-icon="classes"></span>
       </div>
@@ -515,18 +553,19 @@ function classCard(klass) {
         <div class="class-head">
           <div>
             <h2 class="card-title">${escapeHtml(klass.name)}</h2>
-            <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
           </div>
           <details class="item-menu class-menu">
-            <summary aria-label="Меню класса">...</summary>
+            <summary aria-label="Меню группы">...</summary>
             <div class="menu-panel">
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
-              <button data-export-status-class="${klass.id}" type="button">Экспорт класса</button>
+              <button data-show-class-students="${klass.id}" type="button">Статистика</button>
+              <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
-              <button class="danger-text" data-delete-class="${klass.id}" type="button">Удалить класс</button>
+              <button class="danger-text" data-delete-class="${klass.id}" type="button">Удалить</button>
             </div>
           </details>
         </div>
+        <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
         <div class="progress-label">
           <span>Прогресс: ${pct}%</span>
           <strong>${pct}%</strong>
@@ -538,11 +577,11 @@ function classCard(klass) {
 }
 
 function renderSearch() {
-  setShell({ heading: "Поиск", context: "Глобальный поиск", summary: "Школы · классы · ученики" });
+  setShell({ heading: "Поиск", context: "Глобальный поиск", summary: "Проекты · группы · ученики" });
   const results = filteredStudents();
   view.innerHTML = `
     <section class="grid">
-      <input class="input" data-query placeholder="Ученик, класс, проект или QR" value="${escapeAttr(state.query)}" />
+      <input class="input" data-query placeholder="Ученик, группа, проект или QR" value="${escapeAttr(state.query)}" />
       <div class="chip-row">
         ${filterChip("all", "Все")}
         ${filterChip("todo", "Не снято")}
@@ -594,18 +633,18 @@ function renderScan() {
 }
 
 function renderAlbums() {
-  setShell({ heading: "Альбомы", context: "Выпускные проекты", summary: "Классы · общие фото · экспорт дизайнеру" });
+  setShell({ heading: "Альбомы", context: "Выпускные проекты", summary: "Группы · общие фото · экспорт дизайнеру" });
   const projects = state.data.albumProjects;
   view.innerHTML = `
     <section class="toolbar">
       <div>
         <h2 class="card-title">Выпускные альбомы</h2>
-        <p class="muted">Школа → класс → ученики, общие фото, учителя и экспорт дизайнеру.</p>
+        <p class="muted">Проект → группа → ученики, общие фото, учителя и экспорт дизайнеру.</p>
       </div>
-      <button class="primary-button" data-add-album-project type="button">Школа</button>
+      <button class="primary-button" data-add-album-project type="button">Проект</button>
     </section>
     <section class="grid project-grid">
-      ${projects.map(albumProjectCard).join("") || empty("Создайте первую школу для альбомов")}
+      ${projects.map(albumProjectCard).join("") || empty("Создайте первый проект для альбомов")}
     </section>
   `;
   bindViewActions();
@@ -622,16 +661,16 @@ function albumProjectCard(project) {
         <span class="list-icon metric-blue" data-icon="catalog"></span>
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.schoolName)}</h2>
-          <p class="muted">${classes.length} класса · ${students.length} учеников</p>
+          <p class="muted">${classes.length} групп · ${students.length} учеников</p>
           <div class="progress-label"><span>Готовность ${pct}%</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
         </div>
         <details class="item-menu">
-          <summary aria-label="Меню школы">...</summary>
+          <summary aria-label="Меню проекта">...</summary>
           <div class="menu-panel">
-            <button data-add-album-class="${project.id}" type="button">Добавить класс</button>
+            <button data-add-album-class="${project.id}" type="button">Добавить группу</button>
             <button data-open-album-project-action="${project.id}" type="button">Открыть</button>
-            <button class="danger-text" data-delete-album-project="${project.id}" type="button">Удалить школу</button>
+            <button class="danger-text" data-delete-album-project="${project.id}" type="button">Удалить проект</button>
           </div>
         </details>
       </div>
@@ -645,22 +684,22 @@ function renderAlbumProject() {
     navigate("albums");
     return;
   }
-  setShell({ heading: project.schoolName, context: "Альбомы", summary: "Классы выпускных альбомов" });
+  setShell({ heading: project.schoolName, context: "Альбомы", summary: "Группы выпускных альбомов" });
   const classes = albumClassesByProject(project.id);
   view.innerHTML = `
     <section class="toolbar">
       <div>
         <h2 class="card-title">${escapeHtml(project.schoolName)}</h2>
-        <p class="muted">Классы выпускных альбомов</p>
+        <p class="muted">Группы выпускных альбомов</p>
       </div>
       <div class="row album-action-row">
         <button class="secondary-button" data-export-album-status-project="${project.id}" type="button">PDF статистики</button>
-        <button class="primary-button" data-add-album-class="${project.id}" type="button">Класс</button>
+        <button class="primary-button" data-add-album-class="${project.id}" type="button">Группа</button>
       </div>
     </section>
     <button class="fab-back" data-back-to-albums type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
     <section class="grid project-grid">
-      ${classes.map(albumClassCard).join("") || empty("Добавьте первый класс")}
+      ${classes.map(albumClassCard).join("") || empty("Добавьте первую группу")}
     </section>
   `;
   bindViewActions();
@@ -679,11 +718,11 @@ function albumClassCard(klass) {
           <div class="progress"><span style="width:${stats.readyPercent}%"></span></div>
         </div>
         <details class="item-menu">
-          <summary aria-label="Меню класса">...</summary>
+          <summary aria-label="Меню группы">...</summary>
           <div class="menu-panel">
             <button data-open-album-class-action="${klass.id}" type="button">Открыть</button>
             <button data-edit-album-class="${klass.id}" type="button">Изменить</button>
-            <button class="danger-text" data-delete-album-class="${klass.id}" type="button">Удалить класс</button>
+            <button class="danger-text" data-delete-album-class="${klass.id}" type="button">Удалить группу</button>
           </div>
         </details>
       </div>
@@ -794,7 +833,7 @@ function albumGroupsTab(klass) {
       <button class="primary-button" data-add-album-group="${klass.id}" type="button">Общее фото</button>
     </section>
     <section class="grid project-grid">
-      ${items.map(albumGroupCard).join("") || empty("Добавьте фото, которые относятся ко всему классу")}
+      ${items.map(albumGroupCard).join("") || empty("Добавьте фото, которые относятся ко всей группе")}
     </section>
   `;
 }
@@ -833,7 +872,7 @@ function albumTeachersTab(klass) {
       <button class="primary-button" data-add-album-teacher="${klass.id}" type="button">Учитель</button>
     </section>
     <section class="grid project-grid">
-      ${teachers.map(albumTeacherCard).join("") || empty("Добавьте классного руководителя, директора или сотрудников")}
+      ${teachers.map(albumTeacherCard).join("") || empty("Добавьте руководителя группы, директора или сотрудников")}
     </section>
   `;
 }
@@ -984,6 +1023,7 @@ function renderStudent() {
           <div class="action-grid">
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
             <button class="action-button" data-capture="video" data-order-type="${activeTask?.type || "video"}" type="button"><span data-icon="video"></span>Видео</button>
+            <button class="action-button secondary" data-import-media data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="catalog"></span>Из телефона</button>
             <button class="action-button secondary" data-done-task="${activeTask?.type || ""}" type="button"><span data-icon="check"></span>Готово</button>
           </div>
         </article>
@@ -1231,7 +1271,7 @@ function showSettingsDetail(section) {
       <article class="panel grid"><h2 class="card-title">Демо-данные</h2><button class="danger-button" data-clear-all type="button">Очистить все данные</button><button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button></article>`
   }[section];
   if (!content) return;
-  view.innerHTML = `<section class="grid"><button class="secondary-button compact" data-back-settings type="button">Назад</button>${content}</section>`;
+  view.innerHTML = `<section class="grid">${content}</section><button class="fab-back" data-back-settings type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>`;
   bindViewActions();
 }
 
@@ -1305,6 +1345,20 @@ function bindViewActions() {
   });
   view.querySelectorAll("[data-add-project]").forEach((node) => node.addEventListener("click", () => addProject(node.dataset.addProject)));
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
+  view.querySelectorAll("[data-open-class], [data-show-class-students]").forEach((node) => {
+    node.addEventListener("click", (event) => {
+      if (event.target.closest("button") && !node.dataset.showClassStudents) return;
+      if (event.target.closest("details") && !node.dataset.showClassStudents) return;
+      state.classId = node.dataset.openClass || node.dataset.showClassStudents;
+      state.preserveScroll = true;
+      renderClasses();
+    });
+  });
+  view.querySelector("[data-close-class-students]")?.addEventListener("click", () => {
+    state.classId = null;
+    state.preserveScroll = true;
+    renderClasses();
+  });
   view.querySelectorAll("[data-add-student]").forEach((node) => node.addEventListener("click", () => showStudentForm(node.dataset.addStudent)));
   view.querySelectorAll("[data-delete-project]").forEach((node) => node.addEventListener("click", () => deleteProject(node.dataset.deleteProject)));
   view.querySelectorAll("[data-rename-project]").forEach((node) => node.addEventListener("click", () => renameProject(node.dataset.renameProject)));
@@ -1336,6 +1390,7 @@ function bindViewActions() {
   }));
   view.querySelector("[data-project-select]")?.addEventListener("change", (event) => navigate("classes", { projectId: event.target.value }));
   view.querySelectorAll("[data-capture]").forEach((node) => node.addEventListener("click", () => captureMedia(node.dataset.capture, node.dataset.orderType)));
+  view.querySelectorAll("[data-import-media]").forEach((node) => node.addEventListener("click", () => importMediaFromDevice(node.dataset.orderType)));
   view.querySelectorAll("[data-done-task]").forEach((node) => node.addEventListener("click", () => markTaskDone(state.studentId, node.dataset.doneTask)));
   view.querySelectorAll("[data-toggle-task]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, type] = node.dataset.toggleTask.split(":");
@@ -1481,7 +1536,7 @@ function bindDetailsMenus() {
 }
 
 async function addProject(targetRoute = "home") {
-  const name = prompt("Название школы / проекта");
+  const name = prompt("Название проекта");
   if (!name) return;
   const projectId = uid("project");
   await put("projects", { id: projectId, name: name.trim(), createdAt: now(), templateId: state.data.templates[0]?.id });
@@ -1491,7 +1546,7 @@ async function addProject(targetRoute = "home") {
 
 async function addClass(projectId) {
   if (!projectId) return notify("Сначала создайте проект.");
-  const name = prompt("Название класса");
+  const name = prompt("Название группы");
   if (!name) return;
   await put("classes", { id: uid("class"), projectId, name: name.trim() });
   await refreshData();
@@ -1560,7 +1615,7 @@ async function deleteProject(projectId) {
   if (!project) return;
   const classes = classesByProject(projectId);
   const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
-  if (!confirm(`Удалить проект "${project.name}" вместе с ${classes.length} классами и ${students.length} учениками?`)) return;
+  if (!confirm(`Удалить проект "${project.name}" вместе с ${classes.length} группами и ${students.length} учениками?`)) return;
   for (const student of students) await deleteStudentRecords(student.id);
   for (const klass of classes) await del("classes", klass.id);
   await del("projects", projectId);
@@ -1584,22 +1639,22 @@ async function deleteClass(classId) {
   const klass = classById(classId);
   if (!klass) return;
   const students = state.data.students.filter((student) => student.classId === classId);
-  if (!confirm(`Удалить класс "${klass.name}" вместе с ${students.length} учениками?`)) return;
+  if (!confirm(`Удалить группу "${klass.name}" вместе с ${students.length} учениками?`)) return;
   for (const student of students) await deleteStudentRecords(student.id);
   await del("classes", classId);
   await refreshData();
-  notify("Класс удален.");
+  notify("Группа удалена.");
   navigate("classes", { projectId: klass.projectId });
 }
 
 async function renameClass(classId) {
   const klass = classById(classId);
   if (!klass) return;
-  const name = prompt("Название класса", klass.name);
+  const name = prompt("Название группы", klass.name);
   if (!name?.trim()) return;
   await put("classes", { ...klass, name: name.trim() });
   await refreshData();
-  notify("Класс переименован.");
+  notify("Группа переименована.");
   navigate("classes", { projectId: klass.projectId });
 }
 
@@ -1657,7 +1712,7 @@ async function addCatalogItem() {
 }
 
 async function addAlbumProject() {
-  const schoolName = prompt("Название школы");
+  const schoolName = prompt("Название проекта");
   if (!schoolName?.trim()) return;
   const project = { id: uid("album_project"), schoolName: schoolName.trim(), createdAt: now() };
   await put("albumProjects", project);
@@ -1667,7 +1722,7 @@ async function addAlbumProject() {
 
 async function deleteAlbumProject(projectId) {
   const project = albumProjectById(projectId);
-  if (!project || !confirm(`Удалить школу "${project.schoolName}" вместе со всеми альбомными классами?`)) return;
+  if (!project || !confirm(`Удалить проект "${project.schoolName}" вместе со всеми альбомными группами?`)) return;
   for (const klass of albumClassesByProject(projectId)) await deleteAlbumClassRecords(klass.id);
   await del("albumProjects", projectId);
   await refreshData();
@@ -1677,7 +1732,7 @@ async function deleteAlbumProject(projectId) {
 async function addAlbumClass(albumProjectId) {
   const project = albumProjectById(albumProjectId);
   if (!project) return;
-  const name = prompt("Название класса", "11А");
+  const name = prompt("Название группы", "11А");
   if (!name?.trim()) return;
   const albumType = normalizeAlbumType(prompt("Тип альбома: budget, standard, premium или custom", "standard"));
   const pagesCount = Math.max(0, Number.parseInt(prompt("Количество страниц", "20") || "20", 10) || 0);
@@ -1698,7 +1753,7 @@ async function addAlbumClass(albumProjectId) {
 async function editAlbumClass(classId) {
   const klass = albumClassById(classId);
   if (!klass) return;
-  const name = prompt("Название класса", klass.name);
+  const name = prompt("Название группы", klass.name);
   if (!name?.trim()) return;
   const albumType = normalizeAlbumType(prompt("Тип альбома", klass.albumType), klass.albumType);
   const pagesCount = Math.max(0, Number.parseInt(prompt("Количество страниц", String(klass.pagesCount || 20)) || String(klass.pagesCount || 20), 10) || 0);
@@ -1710,7 +1765,7 @@ async function editAlbumClass(classId) {
 
 async function deleteAlbumClass(classId) {
   const klass = albumClassById(classId);
-  if (!klass || !confirm(`Удалить альбомный класс "${klass.name}"?`)) return;
+  if (!klass || !confirm(`Удалить альбомную группу "${klass.name}"?`)) return;
   const projectId = klass.albumProjectId;
   await deleteAlbumClassRecords(classId);
   await refreshData();
@@ -1772,7 +1827,7 @@ async function deleteAlbumStudent(studentId) {
 }
 
 async function addAlbumGroup(classId) {
-  const title = prompt("Название общего фото", "Общее фото класса");
+  const title = prompt("Название общего фото", "Общее фото группы");
   if (!title?.trim()) return;
   const type = normalizeAlbumGroupType(prompt("Тип: class_photo, boys, girls или custom", "class_photo"));
   const comment = prompt("Комментарий", "") || "";
@@ -1814,7 +1869,7 @@ async function deleteAlbumGroup(groupId) {
 async function addAlbumTeacher(classId) {
   const fullName = prompt("ФИО учителя");
   if (!fullName?.trim()) return;
-  const role = prompt("Роль", "Классный руководитель") || "";
+  const role = prompt("Роль", "Руководитель группы") || "";
   const comment = prompt("Комментарий", "") || "";
   await put("albumTeachers", {
     id: uid("album_teacher"),
@@ -2072,18 +2127,27 @@ function captureMedia(type, orderType) {
   mediaInput.click();
 }
 
+function importMediaFromDevice(orderType) {
+  state.currentCapture = { studentId: state.studentId, type: "photo", orderType };
+  mediaInput.accept = "image/*,video/*";
+  mediaInput.removeAttribute("capture");
+  mediaInput.value = "";
+  mediaInput.click();
+}
+
 async function handleMediaInput(event) {
   const file = event.target.files?.[0];
   if (!file || !state.currentCapture) return;
   const student = studentById(state.currentCapture.studentId);
   const klass = classById(student.classId);
-  const ext = extensionFor(file, state.currentCapture.type);
+  const type = fileLooksVideo(file) ? "video" : state.currentCapture.type;
+  const ext = extensionFor(file, type);
   const fileName = safeFileName(`${klass.name}_${student.lastName}_${student.firstName}_${state.currentCapture.orderType}.${ext}`);
   const id = uid("media");
   await put("media", {
     id,
     studentId: student.id,
-    type: state.currentCapture.type,
+    type,
     fileName,
     orderType: state.currentCapture.orderType,
     createdAt: now(),
@@ -2099,7 +2163,7 @@ async function handleAlbumMediaInput(event) {
   const file = event.target.files?.[0];
   const target = state.currentAlbumMedia;
   if (!file || !target) return;
-  const fileType = file.type.startsWith("video/") ? "video" : "image";
+  const fileType = fileLooksVideo(file) ? "video" : "image";
   const fileName = safeFileName(file.name || `album_media.${extensionFor(file, fileType === "video" ? "video" : "photo")}`);
   const media = {
     id: uid("album_media"),
@@ -2430,7 +2494,7 @@ async function ensureQrFallbackClass() {
   const projectId = uid("project");
   const classId = uid("class");
   await put("projects", { id: projectId, name: "QR импорт", createdAt: now(), templateId: state.data.templates[0]?.id });
-  await put("classes", { id: classId, projectId, name: "Без класса" });
+  await put("classes", { id: classId, projectId, name: "Без группы" });
   await refreshData();
   return classId;
 }
@@ -2501,7 +2565,7 @@ async function startQrScanner() {
 }
 
 async function handleShootImport(event) {
-  const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith("image/"));
+  const files = Array.from(event.target.files || []).filter(fileLooksImage);
   if (!files.length) return;
   let currentStudent = null;
   let qrCount = 0;
@@ -2534,6 +2598,7 @@ async function importShootEntries(entries) {
   let assignedCount = 0;
   let skippedCount = 0;
   let lastStudentId = "";
+  const pendingBeforeQr = [];
   const mediaEntries = entries.filter(isImageZipEntry).sort(sortZipEntries);
   for (const entry of mediaEntries) {
     const file = zipEntryToFile(entry, "photo");
@@ -2543,15 +2608,20 @@ async function importShootEntries(entries) {
       currentStudent = qrStudent;
       lastStudentId = qrStudent.id;
       qrCount += 1;
+      while (pendingBeforeQr.length) {
+        await importShotForStudent(currentStudent, pendingBeforeQr.shift());
+        assignedCount += 1;
+      }
       continue;
     }
     if (!currentStudent) {
-      skippedCount += 1;
+      pendingBeforeQr.push(file);
       continue;
     }
     await importShotForStudent(currentStudent, file);
     assignedCount += 1;
   }
+  skippedCount = pendingBeforeQr.length;
   return { qrCount, assignedCount, skippedCount, lastStudentId };
 }
 
@@ -2579,6 +2649,7 @@ async function importAlbumShootEntries(entries) {
   let qrCount = 0;
   let assignedCount = 0;
   let skippedCount = 0;
+  const pendingBeforeQr = [];
   const mediaEntries = entries.filter(isAlbumMediaZipEntry).sort(sortZipEntries);
   for (const entry of mediaEntries) {
     const fileType = isVideoZipEntry(entry) ? "video" : "photo";
@@ -2589,21 +2660,26 @@ async function importAlbumShootEntries(entries) {
       if (qrOwner) {
         currentOwner = qrOwner;
         qrCount += 1;
+        while (pendingBeforeQr.length) {
+          await importAlbumShotForOwner(currentOwner, pendingBeforeQr.shift());
+          assignedCount += 1;
+        }
         continue;
       }
     }
     if (!currentOwner) {
-      skippedCount += 1;
+      pendingBeforeQr.push(file);
       continue;
     }
     await importAlbumShotForOwner(currentOwner, file);
     assignedCount += 1;
   }
+  skippedCount = pendingBeforeQr.length;
   return { qrCount, assignedCount, skippedCount };
 }
 
 async function importAlbumShotForOwner(owner, file) {
-  const fileType = file.type.startsWith("video/") ? "video" : "image";
+  const fileType = fileLooksVideo(file) ? "video" : "image";
   const fileName = safeFileName(file.name || `album_media.${extensionFor(file, fileType === "video" ? "video" : "photo")}`);
   const media = {
     id: uid("album_media"),
@@ -2835,7 +2911,7 @@ function exportStatusPdf({ classId = "", projectId = "" } = {}) {
   const project = projectById(projectId || klass?.projectId);
   const subtitle = [
     project?.name,
-    klass?.name || (projectId ? "Все классы проекта" : "Все проекты"),
+    klass?.name || (projectId ? "Все группы проекта" : "Все проекты"),
     new Date().toLocaleDateString("ru-RU")
   ].filter(Boolean).join(" · ");
   const rows = students.map((student, index) => {
@@ -2891,11 +2967,11 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
   const classes = classId
     ? state.data.albumClasses.filter((klass) => klass.id === classId)
     : albumClassesByProject(albumProjectId);
-  if (!classes.length) return notify("Нет классов для PDF статистики.");
+  if (!classes.length) return notify("Нет групп для PDF статистики.");
   const project = albumProjectById(albumProjectId || classes[0]?.albumProjectId);
   const subtitle = [
     project?.schoolName,
-    classId ? classes[0]?.name : "Все классы школы",
+    classId ? classes[0]?.name : "Все группы проекта",
     new Date().toLocaleDateString("ru-RU")
   ].filter(Boolean).join(" · ");
   const classRows = classes.map((klass) => {
@@ -2956,7 +3032,7 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
         </header>
         <table>
           <thead>
-            <tr><th>Класс</th><th>Тип</th><th>Страниц</th><th>Статус</th><th>Ученики</th><th>Портреты</th><th>Видео</th><th>Учителя</th><th>Общие фото</th><th>Готовность</th></tr>
+            <tr><th>Группа</th><th>Тип</th><th>Страниц</th><th>Статус</th><th>Ученики</th><th>Портреты</th><th>Видео</th><th>Учителя</th><th>Общие фото</th><th>Готовность</th></tr>
           </thead>
           <tbody>${classRows}</tbody>
         </table>
@@ -3112,7 +3188,7 @@ async function handleZipInput(event) {
     notify("ZIP импортирован.");
     navigate("home");
   } catch (error) {
-    notify("Не удалось импортировать ZIP.");
+    notify(zipImportErrorMessage(error));
   } finally {
     state.zipImportMode = "auto";
     event.target.value = "";
@@ -3234,7 +3310,7 @@ async function handleAlbumZipInput(event) {
     }
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
     const project = meta.project || { id: uid("album_project"), schoolName: meta.classInfo?.schoolName || "Импортированный альбом", createdAt: now() };
-    const klass = meta.klass || { id: uid("album_class"), albumProjectId: project.id, name: meta.classInfo?.className || "Класс", albumType: "standard", pagesCount: 0, status: "not_started", createdAt: now() };
+    const klass = meta.klass || { id: uid("album_class"), albumProjectId: project.id, name: meta.classInfo?.className || "Группа", albumType: "standard", pagesCount: 0, status: "not_started", createdAt: now() };
     await put("albumProjects", project);
     await put("albumClasses", { ...klass, albumProjectId: project.id });
     for (const student of meta.students || []) await put("albumStudents", student);
@@ -3249,10 +3325,18 @@ async function handleAlbumZipInput(event) {
     notify("ZIP альбома импортирован.");
     navigate("albumClass", { albumClassId: klass.id, albumProjectId: project.id, albumTab: "students" });
   } catch (error) {
-    notify("Не удалось импортировать ZIP альбома.");
+    notify(zipImportErrorMessage(error, "альбома"));
   } finally {
     event.target.value = "";
   }
+}
+
+function zipImportErrorMessage(error, scope = "") {
+  const text = String(error?.message || "");
+  if (text.includes("Unsupported ZIP compression") || text.includes("Unable to decompress")) {
+    return `Safari не распаковал сжатый ZIP${scope ? ` ${scope}` : ""}. Создайте ZIP без сжатия или импортируйте отдельные фото.`;
+  }
+  return `Не удалось импортировать ZIP${scope ? ` ${scope}` : ""}.`;
 }
 
 function albumExportMediaName(prefix, media) {
@@ -3319,11 +3403,17 @@ function createZip(files) {
 }
 
 function isImageZipEntry(entry) {
-  return /\.(jpe?g|png|webp|gif)$/i.test(entry.path);
+  return !isIgnoredZipEntry(entry) && /\.(jpe?g|png|webp|gif)$/i.test(entry.path);
 }
 
 function isVideoZipEntry(entry) {
-  return /\.(mp4|mov|m4v|webm)$/i.test(entry.path);
+  return !isIgnoredZipEntry(entry) && /\.(mp4|mov|m4v|webm)$/i.test(entry.path);
+}
+
+function isIgnoredZipEntry(entry) {
+  const parts = String(entry.path || "").split("/").filter(Boolean);
+  const name = parts.at(-1) || "";
+  return parts.includes("__MACOSX") || name.startsWith("._") || name === ".DS_Store";
 }
 
 function isAlbumMediaZipEntry(entry) {
@@ -3331,6 +3421,7 @@ function isAlbumMediaZipEntry(entry) {
 }
 
 function sortZipEntries(a, b) {
+  if (Number.isFinite(a.index) && Number.isFinite(b.index)) return a.index - b.index;
   return a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" });
 }
 
@@ -3365,7 +3456,7 @@ async function parseZip(bytes) {
     const path = new TextDecoder().decode(bytes.slice(nameStart, nameStart + nameLength));
     const compressed = bytes.slice(dataStart, dataStart + compressedSize);
     const data = method === 0 ? compressed : await decompressZipEntry(compressed, method);
-    entries.push({ path, data });
+    entries.push({ path, data, index: entries.length });
     offset = dataStart + compressedSize;
   }
   return entries;
@@ -3624,7 +3715,7 @@ function statusExportColumns() {
   return [
     { key: "number", label: "#", value: (_student, index) => index + 1 },
     { key: "student", label: "Ученик", value: (student) => `${student.lastName} ${student.firstName}`.trim() },
-    { key: "class", label: "Класс", value: (student) => classById(student.classId)?.name || "" },
+    { key: "class", label: "Группа", value: (student) => classById(student.classId)?.name || "" },
     { key: "payment", label: "Оплата", value: (student) => paymentLabel(student.paymentStatus) },
     { key: "catalog", label: "Услуги", value: (student) => selectedCatalogIdsForStudent(student).map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Не выбраны" },
     { key: "orderStatus", label: "Статус заказа", value: (student) => orderStatusLabel(student) },
@@ -4254,6 +4345,14 @@ function extensionFor(file, type) {
   const ext = file.name.split(".").pop()?.toLowerCase();
   if (ext && ext.length <= 5) return ext;
   return type === "video" ? "mp4" : "jpg";
+}
+
+function fileLooksVideo(file) {
+  return file?.type?.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/i.test(file?.name || "");
+}
+
+function fileLooksImage(file) {
+  return file?.type?.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file?.name || "");
 }
 
 function downloadBlob(blob, fileName) {

@@ -263,7 +263,15 @@ p {
   flex: 0 0 auto;
   width: 56px;
   height: 56px;
+  inline-size: 56px;
+  block-size: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  min-height: 56px;
+  max-height: 56px;
   align-self: start;
+  justify-self: start;
+  place-self: start;
   border-radius: 999px;
   border: 1px solid var(--line);
   object-fit: cover;
@@ -444,7 +452,15 @@ p {
   text-overflow: ellipsis;
 }
 
+.group-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 .class-section {
+  margin-top: 14px;
   gap: 8px;
 }
 
@@ -595,6 +611,21 @@ p {
   border-radius: 18px;
   background: var(--card);
   box-shadow: var(--shadow);
+}
+
+.group-card {
+  min-height: 178px;
+  align-content: space-between;
+}
+
+.group-card .class-cover {
+  width: 52px;
+  height: 52px;
+}
+
+.group-card .class-main {
+  display: grid;
+  gap: 10px;
 }
 
 .class-cover {
@@ -929,12 +960,16 @@ p {
   flex: 0 0 auto;
   width: 56px;
   height: 56px;
+  inline-size: 56px;
+  block-size: 56px;
   min-width: 56px;
   max-width: 56px;
   min-height: 56px;
   max-height: 56px;
   aspect-ratio: 1;
   align-self: start;
+  justify-self: start;
+  place-self: start;
   border-radius: 999px;
   border: 1px solid var(--line);
   object-fit: cover;
