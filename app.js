@@ -64,6 +64,19 @@ const STATUS_EXPORT_DEFAULT = {
 const SETTING_IDS = {
   initialized: "spf-initialized"
 };
+const CLASS_SORT_MODES = {
+  manual: "Ручной порядок",
+  numeric: "По цифрам",
+  alpha: "По алфавиту"
+};
+const CLASS_COLOR_OPTIONS = [
+  { id: "blue", label: "Синий", accent: "#2563eb", gradient: "linear-gradient(135deg, #2563eb, #818cf8)" },
+  { id: "green", label: "Зеленый", accent: "#16a34a", gradient: "linear-gradient(135deg, #22c55e, #86efac)" },
+  { id: "gold", label: "Золотой", accent: "#d97706", gradient: "linear-gradient(135deg, #d97706, #fbbf24)" },
+  { id: "teal", label: "Бирюза", accent: "#0f766e", gradient: "linear-gradient(135deg, #0f766e, #5eead4)" },
+  { id: "rose", label: "Розовый", accent: "#be123c", gradient: "linear-gradient(135deg, #be123c, #fb7185)" },
+  { id: "slate", label: "Серый", accent: "#475569", gradient: "linear-gradient(135deg, #334155, #94a3b8)" }
+];
 
 const state = {
   route: "home",
@@ -498,6 +511,7 @@ function renderClasses() {
   state.projectId = activeProject;
   const project = projectById(activeProject);
   const classes = activeProject ? classesByProject(activeProject) : [];
+  const sortMode = classSortMode(project);
   const allProjectStudents = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
   const doneTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const totalTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).total, 0);
@@ -508,24 +522,35 @@ function renderClasses() {
     summary: `${classes.length} групп · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
-    <section class="projects-actions">
+    ${state.classId ? "" : `<section class="projects-actions">
       <select class="select project-select" data-project-select aria-label="Проект">
         ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
       </select>
       <div class="project-button-row">
-        <button class="primary-button equal-button" data-add-project="classes" type="button"><span data-icon="plus"></span>Проект</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
       </div>
-    </section>
+    </section>`}
     ${state.classId ? studentQuickForm(state.classId) : ""}
-    <section class="group-card-grid">
-      ${classes.map(classCard).join("") || empty("В проекте пока нет групп")}
-    </section>
-    ${state.classStatsId ? classStatsPanel(state.classStatsId) : ""}
+    ${state.classId ? "" : `
+      <section class="class-order-toolbar">
+        <label>
+          <span>Порядок групп</span>
+          <select class="select" data-class-sort-project="${activeProject}" aria-label="Порядок групп">
+            ${Object.entries(CLASS_SORT_MODES).map(([value, label]) => `<option value="${value}" ${sortMode === value ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
+        </label>
+        <p class="muted">Для ручного порядка используйте кнопки "Выше" и "Ниже" в меню карточки.</p>
+      </section>
+      <section class="group-card-grid">
+        ${classes.map((klass, index) => classCard(klass, index, classes.length, sortMode)).join("") || empty("В проекте пока нет групп")}
+      </section>
+      ${state.classStatsId ? classStatsPanel(state.classStatsId) : ""}
+    `}
     ${state.classId ? classStudentSection(state.classId) : ""}
   `;
   bindViewActions();
+  addContextBackButton();
 }
 
 function classStudentSection(classId) {
@@ -545,13 +570,15 @@ function classStudentSection(classId) {
   `;
 }
 
-function classCard(klass) {
+function classCard(klass, index = 0, total = 0, sortMode = "manual") {
   const allStudents = state.data.students.filter((student) => student.classId === klass.id);
   const done = allStudents.filter((student) => completion(student.id).done).length;
   const pct = allStudents.length ? Math.round((done / allStudents.length) * 100) : 0;
+  const color = classColorOption(klass.color, klass.name);
+  const manualMoveDisabled = sortMode !== "manual";
   return `
-    <article class="class-card group-card card-button" data-open-class="${klass.id}" tabindex="0">
-      <div class="class-cover ${classCoverClass(klass.name)}">
+    <article class="class-card group-card card-button" data-open-class="${klass.id}" tabindex="0" style="--class-accent:${escapeAttr(color.accent)};">
+      <div class="class-cover" style="background:${escapeAttr(color.gradient)};">
         <span data-icon="classes"></span>
       </div>
       <div class="class-main">
@@ -566,6 +593,11 @@ function classCard(klass) {
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
               <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
+              <button data-move-class="${klass.id}:up" ${manualMoveDisabled || index === 0 ? "disabled" : ""} type="button">Выше</button>
+              <button data-move-class="${klass.id}:down" ${manualMoveDisabled || index >= total - 1 ? "disabled" : ""} type="button">Ниже</button>
+              <div class="class-color-palette" aria-label="Цвет карточки">
+                ${CLASS_COLOR_OPTIONS.map((option) => `<button class="class-color-dot ${option.id === color.id ? "active" : ""}" data-set-class-color="${klass.id}:${option.id}" style="--dot-color:${escapeAttr(option.accent)};" title="${escapeAttr(option.label)}" type="button"></button>`).join("")}
+              </div>
               <button class="danger-text" data-delete-class="${klass.id}" type="button">Удалить</button>
             </div>
           </details>
@@ -1417,6 +1449,9 @@ function bindViewActions() {
     state.preserveScroll = true;
     renderClasses();
   }));
+  view.querySelector("[data-class-sort-project]")?.addEventListener("change", (event) => updateProjectClassSort(event.currentTarget.dataset.classSortProject, event.currentTarget.value));
+  view.querySelectorAll("[data-move-class]").forEach((node) => node.addEventListener("click", () => moveClass(node.dataset.moveClass)));
+  view.querySelectorAll("[data-set-class-color]").forEach((node) => node.addEventListener("click", () => setClassColor(node.dataset.setClassColor)));
   view.querySelector("[data-close-class-stats]")?.addEventListener("click", () => {
     state.classStatsId = null;
     state.preserveScroll = true;
@@ -1616,9 +1651,49 @@ async function addClass(projectId) {
   if (!projectId) return notify("Сначала создайте проект.");
   const name = prompt("Название группы");
   if (!name) return;
-  await put("classes", { id: uid("class"), projectId, name: name.trim() });
+  const orderIndex = nextClassOrderIndex(projectId);
+  await put("classes", { id: uid("class"), projectId, name: name.trim(), orderIndex });
   await refreshData();
   navigate("classes", { projectId });
+}
+
+async function updateProjectClassSort(projectId, sortMode) {
+  const project = projectById(projectId);
+  if (!project || !CLASS_SORT_MODES[sortMode]) return;
+  await put("projects", { ...project, classSort: sortMode });
+  await refreshData();
+  state.preserveScroll = true;
+  renderClasses();
+}
+
+async function moveClass(payload) {
+  const [classId, direction] = String(payload || "").split(":");
+  const klass = classById(classId);
+  const project = projectById(klass?.projectId);
+  if (!klass || !project) return;
+  const classes = manualOrderedClasses(klass.projectId);
+  const index = classes.findIndex((item) => item.id === klass.id);
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || targetIndex < 0 || targetIndex >= classes.length) return;
+  const reordered = [...classes];
+  [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+  for (let orderIndex = 0; orderIndex < reordered.length; orderIndex += 1) {
+    await put("classes", { ...reordered[orderIndex], orderIndex });
+  }
+  if (classSortMode(project) !== "manual") await put("projects", { ...project, classSort: "manual" });
+  await refreshData();
+  state.preserveScroll = true;
+  renderClasses();
+}
+
+async function setClassColor(payload) {
+  const [classId, color] = String(payload || "").split(":");
+  const klass = classById(classId);
+  if (!klass || !CLASS_COLOR_OPTIONS.some((option) => option.id === color)) return;
+  await put("classes", { ...klass, color });
+  await refreshData();
+  state.preserveScroll = true;
+  renderClasses();
 }
 
 function showStudentForm(classId) {
@@ -4090,7 +4165,33 @@ function normalizeAlbumGroupType(value, fallback = "custom") {
 }
 
 function classesByProject(projectId) {
-  return state.data.classes.filter((klass) => klass.projectId === projectId);
+  const project = projectById(projectId);
+  const classes = state.data.classes.filter((klass) => klass.projectId === projectId);
+  const sortMode = classSortMode(project);
+  if (sortMode === "alpha") return classes.sort((a, b) => a.name.localeCompare(b.name, "ru", { sensitivity: "base" }));
+  if (sortMode === "numeric") return classes.sort((a, b) => a.name.localeCompare(b.name, "ru", { numeric: true, sensitivity: "base" }));
+  return manualOrderedClasses(projectId);
+}
+
+function manualOrderedClasses(projectId) {
+  return state.data.classes
+    .filter((klass) => klass.projectId === projectId)
+    .sort((a, b) => classManualOrder(a) - classManualOrder(b) || a.name.localeCompare(b.name, "ru", { numeric: true, sensitivity: "base" }));
+}
+
+function classManualOrder(klass) {
+  return Number.isFinite(klass.orderIndex) ? klass.orderIndex : state.data.classes.findIndex((item) => item.id === klass.id);
+}
+
+function classSortMode(project) {
+  return CLASS_SORT_MODES[project?.classSort] ? project.classSort : "manual";
+}
+
+function nextClassOrderIndex(projectId) {
+  const indexes = state.data.classes
+    .filter((klass) => klass.projectId === projectId)
+    .map((klass) => Number.isFinite(klass.orderIndex) ? klass.orderIndex : state.data.classes.findIndex((item) => item.id === klass.id));
+  return indexes.length ? Math.max(...indexes) + 1 : 0;
 }
 
 function studentsByClass(classId) {
@@ -4404,6 +4505,13 @@ function classCoverClass(name) {
   if (normalized.includes("9А") || normalized.includes("9A")) return "cover-purple";
   if (normalized.includes("11А") || normalized.includes("11A")) return "cover-gold";
   return "cover-blue";
+}
+
+function classColorOption(colorId, fallbackName = "") {
+  const byId = CLASS_COLOR_OPTIONS.find((option) => option.id === colorId);
+  if (byId) return byId;
+  const cover = classCoverClass(fallbackName).replace("cover-", "");
+  return CLASS_COLOR_OPTIONS.find((option) => option.id === cover) || CLASS_COLOR_OPTIONS[0];
 }
 
 function pluralizeRu(count, one, few, many) {
