@@ -2712,8 +2712,10 @@ async function processQrSeparatedImport(files, initialErrors = []) {
   const unassigned = [];
   const qrMarkers = [];
   const unknownQr = [];
+  const unknownGroups = [];
   const errors = [...initialErrors];
   let currentStudentId = "";
+  let currentUnknownGroup = null;
   for (let index = 0; index < sortedFiles.length; index += 1) {
     const file = sortedFiles[index];
     try {
@@ -2726,7 +2728,13 @@ async function processQrSeparatedImport(files, initialErrors = []) {
         qrMarkers.push({ fileName: file.name, orderIndex: index, studentId: markerId, rawText: qr.rawText, found: Boolean(student) });
         devImportDebug("qr-import marker", { orderIndex: index, fileName: file.name, studentId: markerId, rawText: qr.rawText, found: Boolean(student), matchedStudentId: student?.id || "" });
         currentStudentId = student?.id || "";
-        if (!student) unknownQr.push({ studentId: markerId, rawText: qr.rawText, fileName: file.name, orderIndex: index });
+        currentUnknownGroup = null;
+        if (!student) {
+          const marker = { studentId: markerId, rawText: qr.rawText, fileName: file.name, orderIndex: index };
+          unknownQr.push(marker);
+          currentUnknownGroup = { id: uid("unknown_qr"), marker, photos: [] };
+          unknownGroups.push(currentUnknownGroup);
+        }
         continue;
       }
       const photo = { file, originalFileName: file.name, orderIndex: index, importSessionId, source: "qr_import" };
@@ -2734,6 +2742,8 @@ async function processQrSeparatedImport(files, initialErrors = []) {
         const list = byStudent.get(currentStudentId) || [];
         list.push(photo);
         byStudent.set(currentStudentId, list);
+      } else if (currentUnknownGroup) {
+        currentUnknownGroup.photos.push(photo);
       } else {
         unassigned.push(photo);
       }
@@ -2751,13 +2761,37 @@ async function processQrSeparatedImport(files, initialErrors = []) {
       devImportDebug("qr-import single marker fallback", { studentId: onlyStudentId, movedToStudent: list.length });
     }
   }
-  if (!foundMarkers.length && qrMarkers.length === 1 && unassigned.length && state.data.students.length === 1) {
+  if (foundMarkers.length > 1 && unassigned.length && assignedPhotoCount(byStudent) === 0) {
+    const markerStudents = foundMarkers
+      .map((marker) => resolveStudentFromQr(marker.rawText, { studentId: marker.studentId }))
+      .filter(Boolean);
+    if (markerStudents.length === foundMarkers.length) {
+      distributeUnassignedAcrossMarkers(unassigned, markerStudents, byStudent);
+      devImportDebug("qr-import multi marker fallback", { markers: markerStudents.length, assigned: assignedPhotoCount(byStudent) });
+    }
+  }
+  if (!foundMarkers.length && qrMarkers.length === 1 && state.data.students.length === 1) {
     const onlyStudentId = state.data.students[0].id;
-    byStudent.set(onlyStudentId, unassigned.splice(0));
+    const photos = [
+      ...unassigned.splice(0),
+      ...(unknownGroups[0]?.photos.splice(0) || [])
+    ];
+    if (photos.length) byStudent.set(onlyStudentId, photos);
     qrMarkers[0].found = true;
     qrMarkers[0].autoMatched = true;
     qrMarkers[0].matchedStudentId = onlyStudentId;
     devImportDebug("qr-import one student fallback", { studentId: onlyStudentId });
+  }
+  if (!foundMarkers.length && unknownGroups.length && unknownGroups.length === state.data.students.length) {
+    unknownGroups.forEach((group, index) => {
+      const student = state.data.students[index];
+      if (!student || !group.photos.length) return;
+      const list = byStudent.get(student.id) || [];
+      list.push(...group.photos.splice(0));
+      byStudent.set(student.id, list);
+      group.assignedStudentId = student.id;
+    });
+    devImportDebug("qr-import ordered unknown marker fallback", { groups: unknownGroups.length });
   }
   const students = Array.from(byStudent.entries()).map(([studentId, photos]) => ({ studentId, student: studentById(studentId), photos }));
   devImportDebug("qr-import draft", {
@@ -2767,7 +2801,25 @@ async function processQrSeparatedImport(files, initialErrors = []) {
     unassigned: unassigned.length,
     errors: errors.length
   });
-  return { id: importSessionId, totalFiles: sortedFiles.length, students, unassigned, qrMarkers, unknownQr, errors };
+  return { id: importSessionId, totalFiles: sortedFiles.length, students, unassigned, unknownGroups, qrMarkers, unknownQr, errors };
+}
+
+function assignedPhotoCount(byStudent) {
+  return Array.from(byStudent.values()).reduce((sum, photos) => sum + photos.length, 0);
+}
+
+function distributeUnassignedAcrossMarkers(unassigned, markerStudents, byStudent) {
+  const total = unassigned.length;
+  const markers = markerStudents.length;
+  markerStudents.forEach((student, index) => {
+    const remainingMarkers = markers - index;
+    const take = Math.ceil(unassigned.length / remainingMarkers);
+    const chunk = unassigned.splice(0, take);
+    const list = byStudent.get(student.id) || [];
+    list.push(...chunk);
+    byStudent.set(student.id, list);
+  });
+  if (unassigned.length) devImportDebug("qr-import multi marker remainder", { total, left: unassigned.length });
 }
 
 async function confirmImportDraft(draft) {
@@ -2817,6 +2869,7 @@ async function saveUnassignedImportPhoto(photo, importSessionId) {
 function showImportDraftPanel(draft) {
   document.querySelector(".import-draft-backdrop")?.remove();
   const assigned = draft.students.reduce((sum, item) => sum + item.photos.length, 0);
+  const unassignedCount = importDraftUnassignedCount(draft);
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop import-draft-backdrop";
   panel.innerHTML = `
@@ -2832,14 +2885,18 @@ function showImportDraftPanel(draft) {
         <div class="stat"><strong>${draft.totalFiles}</strong><span class="muted">Всего файлов</span></div>
         <div class="stat"><strong>${draft.qrMarkers.length}</strong><span class="muted">QR найдено</span></div>
         <div class="stat"><strong>${assigned}</strong><span class="muted">Распределено</span></div>
-        <div class="stat"><strong>${draft.unassigned.length}</strong><span class="muted">Не распределено</span></div>
+        <div class="stat"><strong>${unassignedCount}</strong><span class="muted">Не распределено</span></div>
       </div>
       <div class="import-draft-list">
         ${draft.students.map((item) => {
           const name = `${item.student?.lastName || ""} ${item.student?.firstName || ""}`.trim() || item.studentId;
           return `<div class="import-draft-row"><strong>${escapeHtml(name)}</strong><span>${item.photos.length} фото</span></div>`;
         }).join("") || '<p class="muted">Фото по ученикам пока не распределены.</p>'}
-        ${draft.unassigned.length ? `<div class="import-draft-row warning"><strong>Не распределено</strong><span>${draft.unassigned.length} фото</span></div>` : ""}
+        ${(draft.unknownGroups || []).filter((group) => group.photos.length).map((group, index) => `
+          <div class="import-draft-row warning"><strong>QR-блок ${index + 1}</strong><span>${group.photos.length} фото</span></div>
+          ${importDraftAssignControl(group.id)}
+        `).join("")}
+        ${draft.unassigned.length ? `<div class="import-draft-row warning"><strong>До первого QR</strong><span>${draft.unassigned.length} фото</span></div>` : ""}
         ${draft.unassigned.length ? importDraftAssignControl() : ""}
         ${draft.unknownQr.length ? `<div class="import-draft-errors"><strong>QR найден, ученик не найден</strong>${draft.unknownQr.slice(0, 4).map((item) => `<span>${escapeHtml(item.studentId || item.rawText || item.fileName)}</span>`).join("")}</div>` : ""}
         ${draft.errors.length ? `<div class="import-draft-errors"><strong>Предупреждения</strong>${draft.errors.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
@@ -2851,31 +2908,44 @@ function showImportDraftPanel(draft) {
     </section>
   `;
   panel.querySelectorAll("[data-cancel-import-draft]").forEach((node) => node.addEventListener("click", closeImportDraftPanel));
-  panel.querySelector("[data-assign-import-draft]")?.addEventListener("click", () => assignDraftUnassignedToStudent(panel.querySelector("[data-import-draft-student]")?.value));
+  panel.querySelectorAll("[data-assign-import-draft]").forEach((node) => {
+    node.addEventListener("click", () => {
+      const row = node.closest(".import-draft-assign");
+      assignDraftUnassignedToStudent(row?.querySelector("[data-import-draft-student]")?.value, node.dataset.assignImportDraft || "");
+    });
+  });
   panel.querySelector("[data-confirm-import-draft]")?.addEventListener("click", () => confirmImportDraft(state.currentImportDraft));
   document.body.append(panel);
   injectIcons();
 }
 
-function importDraftAssignControl() {
+function importDraftUnassignedCount(draft) {
+  return (draft.unassigned || []).length + (draft.unknownGroups || []).reduce((sum, group) => sum + group.photos.length, 0);
+}
+
+function importDraftAssignControl(groupId = "") {
   if (!state.data.students.length) return "";
   return `
     <div class="import-draft-assign">
       <select class="select" data-import-draft-student aria-label="Назначить ученику">
         ${state.data.students.map((student) => `<option value="${student.id}">${escapeHtml(`${student.lastName} ${student.firstName}`.trim() || student.id)}</option>`).join("")}
       </select>
-      <button class="secondary-button compact" data-assign-import-draft type="button">Назначить фото</button>
+      <button class="secondary-button compact" data-assign-import-draft="${escapeAttr(groupId)}" type="button">Назначить фото</button>
     </div>
   `;
 }
 
-function assignDraftUnassignedToStudent(studentId) {
+function assignDraftUnassignedToStudent(studentId, groupId = "") {
   const draft = state.currentImportDraft;
   const student = studentById(studentId);
-  if (!draft || !student || !draft.unassigned.length) return;
+  if (!draft || !student) return;
+  const source = groupId
+    ? (draft.unknownGroups || []).find((group) => group.id === groupId)?.photos
+    : draft.unassigned;
+  if (!source?.length) return;
   const group = draft.students.find((item) => item.studentId === student.id);
-  if (group) group.photos.push(...draft.unassigned.splice(0));
-  else draft.students.push({ studentId: student.id, student, photos: draft.unassigned.splice(0) });
+  if (group) group.photos.push(...source.splice(0));
+  else draft.students.push({ studentId: student.id, student, photos: source.splice(0) });
   showImportDraftPanel(draft);
 }
 
