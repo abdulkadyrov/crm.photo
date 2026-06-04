@@ -79,6 +79,7 @@ const state = {
   currentReference: null,
   currentPreview: null,
   currentAlbumMedia: null,
+  currentImportDraft: null,
   zipImportMode: "auto",
   albumProjectId: null,
   albumClassId: null,
@@ -128,6 +129,7 @@ const mediaInput = document.querySelector("#media-input");
 const referenceInput = document.querySelector("#reference-input");
 const previewInput = document.querySelector("#preview-input");
 const shootImportInput = document.querySelector("#shoot-import-input");
+const shootFolderInput = document.querySelector("#shoot-folder-input");
 const zipInput = document.querySelector("#zip-input");
 const albumMediaInput = document.querySelector("#album-media-input");
 const albumZipInput = document.querySelector("#album-zip-input");
@@ -304,6 +306,7 @@ function bindShell() {
   referenceInput.addEventListener("change", handleReferenceInput);
   previewInput.addEventListener("change", handlePreviewInput);
   shootImportInput.addEventListener("change", handleShootImport);
+  shootFolderInput.addEventListener("change", handleShootImport);
   zipInput.addEventListener("change", handleZipInput);
   albumMediaInput.addEventListener("change", handleAlbumMediaInput);
   albumZipInput.addEventListener("change", handleAlbumZipInput);
@@ -661,7 +664,9 @@ function renderScan() {
         </div>
         <div class="toolbar" style="margin-top:12px">
           <button class="primary-button" data-start-scan type="button">Сканировать</button>
-          <button class="secondary-button" data-import-shoot type="button">Импорт съемки</button>
+          <button class="secondary-button" data-import-shoot type="button">Импорт фото</button>
+          <button class="secondary-button" data-import-shoot-folder type="button">Импорт папки</button>
+          <button class="secondary-button" data-import-shoot-zip type="button">Импорт ZIP</button>
           <button class="secondary-button" data-stop-scan type="button">Стоп</button>
         </div>
         <p class="muted scan-note">Импорт съемки распределяет фото по QR-разделителям: QR ученика, затем его снимки, потом QR следующего ученика.</p>
@@ -1467,6 +1472,11 @@ function bindViewActions() {
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
   view.querySelector("[data-import-shoot]")?.addEventListener("click", () => shootImportInput.click());
+  view.querySelector("[data-import-shoot-folder]")?.addEventListener("click", () => shootFolderInput.click());
+  view.querySelector("[data-import-shoot-zip]")?.addEventListener("click", () => {
+    state.zipImportMode = "shoot";
+    zipInput.click();
+  });
   view.querySelector("[data-stop-scan]")?.addEventListener("click", stopQrStream);
   view.querySelector("[data-import-zip]")?.addEventListener("click", () => {
     state.zipImportMode = "full";
@@ -2623,83 +2633,27 @@ async function startQrScanner() {
 }
 
 async function handleShootImport(event) {
-  const files = Array.from(event.target.files || []).filter(fileLooksImage);
-  if (!files.length) return;
-  let currentStudent = null;
-  let qrCount = 0;
-  let assignedCount = 0;
-  let skippedCount = 0;
-  for (const file of files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))) {
-    const rawQr = await detectQrFromImageFile(file);
-    const qrStudent = rawQr ? studentFromQrValue(parseQrPayload(rawQr)) : null;
-    if (qrStudent) {
-      currentStudent = qrStudent;
-      qrCount += 1;
-      continue;
-    }
-    if (!currentStudent) {
-      skippedCount += 1;
-      continue;
-    }
-    await importShotForStudent(currentStudent, file);
-    assignedCount += 1;
-  }
+  const files = Array.from(event.target.files || []);
   event.target.value = "";
-  await refreshData();
-  notify(`Импорт: QR ${qrCount}, фото ${assignedCount}${skippedCount ? `, пропущено ${skippedCount}` : ""}.`);
-  if (currentStudent) navigate("student", { studentId: currentStudent.id });
+  await startQrSeparatedImport(files);
 }
 
 async function importShootEntries(entries) {
-  let currentStudent = null;
-  let qrCount = 0;
-  let assignedCount = 0;
-  let skippedCount = 0;
-  let lastStudentId = "";
-  const pendingBeforeQr = [];
-  const items = [];
-  for (const entry of entries.filter(isImageZipEntry).sort(sortZipEntries)) {
-    const file = zipEntryToFile(entry, "photo");
-    const rawQr = await detectQrFromImageFile(file);
-    const qrStudent = rawQr ? studentFromQrValue(parseQrPayload(rawQr)) : null;
-    items.push({ file, qrStudent });
-  }
-  const markers = items.filter((item) => item.qrStudent);
-  if (markers.length === 1) {
-    currentStudent = markers[0].qrStudent;
-    qrCount = 1;
-    lastStudentId = currentStudent.id;
-    for (const item of items) {
-      if (item.qrStudent) continue;
-      await importShotForStudent(currentStudent, item.file);
-      assignedCount += 1;
-    }
-    return { qrCount, assignedCount, skippedCount: 0, lastStudentId };
-  }
-  for (const item of items) {
-    if (item.qrStudent) {
-      const qrStudent = item.qrStudent;
-      currentStudent = qrStudent;
-      lastStudentId = qrStudent.id;
-      qrCount += 1;
-      while (pendingBeforeQr.length) {
-        await importShotForStudent(currentStudent, pendingBeforeQr.shift());
-        assignedCount += 1;
-      }
+  const files = [];
+  const errors = [];
+  for (const entry of entries.sort(sortZipEntries)) {
+    if (isIgnoredZipEntry(entry)) continue;
+    if (isHeicZipEntry(entry)) {
+      errors.push(`${entry.path}: HEIC/HEIF пропущен`);
       continue;
     }
-    if (!currentStudent) {
-      pendingBeforeQr.push(item.file);
-      continue;
-    }
-    await importShotForStudent(currentStudent, item.file);
-    assignedCount += 1;
+    if (!isSupportedImageZipEntry(entry)) continue;
+    files.push(zipEntryToFile(entry, "photo"));
   }
-  skippedCount = pendingBeforeQr.length;
-  return { qrCount, assignedCount, skippedCount, lastStudentId };
+  return startQrSeparatedImport(files, errors);
 }
 
-async function importShotForStudent(student, file) {
+async function importShotForStudent(student, file, meta = {}) {
   const klass = classById(student.classId);
   const orderType = nextImportOrderType(student.id);
   const ext = extensionFor(file, "photo");
@@ -2712,10 +2666,178 @@ async function importShotForStudent(student, file) {
     type: "photo",
     fileName,
     orderType,
+    originalFileName: meta.originalFileName || file.name,
+    importSessionId: meta.importSessionId || "",
+    orderIndex: Number.isFinite(meta.orderIndex) ? meta.orderIndex : null,
+    source: meta.source || "",
     createdAt: now(),
     blob: file
   });
   await attachFileToOrder(student.id, orderType, id);
+}
+
+async function startQrSeparatedImport(rawFiles, initialErrors = []) {
+  const prepared = prepareImportFiles(rawFiles, initialErrors);
+  if (!prepared.files.length) {
+    notify(prepared.errors.length ? `Нет подходящих изображений. ${prepared.errors[0]}` : "Нет изображений для импорта.");
+    return null;
+  }
+  const draft = await processQrSeparatedImport(prepared.files, prepared.errors);
+  state.currentImportDraft = draft;
+  showImportDraftPanel(draft);
+  return draft;
+}
+
+function prepareImportFiles(rawFiles, initialErrors = []) {
+  const errors = [...initialErrors];
+  const files = [];
+  Array.from(rawFiles || []).forEach((file) => {
+    const name = file.webkitRelativePath || file.name || "";
+    if (isIgnoredImportPath(name)) return;
+    if (fileLooksHeic(file)) {
+      errors.push(`${name || file.name}: HEIC/HEIF пропущен`);
+      return;
+    }
+    if (!fileLooksSupportedImage(file)) return;
+    files.push(file);
+  });
+  return { files, errors };
+}
+
+async function processQrSeparatedImport(files, initialErrors = []) {
+  const importSessionId = uid("import");
+  const sortedFiles = await sortFilesByCaptureOrder(files);
+  devImportDebug("qr-import files", { total: files.length, order: sortedFiles.map((file) => file.webkitRelativePath || file.name) });
+  const byStudent = new Map();
+  const unassigned = [];
+  const qrMarkers = [];
+  const unknownQr = [];
+  const errors = [...initialErrors];
+  let currentStudentId = "";
+  for (let index = 0; index < sortedFiles.length; index += 1) {
+    const file = sortedFiles[index];
+    try {
+      const qr = await scanQrFromImageFile(file);
+      const parsed = qr ? parseStudentQrPayload(qr.rawText) : { studentId: null };
+      if (parsed.studentId) {
+        const student = studentById(parsed.studentId) || studentFromQrValue(parsed.studentId);
+        qrMarkers.push({ fileName: file.name, orderIndex: index, studentId: parsed.studentId, found: Boolean(student) });
+        devImportDebug("qr-import marker", { orderIndex: index, fileName: file.name, studentId: parsed.studentId, found: Boolean(student) });
+        currentStudentId = student?.id || "";
+        if (!student) unknownQr.push({ studentId: parsed.studentId, fileName: file.name, orderIndex: index });
+        continue;
+      }
+      const photo = { file, originalFileName: file.name, orderIndex: index, importSessionId, source: "qr_import" };
+      if (currentStudentId) {
+        const list = byStudent.get(currentStudentId) || [];
+        list.push(photo);
+        byStudent.set(currentStudentId, list);
+      } else {
+        unassigned.push(photo);
+      }
+    } catch (error) {
+      errors.push(`${file.name}: ${error?.message || "ошибка обработки"}`);
+    }
+  }
+  const students = Array.from(byStudent.entries()).map(([studentId, photos]) => ({ studentId, student: studentById(studentId), photos }));
+  devImportDebug("qr-import draft", {
+    total: sortedFiles.length,
+    qrMarkers: qrMarkers.length,
+    assigned: students.reduce((sum, item) => sum + item.photos.length, 0),
+    unassigned: unassigned.length,
+    errors: errors.length
+  });
+  return { id: importSessionId, totalFiles: sortedFiles.length, students, unassigned, qrMarkers, unknownQr, errors };
+}
+
+async function confirmImportDraft(draft) {
+  if (!draft) return;
+  let saved = 0;
+  for (const group of draft.students) {
+    const student = group.student || studentById(group.studentId);
+    if (!student) continue;
+    for (const photo of group.photos) {
+      await importShotForStudent(student, photo.file, {
+        originalFileName: photo.originalFileName,
+        importSessionId: draft.id,
+        orderIndex: photo.orderIndex,
+        source: "qr_import"
+      });
+      saved += 1;
+    }
+  }
+  for (const photo of draft.unassigned) {
+    await saveUnassignedImportPhoto(photo, draft.id);
+    saved += 1;
+  }
+  await refreshData();
+  closeImportDraftPanel();
+  notify(`Импорт подтвержден: сохранено ${saved}, QR ${draft.qrMarkers.length}, не распределено ${draft.unassigned.length}.`);
+}
+
+async function saveUnassignedImportPhoto(photo, importSessionId) {
+  const ext = extensionFor(photo.file, "photo");
+  const fileName = safeFileName(`unassigned_${String(photo.orderIndex + 1).padStart(4, "0")}_${photo.originalFileName || `photo.${ext}`}`);
+  await put("media", {
+    id: uid("media"),
+    studentId: "",
+    type: "photo",
+    fileName,
+    orderType: "unassigned",
+    originalFileName: photo.originalFileName || photo.file.name,
+    importSessionId,
+    orderIndex: photo.orderIndex,
+    source: "qr_import",
+    unassigned: true,
+    createdAt: now(),
+    blob: photo.file
+  });
+}
+
+function showImportDraftPanel(draft) {
+  document.querySelector(".import-draft-backdrop")?.remove();
+  const assigned = draft.students.reduce((sum, item) => sum + item.photos.length, 0);
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop import-draft-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel import-draft-panel" role="dialog" aria-modal="true" aria-label="Проверка импорта">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Проверка импорта</h2>
+          <p class="muted">Проверьте распределение перед сохранением.</p>
+        </div>
+        <button class="icon-button" data-cancel-import-draft type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="stats finance-stats">
+        <div class="stat"><strong>${draft.totalFiles}</strong><span class="muted">Всего файлов</span></div>
+        <div class="stat"><strong>${draft.qrMarkers.length}</strong><span class="muted">QR найдено</span></div>
+        <div class="stat"><strong>${assigned}</strong><span class="muted">Распределено</span></div>
+        <div class="stat"><strong>${draft.unassigned.length}</strong><span class="muted">Не распределено</span></div>
+      </div>
+      <div class="import-draft-list">
+        ${draft.students.map((item) => {
+          const name = `${item.student?.lastName || ""} ${item.student?.firstName || ""}`.trim() || item.studentId;
+          return `<div class="import-draft-row"><strong>${escapeHtml(name)}</strong><span>${item.photos.length} фото</span></div>`;
+        }).join("") || '<p class="muted">Фото по ученикам пока не распределены.</p>'}
+        ${draft.unassigned.length ? `<div class="import-draft-row warning"><strong>Не распределено</strong><span>${draft.unassigned.length} фото</span></div>` : ""}
+        ${draft.unknownQr.length ? `<div class="import-draft-row warning"><strong>QR найден, ученик не найден</strong><span>${draft.unknownQr.length}</span></div>` : ""}
+        ${draft.errors.length ? `<div class="import-draft-errors"><strong>Предупреждения</strong>${draft.errors.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
+      </div>
+      <div class="toolbar">
+        <button class="secondary-button" data-cancel-import-draft type="button">Отмена</button>
+        <button class="primary-button" data-confirm-import-draft type="button">Подтвердить импорт</button>
+      </div>
+    </section>
+  `;
+  panel.querySelectorAll("[data-cancel-import-draft]").forEach((node) => node.addEventListener("click", closeImportDraftPanel));
+  panel.querySelector("[data-confirm-import-draft]")?.addEventListener("click", () => confirmImportDraft(state.currentImportDraft));
+  document.body.append(panel);
+  injectIcons();
+}
+
+function closeImportDraftPanel() {
+  document.querySelector(".import-draft-backdrop")?.remove();
+  state.currentImportDraft = null;
 }
 
 async function importAlbumShootEntries(entries) {
@@ -2860,7 +2982,15 @@ async function detectQrFromImageFile(file) {
   const context = canvas.getContext("2d", { willReadFrequently: true });
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   URL.revokeObjectURL(image.src);
-  return detectQrFromCanvas(canvas) || detectQrFromCanvas(canvas, centerScanArea(canvas.width, canvas.height));
+  return detectQrFromCanvas(canvas)
+    || detectQrFromCanvas(canvas, centerScanArea(canvas.width, canvas.height))
+    || detectQrFromCanvas(resizedCanvas(canvas, 1200))
+    || detectQrFromCanvas(resizedCanvas(canvas, 1200), centerScanAreaForCanvas(resizedCanvas(canvas, 1200)));
+}
+
+async function scanQrFromImageFile(file) {
+  const rawText = await detectQrFromImageFile(file);
+  return rawText ? { rawText } : null;
 }
 
 function detectQrFromCanvas(canvas, area = null) {
@@ -2897,6 +3027,20 @@ function centerScanArea(width, height) {
   };
 }
 
+function centerScanAreaForCanvas(canvas) {
+  return centerScanArea(canvas.width, canvas.height);
+}
+
+function resizedCanvas(sourceCanvas, maxWidth) {
+  if (sourceCanvas.width <= maxWidth) return sourceCanvas;
+  const scale = maxWidth / sourceCanvas.width;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(sourceCanvas.width * scale);
+  canvas.height = Math.round(sourceCanvas.height * scale);
+  canvas.getContext("2d", { willReadFrequently: true }).drawImage(sourceCanvas, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 async function createQrDetector() {
   if (!("BarcodeDetector" in window)) return null;
   try {
@@ -2924,6 +3068,22 @@ function hasJsQr() {
 function parseQrPayload(value) {
   const candidates = Array.from(qrPayloadCandidates(value));
   return candidates.find((item) => item.startsWith("student_")) || candidates[0] || "";
+}
+
+function parseStudentQrPayload(rawText) {
+  const raw = String(rawText || "").trim();
+  try {
+    const json = JSON.parse(raw);
+    if (!json.type || json.type === "student") {
+      return {
+        studentId: json.studentId || json.qrId || json.id || null,
+        classId: json.classId || undefined,
+        projectId: json.projectId || undefined
+      };
+    }
+  } catch {}
+  const parsed = parseQrPayload(raw);
+  return { studentId: parsed || null };
 }
 
 function qrPayloadCandidates(value) {
@@ -3256,11 +3416,7 @@ async function handleZipInput(event) {
     }
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-data.json"));
     if (!dataEntry) {
-      const result = await importShootEntries(entries);
-      if (!result.assignedCount && !result.qrCount) throw new Error("spf-data.json not found");
-      await refreshData();
-      notify(`ZIP съемки: QR ${result.qrCount}, фото ${result.assignedCount}${result.skippedCount ? `, пропущено ${result.skippedCount}` : ""}.`);
-      if (result.lastStudentId) navigate("student", { studentId: result.lastStudentId });
+      await importShootEntries(entries);
       return;
     }
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
@@ -3495,12 +3651,26 @@ function isImageZipEntry(entry) {
   return !isIgnoredZipEntry(entry) && /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(entry.path);
 }
 
+function isSupportedImageZipEntry(entry) {
+  return !isIgnoredZipEntry(entry) && /\.(jpe?g|png|webp)$/i.test(entry.path);
+}
+
+function isHeicZipEntry(entry) {
+  return !isIgnoredZipEntry(entry) && /\.(heic|heif)$/i.test(entry.path);
+}
+
 function isVideoZipEntry(entry) {
   return !isIgnoredZipEntry(entry) && /\.(mp4|mov|m4v|webm)$/i.test(entry.path);
 }
 
 function isIgnoredZipEntry(entry) {
   const parts = String(entry.path || "").split("/").filter(Boolean);
+  const name = parts.at(-1) || "";
+  return parts.includes("__MACOSX") || name.startsWith("._") || name === ".DS_Store";
+}
+
+function isIgnoredImportPath(path) {
+  const parts = String(path || "").split("/").filter(Boolean);
   const name = parts.at(-1) || "";
   return parts.includes("__MACOSX") || name.startsWith("._") || name === ".DS_Store";
 }
@@ -3512,6 +3682,38 @@ function isAlbumMediaZipEntry(entry) {
 function sortZipEntries(a, b) {
   if (Number.isFinite(a.index) && Number.isFinite(b.index)) return a.index - b.index;
   return a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: "base" });
+}
+
+async function sortFilesByCaptureOrder(files) {
+  const enriched = await Promise.all(files.map(async (file, index) => ({
+    file,
+    index,
+    captureTime: await readExifDateTimeOriginal(file).catch(() => null),
+    name: file.webkitRelativePath || file.name || ""
+  })));
+  return enriched
+    .sort((a, b) => {
+      if (a.captureTime && b.captureTime && a.captureTime !== b.captureTime) return a.captureTime - b.captureTime;
+      if (a.captureTime && !b.captureTime) return -1;
+      if (!a.captureTime && b.captureTime) return 1;
+      const byName = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      return byName || a.index - b.index;
+    })
+    .map((item) => item.file);
+}
+
+async function readExifDateTimeOriginal(file) {
+  if (!/\.jpe?g$/i.test(file.name || "")) return null;
+  const bytes = new Uint8Array(await file.slice(0, 256 * 1024).arrayBuffer());
+  let text = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    const code = bytes[index];
+    text += code >= 32 && code <= 126 ? String.fromCharCode(code) : " ";
+  }
+  const match = text.match(/(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day, hour, minute, second] = match.map(Number);
+  return new Date(year, month - 1, day, hour, minute, second).getTime();
 }
 
 function zipEntryToFile(entry, fallbackType = "photo") {
@@ -4247,6 +4449,11 @@ function notify(message) {
   notify.timer = setTimeout(() => toast.classList.remove("show"), 2600);
 }
 
+function devImportDebug(label, payload) {
+  if (!/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(location.hostname)) return;
+  console.debug(label, payload);
+}
+
 function uid(prefix) {
   return `${prefix}_${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
 }
@@ -4490,6 +4697,14 @@ function fileLooksVideo(file) {
 
 function fileLooksImage(file) {
   return file?.type?.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file?.name || "");
+}
+
+function fileLooksSupportedImage(file) {
+  return /\.(jpe?g|png|webp)$/i.test(file?.name || "") || ["image/jpeg", "image/png", "image/webp"].includes(file?.type || "");
+}
+
+function fileLooksHeic(file) {
+  return /\.(heic|heif)$/i.test(file?.name || "");
 }
 
 function downloadBlob(blob, fileName) {

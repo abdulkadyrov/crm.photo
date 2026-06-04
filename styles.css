@@ -1451,6 +1451,42 @@ p {
   font-weight: 800;
 }
 
+.import-draft-panel {
+  width: min(680px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+}
+
+.import-draft-list {
+  display: grid;
+  gap: 8px;
+}
+
+.import-draft-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-strong);
+}
+
+.import-draft-row.warning {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--line));
+}
+
+.import-draft-errors {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--warning) 10%, var(--card));
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .fab-back {
   position: fixed;
   left: 14px;
