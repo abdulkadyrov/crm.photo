@@ -2719,12 +2719,14 @@ async function processQrSeparatedImport(files, initialErrors = []) {
     try {
       const qr = await scanQrFromImageFile(file);
       const parsed = qr ? parseStudentQrPayload(qr.rawText) : { studentId: null };
-      if (parsed.studentId) {
-        const student = studentById(parsed.studentId) || studentFromQrValue(parsed.studentId);
-        qrMarkers.push({ fileName: file.name, orderIndex: index, studentId: parsed.studentId, found: Boolean(student) });
-        devImportDebug("qr-import marker", { orderIndex: index, fileName: file.name, studentId: parsed.studentId, found: Boolean(student) });
+      const resolvedStudent = qr ? resolveStudentFromQr(qr.rawText, parsed) : null;
+      if (parsed.studentId || resolvedStudent) {
+        const student = resolvedStudent;
+        const markerId = parsed.studentId || student?.id || qr.rawText;
+        qrMarkers.push({ fileName: file.name, orderIndex: index, studentId: markerId, rawText: qr.rawText, found: Boolean(student) });
+        devImportDebug("qr-import marker", { orderIndex: index, fileName: file.name, studentId: markerId, rawText: qr.rawText, found: Boolean(student), matchedStudentId: student?.id || "" });
         currentStudentId = student?.id || "";
-        if (!student) unknownQr.push({ studentId: parsed.studentId, fileName: file.name, orderIndex: index });
+        if (!student) unknownQr.push({ studentId: markerId, rawText: qr.rawText, fileName: file.name, orderIndex: index });
         continue;
       }
       const photo = { file, originalFileName: file.name, orderIndex: index, importSessionId, source: "qr_import" };
@@ -2738,6 +2740,24 @@ async function processQrSeparatedImport(files, initialErrors = []) {
     } catch (error) {
       errors.push(`${file.name}: ${error?.message || "ошибка обработки"}`);
     }
+  }
+  const foundMarkers = qrMarkers.filter((marker) => marker.found);
+  if (foundMarkers.length === 1 && unassigned.length) {
+    const onlyStudentId = resolveStudentFromQr(foundMarkers[0].rawText, { studentId: foundMarkers[0].studentId })?.id;
+    if (onlyStudentId) {
+      const list = byStudent.get(onlyStudentId) || [];
+      list.push(...unassigned.splice(0));
+      byStudent.set(onlyStudentId, list);
+      devImportDebug("qr-import single marker fallback", { studentId: onlyStudentId, movedToStudent: list.length });
+    }
+  }
+  if (!foundMarkers.length && qrMarkers.length === 1 && unassigned.length && state.data.students.length === 1) {
+    const onlyStudentId = state.data.students[0].id;
+    byStudent.set(onlyStudentId, unassigned.splice(0));
+    qrMarkers[0].found = true;
+    qrMarkers[0].autoMatched = true;
+    qrMarkers[0].matchedStudentId = onlyStudentId;
+    devImportDebug("qr-import one student fallback", { studentId: onlyStudentId });
   }
   const students = Array.from(byStudent.entries()).map(([studentId, photos]) => ({ studentId, student: studentById(studentId), photos }));
   devImportDebug("qr-import draft", {
@@ -2820,7 +2840,8 @@ function showImportDraftPanel(draft) {
           return `<div class="import-draft-row"><strong>${escapeHtml(name)}</strong><span>${item.photos.length} фото</span></div>`;
         }).join("") || '<p class="muted">Фото по ученикам пока не распределены.</p>'}
         ${draft.unassigned.length ? `<div class="import-draft-row warning"><strong>Не распределено</strong><span>${draft.unassigned.length} фото</span></div>` : ""}
-        ${draft.unknownQr.length ? `<div class="import-draft-row warning"><strong>QR найден, ученик не найден</strong><span>${draft.unknownQr.length}</span></div>` : ""}
+        ${draft.unassigned.length ? importDraftAssignControl() : ""}
+        ${draft.unknownQr.length ? `<div class="import-draft-errors"><strong>QR найден, ученик не найден</strong>${draft.unknownQr.slice(0, 4).map((item) => `<span>${escapeHtml(item.studentId || item.rawText || item.fileName)}</span>`).join("")}</div>` : ""}
         ${draft.errors.length ? `<div class="import-draft-errors"><strong>Предупреждения</strong>${draft.errors.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>` : ""}
       </div>
       <div class="toolbar">
@@ -2830,9 +2851,32 @@ function showImportDraftPanel(draft) {
     </section>
   `;
   panel.querySelectorAll("[data-cancel-import-draft]").forEach((node) => node.addEventListener("click", closeImportDraftPanel));
+  panel.querySelector("[data-assign-import-draft]")?.addEventListener("click", () => assignDraftUnassignedToStudent(panel.querySelector("[data-import-draft-student]")?.value));
   panel.querySelector("[data-confirm-import-draft]")?.addEventListener("click", () => confirmImportDraft(state.currentImportDraft));
   document.body.append(panel);
   injectIcons();
+}
+
+function importDraftAssignControl() {
+  if (!state.data.students.length) return "";
+  return `
+    <div class="import-draft-assign">
+      <select class="select" data-import-draft-student aria-label="Назначить ученику">
+        ${state.data.students.map((student) => `<option value="${student.id}">${escapeHtml(`${student.lastName} ${student.firstName}`.trim() || student.id)}</option>`).join("")}
+      </select>
+      <button class="secondary-button compact" data-assign-import-draft type="button">Назначить фото</button>
+    </div>
+  `;
+}
+
+function assignDraftUnassignedToStudent(studentId) {
+  const draft = state.currentImportDraft;
+  const student = studentById(studentId);
+  if (!draft || !student || !draft.unassigned.length) return;
+  const group = draft.students.find((item) => item.studentId === student.id);
+  if (group) group.photos.push(...draft.unassigned.splice(0));
+  else draft.students.push({ studentId: student.id, student, photos: draft.unassigned.splice(0) });
+  showImportDraftPanel(draft);
 }
 
 function closeImportDraftPanel() {
@@ -2917,6 +2961,17 @@ function studentFromQrValue(value) {
     const ids = [entry.id, entry.qrId].filter(Boolean).map(normalizeQrToken);
     return ids.some((id) => candidates.has(id));
   });
+}
+
+function resolveStudentFromQr(rawText, parsed = parseStudentQrPayload(rawText)) {
+  const candidates = new Set(qrPayloadCandidates(rawText));
+  qrPayloadCandidates(parsed.studentId).forEach((candidate) => candidates.add(candidate));
+  if (parsed.classId) candidates.add(normalizeQrToken(parsed.classId));
+  if (parsed.projectId) candidates.add(normalizeQrToken(parsed.projectId));
+  return state.data.students.find((entry) => {
+    const ids = [entry.id, entry.qrId].filter(Boolean).map(normalizeQrToken);
+    return ids.some((id) => candidates.has(id));
+  }) || null;
 }
 
 function stopQrStream() {

@@ -1487,6 +1487,13 @@ p {
   font-size: 0.82rem;
 }
 
+.import-draft-assign {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
 .fab-back {
   position: fixed;
   left: 14px;
