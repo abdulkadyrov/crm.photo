@@ -64,6 +64,34 @@ const STATUS_EXPORT_DEFAULT = {
 const SETTING_IDS = {
   initialized: "spf-initialized"
 };
+const TRANSFER_APP_NAME = "School Photo Flow";
+const TRANSFER_SCHEMA_VERSION = 1;
+const TRANSFER_STORE_MAP = {
+  projects: "projects",
+  classes: "classes",
+  students: "students",
+  services: "catalog",
+  orders: "orders",
+  settings: "settings",
+  checklistTemplates: "templates"
+};
+const TRANSFER_STORE_ORDER = ["projects", "classes", "services", "checklistTemplates", "settings", "students", "orders"];
+const TRANSFER_COUNT_LABELS = {
+  projects: "проектов",
+  classes: "классов",
+  students: "учеников",
+  services: "услуг",
+  orders: "заказов",
+  settings: "настроек",
+  checklistTemplates: "шаблонов"
+};
+const TRANSFER_IMPORT_SCOPES = {
+  project: ["projects", "classes", "students", "orders", "services", "settings", "checklistTemplates"],
+  class: ["projects", "classes", "students", "orders", "services", "settings", "checklistTemplates"],
+  services: ["services"],
+  settings: ["settings", "checklistTemplates"],
+  full_backup: ["projects", "classes", "students", "orders", "services", "settings", "checklistTemplates"]
+};
 const CLASS_SORT_MODES = {
   manual: "Ручной порядок",
   numeric: "По цифрам",
@@ -488,6 +516,7 @@ function projectCard(project) {
           <div class="menu-panel">
             <button data-open-project-action="${project.id}" type="button">Открыть</button>
             <button data-export-status-project="${project.id}" type="button">Экспорт</button>
+            <button data-export-project="${project.id}" type="button">ZIP проекта</button>
             <button data-rename-project="${project.id}" type="button">Переименовать</button>
             <button class="danger-text" data-delete-project="${project.id}" type="button">Удалить</button>
           </div>
@@ -592,6 +621,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
               <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
+              <button data-export-class="${klass.id}" type="button">ZIP группы</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
               <button data-move-class="${klass.id}:up" ${manualMoveDisabled || index === 0 ? "disabled" : ""} type="button">Выше</button>
               <button data-move-class="${klass.id}:down" ${manualMoveDisabled || index >= total - 1 ? "disabled" : ""} type="button">Ниже</button>
@@ -1351,7 +1381,16 @@ function showSettingsDetail(section) {
         <button class="primary-button" data-save-status-export-template type="button">Сохранить PDF</button>
       </article>`,
     transfer: `
-      <article class="panel grid"><h2 class="card-title">Импорт / экспорт</h2><button class="secondary-button" data-import-settings type="button">Импорт настроек</button><button class="secondary-button" data-export-settings type="button">Экспорт настроек</button><button class="secondary-button" data-import-zip type="button">Импорт данных</button><button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button></article>`,
+      <article class="panel grid">
+        <h2 class="card-title">Импорт / экспорт</h2>
+        <label class="field-label"><span>Проект</span><select class="select" data-transfer-project>${state.data.projects.map((project) => `<option value="${project.id}" ${project.id === state.projectId ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}</select></label>
+        <div class="toolbar"><button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button><button class="secondary-button" data-import-project type="button">Импорт проекта</button></div>
+        <label class="field-label"><span>Класс / группа</span><select class="select" data-transfer-class>${state.data.classes.map((klass) => `<option value="${klass.id}" ${klass.id === state.classId ? "selected" : ""}>${escapeHtml(`${projectById(klass.projectId)?.name || ""} · ${klass.name}`)}</option>`).join("")}</select></label>
+        <div class="toolbar"><button class="secondary-button" data-export-selected-class type="button">Экспорт класса/группы</button><button class="secondary-button" data-import-class type="button">Импорт класса/группы</button></div>
+        <div class="toolbar"><button class="secondary-button" data-export-services type="button">Экспорт услуг</button><button class="secondary-button" data-import-services type="button">Импорт услуг</button></div>
+        <div class="toolbar"><button class="secondary-button" data-export-settings type="button">Экспорт настроек</button><button class="secondary-button" data-import-settings type="button">Импорт настроек</button></div>
+        <div class="toolbar"><button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button><button class="secondary-button" data-import-zip type="button">Импорт всех данных</button></div>
+      </article>`,
     demo: `
       <article class="panel grid"><h2 class="card-title">Демо-данные</h2><button class="danger-button" data-clear-all type="button">Очистить все данные</button><button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button></article>`
   }[section];
@@ -1514,15 +1553,32 @@ function bindViewActions() {
   });
   view.querySelector("[data-stop-scan]")?.addEventListener("click", stopQrStream);
   view.querySelector("[data-import-zip]")?.addEventListener("click", () => {
-    state.zipImportMode = "full";
+    state.zipImportMode = "full_backup";
+    zipInput.click();
+  });
+  view.querySelector("[data-import-project]")?.addEventListener("click", () => {
+    state.zipImportMode = "project";
+    zipInput.click();
+  });
+  view.querySelector("[data-import-class]")?.addEventListener("click", () => {
+    state.zipImportMode = "class";
+    zipInput.click();
+  });
+  view.querySelector("[data-import-services]")?.addEventListener("click", () => {
+    state.zipImportMode = "services";
     zipInput.click();
   });
   view.querySelector("[data-import-settings]")?.addEventListener("click", () => {
     state.zipImportMode = "settings";
     zipInput.click();
   });
-  view.querySelector("[data-export-settings]")?.addEventListener("click", exportSettingsZip);
-  view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportZip()));
+  view.querySelector("[data-export-settings]")?.addEventListener("click", exportSettings);
+  view.querySelector("[data-export-services]")?.addEventListener("click", exportServices);
+  view.querySelector("[data-export-selected-project]")?.addEventListener("click", () => exportProject(view.querySelector("[data-transfer-project]")?.value || state.projectId));
+  view.querySelector("[data-export-selected-class]")?.addEventListener("click", () => exportClass(view.querySelector("[data-transfer-class]")?.value || state.classId));
+  view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportFullBackup()));
+  view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", () => exportProject(node.dataset.exportProject)));
+  view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
   view.querySelectorAll("[data-rename-class]").forEach((node) => node.addEventListener("click", () => renameClass(node.dataset.renameClass)));
@@ -3334,6 +3390,60 @@ async function exportZip(studentId = null) {
   notify("ZIP экспортирован.");
 }
 
+async function exportProject(projectId) {
+  const project = projectById(projectId);
+  if (!project) return notify("Выберите проект для экспорта.");
+  const blob = createZip(await buildTransferExportFiles("project", { projectId }));
+  downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+  notify("Проект экспортирован.");
+}
+
+async function importProject(file) {
+  return importTransferFile(file, "project");
+}
+
+async function exportClass(classId) {
+  const klass = classById(classId);
+  if (!klass) return notify("Выберите класс/группу для экспорта.");
+  const blob = createZip(await buildTransferExportFiles("class", { classId }));
+  downloadBlob(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+  notify("Класс/группа экспортирован.");
+}
+
+async function importClass(file) {
+  return importTransferFile(file, "class");
+}
+
+async function exportServices() {
+  const blob = createZip(await buildTransferExportFiles("services"));
+  downloadBlob(blob, `SPF_services_${new Date().toISOString().slice(0, 10)}.zip`);
+  notify("Услуги экспортированы.");
+}
+
+async function importServices(file) {
+  return importTransferFile(file, "services");
+}
+
+async function exportSettings() {
+  const blob = createZip(await buildTransferExportFiles("settings"));
+  downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
+  notify("Настройки экспортированы.");
+}
+
+async function importSettings(file) {
+  return importTransferFile(file, "settings");
+}
+
+async function exportFullBackup() {
+  const blob = createZip(await buildTransferExportFiles("full_backup"));
+  downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+  notify("Полный ZIP экспортирован.");
+}
+
+async function importFullBackup(file) {
+  return importTransferFile(file, "full_backup");
+}
+
 async function exportSettingsZip() {
   const blob = createZip([{
     path: "spf-settings.json",
@@ -3348,6 +3458,416 @@ async function exportSettingsZip() {
   }]);
   downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
   notify("Настройки экспортированы.");
+}
+
+async function buildTransferExportFiles(exportType, scope = {}) {
+  const data = buildTransferData(exportType, scope);
+  const mediaFiles = collectTransferMediaFiles(data);
+  const manifest = {
+    app: TRANSFER_APP_NAME,
+    schemaVersion: TRANSFER_SCHEMA_VERSION,
+    exportType,
+    exportedAt: now(),
+    containsMedia: mediaFiles.length > 0
+  };
+  return [
+    { path: "manifest.json", data: jsonBytes(manifest) },
+    { path: "data.json", data: jsonBytes(data) },
+    ...mediaFiles
+  ];
+}
+
+function buildTransferData(exportType, scope = {}) {
+  const base = emptyTransferData();
+  if (exportType === "project") {
+    const project = projectById(scope.projectId);
+    if (!project) return base;
+    const classes = classesByProject(project.id);
+    const classIds = new Set(classes.map((klass) => klass.id));
+    const students = state.data.students.filter((student) => classIds.has(student.classId));
+    const serviceIds = serviceIdsForStudents(students);
+    return fillTransferData(base, {
+      projects: [project],
+      classes,
+      students,
+      services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
+      orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
+      settings: state.data.settings,
+      checklistTemplates: state.data.templates
+    });
+  }
+  if (exportType === "class") {
+    const klass = classById(scope.classId);
+    const project = projectById(klass?.projectId);
+    if (!klass || !project) return base;
+    const students = state.data.students.filter((student) => student.classId === klass.id);
+    const serviceIds = serviceIdsForStudents(students);
+    return fillTransferData(base, {
+      projects: [project],
+      classes: [klass],
+      students,
+      services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
+      orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
+      settings: state.data.settings,
+      checklistTemplates: state.data.templates
+    });
+  }
+  if (exportType === "services") {
+    return fillTransferData(base, { services: state.data.catalog });
+  }
+  if (exportType === "settings") {
+    return fillTransferData(base, { settings: state.data.settings, checklistTemplates: state.data.templates });
+  }
+  return fillTransferData(base, {
+    projects: state.data.projects,
+    classes: state.data.classes,
+    students: state.data.students,
+    services: state.data.catalog,
+    orders: state.data.orders,
+    settings: state.data.settings,
+    checklistTemplates: state.data.templates
+  });
+}
+
+function emptyTransferData() {
+  return {
+    projects: [],
+    classes: [],
+    students: [],
+    services: [],
+    orders: [],
+    tasks: [],
+    settings: [],
+    statuses: [],
+    checklistTemplates: []
+  };
+}
+
+function fillTransferData(target, patch) {
+  Object.entries(patch).forEach(([key, value]) => {
+    target[key] = Array.isArray(value) ? value.map((record) => withTransferAliases(key, record)) : [];
+  });
+  target.tasks = transferTasksFromOrders(target.orders);
+  target.statuses = target.settings.filter((item) => item?.id === STATUS_EXPORT_DEFAULT.id).map(clonePlainRecord);
+  return target;
+}
+
+function withTransferAliases(dataKey, record) {
+  const next = clonePlainRecord(record);
+  if (dataKey === "projects") next.projectId = next.projectId || next.id;
+  if (dataKey === "classes") next.classId = next.classId || next.id;
+  if (dataKey === "students") next.studentId = next.studentId || next.id;
+  if (dataKey === "services") next.serviceId = next.serviceId || next.id;
+  if (dataKey === "orders") next.orderId = next.orderId || next.id;
+  return next;
+}
+
+function clonePlainRecord(record) {
+  return JSON.parse(JSON.stringify(record ?? {}));
+}
+
+function serviceIdsForStudents(students) {
+  const ids = new Set();
+  students.forEach((student) => selectedCatalogIdsForStudent(student).forEach((id) => ids.add(id)));
+  return ids;
+}
+
+function transferTasksFromOrders(orders) {
+  return (orders || []).flatMap((order) => (order.items || []).map((item) => ({
+    id: item.id || item.taskId || `${order.id || order.studentId}_${item.type}`,
+    taskId: item.taskId || item.id || `${order.id || order.studentId}_${item.type}`,
+    orderId: order.id,
+    studentId: order.studentId,
+    ...clonePlainRecord(item)
+  })));
+}
+
+function collectTransferMediaFiles(data) {
+  const files = [];
+  const taken = new Set();
+  (data.services || []).forEach((service) => {
+    addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview`, service.previewDataUrl);
+    (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}`, angle.refDataUrl));
+  });
+  return files;
+}
+
+function addDataUrlMediaFile(files, taken, basePath, dataUrl) {
+  const parsed = dataUrlToBytes(dataUrl);
+  if (!parsed) return;
+  const ext = dataUrlExtension(dataUrl);
+  let path = `${basePath}.${ext}`;
+  let index = 2;
+  while (taken.has(path)) {
+    path = `${basePath}_${index}.${ext}`;
+    index += 1;
+  }
+  taken.add(path);
+  files.push({ path, data: parsed.bytes });
+}
+
+async function importTransferFile(file, importMode = "auto") {
+  if (!file) return;
+  const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
+  const draft = await createTransferImportDraft(entries, importMode);
+  showTransferImportPreview(draft);
+}
+
+async function createTransferImportDraft(entries, importMode = "auto") {
+  const manifestEntry = entries.find((entry) => entry.path.endsWith("manifest.json"));
+  const dataEntry = entries.find((entry) => entry.path.endsWith("data.json"));
+  if (!manifestEntry || !dataEntry) throw new Error("manifest.json or data.json not found");
+  const manifest = JSON.parse(new TextDecoder().decode(manifestEntry.data));
+  if (manifest.app !== TRANSFER_APP_NAME) throw new Error("Unsupported transfer archive");
+  const rawData = JSON.parse(new TextDecoder().decode(dataEntry.data));
+  const exportType = manifest.exportType || "full_backup";
+  const mode = TRANSFER_IMPORT_SCOPES[importMode] ? importMode : exportType;
+  const allowed = new Set(TRANSFER_IMPORT_SCOPES[mode] || TRANSFER_IMPORT_SCOPES.full_backup);
+  const data = normalizeTransferData(rawData, allowed);
+  const stats = transferImportStats(data);
+  return { id: uid("transfer_import"), manifest, mode, data, stats, resolution: "update" };
+}
+
+function normalizeTransferData(rawData, allowed) {
+  const data = emptyTransferData();
+  Object.keys(TRANSFER_STORE_MAP).forEach((key) => {
+    data[key] = allowed.has(key) ? normalizeTransferRecords(key, rawData[key]) : [];
+  });
+  data.tasks = Array.isArray(rawData.tasks) ? rawData.tasks.map(clonePlainRecord) : [];
+  data.statuses = Array.isArray(rawData.statuses) ? rawData.statuses.map(clonePlainRecord) : [];
+  if (allowed.has("settings") && data.statuses.length) {
+    const byId = new Map(data.settings.map((record) => [record.id, record]));
+    data.statuses.filter((record) => record?.id).forEach((record) => byId.set(record.id, record));
+    data.settings = Array.from(byId.values());
+  }
+  return data;
+}
+
+function normalizeTransferRecords(dataKey, records) {
+  return Array.from(new Map((records || [])
+    .map((record) => normalizeTransferRecordId(dataKey, record))
+    .filter((record) => record && record.id)
+    .map((record) => [record.id, record]))
+    .values());
+}
+
+function normalizeTransferRecordId(dataKey, record) {
+  const next = clonePlainRecord(record);
+  const alias = {
+    projects: "projectId",
+    classes: "classId",
+    students: "studentId",
+    services: "serviceId",
+    orders: "orderId",
+    settings: "settingId",
+    checklistTemplates: "templateId"
+  }[dataKey];
+  next.id = next.id || next[alias] || "";
+  return next;
+}
+
+function transferImportStats(data) {
+  const stats = { added: {}, updated: {}, conflicts: [] };
+  Object.entries(TRANSFER_STORE_MAP).forEach(([dataKey, store]) => {
+    const existingIds = new Set((state.data[store] || []).map((item) => item.id));
+    const existingById = new Map((state.data[store] || []).map((item) => [item.id, item]));
+    const records = data[dataKey] || [];
+    stats.added[dataKey] = records.filter((record) => !existingIds.has(record.id)).length;
+    stats.updated[dataKey] = records.filter((record) => existingIds.has(record.id)).length;
+    records.forEach((record) => {
+      const existing = existingById.get(record.id);
+      if (existing && !sameTransferRecord(existing, appRecordFromTransfer(dataKey, record))) {
+        stats.conflicts.push({ dataKey, store, id: record.id, label: transferRecordLabel(dataKey, record), resolution: "update" });
+      }
+    });
+  });
+  return stats;
+}
+
+function sameTransferRecord(existing, incoming) {
+  return stableJson(existing) === stableJson(incoming);
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function transferRecordLabel(dataKey, record) {
+  if (dataKey === "projects") return record.name || record.id;
+  if (dataKey === "classes") return record.name || record.id;
+  if (dataKey === "students") return `${record.lastName || ""} ${record.firstName || ""}`.trim() || record.qrId || record.id;
+  if (dataKey === "services") return record.title || record.id;
+  if (dataKey === "orders") return record.studentId || record.id;
+  if (dataKey === "checklistTemplates") return record.name || record.id;
+  return record.title || record.name || record.id;
+}
+
+function showTransferImportPreview(draft) {
+  document.querySelector(".transfer-import-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop transfer-import-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel import-draft-panel" role="dialog" aria-modal="true" aria-label="Предпросмотр импорта">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Предпросмотр импорта</h2>
+          <p class="muted">${escapeHtml(draft.manifest.exportType || draft.mode)} · ${escapeHtml(draft.manifest.exportedAt || "")}</p>
+        </div>
+        <button class="icon-button" data-cancel-transfer-import type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="stats finance-stats">
+        ${transferPreviewStat("Проектов", draft.stats.added.projects, draft.stats.updated.projects)}
+        ${transferPreviewStat("Классов", draft.stats.added.classes, draft.stats.updated.classes)}
+        ${transferPreviewStat("Учеников", draft.stats.added.students, draft.stats.updated.students)}
+        ${transferPreviewStat("Услуг", draft.stats.added.services, draft.stats.updated.services)}
+      </div>
+      <div class="import-draft-list">
+        <div class="import-draft-row ${draft.stats.conflicts.length ? "warning" : ""}"><strong>Конфликты</strong><span>${draft.stats.conflicts.length ? "есть" : "нет"}</span></div>
+        ${draft.stats.conflicts.length ? transferConflictControls(draft) : ""}
+      </div>
+      <div class="toolbar">
+        <button class="secondary-button" data-cancel-transfer-import type="button">Отмена</button>
+        <button class="primary-button" data-confirm-transfer-import type="button">Импортировать</button>
+      </div>
+    </section>
+  `;
+  panel.querySelectorAll("[data-cancel-transfer-import]").forEach((node) => node.addEventListener("click", closeTransferImportPreview));
+  panel.querySelector("[data-transfer-apply-all]")?.addEventListener("click", () => {
+    const resolution = panel.querySelector("[data-transfer-resolution-all]")?.value || "update";
+    panel.querySelectorAll("[data-transfer-conflict-resolution]").forEach((select) => { select.value = resolution; });
+  });
+  panel.querySelector("[data-confirm-transfer-import]")?.addEventListener("click", () => confirmTransferImport(draft, panel));
+  document.body.append(panel);
+  injectIcons();
+}
+
+function transferPreviewStat(label, added = 0, updated = 0) {
+  return `<div class="stat"><strong>+${added} / ${updated}</strong><span class="muted">${escapeHtml(label)}</span></div>`;
+}
+
+function transferConflictControls(draft) {
+  return `
+    <div class="import-draft-assign">
+      <select class="select" data-transfer-resolution-all aria-label="Решение для всех конфликтов">${transferResolutionOptions("update")}</select>
+      <button class="secondary-button compact" data-transfer-apply-all type="button">Применить ко всем</button>
+    </div>
+    ${draft.stats.conflicts.slice(0, 30).map((conflict, index) => `
+      <div class="import-draft-row">
+        <strong>${escapeHtml(TRANSFER_COUNT_LABELS[conflict.dataKey] || conflict.dataKey)}: ${escapeHtml(conflict.label)}</strong>
+        <select class="select" data-transfer-conflict-resolution="${index}" aria-label="Решение конфликта">${transferResolutionOptions(conflict.resolution)}</select>
+      </div>
+    `).join("")}
+    ${draft.stats.conflicts.length > 30 ? `<p class="muted">Показаны первые 30 конфликтов из ${draft.stats.conflicts.length}.</p>` : ""}
+  `;
+}
+
+function transferResolutionOptions(selected) {
+  return [
+    ["update", "Обновить существующее"],
+    ["keep", "Оставить старое"],
+    ["copy", "Создать копию"]
+  ].map(([value, label]) => `<option value="${value}" ${selected === value ? "selected" : ""}>${label}</option>`).join("");
+}
+
+function closeTransferImportPreview() {
+  document.querySelector(".transfer-import-backdrop")?.remove();
+}
+
+async function confirmTransferImport(draft, panel) {
+  draft.stats.conflicts.forEach((conflict, index) => {
+    conflict.resolution = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`)?.value || "update";
+  });
+  const result = await applyTransferImport(draft);
+  await refreshData();
+  closeTransferImportPreview();
+  notify(`Импорт завершен: добавлено ${result.added}, обновлено ${result.updated}, пропущено ${result.skipped}.`);
+  navigate("home");
+}
+
+async function applyTransferImport(draft) {
+  const result = { added: 0, updated: 0, skipped: 0 };
+  const conflictByRecord = new Map(draft.stats.conflicts.map((item) => [`${item.dataKey}:${item.id}`, item]));
+  const idMaps = {};
+  for (const dataKey of TRANSFER_STORE_ORDER) {
+    const store = TRANSFER_STORE_MAP[dataKey];
+    idMaps[dataKey] = new Map();
+    for (const originalRecord of draft.data[dataKey] || []) {
+      const conflict = conflictByRecord.get(`${dataKey}:${originalRecord.id}`);
+      if (conflict?.resolution === "keep") {
+        result.skipped += 1;
+        continue;
+      }
+      const exists = Boolean((state.data[store] || []).some((item) => item.id === originalRecord.id));
+      const record = remapTransferRecord(dataKey, originalRecord, idMaps);
+      if (conflict?.resolution === "copy") {
+        const copyId = uid(transferIdPrefix(dataKey));
+        idMaps[dataKey].set(originalRecord.id, copyId);
+        record.id = copyId;
+        if (dataKey === "students") record.qrId = copyId;
+        if (dataKey === "orders") record.id = `order_${record.studentId || copyId}`;
+      }
+      await put(store, record);
+      if (exists && conflict?.resolution !== "copy") result.updated += 1;
+      else result.added += 1;
+    }
+  }
+  return result;
+}
+
+function remapTransferRecord(dataKey, record, idMaps) {
+  const next = appRecordFromTransfer(dataKey, record);
+  if (dataKey === "classes" && idMaps.projects?.has(next.projectId)) next.projectId = idMaps.projects.get(next.projectId);
+  if (dataKey === "students") {
+    if (idMaps.classes?.has(next.classId)) next.classId = idMaps.classes.get(next.classId);
+    if (idMaps.services?.size) {
+      next.catalogId = idMaps.services.get(next.catalogId) || next.catalogId;
+      next.catalogIds = (next.catalogIds || []).map((id) => idMaps.services.get(id) || id);
+    }
+  }
+  if (dataKey === "orders") {
+    if (idMaps.students?.has(next.studentId)) next.studentId = idMaps.students.get(next.studentId);
+    if (idMaps.services?.size) {
+      next.catalogId = idMaps.services.get(next.catalogId) || next.catalogId;
+      next.catalogIds = (next.catalogIds || []).map((id) => idMaps.services.get(id) || id);
+      next.items = (next.items || []).map((item) => remapOrderItemServices(item, idMaps.services));
+    }
+  }
+  return next;
+}
+
+function appRecordFromTransfer(dataKey, record) {
+  const next = clonePlainRecord(record);
+  if (dataKey === "projects") delete next.projectId;
+  if (dataKey === "classes") delete next.classId;
+  if (dataKey === "students") delete next.studentId;
+  if (dataKey === "services") delete next.serviceId;
+  if (dataKey === "orders") delete next.orderId;
+  if (dataKey === "settings") delete next.settingId;
+  if (dataKey === "checklistTemplates") delete next.templateId;
+  return next;
+}
+
+function remapOrderItemServices(item, serviceMap) {
+  const next = clonePlainRecord(item);
+  const parsed = parseServiceTaskType(next.type || "");
+  if (parsed && serviceMap.has(parsed.catalogId)) next.type = serviceTaskType(serviceMap.get(parsed.catalogId), parsed.angleId);
+  return next;
+}
+
+function transferIdPrefix(dataKey) {
+  return {
+    projects: "project",
+    classes: "class",
+    students: "student",
+    services: "catalog",
+    orders: "order",
+    settings: "setting",
+    checklistTemplates: "template"
+  }[dataKey] || "copy";
 }
 
 function exportStatusPdf({ classId = "", projectId = "" } = {}) {
@@ -3597,6 +4117,13 @@ async function handleZipInput(event) {
   if (!file) return;
   try {
     const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
+    const transferManifestEntry = entries.find((entry) => entry.path.endsWith("manifest.json"));
+    const transferDataEntry = entries.find((entry) => entry.path.endsWith("data.json"));
+    if (transferManifestEntry && transferDataEntry) {
+      const draft = await createTransferImportDraft(entries, state.zipImportMode);
+      showTransferImportPreview(draft);
+      return;
+    }
     const settingsEntry = entries.find((entry) => entry.path.endsWith("spf-settings.json"));
     const fullEntry = entries.find((entry) => entry.path.endsWith("spf-full-data.json"));
     if (settingsEntry || state.zipImportMode === "settings") {
@@ -4351,7 +4878,14 @@ function orderByStudent(studentId) {
 }
 
 function mediaByStudent(studentId) {
-  return state.data.media.filter((item) => item.studentId === studentId);
+  return state.data.media
+    .filter((item) => item.studentId === studentId)
+    .sort((a, b) => mediaSortTime(a) - mediaSortTime(b) || String(a.fileName || a.id).localeCompare(String(b.fileName || b.id), undefined, { numeric: true, sensitivity: "base" }));
+}
+
+function mediaSortTime(item) {
+  const time = Date.parse(item?.createdAt || "");
+  return Number.isFinite(time) ? time : 0;
 }
 
 function projectById(id) {
