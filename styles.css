@@ -274,7 +274,7 @@ p {
   align-self: start;
   justify-self: start;
   place-self: start;
-  border-radius: 999px;
+  border-radius: 16px;
 }
 
 .service-preview-frame {
@@ -301,6 +301,77 @@ p {
   font-weight: 800;
   line-height: 1.05;
   text-align: center;
+}
+
+.service-detail-head {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.service-detail-preview,
+.service-form-preview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card-strong);
+  object-fit: cover;
+  overflow: hidden;
+}
+
+.service-form-preview {
+  max-height: 180px;
+}
+
+.service-detail-preview.empty,
+.service-form-preview.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.prompt-box {
+  white-space: pre-wrap;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-strong);
+  color: var(--text);
+}
+
+.service-editor-panel {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+
+.service-reference-panel {
+  width: min(720px, 100%);
+}
+
+.service-reference-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reference-preview-media {
+  width: 100%;
+  max-height: 70vh;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #000;
+  object-fit: contain;
+}
+
+@media (max-width: 560px) {
+  .service-detail-head {
+    grid-template-columns: 1fr;
+  }
 }
 
 .service-card-meta {

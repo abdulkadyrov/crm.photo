@@ -1256,6 +1256,7 @@ function catalogCard(item) {
   const preview = item.previewDataUrl
     ? `<img class="service-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
     : '<div class="service-preview empty">Нет превью</div>';
+  const promptBadge = servicePrompt(item) ? '<span>✨ Prompt есть</span>' : "";
   return `
     <article class="list-card card-button service-card" data-open-catalog="${item.id}" tabindex="0">
       <div class="list-card-main">
@@ -1263,9 +1264,9 @@ function catalogCard(item) {
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(item.title)}</h2>
           <div class="service-card-meta">
-            <span>${escapeHtml(mediaKindLabel(item.mediaKind))}</span>
             <span>${escapeHtml(formatPrice(item.price))}</span>
             <span>${(item.angles || []).length} ракурсов</span>
+            ${promptBadge}
           </div>
         </div>
         <details class="item-menu">
@@ -1289,33 +1290,41 @@ function renderServiceDetail() {
     navigate("services");
     return;
   }
-  setShell({ heading: item.title, context: mediaKindLabel(item.mediaKind), summary: formatPrice(item.price) });
+  const preview = item.previewDataUrl
+    ? `<img class="service-detail-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
+    : '<div class="service-detail-preview empty">Нет превью</div>';
+  const prompt = servicePrompt(item);
+  setShell({ heading: item.title, context: "Услуга", summary: formatPrice(item.price) });
   view.innerHTML = `
     <section class="grid">
       <article class="panel grid">
-        <div class="catalog-details">
-          <p><strong>Что получает клиент:</strong> ${escapeHtml(item.orderInfo || "Не заполнено")}</p>
-          <p><strong>Что требуется:</strong> ${escapeHtml(item.requirements || "Не заполнено")}</p>
+        <div class="service-detail-head">
+          ${preview}
+          <div class="catalog-details">
+            <p><strong>Цена:</strong> ${escapeHtml(formatPrice(item.price))}</p>
+            <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Редактировать услугу</button>
+          </div>
+        </div>
+      </article>
+      <article class="panel grid">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">✨ Prompt / инструкция</h2>
+            <p class="muted">${prompt ? "Текст можно скопировать для нейросети, сценария или съемки." : "Промпт не добавлен"}</p>
+          </div>
+        </div>
+        ${prompt ? `<div class="prompt-box">${escapeHtml(prompt)}</div>` : ""}
+        <div class="toolbar">
+          ${prompt ? `<button class="secondary-button" data-copy-service-prompt="${item.id}" type="button">Скопировать</button><button class="secondary-button" data-edit-catalog="${item.id}" type="button">Изменить</button>` : `<button class="secondary-button" data-edit-catalog="${item.id}" type="button">Добавить prompt</button>`}
         </div>
       </article>
       <section class="toolbar">
         <h2 class="card-title">Ракурсы</h2>
-        <button class="primary-button" data-add-angle="${item.id}" type="button"><span data-icon="plus"></span>Ракурс</button>
+        <button class="primary-button" data-add-angle="${item.id}" type="button"><span data-icon="plus"></span>Добавить ракурс</button>
       </section>
       <section class="compact-stack">
         ${(item.angles || []).map((angle) => catalogAngleRow(item, angle)).join("") || empty("Ракурсы пока не добавлены")}
       </section>
-      <article class="panel grid">
-        <div>
-          <h2 class="card-title">✨ AI-инструменты</h2>
-          <p class="muted">Быстро подготовьте референсы и идеи для съемки.</p>
-        </div>
-        <div class="settings-list">
-          <button class="settings-row" data-generate-references="${item.id}" type="button"><span>✨</span><div><strong>Сгенерировать референс</strong><small>Набор базовых кадров</small></div><b>›</b></button>
-          <button class="settings-row" data-edit-catalog="${item.id}" type="button"><span>✍️</span><div><strong>Создать описание</strong><small>Заполнить детали пакета</small></div><b>›</b></button>
-          <button class="settings-row" data-add-angle="${item.id}" type="button"><span>🎯</span><div><strong>Предложить ракурс</strong><small>Добавить новый сценарий</small></div><b>›</b></button>
-        </div>
-      </article>
     </section>
   `;
   bindViewActions();
@@ -1324,7 +1333,11 @@ function renderServiceDetail() {
 function catalogAngleRow(item, angle) {
   const reference = angle.refDataUrl
     ? `<img class="reference-thumb large" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
-    : '<div class="reference-empty large">Нет фото</div>';
+    : `<div class="reference-empty large">${angle.videoRefDataUrl ? "Видео" : "Нет референса"}</div>`;
+  const badges = [
+    angle.refDataUrl ? '<span class="status-pill paid">Фото</span>' : "",
+    angle.videoRefDataUrl ? '<span class="status-pill in-progress">Видео</span>' : ""
+  ].filter(Boolean).join("");
   return `
     <article class="list-card">
       <div class="list-card-main">
@@ -1332,11 +1345,12 @@ function catalogAngleRow(item, angle) {
         <div class="list-copy">
           <strong>${escapeHtml(angle.name)}</strong>
           <p class="muted">${escapeHtml(angle.details || "Описание ракурса не заполнено")}</p>
+          <div class="service-card-meta">${badges || "<span>Нет референса</span>"}</div>
         </div>
         <details class="item-menu">
           <summary aria-label="Меню ракурса">...</summary>
           <div class="menu-panel">
-            <button data-upload-reference="${item.id}:${angle.id}" type="button">Референс</button>
+            <button data-view-angle-reference="${item.id}:${angle.id}" type="button">Посмотреть референс</button>
             <button data-edit-angle="${item.id}:${angle.id}" type="button">Изменить</button>
             <button class="danger-text" data-delete-angle="${item.id}:${angle.id}" type="button">Удалить</button>
           </div>
@@ -1616,6 +1630,14 @@ function bindViewActions() {
   view.querySelectorAll("[data-delete-angle]").forEach((node) => node.addEventListener("click", () => {
     const [itemId, angleId] = node.dataset.deleteAngle.split(":");
     deleteCatalogAngle(itemId, angleId);
+  }));
+  view.querySelectorAll("[data-view-angle-reference]").forEach((node) => node.addEventListener("click", () => {
+    const [itemId, angleId] = node.dataset.viewAngleReference.split(":");
+    showAngleReferencePreview(itemId, angleId);
+  }));
+  view.querySelectorAll("[data-copy-service-prompt]").forEach((node) => node.addEventListener("click", async () => {
+    const copied = await copyText(servicePrompt(catalogItemById(node.dataset.copyServicePrompt)));
+    notify(copied ? "Промпт скопирован" : "Не удалось скопировать промпт.");
   }));
   view.querySelectorAll("[data-upload-reference]").forEach((node) => node.addEventListener("click", () => {
     const [itemId, angleId] = node.dataset.uploadReference.split(":");
@@ -1899,15 +1921,7 @@ async function updateStudentServices(studentId, catalogIds) {
 }
 
 async function addCatalogItem() {
-  const title = prompt("Название услуги / пакета", "Пират");
-  if (!title) return;
-  const mediaKind = normalizeMediaKind(prompt("Тип: фото, видео или оба", "оба"));
-  const price = prompt("Цена", "0") || "";
-  const orderInfo = prompt("Описание услуги", "Образ, позы, фон, реквизит и нужные кадры.") || "";
-  const requirements = prompt("Что нужно для реализации", "Реквизит, чистый фон, свет, референсы.") || "";
-  await put("catalog", { id: uid("catalog"), title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim(), angles: [] });
-  await refreshData();
-  renderServices();
+  showCatalogEditor();
 }
 
 async function addAlbumProject() {
@@ -2114,17 +2128,72 @@ function selectAlbumMedia(payload) {
 }
 
 async function editCatalogItem(itemId) {
+  showCatalogEditor(itemId);
+}
+
+function showCatalogEditor(itemId = "") {
   const item = catalogItemById(itemId);
-  if (!item) return;
-  const title = prompt("Название услуги / пакета", item.title);
-  if (!title) return;
-  const mediaKind = normalizeMediaKind(prompt("Тип: фото, видео или оба", mediaKindLabel(item.mediaKind)), item.mediaKind);
-  const price = prompt("Цена", item.price || "") || "";
-  const orderInfo = prompt("Информация про заказ", item.orderInfo || "") || "";
-  const requirements = prompt("Что нужно для реализации", item.requirements || "") || "";
-  await put("catalog", { ...item, title: title.trim(), mediaKind, price: price.trim(), orderInfo: orderInfo.trim(), requirements: requirements.trim() });
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop service-editor-backdrop";
+  panel.innerHTML = `
+    <form class="qr-panel service-editor-panel" data-service-editor>
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${item ? "Редактировать услугу" : "Новая услуга"}</h2>
+          <p class="muted">Достаточно названия. Остальное можно заполнить позже.</p>
+        </div>
+        <button class="icon-button" data-close-service-editor type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <label class="field-label"><span>Название услуги</span><input class="input" name="title" required placeholder="Например: Пират, Принцесса, Интервью" value="${escapeAttr(item?.title || "")}" /></label>
+      <label class="field-label"><span>Цена</span><input class="input" name="price" inputmode="decimal" placeholder="Например: 500" value="${escapeAttr(item?.price || "")}" /></label>
+      <label class="field-label"><span>Превью услуги</span><input class="input" name="preview" type="file" accept="image/*" /></label>
+      ${item?.previewDataUrl ? `<img class="service-form-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />` : '<div class="service-form-preview empty">Нет превью</div>'}
+      <label class="field-label"><span>Prompt / инструкция</span><textarea class="input textarea" name="prompt" placeholder="Введите промпт для нейросети, текст сценария или вопросы для интервью">${escapeHtml(servicePrompt(item))}</textarea></label>
+      <div class="toolbar">
+        <button class="primary-button" data-save-service-editor type="submit">Сохранить</button>
+        <button class="secondary-button" data-skip-service-editor type="button">${item ? "Сохранить только название" : "Пропустить и создать"}</button>
+        <button class="secondary-button" data-close-service-editor type="button">Отмена</button>
+      </div>
+    </form>
+  `;
+  const close = () => panel.remove();
+  panel.querySelectorAll("[data-close-service-editor]").forEach((node) => node.addEventListener("click", close));
+  panel.querySelector("[data-skip-service-editor]")?.addEventListener("click", () => saveCatalogEditor(panel.querySelector("[data-service-editor]"), item, true, close));
+  panel.querySelector("[data-service-editor]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveCatalogEditor(event.currentTarget, item, false, close);
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
+  const fields = form.elements;
+  const title = fields.title.value.trim();
+  if (!title) return notify("Введите название услуги.");
+  const previewFile = fields.preview.files?.[0];
+  const previewDataUrl = previewFile ? await fileToDataUrl(previewFile) : item?.previewDataUrl || "";
+  const next = {
+    ...(item || {}),
+    id: item?.id || uid("catalog"),
+    title,
+    name: title,
+    price: allowOnlyTitle ? (item?.price || "") : fields.price.value.trim(),
+    previewDataUrl,
+    previewName: previewFile?.name || item?.previewName || "",
+    prompt: allowOnlyTitle ? servicePrompt(item) : fields.prompt.value.trim(),
+    mediaKind: item?.mediaKind || "both",
+    orderInfo: item?.orderInfo || "",
+    requirements: item?.requirements || "",
+    angles: item?.angles || [],
+    createdAt: item?.createdAt || now(),
+    updatedAt: now()
+  };
+  await put("catalog", next);
   await refreshData();
-  renderCatalog();
+  close();
+  notify(item ? "Услуга сохранена." : "Услуга создана.");
+  navigate("serviceDetail", { catalogId: next.id });
 }
 
 async function duplicateCatalogItem(itemId) {
@@ -2151,29 +2220,87 @@ async function deleteCatalogItem(itemId) {
 }
 
 async function addCatalogAngle(itemId) {
-  const item = catalogItemById(itemId);
-  if (!item) return;
-  const name = prompt("Название ракурса");
-  if (!name) return;
-  const details = prompt("Описание ракурса", "") || "";
-  const id = normalizeOrderType(name);
-  const angles = [...(item.angles || []), { id: uniqueAngleId(item, id), name: name.trim(), details: details.trim(), refDataUrl: "", refName: "" }];
-  await put("catalog", { ...item, angles });
-  await refreshData();
-  renderCatalog();
+  showAngleEditor(itemId);
 }
 
 async function editCatalogAngle(itemId, angleId) {
+  showAngleEditor(itemId, angleId);
+}
+
+function showAngleEditor(itemId, angleId = "") {
   const item = catalogItemById(itemId);
-  const angle = item?.angles?.find((entry) => entry.id === angleId);
-  if (!item || !angle) return;
-  const name = prompt("Название ракурса", angle.name);
-  if (!name) return;
-  const details = prompt("Описание ракурса", angle.details || "") || "";
-  const angles = item.angles.map((entry) => entry.id === angleId ? { ...entry, name: name.trim(), details: details.trim() } : entry);
-  await put("catalog", { ...item, angles });
+  const angle = (item?.angles || []).find((entry) => entry.id === angleId);
+  if (!item) return;
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop service-editor-backdrop";
+  panel.innerHTML = `
+    <form class="qr-panel service-editor-panel" data-angle-editor>
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${angle ? "Редактировать ракурс" : "Новый ракурс"}</h2>
+          <p class="muted">Фото и видео-референсы можно добавить позже.</p>
+        </div>
+        <button class="icon-button" data-close-angle-editor type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <label class="field-label"><span>Название ракурса</span><input class="input" name="name" required placeholder="Портрет, полный рост, бок, видео, интервью" value="${escapeAttr(angle?.name || "")}" /></label>
+      <label class="field-label"><span>Описание ракурса</span><textarea class="input textarea" name="details" placeholder="Описание ракурса, сценарий или короткая инструкция">${escapeHtml(angle?.details || "")}</textarea></label>
+      <label class="field-label"><span>Референс изображения</span><input class="input" name="imageReference" type="file" accept="image/*" /></label>
+      <label class="field-label"><span>Референс видео</span><input class="input" name="videoReference" type="file" accept="video/*" /></label>
+      <div class="service-reference-summary">
+        ${angle?.refDataUrl ? '<span class="status-pill paid">Фото есть</span>' : '<span class="muted">Фото не добавлено</span>'}
+        ${angle?.videoRefDataUrl ? '<span class="status-pill in-progress">Видео есть</span>' : '<span class="muted">Видео не добавлено</span>'}
+      </div>
+      <div class="toolbar">
+        <button class="primary-button" type="submit">Сохранить</button>
+        <button class="secondary-button" data-skip-angle-editor type="button">Пропустить</button>
+        <button class="secondary-button" data-close-angle-editor type="button">Отмена</button>
+      </div>
+    </form>
+  `;
+  const close = () => panel.remove();
+  panel.querySelectorAll("[data-close-angle-editor]").forEach((node) => node.addEventListener("click", close));
+  panel.querySelector("[data-skip-angle-editor]")?.addEventListener("click", () => saveAngleEditor(panel.querySelector("[data-angle-editor]"), item, angle, true, close));
+  panel.querySelector("[data-angle-editor]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveAngleEditor(event.currentTarget, item, angle, false, close);
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+async function saveAngleEditor(form, item, angle, allowOnlyName, close) {
+  const fields = form.elements;
+  const name = fields.name.value.trim();
+  if (!name) return notify("Введите название ракурса.");
+  const imageFile = fields.imageReference.files?.[0];
+  const videoFile = fields.videoReference.files?.[0];
+  const refDataUrl = imageFile ? await fileToDataUrl(imageFile) : angle?.refDataUrl || "";
+  const videoRefDataUrl = videoFile ? await fileToDataUrl(videoFile) : angle?.videoRefDataUrl || "";
+  const baseId = angle?.id || uniqueAngleId(item, normalizeOrderType(name));
+  const nextAngle = {
+    ...(angle || {}),
+    id: baseId,
+    serviceId: item.id,
+    name,
+    details: allowOnlyName ? (angle?.details || "") : fields.details.value.trim(),
+    description: allowOnlyName ? (angle?.description || "") : fields.details.value.trim(),
+    refDataUrl,
+    refName: imageFile?.name || angle?.refName || "",
+    imageReferenceId: refDataUrl ? `${baseId}_image` : "",
+    videoRefDataUrl,
+    videoRefName: videoFile?.name || angle?.videoRefName || "",
+    videoReferenceId: videoRefDataUrl ? `${baseId}_video` : "",
+    createdAt: angle?.createdAt || now(),
+    updatedAt: now()
+  };
+  const angles = angle
+    ? (item.angles || []).map((entry) => entry.id === angle.id ? nextAngle : entry)
+    : [...(item.angles || []), nextAngle];
+  await put("catalog", { ...item, angles, updatedAt: now() });
   await refreshData();
-  renderCatalog();
+  close();
+  notify(angle ? "Ракурс сохранен." : "Ракурс добавлен.");
+  renderServiceDetail();
 }
 
 async function deleteCatalogAngle(itemId, angleId) {
@@ -2194,6 +2321,34 @@ function uploadCatalogPreview(itemId) {
   state.currentPreview = { kind: "catalog", itemId };
   previewInput.value = "";
   previewInput.click();
+}
+
+function showAngleReferencePreview(itemId, angleId) {
+  const item = catalogItemById(itemId);
+  const angle = (item?.angles || []).find((entry) => entry.id === angleId);
+  if (!angle) return;
+  if (!angle.refDataUrl && !angle.videoRefDataUrl) return notify("Референс не добавлен.");
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop service-reference-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel service-reference-panel" role="dialog" aria-modal="true" aria-label="Референс ракурса">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(angle.name)}</h2>
+          <p class="muted">${escapeHtml(item?.title || "")}</p>
+        </div>
+        <button class="icon-button" data-close-reference-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      ${angle.refDataUrl ? `<img class="reference-preview-media" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />` : ""}
+      ${angle.videoRefDataUrl ? `<video class="reference-preview-media" src="${angle.videoRefDataUrl}" controls playsinline></video>` : ""}
+    </section>
+  `;
+  panel.querySelector("[data-close-reference-preview]")?.addEventListener("click", () => panel.remove());
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel) panel.remove();
+  });
+  document.body.append(panel);
+  injectIcons();
 }
 
 async function generateReferenceSet(itemId) {
@@ -3588,6 +3743,7 @@ function collectTransferMediaFiles(data) {
   (data.services || []).forEach((service) => {
     addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview`, service.previewDataUrl);
     (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}`, angle.refDataUrl));
+    (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}_video`, angle.videoRefDataUrl));
   });
   return files;
 }
@@ -5013,6 +5169,10 @@ function serviceTaskLabel(catalog, angle) {
   return `${catalog.title}: ${angle.name}`;
 }
 
+function servicePrompt(item) {
+  return String(item?.prompt || item?.orderInfo || "").trim();
+}
+
 function paymentLabel(status) {
   return status === "paid" ? "Оплачено" : "Не оплачено";
 }
@@ -5247,6 +5407,9 @@ function dataUrlExtension(dataUrl) {
   if (mime.includes("image/png")) return "png";
   if (mime.includes("image/webp")) return "webp";
   if (mime.includes("image/gif")) return "gif";
+  if (mime.includes("video/mp4")) return "mp4";
+  if (mime.includes("video/quicktime")) return "mov";
+  if (mime.includes("video/webm")) return "webm";
   return "jpg";
 }
 
