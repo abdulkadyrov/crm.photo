@@ -114,6 +114,8 @@ const state = {
   catalogId: null,
   filter: "all",
   query: "",
+  catalogAudience: "all",
+  catalogQuery: "",
   db: null,
   data: emptyData(),
   currentCapture: null,
@@ -320,8 +322,12 @@ async function seedCatalogIfNeeded() {
   await put("catalog", {
     id: uid("catalog"),
     title: "Стандартный проектный пакет",
+    name: "Стандартный проектный пакет",
     mediaKind: "both",
     price: "0",
+    shortDescription: "Портреты, полный рост, профиль, короткое видео и интервью.",
+    description: "Базовый пакет для школьной фотосъемки с набором ракурсов и короткими видео-сценами.",
+    gender: "unisex",
     orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
     requirements: "Ровный свет, чистый фон, готовый список учеников и место для съемки.",
     angles: [
@@ -363,7 +369,7 @@ function navigate(route, params = {}) {
   Object.assign(state, params, { route });
   document.querySelectorAll(".nav-item").forEach((item) => {
     const itemRoute = item.dataset.route;
-    item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")));
+    item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")) || (itemRoute === "settings" && ["settings", "services", "serviceDetail", "catalog"].includes(route)));
   });
   render();
   if (prevRoute !== route) window.scrollTo(0, 0);
@@ -428,6 +434,7 @@ function navigateContextBack() {
   if (state.route === "student") return navigateBackFromStudent();
   if (state.route === "services") return navigate("settings");
   if (state.route === "serviceDetail") return navigate("services");
+  if (state.route === "catalog") return navigate("settings");
   if (state.route === "albumProject") return navigate("albums");
   if (state.route === "albumClass") {
     const klass = albumClassById(state.albumClassId);
@@ -1069,7 +1076,7 @@ function studentQuickForm(classId) {
             ${state.data.catalog.map((item) => `
               <label class="checkbox-row">
                 <input type="checkbox" name="catalogIds" value="${item.id}" ${item.id === selectedCatalogId ? "checked" : ""} />
-                <span>${escapeHtml(item.title)}</span>
+                <span>${escapeHtml(serviceName(item))}</span>
               </label>
             `).join("") || '<p class="muted">Сначала добавьте услугу.</p>'}
           </div>
@@ -1108,7 +1115,7 @@ function renderStudent() {
   const media = mediaByStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
-  const selectedCatalogTitle = selectedCatalogIds.map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Услуги не выбраны";
+  const selectedCatalogTitle = selectedCatalogIds.map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Услуги не выбраны";
   const c = completion(student.id);
   setShell({ heading: `${student.firstName} ${student.lastName}`, context: project?.name || "Ученик", summary: klass?.name || "" });
   view.innerHTML = `
@@ -1166,7 +1173,7 @@ function renderStudent() {
             ${state.data.catalog.map((item) => `
               <label class="checkbox-row">
                 <input type="checkbox" data-student-service="${student.id}" value="${item.id}" ${selectedCatalogIds.includes(item.id) ? "checked" : ""} />
-                <span>${escapeHtml(item.title)}</span>
+                <span>${escapeHtml(serviceName(item))}</span>
               </label>
             `).join("") || '<p class="muted">Добавьте услуги в разделе настроек.</p>'}
           </div>
@@ -1231,7 +1238,153 @@ function mediaTile(item) {
 }
 
 function renderCatalog() {
-  renderServices();
+  setShell({ heading: "Каталог услуг", context: "Витрина", summary: "Покажите детям и родителям доступные варианты" });
+  const sections = catalogAudienceSections()
+    .map((section) => ({ ...section, services: catalogServicesForSection(section.gender) }))
+    .filter((section) => section.services.length);
+  view.innerHTML = `
+    <section class="catalog-page">
+      <article class="panel catalog-hero">
+        <div>
+          <h2 class="card-title">Каталог услуг</h2>
+          <p class="muted">Покажите детям и родителям доступные варианты</p>
+        </div>
+        <button class="primary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать каталог</button>
+      </article>
+      <label class="search-box catalog-search">
+        <span data-icon="search"></span>
+        <input data-catalog-query placeholder="Найти услугу" value="${escapeAttr(state.catalogQuery)}" />
+      </label>
+      <div class="chip-row catalog-tabs">
+        ${catalogAudienceChip("all", "Все")}
+        ${catalogAudienceChip("boys", "Мальчикам")}
+        ${catalogAudienceChip("girls", "Девочкам")}
+      </div>
+      <section class="catalog-feed">
+        ${sections.map(catalogSection).join("") || empty("В каталоге пока нет услуг")}
+      </section>
+    </section>
+  `;
+  bindViewActions();
+}
+
+function catalogAudienceChip(value, label) {
+  return `<button class="chip ${state.catalogAudience === value ? "active" : ""}" data-catalog-audience="${value}" type="button">${label}</button>`;
+}
+
+function catalogAudienceSections() {
+  const sections = [
+    { gender: "boys", title: "Для мальчиков" },
+    { gender: "girls", title: "Для девочек" },
+    { gender: "unisex", title: "Для всех" }
+  ];
+  if (state.catalogAudience === "boys") return sections.filter((section) => section.gender !== "girls");
+  if (state.catalogAudience === "girls") return sections.filter((section) => section.gender !== "boys");
+  return sections;
+}
+
+function catalogServicesForSection(gender) {
+  return state.data.catalog
+    .filter((item) => serviceGender(item) === gender)
+    .filter(serviceMatchesCatalogQuery);
+}
+
+function serviceMatchesCatalogQuery(item) {
+  const query = state.catalogQuery.trim().toLowerCase();
+  if (!query) return true;
+  return [
+    serviceName(item),
+    serviceShortDescription(item),
+    serviceDescription(item),
+    item.price
+  ].join(" ").toLowerCase().includes(query);
+}
+
+function catalogSection(section) {
+  return `
+    <section class="catalog-section">
+      <div class="catalog-section-heading">
+        <h3>${escapeHtml(section.title)}</h3>
+        <span>${section.services.length}</span>
+      </div>
+      <div class="catalog-card-list">
+        ${section.services.map(catalogServiceCard).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function catalogServiceCard(item) {
+  const previewUrl = servicePreviewImageDataUrl(item);
+  const preview = previewUrl
+    ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
+    : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
+  const videoBadge = servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : "";
+  const shortDescription = serviceShortDescription(item);
+  return `
+    <article class="catalog-service-card card-button" data-open-catalog-service="${item.id}" tabindex="0">
+      <div class="catalog-card-preview">${preview}</div>
+      <div class="catalog-card-body">
+        <div class="catalog-card-title-row">
+          <h3>${escapeHtml(serviceName(item))}</h3>
+          <strong>${escapeHtml(formatPrice(item.price))}</strong>
+        </div>
+        ${shortDescription ? `<p>${escapeHtml(shortDescription)}</p>` : '<p class="muted">Описание можно добавить в услуге.</p>'}
+        <div class="catalog-card-badges">
+          <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
+          ${videoBadge}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function showCatalogServiceViewer(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  document.querySelector(".catalog-modal-backdrop")?.remove();
+  const videoUrl = servicePreviewVideoDataUrl(item);
+  const imageUrl = servicePreviewImageDataUrl(item);
+  const description = serviceDescription(item) || serviceShortDescription(item) || "Описание скоро появится.";
+  const media = videoUrl
+    ? `<div class="catalog-modal-media"><video data-catalog-modal-video src="${videoUrl}" controls playsinline></video><button class="secondary-button compact" data-catalog-video-fullscreen type="button">На весь экран</button></div>`
+    : imageUrl
+      ? `<img class="catalog-modal-image" src="${imageUrl}" alt="${escapeAttr(serviceName(item))}" />`
+      : `<div class="catalog-modal-image empty">Нет превью</div>`;
+  const panel = document.createElement("div");
+  panel.className = "catalog-modal-backdrop";
+  panel.innerHTML = `
+    <section class="catalog-modal" role="dialog" aria-modal="true" aria-label="${escapeAttr(serviceName(item))}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
+          <p class="muted">${escapeHtml(formatPrice(item.price))}</p>
+        </div>
+        <button class="icon-button" data-close-catalog-modal type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      ${media}
+      <div class="catalog-modal-copy">
+        <div class="catalog-card-badges">
+          <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
+          ${videoUrl ? '<span class="catalog-card-badge video">Видео</span>' : ""}
+        </div>
+        <p>${escapeHtml(description)}</p>
+      </div>
+      <button class="secondary-button" data-close-catalog-modal type="button">Назад</button>
+    </section>
+  `;
+  const close = () => panel.remove();
+  panel.querySelectorAll("[data-close-catalog-modal]").forEach((node) => node.addEventListener("click", close));
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel) close();
+  });
+  panel.querySelector("[data-catalog-video-fullscreen]")?.addEventListener("click", async () => {
+    const video = panel.querySelector("[data-catalog-modal-video]");
+    if (video?.requestFullscreen) await video.requestFullscreen().catch(() => {});
+    else video?.webkitEnterFullscreen?.();
+  });
+  document.body.append(panel);
+  injectIcons();
 }
 
 function renderServices() {
@@ -1253,19 +1406,25 @@ function renderServices() {
 }
 
 function catalogCard(item) {
-  const preview = item.previewDataUrl
-    ? `<img class="service-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
+  const previewUrl = servicePreviewImageDataUrl(item);
+  const preview = previewUrl
+    ? `<img class="service-preview" src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" />`
     : '<div class="service-preview empty">Нет превью</div>';
   const promptBadge = servicePrompt(item) ? '<span>✨ Prompt есть</span>' : "";
+  const videoBadge = servicePreviewVideoDataUrl(item) ? '<span>Видео</span>' : "";
+  const description = serviceShortDescription(item);
   return `
     <article class="list-card card-button service-card" data-open-catalog="${item.id}" tabindex="0">
       <div class="list-card-main">
         <div class="service-preview-frame">${preview}</div>
         <div class="list-copy">
-          <h2 class="card-title">${escapeHtml(item.title)}</h2>
+          <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
+          ${description ? `<p class="muted">${escapeHtml(description)}</p>` : ""}
           <div class="service-card-meta">
             <span>${escapeHtml(formatPrice(item.price))}</span>
+            <span>${escapeHtml(serviceGenderLabel(item))}</span>
             <span>${(item.angles || []).length} ракурсов</span>
+            ${videoBadge}
             ${promptBadge}
           </div>
         </div>
@@ -1290,11 +1449,13 @@ function renderServiceDetail() {
     navigate("services");
     return;
   }
-  const preview = item.previewDataUrl
-    ? `<img class="service-detail-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />`
+  const previewUrl = servicePreviewImageDataUrl(item);
+  const videoUrl = servicePreviewVideoDataUrl(item);
+  const preview = previewUrl
+    ? `<img class="service-detail-preview" src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" />`
     : '<div class="service-detail-preview empty">Нет превью</div>';
   const prompt = servicePrompt(item);
-  setShell({ heading: item.title, context: "Услуга", summary: formatPrice(item.price) });
+  setShell({ heading: serviceName(item), context: "Услуга", summary: formatPrice(item.price) });
   view.innerHTML = `
     <section class="grid">
       <article class="panel grid">
@@ -1302,9 +1463,14 @@ function renderServiceDetail() {
           ${preview}
           <div class="catalog-details">
             <p><strong>Цена:</strong> ${escapeHtml(formatPrice(item.price))}</p>
+            <p><strong>Для кого:</strong> ${escapeHtml(serviceGenderLabel(item))}</p>
+            ${serviceShortDescription(item) ? `<p><strong>Короткое описание:</strong> ${escapeHtml(serviceShortDescription(item))}</p>` : ""}
+            ${serviceDescription(item) ? `<p><strong>Полное описание:</strong> ${escapeHtml(serviceDescription(item))}</p>` : ""}
+            ${videoUrl ? '<p><strong>Превью видео:</strong> добавлено</p>' : ""}
             <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Редактировать услугу</button>
           </div>
         </div>
+        ${videoUrl ? `<video class="service-detail-video" src="${videoUrl}" controls playsinline></video>` : ""}
       </article>
       <article class="panel grid">
         <div class="card-header">
@@ -1367,6 +1533,7 @@ function renderSettings() {
       <button class="settings-row" data-settings-detail="checklists" type="button"><span>📋</span><div><strong>Шаблоны чеклистов</strong><small>Настройка задач заказа</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>PDF статусы</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
+      <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
@@ -1401,7 +1568,7 @@ function showSettingsDetail(section) {
         <div class="toolbar"><button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button><button class="secondary-button" data-import-project type="button">Импорт проекта</button></div>
         <label class="field-label"><span>Класс / группа</span><select class="select" data-transfer-class>${state.data.classes.map((klass) => `<option value="${klass.id}" ${klass.id === state.classId ? "selected" : ""}>${escapeHtml(`${projectById(klass.projectId)?.name || ""} · ${klass.name}`)}</option>`).join("")}</select></label>
         <div class="toolbar"><button class="secondary-button" data-export-selected-class type="button">Экспорт класса/группы</button><button class="secondary-button" data-import-class type="button">Импорт класса/группы</button></div>
-        <div class="toolbar"><button class="secondary-button" data-export-services type="button">Экспорт услуг</button><button class="secondary-button" data-import-services type="button">Импорт услуг</button></div>
+        <div class="toolbar"><button class="secondary-button" data-export-services type="button">Экспорт услуг</button><button class="secondary-button" data-import-services type="button">Импорт услуг</button><button class="secondary-button" data-export-catalog type="button">Экспорт публичного каталога</button></div>
         <div class="toolbar"><button class="secondary-button" data-export-settings type="button">Экспорт настроек</button><button class="secondary-button" data-import-settings type="button">Импорт настроек</button></div>
         <div class="toolbar"><button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button><button class="secondary-button" data-import-zip type="button">Импорт всех данных</button></div>
       </article>`,
@@ -1609,8 +1776,30 @@ function bindViewActions() {
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelectorAll("[data-generate-qr]").forEach((node) => node.addEventListener("click", (event) => showQrPayload(event.currentTarget.dataset.generateQr || state.studentId)));
   view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
+  view.querySelector("[data-open-public-catalog]")?.addEventListener("click", () => navigate("catalog"));
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
   view.querySelector("[data-back-settings]")?.addEventListener("click", () => renderSettings());
+  view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);
+  view.querySelectorAll("[data-catalog-audience]").forEach((node) => node.addEventListener("click", () => {
+    state.catalogAudience = node.dataset.catalogAudience;
+    renderCatalog();
+  }));
+  view.querySelector("[data-catalog-query]")?.addEventListener("input", (event) => {
+    const cursor = event.target.selectionStart || 0;
+    state.catalogQuery = event.target.value;
+    renderCatalog();
+    requestAnimationFrame(() => {
+      const input = view.querySelector("[data-catalog-query]");
+      input?.focus();
+      input?.setSelectionRange(cursor, cursor);
+    });
+  });
+  view.querySelectorAll("[data-open-catalog-service]").forEach((node) => {
+    node.addEventListener("click", () => showCatalogServiceViewer(node.dataset.openCatalogService));
+    node.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") showCatalogServiceViewer(node.dataset.openCatalogService);
+    });
+  });
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
   view.querySelectorAll("[data-open-catalog], [data-open-catalog-action]").forEach((node) => {
     node.addEventListener("click", (event) => {
@@ -2144,10 +2333,25 @@ function showCatalogEditor(itemId = "") {
         </div>
         <button class="icon-button" data-close-service-editor type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
-      <label class="field-label"><span>Название услуги</span><input class="input" name="title" required placeholder="Например: Пират, Принцесса, Интервью" value="${escapeAttr(item?.title || "")}" /></label>
-      <label class="field-label"><span>Цена</span><input class="input" name="price" inputmode="decimal" placeholder="Например: 500" value="${escapeAttr(item?.price || "")}" /></label>
-      <label class="field-label"><span>Превью услуги</span><input class="input" name="preview" type="file" accept="image/*" /></label>
-      ${item?.previewDataUrl ? `<img class="service-form-preview" src="${item.previewDataUrl}" alt="${escapeAttr(item.title)}" />` : '<div class="service-form-preview empty">Нет превью</div>'}
+      <label class="field-label"><span>Название услуги</span><input class="input" name="title" required placeholder="Например: Пират, Принцесса, Интервью" value="${escapeAttr(serviceName(item))}" /></label>
+      <div class="form-grid">
+        <label class="field-label"><span>Цена</span><input class="input" name="price" inputmode="decimal" placeholder="Например: 500" value="${escapeAttr(item?.price || "")}" /></label>
+        <label class="field-label"><span>Для кого услуга</span><select class="select" name="gender">
+          <option value="unisex" ${serviceGender(item) === "unisex" ? "selected" : ""}>Для всех</option>
+          <option value="boys" ${serviceGender(item) === "boys" ? "selected" : ""}>Для мальчиков</option>
+          <option value="girls" ${serviceGender(item) === "girls" ? "selected" : ""}>Для девочек</option>
+        </select></label>
+      </div>
+      <label class="field-label"><span>Короткое описание</span><textarea class="input textarea" name="shortDescription" placeholder="Коротко для карточки каталога">${escapeHtml(serviceShortDescription(item))}</textarea></label>
+      <label class="field-label"><span>Полное описание</span><textarea class="input textarea" name="description" placeholder="Подробное описание для просмотра услуги">${escapeHtml(serviceDescription(item))}</textarea></label>
+      <div class="service-editor-media-grid">
+        <label class="field-label"><span>Превью фото</span><input class="input" name="preview" type="file" accept="image/*" /></label>
+        <label class="field-label"><span>Превью видео</span><input class="input" name="previewVideo" type="file" accept="video/*" /></label>
+      </div>
+      <div class="service-form-media-grid">
+        ${servicePreviewImageDataUrl(item) ? `<img class="service-form-preview" src="${servicePreviewImageDataUrl(item)}" alt="${escapeAttr(serviceName(item))}" />` : '<div class="service-form-preview empty">Нет фото</div>'}
+        ${servicePreviewVideoDataUrl(item) ? `<video class="service-form-preview" src="${servicePreviewVideoDataUrl(item)}" controls playsinline></video>` : '<div class="service-form-preview empty">Нет видео</div>'}
+      </div>
       <label class="field-label"><span>Prompt / инструкция</span><textarea class="input textarea" name="prompt" placeholder="Введите промпт для нейросети, текст сценария или вопросы для интервью">${escapeHtml(servicePrompt(item))}</textarea></label>
       <div class="toolbar">
         <button class="primary-button" data-save-service-editor type="submit">Сохранить</button>
@@ -2172,15 +2376,25 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
   const title = fields.title.value.trim();
   if (!title) return notify("Введите название услуги.");
   const previewFile = fields.preview.files?.[0];
-  const previewDataUrl = previewFile ? await fileToDataUrl(previewFile) : item?.previewDataUrl || "";
+  const previewVideoFile = fields.previewVideo.files?.[0];
+  const id = item?.id || uid("catalog");
+  const previewDataUrl = previewFile ? await fileToDataUrl(previewFile) : servicePreviewImageDataUrl(item);
+  const previewVideoDataUrl = previewVideoFile ? await fileToDataUrl(previewVideoFile) : servicePreviewVideoDataUrl(item);
   const next = {
     ...(item || {}),
-    id: item?.id || uid("catalog"),
+    id,
     title,
     name: title,
-    price: allowOnlyTitle ? (item?.price || "") : fields.price.value.trim(),
+    price: allowOnlyTitle ? (item?.price || "") : normalizeServicePriceInput(fields.price.value),
+    shortDescription: allowOnlyTitle ? serviceShortDescription(item) : fields.shortDescription.value.trim(),
+    description: allowOnlyTitle ? serviceDescription(item) : fields.description.value.trim(),
+    gender: allowOnlyTitle ? serviceGender(item) : normalizeServiceGender(fields.gender.value),
     previewDataUrl,
+    previewImageId: previewDataUrl ? (item?.previewImageId || `${id}_preview_image`) : "",
     previewName: previewFile?.name || item?.previewName || "",
+    previewVideoDataUrl,
+    previewVideoId: previewVideoDataUrl ? (item?.previewVideoId || `${id}_preview_video`) : "",
+    previewVideoName: previewVideoFile?.name || item?.previewVideoName || "",
     prompt: allowOnlyTitle ? servicePrompt(item) : fields.prompt.value.trim(),
     mediaKind: item?.mediaKind || "both",
     orderInfo: item?.orderInfo || "",
@@ -2203,20 +2417,25 @@ async function duplicateCatalogItem(itemId) {
   const copy = {
     ...item,
     id: copyId,
-    title: `${item.title} копия`,
-    angles: (item.angles || []).map((angle) => ({ ...angle }))
+    title: `${serviceName(item)} копия`,
+    name: `${serviceName(item)} копия`,
+    previewImageId: servicePreviewImageDataUrl(item) ? `${copyId}_preview_image` : "",
+    previewVideoId: servicePreviewVideoDataUrl(item) ? `${copyId}_preview_video` : "",
+    angles: (item.angles || []).map((angle) => ({ ...angle })),
+    createdAt: now(),
+    updatedAt: now()
   };
   await put("catalog", copy);
   await refreshData();
   notify("Услуга продублирована.");
-  renderCatalog();
+  renderServices();
 }
 
 async function deleteCatalogItem(itemId) {
   if (!confirm("Удалить услугу из каталога?")) return;
   await del("catalog", itemId);
   await refreshData();
-  renderCatalog();
+  renderServices();
 }
 
 async function addCatalogAngle(itemId) {
@@ -2308,7 +2527,7 @@ async function deleteCatalogAngle(itemId, angleId) {
   if (!item || !confirm("Удалить ракурс?")) return;
   await put("catalog", { ...item, angles: (item.angles || []).filter((entry) => entry.id !== angleId) });
   await refreshData();
-  renderCatalog();
+  renderServiceDetail();
 }
 
 function uploadReference(itemId, angleId) {
@@ -2335,7 +2554,7 @@ function showAngleReferencePreview(itemId, angleId) {
       <div class="card-header">
         <div>
           <h2 class="card-title">${escapeHtml(angle.name)}</h2>
-          <p class="muted">${escapeHtml(item?.title || "")}</p>
+          <p class="muted">${escapeHtml(serviceName(item))}</p>
         </div>
         <button class="icon-button" data-close-reference-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
@@ -2369,7 +2588,8 @@ async function generateReferenceSet(itemId) {
   if (!copied) prompt("Скопируйте промпт для ChatGPT / генератора изображений", promptText);
   await refreshData();
   notify(copied ? "AI-референсы добавлены. Промпт для генерации скопирован." : "AI-референсы добавлены. Промпт показан для копирования.");
-  renderCatalog();
+  state.catalogId = item.id;
+  renderServiceDetail();
 }
 
 function mergeReferenceAngles(currentAngles, subject) {
@@ -2576,7 +2796,8 @@ async function handleReferenceInput(event) {
   event.target.value = "";
   await refreshData();
   notify("Референс сохранен.");
-  renderCatalog();
+  if (state.route === "serviceDetail") renderServiceDetail();
+  else renderServices();
 }
 
 function isReferenceImage(file) {
@@ -2615,10 +2836,11 @@ async function handlePreviewInput(event) {
     const item = catalogItemById(task.itemId);
     if (!item) return;
     const previewDataUrl = await fileToDataUrl(file);
-    await put("catalog", { ...item, previewDataUrl, previewName: file.name || "preview" });
+    await put("catalog", { ...item, previewDataUrl, previewImageId: item.previewImageId || `${item.id}_preview_image`, previewName: file.name || "preview", updatedAt: now() });
     await refreshData();
     notify("Превью услуги сохранено.");
-    renderServices();
+    if (state.route === "serviceDetail") renderServiceDetail();
+    else renderServices();
   }
 }
 
@@ -3575,6 +3797,12 @@ async function exportServices() {
   notify("Услуги экспортированы.");
 }
 
+async function exportPublicCatalog() {
+  const blob = createZip(await buildPublicCatalogExportFiles());
+  downloadBlob(blob, "catalog_export.zip");
+  notify("Каталог экспортирован.");
+}
+
 async function importServices(file) {
   return importTransferFile(file, "services");
 }
@@ -3630,6 +3858,519 @@ async function buildTransferExportFiles(exportType, scope = {}) {
     { path: "data.json", data: jsonBytes(data) },
     ...mediaFiles
   ];
+}
+
+async function buildPublicCatalogExportFiles() {
+  const files = [];
+  const services = [];
+  for (const item of state.data.catalog) {
+    const serviceId = item.id || uid("service");
+    const fileBase = safePath(serviceId);
+    const imageUrl = servicePreviewImageDataUrl(item);
+    const videoUrl = servicePreviewVideoDataUrl(item);
+    let previewImage = "";
+    let previewVideo = "";
+    const image = dataUrlToBytes(imageUrl);
+    if (image) {
+      previewImage = `assets/images/${fileBase}.${dataUrlExtension(imageUrl)}`;
+      files.push({ path: previewImage, data: image.bytes });
+    }
+    const video = dataUrlToBytes(videoUrl);
+    if (video) {
+      previewVideo = `assets/videos/${fileBase}.${dataUrlExtension(videoUrl)}`;
+      files.push({ path: previewVideo, data: video.bytes });
+    }
+    services.push({
+      id: serviceId,
+      name: serviceName(item) || "Услуга",
+      price: serviceExportPrice(item),
+      shortDescription: serviceShortDescription(item),
+      description: serviceDescription(item),
+      gender: serviceGender(item),
+      previewImage,
+      previewVideo
+    });
+  }
+  const catalogData = {
+    title: "Каталог услуг",
+    exportedAt: now(),
+    services
+  };
+  return [
+    { path: "index.html", data: new TextEncoder().encode(buildPublicCatalogHtml(catalogData)) },
+    { path: "catalog.json", data: jsonBytes(catalogData) },
+    { path: "assets/images/", data: new Uint8Array() },
+    { path: "assets/videos/", data: new Uint8Array() },
+    ...files
+  ];
+}
+
+function serviceExportPrice(item) {
+  const amount = parseMoney(item?.price);
+  return amount || undefined;
+}
+
+function buildPublicCatalogHtml(catalogData) {
+  const inlineCatalog = JSON.stringify(catalogData).replace(/</g, "\\u003c");
+  return `<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Каталог услуг</title>
+    <style>
+      * { box-sizing: border-box; }
+      :root {
+        --bg: #f7f3ec;
+        --card: #fffaf3;
+        --ink: #221b16;
+        --muted: #74685f;
+        --line: rgba(72, 52, 36, .16);
+        --accent: #d46a35;
+        --accent-2: #18736f;
+        --soft: #efe2d0;
+        --shadow: 0 22px 60px rgba(57, 37, 21, .12);
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, rgba(212, 106, 53, .24), transparent 34rem),
+          radial-gradient(circle at 82% 10%, rgba(24, 115, 111, .16), transparent 26rem),
+          var(--bg);
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      .page {
+        width: min(1040px, 100%);
+        margin: 0 auto;
+        padding: 24px 16px 44px;
+      }
+      .hero {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        background: rgba(255, 250, 243, .82);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(2.15rem, 10vw, 4.6rem);
+        line-height: .92;
+        letter-spacing: -.055em;
+      }
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 1rem;
+        font-weight: 700;
+      }
+      .controls {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+      .search {
+        min-height: 54px;
+        width: 100%;
+        padding: 0 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 250, 243, .9);
+        color: var(--ink);
+        box-shadow: 0 12px 28px rgba(57, 37, 21, .06);
+        outline: none;
+        font-weight: 800;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+      .chip {
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 250, 243, .78);
+        color: var(--ink);
+        font-weight: 900;
+        white-space: nowrap;
+      }
+      .chip.active {
+        border-color: rgba(212, 106, 53, .46);
+        background: var(--accent);
+        color: white;
+      }
+      .section {
+        display: grid;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .section-title h2 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+      .section-title span {
+        display: inline-grid;
+        place-items: center;
+        min-width: 32px;
+        min-height: 32px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--muted);
+        font-weight: 900;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 250, 243, .96);
+        box-shadow: 0 16px 44px rgba(57, 37, 21, .1);
+        text-align: left;
+        transition: transform .18s ease, box-shadow .18s ease;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 24px 64px rgba(57, 37, 21, .16);
+      }
+      .preview {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: linear-gradient(135deg, #efd6b5, #f9efe3);
+      }
+      .preview img,
+      .modal-media img,
+      .modal-media video {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .empty-preview {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        color: rgba(34, 27, 22, .38);
+        font-size: 4rem;
+        font-weight: 900;
+      }
+      .body {
+        display: grid;
+        gap: 10px;
+        padding: 16px;
+      }
+      .title-row {
+        display: grid;
+        gap: 4px;
+      }
+      .title-row h3 {
+        margin: 0;
+        font-size: 1.35rem;
+        line-height: 1.05;
+      }
+      .price {
+        color: var(--accent-2);
+        font-size: 1.08rem;
+        font-weight: 950;
+      }
+      .desc {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--muted);
+        font-size: .8rem;
+        font-weight: 900;
+      }
+      .badge.video {
+        background: rgba(24, 115, 111, .13);
+        color: var(--accent-2);
+      }
+      .empty {
+        padding: 22px;
+        border: 1px dashed var(--line);
+        border-radius: 22px;
+        color: var(--muted);
+        text-align: center;
+        font-weight: 800;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(34, 27, 22, .52);
+        backdrop-filter: blur(12px);
+      }
+      .modal-backdrop.show { display: flex; }
+      .modal {
+        width: min(780px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        border-radius: 28px;
+        background: #fffaf3;
+        box-shadow: 0 34px 90px rgba(0, 0, 0, .28);
+      }
+      .modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 18px 0;
+      }
+      .modal-head h2 {
+        margin: 0;
+        font-size: 1.7rem;
+      }
+      .close {
+        min-width: 44px;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: white;
+        color: var(--ink);
+        font-weight: 900;
+      }
+      .modal-media {
+        position: relative;
+        overflow: hidden;
+        margin: 16px 18px 0;
+        aspect-ratio: 16 / 10;
+        border-radius: 22px;
+        background: #111;
+      }
+      .fullscreen {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        min-height: 38px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .92);
+        color: var(--ink);
+        font-weight: 900;
+      }
+      .modal-copy {
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+      }
+      .modal-copy p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .back {
+        min-height: 48px;
+        margin: 0 18px 18px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+        color: var(--ink);
+        font-weight: 900;
+      }
+      @media (max-width: 620px) {
+        .page { padding-inline: 12px; }
+        .hero { padding: 22px; border-radius: 26px; }
+        .cards { grid-template-columns: 1fr; }
+        .modal-media { aspect-ratio: 4 / 3; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1 id="catalog-title">Каталог услуг</h1>
+        <p>Выберите образ или формат съемки, который хочется показать ребенку.</p>
+      </section>
+      <section class="controls">
+        <input class="search" id="search" placeholder="Найти услугу" />
+        <div class="filters" id="filters">
+          <button class="chip active" data-filter="all" type="button">Все</button>
+          <button class="chip" data-filter="boys" type="button">Мальчикам</button>
+          <button class="chip" data-filter="girls" type="button">Девочкам</button>
+        </div>
+      </section>
+      <section id="catalog-feed"></section>
+    </main>
+    <div class="modal-backdrop" id="modal" aria-hidden="true"></div>
+    <script type="application/json" id="catalog-fallback">${inlineCatalog}</script>
+    <script>
+      var catalog = { title: "Каталог услуг", services: [] };
+      var activeFilter = "all";
+      var query = "";
+      var sections = [
+        { gender: "boys", title: "Для мальчиков" },
+        { gender: "girls", title: "Для девочек" },
+        { gender: "unisex", title: "Для всех" }
+      ];
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char];
+        });
+      }
+
+      function normalizeGender(value) {
+        return ["boys", "girls", "unisex"].indexOf(value) >= 0 ? value : "unisex";
+      }
+
+      function genderLabel(value) {
+        var gender = normalizeGender(value);
+        if (gender === "boys") return "Мальчикам";
+        if (gender === "girls") return "Девочкам";
+        return "Для всех";
+      }
+
+      function priceText(price) {
+        var amount = Number(price || 0);
+        return amount ? amount.toLocaleString("ru-RU") + " ₽" : "Цена не указана";
+      }
+
+      function activeSections() {
+        if (activeFilter === "boys") return sections.filter(function(section) { return section.gender !== "girls"; });
+        if (activeFilter === "girls") return sections.filter(function(section) { return section.gender !== "boys"; });
+        return sections;
+      }
+
+      function matches(service) {
+        var gender = normalizeGender(service.gender);
+        if (activeFilter === "boys" && gender === "girls") return false;
+        if (activeFilter === "girls" && gender === "boys") return false;
+        if (!query) return true;
+        return [service.name, service.shortDescription, service.description, service.price].join(" ").toLowerCase().indexOf(query) >= 0;
+      }
+
+      function card(service) {
+        var preview = service.previewImage
+          ? '<img src="' + escapeHtml(service.previewImage) + '" alt="' + escapeHtml(service.name) + '" loading="lazy" />'
+          : '<div class="empty-preview">' + escapeHtml((service.name || "У").slice(0, 1)) + '</div>';
+        var video = service.previewVideo ? '<span class="badge video">Видео</span>' : "";
+        return '<button class="card" data-service="' + escapeHtml(service.id) + '" type="button">' +
+          '<div class="preview">' + preview + '</div>' +
+          '<div class="body">' +
+            '<div class="title-row"><h3>' + escapeHtml(service.name || "Услуга") + '</h3><span class="price">' + escapeHtml(priceText(service.price)) + '</span></div>' +
+            '<p class="desc">' + escapeHtml(service.shortDescription || "Описание скоро появится.") + '</p>' +
+            '<div class="badges"><span class="badge">' + escapeHtml(genderLabel(service.gender)) + '</span>' + video + '</div>' +
+          '</div>' +
+        '</button>';
+      }
+
+      function render() {
+        document.getElementById("catalog-title").textContent = catalog.title || "Каталог услуг";
+        var html = "";
+        activeSections().forEach(function(section) {
+          var services = (catalog.services || []).filter(function(service) {
+            return normalizeGender(service.gender) === section.gender && matches(service);
+          });
+          if (!services.length) return;
+          html += '<section class="section"><div class="section-title"><h2>' + escapeHtml(section.title) + '</h2><span>' + services.length + '</span></div><div class="cards">' + services.map(card).join("") + '</div></section>';
+        });
+        document.getElementById("catalog-feed").innerHTML = html || '<div class="empty">В каталоге пока нет услуг</div>';
+        Array.from(document.querySelectorAll(".chip")).forEach(function(chip) {
+          chip.classList.toggle("active", chip.dataset.filter === activeFilter);
+        });
+      }
+
+      function openService(id) {
+        var service = (catalog.services || []).find(function(item) { return item.id === id; });
+        if (!service) return;
+        var modal = document.getElementById("modal");
+        var media = service.previewVideo
+          ? '<div class="modal-media"><video id="modal-video" src="' + escapeHtml(service.previewVideo) + '" controls playsinline></video><button class="fullscreen" data-fullscreen type="button">На весь экран</button></div>'
+          : '<div class="modal-media">' + (service.previewImage ? '<img src="' + escapeHtml(service.previewImage) + '" alt="' + escapeHtml(service.name) + '" />' : '<div class="empty-preview">Нет превью</div>') + '</div>';
+        modal.innerHTML = '<section class="modal" role="dialog" aria-modal="true">' +
+          '<div class="modal-head"><div><h2>' + escapeHtml(service.name || "Услуга") + '</h2><span class="price">' + escapeHtml(priceText(service.price)) + '</span></div><button class="close" data-close type="button">x</button></div>' +
+          media +
+          '<div class="modal-copy"><div class="badges"><span class="badge">' + escapeHtml(genderLabel(service.gender)) + '</span>' + (service.previewVideo ? '<span class="badge video">Видео</span>' : '') + '</div><p>' + escapeHtml(service.description || service.shortDescription || "Описание скоро появится.") + '</p></div>' +
+          '<button class="back" data-close type="button">Назад</button>' +
+        '</section>';
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeModal() {
+        var modal = document.getElementById("modal");
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+        modal.innerHTML = "";
+      }
+
+      document.addEventListener("click", function(event) {
+        var filter = event.target.closest("[data-filter]");
+        if (filter) {
+          activeFilter = filter.dataset.filter || "all";
+          render();
+          return;
+        }
+        var cardButton = event.target.closest("[data-service]");
+        if (cardButton) {
+          openService(cardButton.dataset.service);
+          return;
+        }
+        if (event.target.matches("[data-close]") || event.target.id === "modal") closeModal();
+        if (event.target.matches("[data-fullscreen]")) {
+          var video = document.getElementById("modal-video");
+          if (video && video.requestFullscreen) video.requestFullscreen();
+          else if (video && video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+        }
+      });
+
+      document.getElementById("search").addEventListener("input", function(event) {
+        query = event.target.value.trim().toLowerCase();
+        render();
+      });
+
+      async function loadCatalog() {
+        try {
+          var response = await fetch("./catalog.json");
+          if (response.ok) {
+            catalog = await response.json();
+            render();
+            return;
+          }
+        } catch (error) {}
+        catalog = JSON.parse(document.getElementById("catalog-fallback").textContent);
+        render();
+      }
+
+      loadCatalog();
+    </script>
+  </body>
+</html>`;
 }
 
 function buildTransferData(exportType, scope = {}) {
@@ -3741,7 +4482,8 @@ function collectTransferMediaFiles(data) {
   const files = [];
   const taken = new Set();
   (data.services || []).forEach((service) => {
-    addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview`, service.previewDataUrl);
+    addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview`, servicePreviewImageDataUrl(service));
+    addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview_video`, servicePreviewVideoDataUrl(service));
     (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}`, angle.refDataUrl));
     (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}_video`, angle.videoRefDataUrl));
   });
@@ -3856,7 +4598,7 @@ function transferRecordLabel(dataKey, record) {
   if (dataKey === "projects") return record.name || record.id;
   if (dataKey === "classes") return record.name || record.id;
   if (dataKey === "students") return `${record.lastName || ""} ${record.firstName || ""}`.trim() || record.qrId || record.id;
-  if (dataKey === "services") return record.title || record.id;
+  if (dataKey === "services") return record.name || record.title || record.id;
   if (dataKey === "orders") return record.studentId || record.id;
   if (dataKey === "checklistTemplates") return record.name || record.id;
   return record.title || record.name || record.id;
@@ -4202,13 +4944,13 @@ async function buildExportFiles(studentId) {
     const previewNames = new Set();
     const selectedServices = selectedCatalogIdsForStudent(student).map((id) => {
       const item = catalogItemById(id);
-      return item ? { id: item.id, title: item.title, previewFile: item.previewDataUrl ? uniqueServicePreviewFile(item, previewNames) : "" } : null;
+      return item ? { id: item.id, title: serviceName(item), previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : "" } : null;
     }).filter(Boolean);
     files.push({ path: `${base}/meta.json`, data: jsonBytes({ student, order, services: selectedServices }) });
     for (const service of selectedServices) {
       if (!service.previewFile) continue;
       const item = catalogItemById(service.id);
-      const parsed = item?.previewDataUrl ? dataUrlToBytes(item.previewDataUrl) : null;
+      const parsed = servicePreviewImageDataUrl(item) ? dataUrlToBytes(servicePreviewImageDataUrl(item)) : null;
       if (!parsed) continue;
       files.push({ path: `${base}/${service.previewFile}`, data: parsed.bytes });
     }
@@ -4221,8 +4963,8 @@ async function buildExportFiles(studentId) {
 }
 
 function uniqueServicePreviewFile(item, taken) {
-  const ext = dataUrlExtension(item.previewDataUrl);
-  const base = safePath(item.title || "service");
+  const ext = dataUrlExtension(servicePreviewImageDataUrl(item));
+  const base = safePath(serviceName(item) || "service");
   let fileName = `${base}.${ext}`;
   let index = 2;
   while (taken.has(fileName)) {
@@ -4259,11 +5001,18 @@ async function buildFullExportFiles() {
     files.push({ path: `album_media/${item.id}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
   }
   for (const item of state.data.catalog) {
-    if (!item.previewDataUrl) continue;
-    const parsed = dataUrlToBytes(item.previewDataUrl);
+    if (!servicePreviewImageDataUrl(item)) continue;
+    const parsed = dataUrlToBytes(servicePreviewImageDataUrl(item));
     if (!parsed) continue;
-    const ext = dataUrlExtension(item.previewDataUrl);
+    const ext = dataUrlExtension(servicePreviewImageDataUrl(item));
     files.push({ path: `catalog_previews/${item.id}.${ext}`, data: parsed.bytes });
+  }
+  for (const item of state.data.catalog) {
+    if (!servicePreviewVideoDataUrl(item)) continue;
+    const parsed = dataUrlToBytes(servicePreviewVideoDataUrl(item));
+    if (!parsed) continue;
+    const ext = dataUrlExtension(servicePreviewVideoDataUrl(item));
+    files.push({ path: `catalog_preview_videos/${item.id}.${ext}`, data: parsed.bytes });
   }
   return files;
 }
@@ -4955,6 +5704,13 @@ function parseMoney(value) {
   return match ? Number(match[0]) : 0;
 }
 
+function normalizeServicePriceInput(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const normalized = text.replace(/\s+/g, "").replace(",", ".");
+  return /^\d+(?:\.\d+)?$/.test(normalized) ? Number(normalized) : text;
+}
+
 function formatMoney(value) {
   return `${Math.round(Number(value || 0)).toLocaleString("ru-RU")} ₽`;
 }
@@ -4965,7 +5721,7 @@ function statusExportColumns() {
     { key: "student", label: "Ученик", value: (student) => `${student.lastName} ${student.firstName}`.trim() },
     { key: "class", label: "Группа", value: (student) => classById(student.classId)?.name || "" },
     { key: "payment", label: "Оплата", value: (student) => paymentLabel(student.paymentStatus) },
-    { key: "catalog", label: "Услуги", value: (student) => selectedCatalogIdsForStudent(student).map((id) => catalogItemById(id)?.title).filter(Boolean).join(", ") || "Не выбраны" },
+    { key: "catalog", label: "Услуги", value: (student) => selectedCatalogIdsForStudent(student).map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Не выбраны" },
     { key: "orderStatus", label: "Статус заказа", value: (student) => orderStatusLabel(student) },
     { key: "progress", label: "Готовность", value: (student) => {
       const c = completion(student.id);
@@ -5058,6 +5814,53 @@ function studentById(id) {
 
 function catalogItemById(id) {
   return state.data.catalog.find((item) => item.id === id);
+}
+
+function serviceName(item) {
+  return String(item?.name || item?.title || "").trim();
+}
+
+function serviceGender(item) {
+  const value = String(item?.gender || "unisex").trim().toLowerCase();
+  return ["boys", "girls", "unisex"].includes(value) ? value : "unisex";
+}
+
+function normalizeServiceGender(value) {
+  const text = String(value || "").trim().toLowerCase();
+  if (["boys", "male", "boy", "мальчики", "мальчикам", "для мальчиков"].includes(text)) return "boys";
+  if (["girls", "female", "girl", "девочки", "девочкам", "для девочек"].includes(text)) return "girls";
+  return "unisex";
+}
+
+function serviceGenderLabel(itemOrGender) {
+  const gender = typeof itemOrGender === "string" ? normalizeServiceGender(itemOrGender) : serviceGender(itemOrGender);
+  if (gender === "boys") return "Мальчикам";
+  if (gender === "girls") return "Девочкам";
+  return "Для всех";
+}
+
+function serviceShortDescription(item) {
+  return String(item?.shortDescription || "").trim();
+}
+
+function serviceDescription(item) {
+  return String(item?.description || "").trim();
+}
+
+function servicePreviewImageDataUrl(item) {
+  return String(item?.previewDataUrl || item?.previewImageDataUrl || "").trim();
+}
+
+function servicePreviewVideoDataUrl(item) {
+  return String(item?.previewVideoDataUrl || item?.previewVideoUrl || "").trim();
+}
+
+function servicePreviewImageId(item) {
+  return servicePreviewImageDataUrl(item) ? (item?.previewImageId || `${item?.id || "service"}_preview_image`) : "";
+}
+
+function servicePreviewVideoId(item) {
+  return servicePreviewVideoDataUrl(item) ? (item?.previewVideoId || `${item?.id || "service"}_preview_video`) : "";
 }
 
 function catalogAngleByType(type) {
@@ -5166,7 +5969,7 @@ function parseServiceTaskType(type) {
 }
 
 function serviceTaskLabel(catalog, angle) {
-  return `${catalog.title}: ${angle.name}`;
+  return `${serviceName(catalog)}: ${angle.name}`;
 }
 
 function servicePrompt(item) {
@@ -5260,6 +6063,9 @@ function normalizeMediaKind(value, fallback = "both") {
 function formatPrice(value) {
   const text = String(value || "").trim();
   if (!text || text === "0") return "Цена не указана";
+  if (/₽|руб|rub|eur|€|usd|\$/i.test(text)) return text;
+  const amount = parseMoney(text);
+  if (amount) return formatMoney(amount);
   return text;
 }
 
@@ -5273,7 +6079,7 @@ function uniqueAngleId(item, baseId) {
 
 function chooseCatalogId(currentId = "") {
   if (!state.data.catalog.length) return "";
-  const labels = state.data.catalog.map((item, index) => `${index + 1}. ${item.title}`).join("\n");
+  const labels = state.data.catalog.map((item, index) => `${index + 1}. ${serviceName(item)}`).join("\n");
   const currentIndex = Math.max(0, state.data.catalog.findIndex((item) => item.id === currentId));
   const answer = prompt(`Выберите услугу номером:\n${labels}`, String(currentIndex + 1));
   const index = Number(answer) - 1;
