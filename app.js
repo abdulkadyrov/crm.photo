@@ -62,7 +62,8 @@ const STATUS_EXPORT_DEFAULT = {
   columns: ["number", "student", "class", "payment", "catalog", "orderStatus", "progress", "pending"]
 };
 const SETTING_IDS = {
-  initialized: "spf-initialized"
+  initialized: "spf-initialized",
+  catalogWatermark: "spf-catalog-watermark"
 };
 const TRANSFER_APP_NAME = "School Photo Flow";
 const TRANSFER_SCHEMA_VERSION = 1;
@@ -97,6 +98,13 @@ const CLASS_SORT_MODES = {
   numeric: "По цифрам",
   alpha: "По алфавиту"
 };
+const SERVICE_SORT_MODES = {
+  manual: "Свой порядок",
+  alpha: "По алфавиту",
+  category: "По категориям"
+};
+const SERVICE_UNCATEGORIZED = "__uncategorized";
+const SERVICE_DEFAULT_CATEGORIES = ["Мультики", "Военные", "Спортивные", "Сказочные", "Профессии", "Праздничные"];
 const CLASS_COLOR_OPTIONS = [
   { id: "blue", label: "Синий", accent: "#2563eb", gradient: "linear-gradient(135deg, #2563eb, #818cf8)" },
   { id: "green", label: "Зеленый", accent: "#16a34a", gradient: "linear-gradient(135deg, #22c55e, #86efac)" },
@@ -116,6 +124,10 @@ const state = {
   query: "",
   catalogAudience: "all",
   catalogQuery: "",
+  catalogCategory: "all",
+  serviceSort: "manual",
+  serviceCategoryFilter: "all",
+  selectedServiceIds: new Set(),
   db: null,
   data: emptyData(),
   currentCapture: null,
@@ -174,6 +186,7 @@ const previewInput = document.querySelector("#preview-input");
 const shootImportInput = document.querySelector("#shoot-import-input");
 const shootFolderInput = document.querySelector("#shoot-folder-input");
 const zipInput = document.querySelector("#zip-input");
+const transferFolderInput = document.querySelector("#transfer-folder-input");
 const albumMediaInput = document.querySelector("#album-media-input");
 const albumZipInput = document.querySelector("#album-zip-input");
 
@@ -328,6 +341,9 @@ async function seedCatalogIfNeeded() {
     shortDescription: "Портреты, полный рост, профиль, короткое видео и интервью.",
     description: "Базовый пакет для школьной фотосъемки с набором ракурсов и короткими видео-сценами.",
     gender: "unisex",
+    category: "",
+    popular: false,
+    orderIndex: 0,
     orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
     requirements: "Ровный свет, чистый фон, готовый список учеников и место для съемки.",
     angles: [
@@ -355,6 +371,7 @@ function bindShell() {
   shootImportInput.addEventListener("change", handleShootImport);
   shootFolderInput.addEventListener("change", handleShootImport);
   zipInput.addEventListener("change", handleZipInput);
+  transferFolderInput?.addEventListener("change", handleTransferFolderInput);
   albumMediaInput.addEventListener("change", handleAlbumMediaInput);
   albumZipInput.addEventListener("change", handleAlbumZipInput);
 }
@@ -1189,6 +1206,7 @@ function renderStudent() {
         </button>
         <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
         <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
+        <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
         <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
       </aside>
     </section>
@@ -1199,8 +1217,9 @@ function renderStudent() {
 
 function taskRow(item, studentId) {
   const angle = catalogAngleForStudent(studentId, item.type);
-  const reference = angle?.refDataUrl
-    ? `<img class="reference-thumb" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
+  const hasReference = Boolean(angle?.refDataUrl || angle?.videoRefDataUrl);
+  const reference = hasReference
+    ? `<button class="reference-thumb-button" data-view-student-reference="${escapeAttr(`${studentId}:${item.type}`)}" type="button" title="Посмотреть референс">${angle.refDataUrl ? `<img class="reference-thumb" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />` : '<div class="reference-empty">Видео</div>'}</button>`
     : '<div class="reference-empty">Референс</div>';
   return `
     <div class="task-row ${item.status === "done" ? "done" : ""}">
@@ -1239,9 +1258,9 @@ function mediaTile(item) {
 
 function renderCatalog() {
   setShell({ heading: "Каталог услуг", context: "Витрина", summary: "Покажите детям и родителям доступные варианты" });
-  const sections = catalogAudienceSections()
-    .map((section) => ({ ...section, services: catalogServicesForSection(section.gender) }))
-    .filter((section) => section.services.length);
+  const sections = catalogDisplaySections();
+  const categories = serviceCategoryOptions({ includeDefaults: false });
+  const hasUncategorized = state.data.catalog.some((item) => !serviceCategory(item));
   view.innerHTML = `
     <section class="catalog-page">
       <article class="panel catalog-hero">
@@ -1260,6 +1279,13 @@ function renderCatalog() {
         ${catalogAudienceChip("boys", "Мальчикам")}
         ${catalogAudienceChip("girls", "Девочкам")}
       </div>
+      ${categories.length || hasUncategorized ? `
+        <div class="chip-row catalog-tabs">
+          ${catalogCategoryChip("all", "Все категории")}
+          ${categories.map((category) => catalogCategoryChip(category, category)).join("")}
+          ${hasUncategorized ? catalogCategoryChip(SERVICE_UNCATEGORIZED, "Без категории") : ""}
+        </div>
+      ` : ""}
       <section class="catalog-feed">
         ${sections.map(catalogSection).join("") || empty("В каталоге пока нет услуг")}
       </section>
@@ -1270,6 +1296,25 @@ function renderCatalog() {
 
 function catalogAudienceChip(value, label) {
   return `<button class="chip ${state.catalogAudience === value ? "active" : ""}" data-catalog-audience="${value}" type="button">${label}</button>`;
+}
+
+function catalogCategoryChip(value, label) {
+  return `<button class="chip ${state.catalogCategory === value ? "active" : ""}" data-catalog-category="${escapeAttr(value)}" type="button">${escapeHtml(label)}</button>`;
+}
+
+function catalogDisplaySections() {
+  const visible = publicOrderedServices(state.data.catalog)
+    .filter(serviceMatchesCatalogQuery)
+    .filter(serviceMatchesCatalogCategory)
+    .filter(serviceMatchesCatalogAudience);
+  const popular = visible.filter(isServicePopular);
+  const popularIds = new Set(popular.map((item) => item.id));
+  const sections = popular.length ? [{ title: "Популярные", services: popular, featured: true }] : [];
+  catalogAudienceSections().forEach((section) => {
+    const services = visible.filter((item) => serviceGender(item) === section.gender && !popularIds.has(item.id));
+    if (services.length) sections.push({ ...section, services });
+  });
+  return sections;
 }
 
 function catalogAudienceSections() {
@@ -1289,6 +1334,19 @@ function catalogServicesForSection(gender) {
     .filter(serviceMatchesCatalogQuery);
 }
 
+function serviceMatchesCatalogAudience(item) {
+  const gender = serviceGender(item);
+  if (state.catalogAudience === "boys") return gender !== "girls";
+  if (state.catalogAudience === "girls") return gender !== "boys";
+  return true;
+}
+
+function serviceMatchesCatalogCategory(item) {
+  if (state.catalogCategory === "all") return true;
+  if (state.catalogCategory === SERVICE_UNCATEGORIZED) return !serviceCategory(item);
+  return serviceCategory(item) === state.catalogCategory;
+}
+
 function serviceMatchesCatalogQuery(item) {
   const query = state.catalogQuery.trim().toLowerCase();
   if (!query) return true;
@@ -1296,6 +1354,7 @@ function serviceMatchesCatalogQuery(item) {
     serviceName(item),
     serviceShortDescription(item),
     serviceDescription(item),
+    serviceCategory(item),
     item.price
   ].join(" ").toLowerCase().includes(query);
 }
@@ -1321,6 +1380,7 @@ function catalogServiceCard(item) {
     : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
   const videoBadge = servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : "";
   const shortDescription = serviceShortDescription(item);
+  const category = serviceCategory(item);
   return `
     <article class="catalog-service-card card-button" data-open-catalog-service="${item.id}" tabindex="0">
       <div class="catalog-card-preview">${preview}</div>
@@ -1331,7 +1391,9 @@ function catalogServiceCard(item) {
         </div>
         ${shortDescription ? `<p>${escapeHtml(shortDescription)}</p>` : '<p class="muted">Описание можно добавить в услуге.</p>'}
         <div class="catalog-card-badges">
+          ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
           <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
+          ${category ? `<span class="catalog-card-badge">${escapeHtml(category)}</span>` : ""}
           ${videoBadge}
         </div>
       </div>
@@ -1365,7 +1427,9 @@ function showCatalogServiceViewer(itemId) {
       ${media}
       <div class="catalog-modal-copy">
         <div class="catalog-card-badges">
+          ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
           <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
+          ${serviceCategory(item) ? `<span class="catalog-card-badge">${escapeHtml(serviceCategory(item))}</span>` : ""}
           ${videoUrl ? '<span class="catalog-card-badge video">Видео</span>' : ""}
         </div>
         <p>${escapeHtml(description)}</p>
@@ -1389,7 +1453,11 @@ function showCatalogServiceViewer(itemId) {
 
 function renderServices() {
   setShell({ heading: "Услуги", context: "Настройки съемки", summary: "Пакеты · чек-листы · референсы" });
-  const catalog = state.data.catalog;
+  pruneSelectedServices();
+  const catalog = servicesForAdminView();
+  const categories = serviceCategoryOptions();
+  const selectedCount = state.selectedServiceIds.size;
+  const canMove = state.serviceSort === "manual" && state.serviceCategoryFilter === "all";
   view.innerHTML = `
     <section class="toolbar">
       <div>
@@ -1398,35 +1466,93 @@ function renderServices() {
       </div>
       <button class="primary-button" data-add-catalog type="button"><span data-icon="plus"></span>Услуга</button>
     </section>
+    <section class="service-order-toolbar">
+      <label class="field-label compact-field"><span>Порядок</span><select class="select" data-service-sort>
+        ${Object.entries(SERVICE_SORT_MODES).map(([value, label]) => `<option value="${value}" ${state.serviceSort === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+      </select></label>
+      <label class="field-label compact-field"><span>Категория</span><select class="select" data-service-category-filter>
+        <option value="all" ${state.serviceCategoryFilter === "all" ? "selected" : ""}>Все категории</option>
+        <option value="${SERVICE_UNCATEGORIZED}" ${state.serviceCategoryFilter === SERVICE_UNCATEGORIZED ? "selected" : ""}>Без категории</option>
+        ${categories.map((category) => `<option value="${escapeAttr(category)}" ${state.serviceCategoryFilter === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
+      </select></label>
+      <span class="muted">${catalog.length} из ${state.data.catalog.length} услуг</span>
+    </section>
+    ${selectedCount ? serviceBulkPanel(selectedCount) : ""}
     <section class="compact-stack">
-      ${catalog.map(catalogCard).join("") || empty("Добавьте первую услугу для съемки")}
+      ${catalog.map((item, index) => catalogCard(item, index, catalog.length, canMove)).join("") || empty("Добавьте первую услугу для съемки")}
     </section>
   `;
   bindViewActions();
 }
 
-function catalogCard(item) {
+function serviceBulkPanel(selectedCount) {
+  return `
+    <section class="panel service-bulk-panel">
+      <div>
+        <h3 class="card-title">Выбрано услуг: ${selectedCount}</h3>
+        <p class="muted">Можно сразу назначить цену, категорию, аудиторию или скопировать ракурсы.</p>
+      </div>
+      <div class="service-bulk-grid">
+        <label class="field-label compact-field"><span>Цена</span><input class="input" data-bulk-price inputmode="decimal" placeholder="500" /></label>
+        <button class="secondary-button compact" data-bulk-apply-price type="button">Применить цену</button>
+        <label class="field-label compact-field"><span>Категория</span><input class="input" data-bulk-category list="service-category-options" placeholder="Мультики" /></label>
+        <button class="secondary-button compact" data-bulk-apply-category type="button">Применить категорию</button>
+        <label class="field-label compact-field"><span>Для кого</span><select class="select" data-bulk-gender>
+          <option value="unisex">Для всех</option>
+          <option value="boys">Для мальчиков</option>
+          <option value="girls">Для девочек</option>
+        </select></label>
+        <button class="secondary-button compact" data-bulk-apply-gender type="button">Применить</button>
+        <label class="field-label compact-field"><span>Ракурсы как у</span><select class="select" data-bulk-angle-source>
+          ${manualOrderedServices().map((item) => `<option value="${item.id}">${escapeHtml(serviceName(item))}</option>`).join("")}
+        </select></label>
+        <button class="secondary-button compact" data-bulk-copy-angles type="button">Скопировать ракурсы</button>
+      </div>
+      <div class="toolbar">
+        <button class="secondary-button compact" data-clear-service-selection type="button">Снять выбор</button>
+      </div>
+      <datalist id="service-category-options">
+        ${serviceCategoryOptions().map((category) => `<option value="${escapeAttr(category)}"></option>`).join("")}
+      </datalist>
+    </section>
+  `;
+}
+
+function catalogCard(item, index = 0, total = 0, canMove = false) {
   const previewUrl = servicePreviewImageDataUrl(item);
   const preview = previewUrl
-    ? `<img class="service-preview" src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" />`
+    ? `<img class="service-preview" src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" decoding="async" />`
     : '<div class="service-preview empty">Нет превью</div>';
   const promptBadge = servicePrompt(item) ? '<span>✨ Prompt есть</span>' : "";
   const videoBadge = servicePreviewVideoDataUrl(item) ? '<span>Видео</span>' : "";
   const description = serviceShortDescription(item);
+  const selected = state.selectedServiceIds.has(item.id);
+  const popular = isServicePopular(item);
+  const category = serviceCategory(item);
   return `
-    <article class="list-card card-button service-card" data-open-catalog="${item.id}" tabindex="0">
+    <article class="list-card card-button service-card ${selected ? "selected" : ""}" data-open-catalog="${item.id}" tabindex="0">
       <div class="list-card-main">
+        <label class="service-select" title="Выбрать услугу"><input type="checkbox" data-select-service="${item.id}" ${selected ? "checked" : ""} /><span></span></label>
         <div class="service-preview-frame">${preview}</div>
         <div class="list-copy">
-          <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
+          <div class="service-title-row">
+            <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
+            <button class="service-star ${popular ? "active" : ""}" data-toggle-service-popular="${item.id}" type="button" aria-label="${popular ? "Убрать из популярных" : "Добавить в популярные"}" title="Популярное"><span data-icon="star"></span></button>
+          </div>
           ${description ? `<p class="muted">${escapeHtml(description)}</p>` : ""}
           <div class="service-card-meta">
             <span>${escapeHtml(formatPrice(item.price))}</span>
             <span>${escapeHtml(serviceGenderLabel(item))}</span>
+            <span>${escapeHtml(category || "Без категории")}</span>
+            ${popular ? "<span>Популярное</span>" : ""}
             <span>${(item.angles || []).length} ракурсов</span>
             ${videoBadge}
             ${promptBadge}
           </div>
+        </div>
+        <div class="service-move-buttons">
+          <button class="icon-button compact" data-move-service="${item.id}:up" type="button" ${!canMove || index === 0 ? "disabled" : ""} aria-label="Выше" title="Выше">↑</button>
+          <button class="icon-button compact" data-move-service="${item.id}:down" type="button" ${!canMove || index >= total - 1 ? "disabled" : ""} aria-label="Ниже" title="Ниже">↓</button>
         </div>
         <details class="item-menu">
           <summary aria-label="Меню услуги">...</summary>
@@ -1464,6 +1590,8 @@ function renderServiceDetail() {
           <div class="catalog-details">
             <p><strong>Цена:</strong> ${escapeHtml(formatPrice(item.price))}</p>
             <p><strong>Для кого:</strong> ${escapeHtml(serviceGenderLabel(item))}</p>
+            <p><strong>Категория:</strong> ${escapeHtml(serviceCategoryLabel(item))}</p>
+            ${isServicePopular(item) ? '<p><strong>Популярное:</strong> показывается выше в каталоге</p>' : ""}
             ${serviceShortDescription(item) ? `<p><strong>Короткое описание:</strong> ${escapeHtml(serviceShortDescription(item))}</p>` : ""}
             ${serviceDescription(item) ? `<p><strong>Полное описание:</strong> ${escapeHtml(serviceDescription(item))}</p>` : ""}
             ${videoUrl ? '<p><strong>Превью видео:</strong> добавлено</p>' : ""}
@@ -1534,6 +1662,7 @@ function renderSettings() {
       <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>PDF статусы</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
@@ -1546,6 +1675,7 @@ function showSettingsDetail(section) {
   const template = state.data.templates[0] || { id: uid("template"), name: "Чеклист", items: Object.keys(ORDER_TYPES) };
   const items = templateItemsForSettings(template);
   const exportTemplate = getStatusExportTemplate();
+  const watermark = catalogWatermarkSettings();
   const content = {
     checklists: `
       <article class="panel grid">
@@ -1561,6 +1691,21 @@ function showSettingsDetail(section) {
         <div class="export-column-grid">${statusExportColumns().map((column) => `<label class="checkbox-row"><input type="checkbox" data-status-export-column="${column.key}" ${exportTemplate.columns.includes(column.key) ? "checked" : ""} /><span>${escapeHtml(column.label)}</span></label>`).join("")}</div>
         <button class="primary-button" data-save-status-export-template type="button">Сохранить PDF</button>
       </article>`,
+    watermark: `
+      <article class="panel grid">
+        <div><h2 class="card-title">Водяной знак каталога</h2><p class="muted">При экспорте публичного каталога знак будет нанесен поверх превью фото.</p></div>
+        <label class="checkbox-row"><input type="checkbox" data-watermark-enabled ${watermark.enabled ? "checked" : ""} /><span>Включить водяной знак</span></label>
+        <label class="field-label"><span>Текст</span><input class="input" data-watermark-text placeholder="Ваше имя, студия или телефон" value="${escapeAttr(watermark.text)}" /></label>
+        <label class="field-label"><span>Прозрачность</span><input class="input" data-watermark-opacity type="range" min="0.15" max="0.65" step="0.05" value="${escapeAttr(String(watermark.opacity))}" /></label>
+        <div class="watermark-logo-row">
+          ${watermark.logoDataUrl ? `<img class="watermark-logo-preview" src="${watermark.logoDataUrl}" alt="Логотип водяного знака" />` : '<div class="watermark-logo-preview empty">Лого</div>'}
+          <div class="toolbar">
+            <button class="secondary-button" data-upload-watermark-logo type="button">Загрузить PNG/логотип</button>
+            ${watermark.logoDataUrl ? '<button class="secondary-button" data-remove-watermark-logo type="button">Убрать логотип</button>' : ""}
+          </div>
+        </div>
+        <button class="primary-button" data-save-watermark-settings type="button">Сохранить водяной знак</button>
+      </article>`,
     transfer: `
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
@@ -1568,7 +1713,7 @@ function showSettingsDetail(section) {
         <div class="toolbar"><button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button><button class="secondary-button" data-import-project type="button">Импорт проекта</button></div>
         <label class="field-label"><span>Класс / группа</span><select class="select" data-transfer-class>${state.data.classes.map((klass) => `<option value="${klass.id}" ${klass.id === state.classId ? "selected" : ""}>${escapeHtml(`${projectById(klass.projectId)?.name || ""} · ${klass.name}`)}</option>`).join("")}</select></label>
         <div class="toolbar"><button class="secondary-button" data-export-selected-class type="button">Экспорт класса/группы</button><button class="secondary-button" data-import-class type="button">Импорт класса/группы</button></div>
-        <div class="toolbar"><button class="secondary-button" data-export-services type="button">Экспорт услуг</button><button class="secondary-button" data-import-services type="button">Импорт услуг</button><button class="secondary-button" data-export-catalog type="button">Экспорт публичного каталога</button></div>
+        <div class="toolbar"><button class="secondary-button" data-export-services type="button">Экспорт услуг</button><button class="secondary-button" data-import-services type="button">Импорт услуг ZIP</button><button class="secondary-button" data-import-services-folder type="button">Импорт папки услуг</button><button class="secondary-button" data-export-catalog type="button">Экспорт публичного каталога</button></div>
         <div class="toolbar"><button class="secondary-button" data-export-settings type="button">Экспорт настроек</button><button class="secondary-button" data-import-settings type="button">Импорт настроек</button></div>
         <div class="toolbar"><button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button><button class="secondary-button" data-import-zip type="button">Импорт всех данных</button></div>
       </article>`,
@@ -1616,6 +1761,7 @@ function studentCard(student) {
             <button data-open-student-action="${student.id}" type="button">Открыть</button>
             <button data-edit-student="${student.id}" type="button">Редактировать</button>
             <button data-generate-qr="${student.id}" type="button">QR</button>
+            <button data-show-student-references="${student.id}" type="button">Референсы</button>
             <button data-export-student="${student.id}" type="button">Экспорт</button>
             <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
           </div>
@@ -1749,6 +1895,12 @@ function bindViewActions() {
     state.zipImportMode = "services";
     zipInput.click();
   });
+  view.querySelector("[data-import-services-folder]")?.addEventListener("click", () => {
+    if (!transferFolderInput) return notify("Обновите страницу, чтобы появилась загрузка папки услуг.");
+    state.zipImportMode = "services";
+    transferFolderInput.value = "";
+    transferFolderInput.click();
+  });
   view.querySelector("[data-import-settings]")?.addEventListener("click", () => {
     state.zipImportMode = "settings";
     zipInput.click();
@@ -1766,6 +1918,9 @@ function bindViewActions() {
   view.querySelectorAll("[data-export-status-project]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ projectId: node.dataset.exportStatusProject })));
   view.querySelector("[data-save-template]")?.addEventListener("click", saveTemplate);
   view.querySelector("[data-save-status-export-template]")?.addEventListener("click", saveStatusExportTemplate);
+  view.querySelector("[data-save-watermark-settings]")?.addEventListener("click", saveWatermarkSettingsFromView);
+  view.querySelector("[data-upload-watermark-logo]")?.addEventListener("click", uploadWatermarkLogo);
+  view.querySelector("[data-remove-watermark-logo]")?.addEventListener("click", removeWatermarkLogo);
   view.querySelector("[data-add-template-item]")?.addEventListener("click", addTemplateEditorItem);
   view.querySelectorAll("[data-remove-template-item]").forEach((node) => node.addEventListener("click", () => {
     node.closest(".template-item-row")?.remove();
@@ -1775,6 +1930,13 @@ function bindViewActions() {
   view.querySelector("[data-refresh-app]")?.addEventListener("click", refreshApp);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelectorAll("[data-generate-qr]").forEach((node) => node.addEventListener("click", (event) => showQrPayload(event.currentTarget.dataset.generateQr || state.studentId)));
+  view.querySelectorAll("[data-show-student-references]").forEach((node) => node.addEventListener("click", (event) => showStudentReferences(event.currentTarget.dataset.showStudentReferences)));
+  view.querySelectorAll("[data-view-student-reference]").forEach((node) => node.addEventListener("click", (event) => {
+    const payload = event.currentTarget.dataset.viewStudentReference || "";
+    const divider = payload.indexOf(":");
+    if (divider < 0) return;
+    showStudentReferences(payload.slice(0, divider), payload.slice(divider + 1));
+  }));
   view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
   view.querySelector("[data-open-public-catalog]")?.addEventListener("click", () => navigate("catalog"));
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
@@ -1782,6 +1944,10 @@ function bindViewActions() {
   view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);
   view.querySelectorAll("[data-catalog-audience]").forEach((node) => node.addEventListener("click", () => {
     state.catalogAudience = node.dataset.catalogAudience;
+    renderCatalog();
+  }));
+  view.querySelectorAll("[data-catalog-category]").forEach((node) => node.addEventListener("click", () => {
+    state.catalogCategory = node.dataset.catalogCategory || "all";
     renderCatalog();
   }));
   view.querySelector("[data-catalog-query]")?.addEventListener("input", (event) => {
@@ -1801,10 +1967,33 @@ function bindViewActions() {
     });
   });
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
+  view.querySelector("[data-service-sort]")?.addEventListener("change", (event) => {
+    state.serviceSort = event.currentTarget.value;
+    renderServices();
+  });
+  view.querySelector("[data-service-category-filter]")?.addEventListener("change", (event) => {
+    state.serviceCategoryFilter = event.currentTarget.value;
+    renderServices();
+  });
+  view.querySelectorAll("[data-select-service]").forEach((node) => node.addEventListener("change", () => toggleServiceSelection(node.dataset.selectService, node.checked)));
+  view.querySelector("[data-clear-service-selection]")?.addEventListener("click", () => {
+    state.selectedServiceIds.clear();
+    renderServices();
+  });
+  view.querySelector("[data-bulk-apply-price]")?.addEventListener("click", bulkUpdateServicePrice);
+  view.querySelector("[data-bulk-apply-category]")?.addEventListener("click", bulkUpdateServiceCategory);
+  view.querySelector("[data-bulk-apply-gender]")?.addEventListener("click", bulkUpdateServiceGender);
+  view.querySelector("[data-bulk-copy-angles]")?.addEventListener("click", bulkCopyServiceAngles);
+  view.querySelectorAll("[data-toggle-service-popular]").forEach((node) => node.addEventListener("click", () => toggleServicePopular(node.dataset.toggleServicePopular)));
+  view.querySelectorAll("[data-move-service]").forEach((node) => node.addEventListener("click", () => {
+    const [itemId, direction] = node.dataset.moveService.split(":");
+    moveService(itemId, direction);
+  }));
   view.querySelectorAll("[data-open-catalog], [data-open-catalog-action]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button") && !node.dataset.openCatalogAction) return;
       if (event.target.closest("details") && !node.dataset.openCatalogAction) return;
+      if (event.target.closest("label, input, select") && !node.dataset.openCatalogAction) return;
       navigate("serviceDetail", { catalogId: node.dataset.openCatalog || node.dataset.openCatalogAction });
     });
   });
@@ -2342,6 +2531,13 @@ function showCatalogEditor(itemId = "") {
           <option value="girls" ${serviceGender(item) === "girls" ? "selected" : ""}>Для девочек</option>
         </select></label>
       </div>
+      <div class="form-grid">
+        <label class="field-label"><span>Категория</span><input class="input" name="category" list="service-editor-category-options" placeholder="Мультики, Военные, Спорт" value="${escapeAttr(serviceCategory(item))}" /></label>
+        <label class="checkbox-row service-editor-check"><input type="checkbox" name="popular" ${isServicePopular(item) ? "checked" : ""} /><span>Показывать в популярных</span></label>
+      </div>
+      <datalist id="service-editor-category-options">
+        ${serviceCategoryOptions().map((category) => `<option value="${escapeAttr(category)}"></option>`).join("")}
+      </datalist>
       <label class="field-label"><span>Короткое описание</span><textarea class="input textarea" name="shortDescription" placeholder="Коротко для карточки каталога">${escapeHtml(serviceShortDescription(item))}</textarea></label>
       <label class="field-label"><span>Полное описание</span><textarea class="input textarea" name="description" placeholder="Подробное описание для просмотра услуги">${escapeHtml(serviceDescription(item))}</textarea></label>
       <div class="service-editor-media-grid">
@@ -2378,7 +2574,7 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
   const previewFile = fields.preview.files?.[0];
   const previewVideoFile = fields.previewVideo.files?.[0];
   const id = item?.id || uid("catalog");
-  const previewDataUrl = previewFile ? await fileToDataUrl(previewFile) : servicePreviewImageDataUrl(item);
+  const previewDataUrl = previewFile ? await fileToOptimizedImageDataUrl(previewFile, { maxSize: 1600, quality: 0.84 }) : servicePreviewImageDataUrl(item);
   const previewVideoDataUrl = previewVideoFile ? await fileToDataUrl(previewVideoFile) : servicePreviewVideoDataUrl(item);
   const next = {
     ...(item || {}),
@@ -2389,6 +2585,8 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
     shortDescription: allowOnlyTitle ? serviceShortDescription(item) : fields.shortDescription.value.trim(),
     description: allowOnlyTitle ? serviceDescription(item) : fields.description.value.trim(),
     gender: allowOnlyTitle ? serviceGender(item) : normalizeServiceGender(fields.gender.value),
+    category: allowOnlyTitle ? serviceCategory(item) : normalizeServiceCategory(fields.category.value),
+    popular: allowOnlyTitle ? isServicePopular(item) : Boolean(fields.popular.checked),
     previewDataUrl,
     previewImageId: previewDataUrl ? (item?.previewImageId || `${id}_preview_image`) : "",
     previewName: previewFile?.name || item?.previewName || "",
@@ -2400,6 +2598,7 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
     orderInfo: item?.orderInfo || "",
     requirements: item?.requirements || "",
     angles: item?.angles || [],
+    orderIndex: Number.isFinite(Number(item?.orderIndex)) ? Number(item.orderIndex) : nextServiceOrderIndex(),
     createdAt: item?.createdAt || now(),
     updatedAt: now()
   };
@@ -2421,6 +2620,8 @@ async function duplicateCatalogItem(itemId) {
     name: `${serviceName(item)} копия`,
     previewImageId: servicePreviewImageDataUrl(item) ? `${copyId}_preview_image` : "",
     previewVideoId: servicePreviewVideoDataUrl(item) ? `${copyId}_preview_video` : "",
+    popular: false,
+    orderIndex: nextServiceOrderIndex(),
     angles: (item.angles || []).map((angle) => ({ ...angle })),
     createdAt: now(),
     updatedAt: now()
@@ -2434,6 +2635,96 @@ async function duplicateCatalogItem(itemId) {
 async function deleteCatalogItem(itemId) {
   if (!confirm("Удалить услугу из каталога?")) return;
   await del("catalog", itemId);
+  state.selectedServiceIds.delete(itemId);
+  await refreshData();
+  renderServices();
+}
+
+function pruneSelectedServices() {
+  const valid = new Set(state.data.catalog.map((item) => item.id));
+  Array.from(state.selectedServiceIds).forEach((id) => {
+    if (!valid.has(id)) state.selectedServiceIds.delete(id);
+  });
+}
+
+function selectedServiceItems() {
+  return state.data.catalog.filter((item) => state.selectedServiceIds.has(item.id));
+}
+
+function toggleServiceSelection(itemId, checked) {
+  if (checked) state.selectedServiceIds.add(itemId);
+  else state.selectedServiceIds.delete(itemId);
+  renderServices();
+}
+
+async function toggleServicePopular(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  await put("catalog", { ...item, popular: !isServicePopular(item), updatedAt: now() });
+  await refreshData();
+  renderServices();
+}
+
+async function moveService(itemId, direction) {
+  const items = manualOrderedServices();
+  const currentIndex = items.findIndex((item) => item.id === itemId);
+  const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= items.length) return;
+  const reordered = [...items];
+  const moving = reordered[currentIndex];
+  reordered[currentIndex] = reordered[nextIndex];
+  reordered[nextIndex] = moving;
+  for (const [index, item] of reordered.entries()) {
+    await put("catalog", { ...item, orderIndex: index, updatedAt: now() });
+  }
+  await refreshData();
+  renderServices();
+}
+
+async function bulkUpdateServicePrice() {
+  const priceInput = view.querySelector("[data-bulk-price]");
+  const price = normalizeServicePriceInput(priceInput?.value || "");
+  if (!price) return notify("Введите цену для выбранных услуг.");
+  const items = selectedServiceItems();
+  if (!items.length) return notify("Выберите услуги.");
+  await updateSelectedServices((item) => ({ ...item, price, updatedAt: now() }));
+  notify(`Цена применена: ${items.length} услуг.`);
+}
+
+async function bulkUpdateServiceCategory() {
+  const category = normalizeServiceCategory(view.querySelector("[data-bulk-category]")?.value || "");
+  const items = selectedServiceItems();
+  if (!items.length) return notify("Выберите услуги.");
+  await updateSelectedServices((item) => ({ ...item, category, updatedAt: now() }));
+  notify(category ? `Категория "${category}" применена.` : "Категория очищена.");
+}
+
+async function bulkUpdateServiceGender() {
+  const gender = normalizeServiceGender(view.querySelector("[data-bulk-gender]")?.value || "unisex");
+  const items = selectedServiceItems();
+  if (!items.length) return notify("Выберите услуги.");
+  await updateSelectedServices((item) => ({ ...item, gender, updatedAt: now() }));
+  notify(`Аудитория применена: ${serviceGenderLabel(gender)}.`);
+}
+
+async function bulkCopyServiceAngles() {
+  const sourceId = view.querySelector("[data-bulk-angle-source]")?.value || "";
+  const source = catalogItemById(sourceId);
+  const items = selectedServiceItems();
+  if (!source) return notify("Выберите услугу-источник.");
+  if (!items.length) return notify("Выберите услуги.");
+  const sourceAngles = (source.angles || []).map((angle) => ({ ...angle }));
+  await updateSelectedServices((item) => ({
+    ...item,
+    angles: sourceAngles.map((angle) => ({ ...angle, serviceId: item.id })),
+    updatedAt: now()
+  }));
+  notify(`Ракурсы скопированы: ${items.length} услуг.`);
+}
+
+async function updateSelectedServices(updater) {
+  const items = selectedServiceItems();
+  for (const item of items) await put("catalog", updater(item));
   await refreshData();
   renderServices();
 }
@@ -2493,7 +2784,7 @@ async function saveAngleEditor(form, item, angle, allowOnlyName, close) {
   if (!name) return notify("Введите название ракурса.");
   const imageFile = fields.imageReference.files?.[0];
   const videoFile = fields.videoReference.files?.[0];
-  const refDataUrl = imageFile ? await fileToDataUrl(imageFile) : angle?.refDataUrl || "";
+  const refDataUrl = imageFile ? await fileToOptimizedImageDataUrl(imageFile, { maxSize: 1600, quality: 0.84 }) : angle?.refDataUrl || "";
   const videoRefDataUrl = videoFile ? await fileToDataUrl(videoFile) : angle?.videoRefDataUrl || "";
   const baseId = angle?.id || uniqueAngleId(item, normalizeOrderType(name));
   const nextAngle = {
@@ -2568,6 +2859,69 @@ function showAngleReferencePreview(itemId, angleId) {
   });
   document.body.append(panel);
   injectIcons();
+}
+
+function studentReferenceEntries(studentId, taskType = "") {
+  const student = studentById(studentId);
+  const order = orderByStudent(studentId);
+  if (!student || !order) return [];
+  return (order.items || [])
+    .filter((item) => !taskType || item.type === taskType)
+    .map((item) => {
+      const angle = catalogAngleForStudent(studentId, item.type);
+      const parsed = parseServiceTaskType(item.type);
+      const catalog = parsed ? catalogItemById(parsed.catalogId) : catalogItemById(student.catalogId || order.catalogId);
+      return angle ? { item, angle, catalog } : null;
+    })
+    .filter((entry) => entry && (entry.angle.refDataUrl || entry.angle.videoRefDataUrl));
+}
+
+function showStudentReferences(studentId, taskType = "") {
+  const student = studentById(studentId);
+  if (!student) return;
+  const entries = studentReferenceEntries(studentId, taskType);
+  if (!entries.length) return notify("Для этого ученика референсы не добавлены.");
+  document.querySelector(".student-reference-backdrop")?.remove();
+  const name = `${student.lastName} ${student.firstName}`.trim() || "Ученик";
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop student-reference-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel student-reference-panel" role="dialog" aria-modal="true" aria-label="Референсы ученика">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Референсы</h2>
+          <p class="muted">${escapeHtml(name)}</p>
+        </div>
+        <button class="icon-button" data-close-student-references type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="student-reference-list">
+        ${entries.map(studentReferenceCard).join("")}
+      </div>
+    </section>
+  `;
+  panel.querySelector("[data-close-student-references]")?.addEventListener("click", () => panel.remove());
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel) panel.remove();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+function studentReferenceCard(entry) {
+  const { angle, catalog, item } = entry;
+  const media = angle.refDataUrl
+    ? `<img class="reference-preview-media" src="${angle.refDataUrl}" alt="${escapeAttr(angle.name)}" />`
+    : `<video class="reference-preview-media" src="${angle.videoRefDataUrl}" controls playsinline></video>`;
+  return `
+    <article class="student-reference-card">
+      <div>
+        <strong>${escapeHtml(orderItemLabel(item))}</strong>
+        <p class="muted">${escapeHtml(serviceName(catalog) || "Услуга")}</p>
+      </div>
+      ${media}
+      ${angle.details ? `<p class="muted">${escapeHtml(angle.details)}</p>` : ""}
+    </article>
+  `;
 }
 
 async function generateReferenceSet(itemId) {
@@ -2789,7 +3143,7 @@ async function handleReferenceInput(event) {
   const { itemId, angleId } = state.currentReference;
   const item = catalogItemById(itemId);
   if (!item) return;
-  const refDataUrl = await fileToDataUrl(file);
+  const refDataUrl = await fileToOptimizedImageDataUrl(file, { maxSize: 1600, quality: 0.84 });
   const angles = (item.angles || []).map((angle) => angle.id === angleId ? { ...angle, refDataUrl, refName: file.name } : angle);
   await put("catalog", { ...item, angles });
   state.currentReference = null;
@@ -2832,10 +3186,14 @@ async function handlePreviewInput(event) {
   const task = state.currentPreview;
   state.currentPreview = null;
   event.target.value = "";
+  if (task.kind === "watermarkLogo") {
+    await saveWatermarkLogo(file);
+    return;
+  }
   if (task.kind === "catalog") {
     const item = catalogItemById(task.itemId);
     if (!item) return;
-    const previewDataUrl = await fileToDataUrl(file);
+    const previewDataUrl = await fileToOptimizedImageDataUrl(file, { maxSize: 1600, quality: 0.84 });
     await put("catalog", { ...item, previewDataUrl, previewImageId: item.previewImageId || `${item.id}_preview_image`, previewName: file.name || "preview", updatedAt: now() });
     await refreshData();
     notify("Превью услуги сохранено.");
@@ -3846,6 +4204,7 @@ async function exportSettingsZip() {
 async function buildTransferExportFiles(exportType, scope = {}) {
   const data = buildTransferData(exportType, scope);
   const mediaFiles = collectTransferMediaFiles(data);
+  const exportData = stripTransferMediaDataUrls(data);
   const manifest = {
     app: TRANSFER_APP_NAME,
     schemaVersion: TRANSFER_SCHEMA_VERSION,
@@ -3855,7 +4214,7 @@ async function buildTransferExportFiles(exportType, scope = {}) {
   };
   return [
     { path: "manifest.json", data: jsonBytes(manifest) },
-    { path: "data.json", data: jsonBytes(data) },
+    { path: "data.json", data: jsonBytes(exportData) },
     ...mediaFiles
   ];
 }
@@ -3863,16 +4222,18 @@ async function buildTransferExportFiles(exportType, scope = {}) {
 async function buildPublicCatalogExportFiles() {
   const files = [];
   const services = [];
-  for (const item of state.data.catalog) {
+  const watermark = catalogWatermarkSettings();
+  for (const item of publicOrderedServices(state.data.catalog)) {
     const serviceId = item.id || uid("service");
     const fileBase = safePath(serviceId);
     const imageUrl = servicePreviewImageDataUrl(item);
     const videoUrl = servicePreviewVideoDataUrl(item);
     let previewImage = "";
     let previewVideo = "";
-    const image = dataUrlToBytes(imageUrl);
+    const imageExportUrl = await applyCatalogWatermark(imageUrl, watermark);
+    const image = dataUrlToBytes(imageExportUrl);
     if (image) {
-      previewImage = `assets/images/${fileBase}.${dataUrlExtension(imageUrl)}`;
+      previewImage = `assets/images/${fileBase}.${dataUrlExtension(imageExportUrl)}`;
       files.push({ path: previewImage, data: image.bytes });
     }
     const video = dataUrlToBytes(videoUrl);
@@ -3887,6 +4248,8 @@ async function buildPublicCatalogExportFiles() {
       shortDescription: serviceShortDescription(item),
       description: serviceDescription(item),
       gender: serviceGender(item),
+      category: serviceCategory(item),
+      popular: isServicePopular(item),
       previewImage,
       previewVideo
     });
@@ -3894,6 +4257,7 @@ async function buildPublicCatalogExportFiles() {
   const catalogData = {
     title: "Каталог услуг",
     exportedAt: now(),
+    watermark: publicCatalogWatermarkData(watermark),
     services
   };
   return [
@@ -3908,6 +4272,80 @@ async function buildPublicCatalogExportFiles() {
 function serviceExportPrice(item) {
   const amount = parseMoney(item?.price);
   return amount || undefined;
+}
+
+function publicCatalogWatermarkData(watermark) {
+  if (!watermark?.enabled) return null;
+  if (!watermark.text && !watermark.logoDataUrl) return null;
+  return {
+    text: watermark.text,
+    logoDataUrl: watermark.logoDataUrl,
+    opacity: watermark.opacity
+  };
+}
+
+async function applyCatalogWatermark(imageUrl, watermark) {
+  if (!imageUrl || !watermark?.enabled || (!watermark.text && !watermark.logoDataUrl)) return imageUrl;
+  try {
+    const image = await loadImageFromUrl(imageUrl);
+    const logo = watermark.logoDataUrl ? await loadImageFromUrl(watermark.logoDataUrl).catch(() => null) : null;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth || image.width;
+    canvas.height = image.naturalHeight || image.height;
+    if (!canvas.width || !canvas.height) return imageUrl;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    drawCatalogWatermark(context, canvas, watermark, logo);
+    return canvas.toDataURL("image/jpeg", 0.88);
+  } catch {
+    return imageUrl;
+  }
+}
+
+function drawCatalogWatermark(context, canvas, watermark, logo) {
+  const width = canvas.width;
+  const height = canvas.height;
+  const opacity = normalizeWatermarkOpacity(watermark.opacity);
+  const text = watermark.text || "";
+  const tileX = Math.max(260, width / 2.8);
+  const tileY = Math.max(180, height / 3.2);
+  const fontSize = Math.max(24, Math.min(64, width / 15));
+  context.save();
+  context.globalAlpha = opacity;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `800 ${fontSize}px Arial, sans-serif`;
+  for (let y = -tileY; y < height + tileY; y += tileY) {
+    for (let x = -tileX; x < width + tileX; x += tileX) {
+      context.save();
+      context.translate(x + tileX / 2, y + tileY / 2);
+      context.rotate(-Math.PI / 8);
+      if (logo) {
+        const logoWidth = Math.min(width * 0.22, tileX * 0.48, logo.naturalWidth || logo.width);
+        const logoHeight = logoWidth * ((logo.naturalHeight || logo.height) / Math.max(1, logo.naturalWidth || logo.width));
+        context.drawImage(logo, -logoWidth / 2, -logoHeight / 2 - (text ? fontSize * 0.55 : 0), logoWidth, logoHeight);
+      }
+      if (text) {
+        const textY = logo ? fontSize * 0.8 : 0;
+        context.lineWidth = Math.max(3, fontSize / 12);
+        context.strokeStyle = "rgba(255,255,255,.88)";
+        context.fillStyle = "rgba(17,24,39,.88)";
+        context.strokeText(text, 0, textY);
+        context.fillText(text, 0, textY);
+      }
+      context.restore();
+    }
+  }
+  context.restore();
+}
+
+function loadImageFromUrl(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to load image"));
+    image.src = src;
+  });
 }
 
 function buildPublicCatalogHtml(catalogData) {
@@ -4115,6 +4553,10 @@ function buildPublicCatalogHtml(catalogData) {
         background: rgba(24, 115, 111, .13);
         color: var(--accent-2);
       }
+      .badge.popular {
+        background: #ffedd5;
+        color: #9a3412;
+      }
       .empty {
         padding: 22px;
         border: 1px dashed var(--line);
@@ -4223,6 +4665,7 @@ function buildPublicCatalogHtml(catalogData) {
           <button class="chip" data-filter="boys" type="button">Мальчикам</button>
           <button class="chip" data-filter="girls" type="button">Девочкам</button>
         </div>
+        <div class="filters" id="category-filters"></div>
       </section>
       <section id="catalog-feed"></section>
     </main>
@@ -4231,6 +4674,7 @@ function buildPublicCatalogHtml(catalogData) {
     <script>
       var catalog = { title: "Каталог услуг", services: [] };
       var activeFilter = "all";
+      var activeCategory = "all";
       var query = "";
       var sections = [
         { gender: "boys", title: "Для мальчиков" },
@@ -4255,6 +4699,10 @@ function buildPublicCatalogHtml(catalogData) {
         return "Для всех";
       }
 
+      function serviceCategory(service) {
+        return String(service && service.category ? service.category : "").trim();
+      }
+
       function priceText(price) {
         var amount = Number(price || 0);
         return amount ? amount.toLocaleString("ru-RU") + " ₽" : "Цена не указана";
@@ -4270,8 +4718,31 @@ function buildPublicCatalogHtml(catalogData) {
         var gender = normalizeGender(service.gender);
         if (activeFilter === "boys" && gender === "girls") return false;
         if (activeFilter === "girls" && gender === "boys") return false;
+        if (activeCategory === "${SERVICE_UNCATEGORIZED}" && serviceCategory(service)) return false;
+        if (activeCategory !== "all" && activeCategory !== "${SERVICE_UNCATEGORIZED}" && serviceCategory(service) !== activeCategory) return false;
         if (!query) return true;
-        return [service.name, service.shortDescription, service.description, service.price].join(" ").toLowerCase().indexOf(query) >= 0;
+        return [service.name, service.shortDescription, service.description, service.category, service.price].join(" ").toLowerCase().indexOf(query) >= 0;
+      }
+
+      function categoryFiltersHtml() {
+        var categories = [];
+        var hasUncategorized = false;
+        (catalog.services || []).forEach(function(service) {
+          var category = serviceCategory(service);
+          if (!category) {
+            hasUncategorized = true;
+            return;
+          }
+          if (categories.indexOf(category) < 0) categories.push(category);
+        });
+        categories.sort(function(a, b) { return a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" }); });
+        if (!categories.length && !hasUncategorized) return "";
+        var html = '<button class="chip" data-category-filter="all" type="button">Все категории</button>';
+        categories.forEach(function(category) {
+          html += '<button class="chip" data-category-filter="' + escapeHtml(category) + '" type="button">' + escapeHtml(category) + '</button>';
+        });
+        if (hasUncategorized) html += '<button class="chip" data-category-filter="${SERVICE_UNCATEGORIZED}" type="button">Без категории</button>';
+        return html;
       }
 
       function card(service) {
@@ -4279,29 +4750,42 @@ function buildPublicCatalogHtml(catalogData) {
           ? '<img src="' + escapeHtml(service.previewImage) + '" alt="' + escapeHtml(service.name) + '" loading="lazy" />'
           : '<div class="empty-preview">' + escapeHtml((service.name || "У").slice(0, 1)) + '</div>';
         var video = service.previewVideo ? '<span class="badge video">Видео</span>' : "";
+        var popular = service.popular ? '<span class="badge popular">Популярное</span>' : "";
+        var category = serviceCategory(service) ? '<span class="badge">' + escapeHtml(serviceCategory(service)) + '</span>' : "";
         return '<button class="card" data-service="' + escapeHtml(service.id) + '" type="button">' +
           '<div class="preview">' + preview + '</div>' +
           '<div class="body">' +
             '<div class="title-row"><h3>' + escapeHtml(service.name || "Услуга") + '</h3><span class="price">' + escapeHtml(priceText(service.price)) + '</span></div>' +
             '<p class="desc">' + escapeHtml(service.shortDescription || "Описание скоро появится.") + '</p>' +
-            '<div class="badges"><span class="badge">' + escapeHtml(genderLabel(service.gender)) + '</span>' + video + '</div>' +
+            '<div class="badges">' + popular + '<span class="badge">' + escapeHtml(genderLabel(service.gender)) + '</span>' + category + video + '</div>' +
           '</div>' +
         '</button>';
       }
 
+      function sectionHtml(title, services) {
+        return '<section class="section"><div class="section-title"><h2>' + escapeHtml(title) + '</h2><span>' + services.length + '</span></div><div class="cards">' + services.map(card).join("") + '</div></section>';
+      }
+
       function render() {
         document.getElementById("catalog-title").textContent = catalog.title || "Каталог услуг";
+        document.getElementById("category-filters").innerHTML = categoryFiltersHtml();
         var html = "";
+        var visible = (catalog.services || []).filter(matches);
+        var popular = visible.filter(function(service) { return !!service.popular; });
+        var popularIds = {};
+        popular.forEach(function(service) { popularIds[service.id] = true; });
+        if (popular.length) html += sectionHtml("Популярные", popular);
         activeSections().forEach(function(section) {
-          var services = (catalog.services || []).filter(function(service) {
-            return normalizeGender(service.gender) === section.gender && matches(service);
+          var services = visible.filter(function(service) {
+            return normalizeGender(service.gender) === section.gender && !popularIds[service.id];
           });
           if (!services.length) return;
-          html += '<section class="section"><div class="section-title"><h2>' + escapeHtml(section.title) + '</h2><span>' + services.length + '</span></div><div class="cards">' + services.map(card).join("") + '</div></section>';
+          html += sectionHtml(section.title, services);
         });
         document.getElementById("catalog-feed").innerHTML = html || '<div class="empty">В каталоге пока нет услуг</div>';
         Array.from(document.querySelectorAll(".chip")).forEach(function(chip) {
-          chip.classList.toggle("active", chip.dataset.filter === activeFilter);
+          if (chip.dataset.filter) chip.classList.toggle("active", chip.dataset.filter === activeFilter);
+          if (chip.dataset.categoryFilter) chip.classList.toggle("active", chip.dataset.categoryFilter === activeCategory);
         });
       }
 
@@ -4315,7 +4799,7 @@ function buildPublicCatalogHtml(catalogData) {
         modal.innerHTML = '<section class="modal" role="dialog" aria-modal="true">' +
           '<div class="modal-head"><div><h2>' + escapeHtml(service.name || "Услуга") + '</h2><span class="price">' + escapeHtml(priceText(service.price)) + '</span></div><button class="close" data-close type="button">x</button></div>' +
           media +
-          '<div class="modal-copy"><div class="badges"><span class="badge">' + escapeHtml(genderLabel(service.gender)) + '</span>' + (service.previewVideo ? '<span class="badge video">Видео</span>' : '') + '</div><p>' + escapeHtml(service.description || service.shortDescription || "Описание скоро появится.") + '</p></div>' +
+          '<div class="modal-copy"><div class="badges">' + (service.popular ? '<span class="badge popular">Популярное</span>' : '') + '<span class="badge">' + escapeHtml(genderLabel(service.gender)) + '</span>' + (serviceCategory(service) ? '<span class="badge">' + escapeHtml(serviceCategory(service)) + '</span>' : '') + (service.previewVideo ? '<span class="badge video">Видео</span>' : '') + '</div><p>' + escapeHtml(service.description || service.shortDescription || "Описание скоро появится.") + '</p></div>' +
           '<button class="back" data-close type="button">Назад</button>' +
         '</section>';
         modal.classList.add("show");
@@ -4333,6 +4817,12 @@ function buildPublicCatalogHtml(catalogData) {
         var filter = event.target.closest("[data-filter]");
         if (filter) {
           activeFilter = filter.dataset.filter || "all";
+          render();
+          return;
+        }
+        var categoryFilter = event.target.closest("[data-category-filter]");
+        if (categoryFilter) {
+          activeCategory = categoryFilter.dataset.categoryFilter || "all";
           render();
           return;
         }
@@ -4409,7 +4899,7 @@ function buildTransferData(exportType, scope = {}) {
     });
   }
   if (exportType === "services") {
-    return fillTransferData(base, { services: state.data.catalog });
+    return fillTransferData(base, { services: manualOrderedServices(state.data.catalog) });
   }
   if (exportType === "settings") {
     return fillTransferData(base, { settings: state.data.settings, checklistTemplates: state.data.templates });
@@ -4504,6 +4994,62 @@ function addDataUrlMediaFile(files, taken, basePath, dataUrl) {
   files.push({ path, data: parsed.bytes });
 }
 
+function stripTransferMediaDataUrls(data) {
+  const next = clonePlainRecord(data);
+  (next.services || []).forEach((service) => {
+    if (dataUrlToBytes(service.previewDataUrl)) service.previewDataUrl = "";
+    if (dataUrlToBytes(service.previewImageDataUrl)) service.previewImageDataUrl = "";
+    if (dataUrlToBytes(service.previewVideoDataUrl)) service.previewVideoDataUrl = "";
+    if (dataUrlToBytes(service.previewVideoUrl)) service.previewVideoUrl = "";
+    (service.angles || []).forEach((angle) => {
+      if (dataUrlToBytes(angle.refDataUrl)) angle.refDataUrl = "";
+      if (dataUrlToBytes(angle.videoRefDataUrl)) angle.videoRefDataUrl = "";
+    });
+  });
+  return next;
+}
+
+function hydrateTransferMediaData(data, entries) {
+  (data.services || []).forEach((service) => {
+    const imageEntry = findTransferMediaEntry(entries, `media/services/${service.id}/preview`);
+    const videoEntry = findTransferMediaEntry(entries, `media/services/${service.id}/preview_video`);
+    if (imageEntry) service.previewDataUrl = zipEntryToDataUrl(imageEntry);
+    if (videoEntry) service.previewVideoDataUrl = zipEntryToDataUrl(videoEntry);
+    (service.angles || []).forEach((angle) => {
+      const angleId = angle.id || "";
+      if (!angleId) return;
+      const refEntry = findTransferMediaEntry(entries, `media/services/${service.id}/${angleId}`);
+      const videoRefEntry = findTransferMediaEntry(entries, `media/services/${service.id}/${angleId}_video`);
+      if (refEntry) angle.refDataUrl = zipEntryToDataUrl(refEntry);
+      if (videoRefEntry) angle.videoRefDataUrl = zipEntryToDataUrl(videoRefEntry);
+    });
+  });
+  return data;
+}
+
+function findTransferMediaEntry(entries, basePath) {
+  const normalizedBase = String(basePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+  return entries.find((entry) => {
+    const path = String(entry.path || "").replace(/\\/g, "/").replace(/^\/+/, "");
+    const withoutExtension = path.replace(/\.[^/.]+$/, "");
+    return withoutExtension === normalizedBase || withoutExtension.endsWith(`/${normalizedBase}`);
+  });
+}
+
+function zipEntryToDataUrl(entry) {
+  return bytesToDataUrl(mimeForPath(entry.path, isVideoZipEntry(entry) ? "video" : "photo"), entry.data);
+}
+
+function bytesToDataUrl(mime, bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return `data:${mime || "application/octet-stream"};base64,${btoa(binary)}`;
+}
+
 async function importTransferFile(file, importMode = "auto") {
   if (!file) return;
   const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
@@ -4521,7 +5067,7 @@ async function createTransferImportDraft(entries, importMode = "auto") {
   const exportType = manifest.exportType || "full_backup";
   const mode = TRANSFER_IMPORT_SCOPES[importMode] ? importMode : exportType;
   const allowed = new Set(TRANSFER_IMPORT_SCOPES[mode] || TRANSFER_IMPORT_SCOPES.full_backup);
-  const data = normalizeTransferData(rawData, allowed);
+  const data = hydrateTransferMediaData(normalizeTransferData(rawData, allowed), entries);
   const stats = transferImportStats(data);
   return { id: uid("transfer_import"), manifest, mode, data, stats, resolution: "update" };
 }
@@ -5072,6 +5618,31 @@ async function handleZipInput(event) {
   }
 }
 
+async function handleTransferFolderInput(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  try {
+    const entries = await filesToZipLikeEntries(files);
+    const draft = await createTransferImportDraft(entries, state.zipImportMode);
+    showTransferImportPreview(draft);
+  } catch (error) {
+    notify("Не удалось импортировать папку услуг. Выберите папку, где лежат manifest.json и data.json.");
+  } finally {
+    state.zipImportMode = "auto";
+    event.target.value = "";
+  }
+}
+
+async function filesToZipLikeEntries(files) {
+  const entries = [];
+  for (const [index, file] of files.entries()) {
+    const path = file.webkitRelativePath || file.name || `file_${index}`;
+    if (isIgnoredImportPath(path)) continue;
+    entries.push({ path, data: new Uint8Array(await file.arrayBuffer()), index });
+  }
+  return entries;
+}
+
 async function importSettingsMeta(meta) {
   for (const store of ["templates", "settings", "catalog"]) {
     for (const record of meta[store] || []) await put(store, record);
@@ -5211,7 +5782,7 @@ async function handleAlbumZipInput(event) {
 function zipImportErrorMessage(error, scope = "") {
   const text = String(error?.message || "");
   if (text.includes("Unsupported ZIP compression") || text.includes("Unable to decompress")) {
-    return `Safari не распаковал сжатый ZIP${scope ? ` ${scope}` : ""}. Создайте ZIP без сжатия или импортируйте отдельные фото.`;
+    return `Safari не распаковал сжатый ZIP${scope ? ` ${scope}` : ""}. Разархивируйте его и выберите кнопку "Импорт папки услуг".`;
   }
   return `Не удалось импортировать ZIP${scope ? ` ${scope}` : ""}.`;
 }
@@ -5297,13 +5868,13 @@ function isVideoZipEntry(entry) {
 
 function isIgnoredZipEntry(entry) {
   const parts = String(entry.path || "").split("/").filter(Boolean);
-  const name = parts.at(-1) || "";
+  const name = parts[parts.length - 1] || "";
   return parts.includes("__MACOSX") || name.startsWith("._") || name === ".DS_Store";
 }
 
 function isIgnoredImportPath(path) {
   const parts = String(path || "").split("/").filter(Boolean);
-  const name = parts.at(-1) || "";
+  const name = parts[parts.length - 1] || "";
   return parts.includes("__MACOSX") || name.startsWith("._") || name === ".DS_Store";
 }
 
@@ -5359,6 +5930,7 @@ function mimeForPath(path, fallbackType = "photo") {
   if (ext === "png") return "image/png";
   if (ext === "webp") return "image/webp";
   if (ext === "gif") return "image/gif";
+  if (ext === "svg") return "image/svg+xml";
   if (ext === "mp4" || ext === "m4v") return "video/mp4";
   if (ext === "mov") return "video/quicktime";
   if (ext === "webm") return "video/webm";
@@ -5366,6 +5938,47 @@ function mimeForPath(path, fallbackType = "photo") {
 }
 
 async function parseZip(bytes) {
+  const centralEntries = await parseZipCentralDirectory(bytes).catch(() => []);
+  if (centralEntries.length) return centralEntries;
+  return parseZipLocalHeaders(bytes);
+}
+
+async function parseZipCentralDirectory(bytes) {
+  const endOffset = findZipEndOfCentralDirectory(bytes);
+  if (endOffset < 0) return [];
+  const totalEntries = readU16(bytes, endOffset + 10);
+  const centralOffset = readU32(bytes, endOffset + 16);
+  const entries = [];
+  let offset = centralOffset;
+  for (let index = 0; index < totalEntries && offset < bytes.length - 4; index += 1) {
+    if (readU32(bytes, offset) !== 0x02014b50) break;
+    const method = readU16(bytes, offset + 10);
+    const compressedSize = readU32(bytes, offset + 20);
+    const nameLength = readU16(bytes, offset + 28);
+    const extraLength = readU16(bytes, offset + 30);
+    const commentLength = readU16(bytes, offset + 32);
+    const localOffset = readU32(bytes, offset + 42);
+    const path = new TextDecoder().decode(bytes.slice(offset + 46, offset + 46 + nameLength));
+    const localNameLength = readU16(bytes, localOffset + 26);
+    const localExtraLength = readU16(bytes, localOffset + 28);
+    const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+    const compressed = bytes.slice(dataStart, dataStart + compressedSize);
+    const data = method === 0 ? compressed : await decompressZipEntry(compressed, method);
+    entries.push({ path, data, index: entries.length });
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+  return entries;
+}
+
+function findZipEndOfCentralDirectory(bytes) {
+  const min = Math.max(0, bytes.length - 0xffff - 22);
+  for (let offset = bytes.length - 22; offset >= min; offset -= 1) {
+    if (readU32(bytes, offset) === 0x06054b50) return offset;
+  }
+  return -1;
+}
+
+async function parseZipLocalHeaders(bytes) {
   const entries = [];
   let offset = 0;
   while (offset < bytes.length - 4) {
@@ -5738,6 +6351,66 @@ function pendingOrderLabels(student) {
     .map(orderItemLabel);
 }
 
+function catalogWatermarkSettings() {
+  const saved = state.data.settings.find((item) => item.id === SETTING_IDS.catalogWatermark) || {};
+  return {
+    id: SETTING_IDS.catalogWatermark,
+    enabled: saved.enabled !== false,
+    text: String(saved.text || "").trim(),
+    opacity: normalizeWatermarkOpacity(saved.opacity),
+    logoDataUrl: String(saved.logoDataUrl || "").trim(),
+    logoName: String(saved.logoName || "").trim()
+  };
+}
+
+function normalizeWatermarkOpacity(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0.32;
+  return Math.min(0.65, Math.max(0.15, number));
+}
+
+async function saveWatermarkSettingsFromView() {
+  const previous = catalogWatermarkSettings();
+  const settings = {
+    ...previous,
+    enabled: Boolean(view.querySelector("[data-watermark-enabled]")?.checked),
+    text: view.querySelector("[data-watermark-text]")?.value.trim() || "",
+    opacity: normalizeWatermarkOpacity(view.querySelector("[data-watermark-opacity]")?.value)
+  };
+  await put("settings", settings);
+  await refreshData();
+  notify("Водяной знак сохранен.");
+  showSettingsDetail("watermark");
+}
+
+function uploadWatermarkLogo() {
+  state.currentPreview = { kind: "watermarkLogo" };
+  previewInput.value = "";
+  previewInput.click();
+}
+
+async function saveWatermarkLogo(file) {
+  const previous = catalogWatermarkSettings();
+  const logoDataUrl = await fileToPngImageDataUrl(file, { maxSize: 900 });
+  await put("settings", {
+    ...previous,
+    enabled: true,
+    logoDataUrl,
+    logoName: file.name || "logo.png"
+  });
+  await refreshData();
+  notify("Логотип водяного знака сохранен.");
+  showSettingsDetail("watermark");
+}
+
+async function removeWatermarkLogo() {
+  const previous = catalogWatermarkSettings();
+  await put("settings", { ...previous, logoDataUrl: "", logoName: "" });
+  await refreshData();
+  notify("Логотип удален.");
+  showSettingsDetail("watermark");
+}
+
 function getStatusExportTemplate() {
   const saved = state.data.settings.find((item) => item.id === STATUS_EXPORT_DEFAULT.id);
   const validColumns = new Set(statusExportColumns().map((column) => column.key));
@@ -5818,6 +6491,77 @@ function catalogItemById(id) {
 
 function serviceName(item) {
   return String(item?.name || item?.title || "").trim();
+}
+
+function serviceManualOrder(item, fallbackIndex = 0) {
+  const value = Number(item?.orderIndex);
+  return Number.isFinite(value) ? value : fallbackIndex;
+}
+
+function manualOrderedServices(items = state.data.catalog) {
+  return [...items].sort((a, b) => {
+    const indexA = state.data.catalog.findIndex((item) => item.id === a.id);
+    const indexB = state.data.catalog.findIndex((item) => item.id === b.id);
+    return serviceManualOrder(a, indexA) - serviceManualOrder(b, indexB)
+      || serviceName(a).localeCompare(serviceName(b), "ru", { numeric: true, sensitivity: "base" })
+      || String(a.id || "").localeCompare(String(b.id || ""));
+  });
+}
+
+function alphabeticalServices(items = state.data.catalog) {
+  return [...items].sort((a, b) => serviceName(a).localeCompare(serviceName(b), "ru", { numeric: true, sensitivity: "base" }));
+}
+
+function categoryOrderedServices(items = state.data.catalog) {
+  return alphabeticalServices(items).sort((a, b) => serviceCategoryLabel(a).localeCompare(serviceCategoryLabel(b), "ru", { numeric: true, sensitivity: "base" }));
+}
+
+function publicOrderedServices(items = state.data.catalog) {
+  return manualOrderedServices(items);
+}
+
+function servicesForAdminView() {
+  const filtered = state.data.catalog.filter(serviceMatchesCategoryFilter);
+  if (state.serviceSort === "alpha") return alphabeticalServices(filtered);
+  if (state.serviceSort === "category") return categoryOrderedServices(filtered);
+  return manualOrderedServices(filtered);
+}
+
+function nextServiceOrderIndex() {
+  const orders = state.data.catalog.map((item, index) => serviceManualOrder(item, index));
+  return (orders.length ? Math.max(...orders) : -1) + 1;
+}
+
+function isServicePopular(item) {
+  return Boolean(item?.popular);
+}
+
+function serviceCategory(item) {
+  return String(item?.category || "").trim();
+}
+
+function normalizeServiceCategory(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function serviceCategoryLabel(itemOrCategory) {
+  const value = typeof itemOrCategory === "string" ? normalizeServiceCategory(itemOrCategory) : serviceCategory(itemOrCategory);
+  return value || "Без категории";
+}
+
+function serviceCategoryOptions({ includeDefaults = true } = {}) {
+  const values = new Set(includeDefaults ? SERVICE_DEFAULT_CATEGORIES : []);
+  state.data.catalog.forEach((item) => {
+    const category = serviceCategory(item);
+    if (category) values.add(category);
+  });
+  return Array.from(values).sort((a, b) => a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" }));
+}
+
+function serviceMatchesCategoryFilter(item) {
+  if (state.serviceCategoryFilter === "all") return true;
+  if (state.serviceCategoryFilter === SERVICE_UNCATEGORIZED) return !serviceCategory(item);
+  return serviceCategory(item) === state.serviceCategoryFilter;
 }
 
 function serviceGender(item) {
@@ -6208,11 +6952,75 @@ function fileToDataUrl(file) {
   });
 }
 
+async function fileToOptimizedImageDataUrl(file, options = {}) {
+  if (!file || !String(file.type || "").startsWith("image/")) return fileToDataUrl(file);
+  if (/gif|svg|heic|heif/i.test(file.type || file.name || "")) return fileToDataUrl(file);
+  const maxSize = options.maxSize || 1600;
+  const quality = options.quality || 0.84;
+  try {
+    const image = await loadImageForCanvas(file);
+    const width = image.width || image.naturalWidth;
+    const height = image.height || image.naturalHeight;
+    if (!width || !height) return fileToDataUrl(file);
+    const scale = Math.min(1, maxSize / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    if (typeof image.close === "function") image.close();
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return fileToDataUrl(file);
+  }
+}
+
+async function fileToPngImageDataUrl(file, options = {}) {
+  if (!file || !String(file.type || "").startsWith("image/")) return fileToDataUrl(file);
+  if (/svg|heic|heif/i.test(file.type || file.name || "")) return fileToDataUrl(file);
+  const maxSize = options.maxSize || 900;
+  try {
+    const image = await loadImageForCanvas(file);
+    const width = image.width || image.naturalWidth;
+    const height = image.height || image.naturalHeight;
+    if (!width || !height) return fileToDataUrl(file);
+    const scale = Math.min(1, maxSize / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    if (typeof image.close === "function") image.close();
+    return canvas.toDataURL("image/png");
+  } catch {
+    return fileToDataUrl(file);
+  }
+}
+
+function loadImageForCanvas(file) {
+  if ("createImageBitmap" in window) return createImageBitmap(file);
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Unable to load image"));
+    };
+    image.src = url;
+  });
+}
+
 function dataUrlExtension(dataUrl) {
   const mime = String(dataUrl || "").slice(0, 64);
   if (mime.includes("image/png")) return "png";
   if (mime.includes("image/webp")) return "webp";
   if (mime.includes("image/gif")) return "gif";
+  if (mime.includes("image/svg+xml")) return "svg";
   if (mime.includes("video/mp4")) return "mp4";
   if (mime.includes("video/quicktime")) return "mov";
   if (mime.includes("video/webm")) return "webm";
@@ -6221,12 +7029,21 @@ function dataUrlExtension(dataUrl) {
 
 function dataUrlToBytes(dataUrl) {
   const text = String(dataUrl || "");
-  const match = text.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return null;
-  const binary = atob(match[2]);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return { mime: match[1], bytes };
+  if (!text.startsWith("data:")) return null;
+  const comma = text.indexOf(",");
+  if (comma < 0) return null;
+  const header = text.slice(5, comma);
+  const mime = header.split(";")[0] || "application/octet-stream";
+  const payload = text.slice(comma + 1);
+  try {
+    if (!header.includes(";base64")) return { mime, bytes: new TextEncoder().encode(decodeURIComponent(payload)) };
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return { mime, bytes };
+  } catch {
+    return null;
+  }
 }
 
 function createQrSvg(text, scale = 6) {
@@ -6478,6 +7295,7 @@ function injectIcons() {
     video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m20 6-11 11-5-5"/></svg>'
     ,
+    star: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>',
     refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 16v5h5"/><path d="M3 12A9 9 0 0 1 18.3 5.6L21 8"/><path d="M21 8V3h-5"/></svg>'
   };
   document.querySelectorAll("[data-icon]").forEach((node) => {
