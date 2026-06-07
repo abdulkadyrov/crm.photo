@@ -2178,6 +2178,51 @@ p {
   opacity: 1;
 }
 
+.busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.busy-card {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  width: min(320px, 100%);
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.26);
+  text-align: center;
+}
+
+.busy-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.busy-spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid color-mix(in srgb, var(--primary) 20%, var(--line));
+  border-top-color: var(--primary);
+  border-radius: 999px;
+  animation: busy-spin 800ms linear infinite;
+}
+
+@keyframes busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .qr-panel-backdrop {
   position: fixed;
   inset: 0;

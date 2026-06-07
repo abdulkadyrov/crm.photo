@@ -365,6 +365,7 @@ function renderOperatorGate() {
         <label class="field-label"><span>Код</span><input class="input" name="code" inputmode="numeric" pattern="[0-9]{4,6}" autocomplete="off" placeholder="4-6 цифр" /></label>
         <div class="toolbar">
           <button class="secondary-button" data-skip-operator-gate type="button">Продолжить без профиля</button>
+          <button class="secondary-button" data-import-operator-gate type="button">Импорт профиля</button>
           <button class="primary-button" type="submit">Войти</button>
         </div>
       </form>
@@ -381,6 +382,7 @@ function renderOperatorGate() {
         <div class="detail-stat"><span>Роль</span><strong>Владелец</strong></div>
         <div class="toolbar">
           <button class="secondary-button" data-skip-operator-gate type="button">Продолжить без профиля</button>
+          <button class="secondary-button" data-import-operator-gate type="button">Импорт профиля</button>
           <button class="primary-button" type="submit">Создать профиль</button>
         </div>
       </form>
@@ -389,6 +391,10 @@ function renderOperatorGate() {
   view.querySelector("[data-owner-setup]")?.addEventListener("submit", handleOwnerSetup);
   view.querySelector("[data-operator-login]")?.addEventListener("submit", handleOperatorLogin);
   view.querySelector("[data-skip-operator-gate]")?.addEventListener("click", continueWithoutOperator);
+  view.querySelector("[data-import-operator-gate]")?.addEventListener("click", () => {
+    state.zipImportMode = "work_config";
+    zipInput.click();
+  });
   injectIcons();
 }
 
@@ -623,7 +629,11 @@ async function seedCatalogIfNeeded() {
 
 function bindShell() {
   document.querySelectorAll("[data-route]").forEach((button) => {
-    button.addEventListener("click", () => navigate(button.dataset.route));
+    button.addEventListener("click", () => {
+      const route = button.dataset.route;
+      if (route === "classes") return navigate("classes", { classId: null });
+      navigate(route);
+    });
   });
   document.querySelector("#theme-toggle").addEventListener("click", () => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
@@ -2403,11 +2413,13 @@ async function toggleOperatorActive(operatorId) {
 }
 
 async function exportOperators() {
-  if (currentOperator()?.role !== "owner") return notify("Экспорт сотрудников доступен владельцу.");
-  const blob = createZip(await buildTransferExportFiles("operators"));
-  downloadBlob(blob, `SPF_operators_${new Date().toISOString().slice(0, 10)}.zip`);
-  await recordOperatorEvent("export", { targetType: "operators" });
-  notify("Сотрудники экспортированы.");
+  return withBusy("Экспорт сотрудников...", async () => {
+    if (currentOperator()?.role !== "owner") return notify("Экспорт сотрудников доступен владельцу.");
+    const blob = createZip(await buildTransferExportFiles("operators"));
+    downloadBlob(blob, `SPF_operators_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: "operators" });
+    notify("Сотрудники экспортированы.");
+  });
 }
 
 function showAssignOperatorPanel(scope, targetId) {
@@ -2562,11 +2574,11 @@ function bindViewActions() {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
       if (event.target.closest("details")) return;
-      navigate("classes", { projectId: node.dataset.openProject });
+      navigate("classes", { projectId: node.dataset.openProject, classId: null });
     });
   });
   view.querySelectorAll("[data-open-project-action]").forEach((node) => {
-    node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction }));
+    node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction, classId: null }));
   });
   view.querySelectorAll("[data-add-project]").forEach((node) => node.addEventListener("click", () => addProject(node.dataset.addProject)));
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
@@ -4528,29 +4540,31 @@ function distributeUnassignedAcrossMarkers(unassigned, markerStudents, byStudent
 }
 
 async function confirmImportDraft(draft) {
-  if (!draft) return;
-  let saved = 0;
-  for (const group of draft.students) {
-    const student = group.student || studentById(group.studentId);
-    if (!student) continue;
-    for (const photo of group.photos) {
-      await importShotForStudent(student, photo.file, {
-        originalFileName: photo.originalFileName,
-        importSessionId: draft.id,
-        orderIndex: photo.orderIndex,
-        source: "qr_import"
-      });
+  return withBusy("Сохраняю импорт...", async () => {
+    if (!draft) return;
+    let saved = 0;
+    for (const group of draft.students) {
+      const student = group.student || studentById(group.studentId);
+      if (!student) continue;
+      for (const photo of group.photos) {
+        await importShotForStudent(student, photo.file, {
+          originalFileName: photo.originalFileName,
+          importSessionId: draft.id,
+          orderIndex: photo.orderIndex,
+          source: "qr_import"
+        });
+        saved += 1;
+      }
+    }
+    for (const photo of draft.unassigned) {
+      await saveUnassignedImportPhoto(photo, draft.id);
       saved += 1;
     }
-  }
-  for (const photo of draft.unassigned) {
-    await saveUnassignedImportPhoto(photo, draft.id);
-    saved += 1;
-  }
-  await recordOperatorEvent("import", { targetType: "qr_media", targetId: draft.id, count: saved });
-  await refreshData();
-  closeImportDraftPanel();
-  notify(`Импорт подтвержден: сохранено ${saved}, QR ${draft.qrMarkers.length}, не распределено ${draft.unassigned.length}.`);
+    await recordOperatorEvent("import", { targetType: "qr_media", targetId: draft.id, count: saved });
+    await refreshData();
+    closeImportDraftPanel();
+    notify(`Импорт подтвержден: сохранено ${saved}, QR ${draft.qrMarkers.length}, не распределено ${draft.unassigned.length}.`);
+  });
 }
 
 async function saveUnassignedImportPhoto(photo, importSessionId) {
@@ -4965,29 +4979,33 @@ function normalizeQrToken(value) {
 }
 
 async function exportZip(studentId = null) {
-  if (studentId) {
-    const student = studentById(studentId);
-    if (student) {
-      await put("students", stampExported(student));
-      await refreshData();
+  return withBusy("Экспорт ZIP...", async () => {
+    if (studentId) {
+      const student = studentById(studentId);
+      if (student) {
+        await put("students", stampExported(student));
+        await refreshData();
+      }
     }
-  }
-  const files = studentId ? await buildExportFiles(studentId) : await buildFullExportFiles();
-  const blob = createZip(files);
-  downloadBlob(blob, `SPF_${studentId ? "student" : "full"}_${new Date().toISOString().slice(0, 10)}.zip`);
-  await recordOperatorEvent("export", { targetType: studentId ? "student" : "full", targetId: studentId || "" });
-  notify("ZIP экспортирован.");
+    const files = studentId ? await buildExportFiles(studentId) : await buildFullExportFiles();
+    const blob = createZip(files);
+    downloadBlob(blob, `SPF_${studentId ? "student" : "full"}_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: studentId ? "student" : "full", targetId: studentId || "" });
+    notify("ZIP экспортирован.");
+  });
 }
 
 async function exportProject(projectId) {
-  const project = projectById(projectId);
-  if (!project) return notify("Выберите проект для экспорта.");
-  await put("projects", stampExported(project));
-  await refreshData();
-  const blob = createZip(await buildTransferExportFiles("project", { projectId }));
-  downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
-  await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
-  notify("Проект экспортирован.");
+  return withBusy("Экспорт проекта...", async () => {
+    const project = projectById(projectId);
+    if (!project) return notify("Выберите проект для экспорта.");
+    await put("projects", stampExported(project));
+    await refreshData();
+    const blob = createZip(await buildTransferExportFiles("project", { projectId }));
+    downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+    await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
+    notify("Проект экспортирован.");
+  });
 }
 
 async function importProject(file) {
@@ -4995,14 +5013,16 @@ async function importProject(file) {
 }
 
 async function exportClass(classId) {
-  const klass = classById(classId);
-  if (!klass) return notify("Выберите класс/группу для экспорта.");
-  await put("classes", stampExported(klass));
-  await refreshData();
-  const blob = createZip(await buildTransferExportFiles("class", { classId }));
-  downloadBlob(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
-  await recordOperatorEvent("export", { targetType: "class", targetId: classId });
-  notify("Класс/группа экспортирован.");
+  return withBusy("Экспорт группы...", async () => {
+    const klass = classById(classId);
+    if (!klass) return notify("Выберите класс/группу для экспорта.");
+    await put("classes", stampExported(klass));
+    await refreshData();
+    const blob = createZip(await buildTransferExportFiles("class", { classId }));
+    downloadBlob(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+    await recordOperatorEvent("export", { targetType: "class", targetId: classId });
+    notify("Класс/группа экспортирован.");
+  });
 }
 
 async function importClass(file) {
@@ -5010,17 +5030,21 @@ async function importClass(file) {
 }
 
 async function exportServices() {
-  const blob = createZip(await buildTransferExportFiles("services"));
-  downloadBlob(blob, `SPF_services_${new Date().toISOString().slice(0, 10)}.zip`);
-  await recordOperatorEvent("export", { targetType: "services" });
-  notify("Услуги экспортированы.");
+  return withBusy("Экспорт услуг...", async () => {
+    const blob = createZip(await buildTransferExportFiles("services"));
+    downloadBlob(blob, `SPF_services_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: "services" });
+    notify("Услуги экспортированы.");
+  });
 }
 
 async function exportPublicCatalog() {
-  const blob = createZip(await buildPublicCatalogExportFiles());
-  downloadBlob(blob, "catalog_export.zip");
-  await recordOperatorEvent("export", { targetType: "public_catalog" });
-  notify("Каталог экспортирован.");
+  return withBusy("Экспорт каталога...", async () => {
+    const blob = createZip(await buildPublicCatalogExportFiles());
+    downloadBlob(blob, "catalog_export.zip");
+    await recordOperatorEvent("export", { targetType: "public_catalog" });
+    notify("Каталог экспортирован.");
+  });
 }
 
 async function importServices(file) {
@@ -5028,10 +5052,12 @@ async function importServices(file) {
 }
 
 async function exportSettings() {
-  const blob = createZip(await buildTransferExportFiles("settings"));
-  downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
-  await recordOperatorEvent("export", { targetType: "settings" });
-  notify("Настройки экспортированы.");
+  return withBusy("Экспорт настроек...", async () => {
+    const blob = createZip(await buildTransferExportFiles("settings"));
+    downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: "settings" });
+    notify("Настройки экспортированы.");
+  });
 }
 
 async function importSettings(file) {
@@ -5039,17 +5065,21 @@ async function importSettings(file) {
 }
 
 async function exportFullBackup() {
-  const blob = createZip(await buildTransferExportFiles("full_backup"));
-  downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
-  await recordOperatorEvent("export", { targetType: "full_backup" });
-  notify("Полный ZIP экспортирован.");
+  return withBusy("Экспорт всех данных...", async () => {
+    const blob = createZip(await buildTransferExportFiles("full_backup"));
+    downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: "full_backup" });
+    notify("Полный ZIP экспортирован.");
+  });
 }
 
 async function exportWorkConfig() {
-  const blob = createZip(await buildTransferExportFiles("work_config"));
-  downloadBlob(blob, `SPF_work_config_${new Date().toISOString().slice(0, 10)}.zip`);
-  await recordOperatorEvent("export", { targetType: "work_config" });
-  notify("Рабочая конфигурация экспортирована.");
+  return withBusy("Экспорт рабочей конфигурации...", async () => {
+    const blob = createZip(await buildTransferExportFiles("work_config"));
+    downloadBlob(blob, `SPF_work_config_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: "work_config" });
+    notify("Рабочая конфигурация экспортирована.");
+  });
 }
 
 async function importFullBackup(file) {
@@ -6151,15 +6181,22 @@ function closeTransferImportPreview() {
 }
 
 async function confirmTransferImport(draft, panel) {
-  draft.stats.conflicts.forEach((conflict, index) => {
-    conflict.resolution = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`)?.value || "update";
+  return withBusy("Импорт данных...", async () => {
+    draft.stats.conflicts.forEach((conflict, index) => {
+      conflict.resolution = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`)?.value || "update";
+    });
+    const result = await applyTransferImport(draft);
+    await recordOperatorEvent("import", { targetType: draft.mode || draft.manifest.exportType || "transfer", targetId: draft.id });
+    await refreshData();
+    normalizeCurrentOperator();
+    closeTransferImportPreview();
+    notify(`Импорт завершен: добавлено ${result.added}, обновлено ${result.updated}, пропущено ${result.skipped}.`);
+    if (shouldShowOperatorGate()) {
+      renderOperatorGate();
+      return;
+    }
+    navigate("home");
   });
-  const result = await applyTransferImport(draft);
-  await recordOperatorEvent("import", { targetType: draft.mode || draft.manifest.exportType || "transfer", targetId: draft.id });
-  await refreshData();
-  closeTransferImportPreview();
-  notify(`Импорт завершен: добавлено ${result.added}, обновлено ${result.updated}, пропущено ${result.skipped}.`);
-  navigate("home");
 }
 
 async function applyTransferImport(draft) {
@@ -6594,6 +6631,7 @@ async function buildFullExportFiles() {
 async function handleZipInput(event) {
   const file = event.target.files?.[0];
   if (!file) return;
+  showBusy("Импорт ZIP...");
   try {
     const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
     const transferManifestEntry = entries.find((entry) => entry.path.endsWith("manifest.json"));
@@ -6610,7 +6648,12 @@ async function handleZipInput(event) {
       await importSettingsMeta(JSON.parse(new TextDecoder().decode(settingsEntry.data)));
       await recordOperatorEvent("import", { targetType: "settings" });
       await refreshData();
+      normalizeCurrentOperator();
       notify("Настройки импортированы.");
+      if (shouldShowOperatorGate()) {
+        renderOperatorGate();
+        return;
+      }
       renderSettings();
       return;
     }
@@ -6618,7 +6661,12 @@ async function handleZipInput(event) {
       await importFullMeta(JSON.parse(new TextDecoder().decode(fullEntry.data)), entries);
       await recordOperatorEvent("import", { targetType: "full_backup" });
       await refreshData();
+      normalizeCurrentOperator();
       notify("Все данные импортированы.");
+      if (shouldShowOperatorGate()) {
+        renderOperatorGate();
+        return;
+      }
       navigate("home");
       return;
     }
@@ -6639,19 +6687,26 @@ async function handleZipInput(event) {
     }
     await recordOperatorEvent("import", { targetType: "legacy_zip" });
     await refreshData();
+    normalizeCurrentOperator();
     notify("ZIP импортирован.");
+    if (shouldShowOperatorGate()) {
+      renderOperatorGate();
+      return;
+    }
     navigate("home");
   } catch (error) {
     notify(zipImportErrorMessage(error));
   } finally {
     state.zipImportMode = "auto";
     event.target.value = "";
+    hideBusy();
   }
 }
 
 async function handleTransferFolderInput(event) {
   const files = Array.from(event.target.files || []);
   if (!files.length) return;
+  showBusy("Импорт папки...");
   try {
     const entries = await filesToZipLikeEntries(files);
     const draft = await createTransferImportDraft(entries, state.zipImportMode);
@@ -6661,6 +6716,7 @@ async function handleTransferFolderInput(event) {
   } finally {
     state.zipImportMode = "auto";
     event.target.value = "";
+    hideBusy();
   }
 }
 
@@ -6698,13 +6754,15 @@ async function importFullMeta(meta, entries) {
 }
 
 async function exportAlbumClassZip(classId) {
-  const klass = albumClassById(classId);
-  if (!klass) return;
-  const files = await buildAlbumExportFiles(klass);
-  const blob = createZip(files);
-  downloadBlob(blob, `${safeFileName(`${klass.name}_album_export`)}.zip`);
-  await recordOperatorEvent("export", { targetType: "album_class", targetId: classId });
-  notify("ZIP альбома экспортирован.");
+  return withBusy("Экспорт альбома...", async () => {
+    const klass = albumClassById(classId);
+    if (!klass) return;
+    const files = await buildAlbumExportFiles(klass);
+    const blob = createZip(files);
+    downloadBlob(blob, `${safeFileName(`${klass.name}_album_export`)}.zip`);
+    await recordOperatorEvent("export", { targetType: "album_class", targetId: classId });
+    notify("ZIP альбома экспортирован.");
+  });
 }
 
 async function buildAlbumExportFiles(klass) {
@@ -6777,6 +6835,7 @@ async function buildAlbumExportFiles(klass) {
 async function handleAlbumZipInput(event) {
   const file = event.target.files?.[0];
   if (!file) return;
+  showBusy("Импорт альбомного ZIP...");
   try {
     const entries = await parseZip(new Uint8Array(await file.arrayBuffer()));
     const dataEntry = entries.find((entry) => entry.path.endsWith("spf-album-data.json"));
@@ -6810,6 +6869,7 @@ async function handleAlbumZipInput(event) {
     notify(zipImportErrorMessage(error, "альбома"));
   } finally {
     event.target.value = "";
+    hideBusy();
   }
 }
 
@@ -8053,6 +8113,34 @@ function notify(message) {
   toast.classList.add("show");
   clearTimeout(notify.timer);
   notify.timer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+async function withBusy(message, task) {
+  showBusy(message);
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  try {
+    return await task();
+  } finally {
+    hideBusy();
+  }
+}
+
+function showBusy(message = "Загрузка...") {
+  document.querySelector(".busy-overlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.className = "busy-overlay";
+  overlay.innerHTML = `
+    <div class="busy-card" role="status" aria-live="polite">
+      <span class="busy-spinner"></span>
+      <strong>${escapeHtml(message)}</strong>
+      <small>Пожалуйста, подождите</small>
+    </div>
+  `;
+  document.body.append(overlay);
+}
+
+function hideBusy() {
+  document.querySelector(".busy-overlay")?.remove();
 }
 
 function devImportDebug(label, payload) {
