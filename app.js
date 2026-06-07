@@ -924,6 +924,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
           <details class="item-menu class-menu">
             <summary aria-label="Меню группы">...</summary>
             <div class="menu-panel">
+              <button data-open-class-action="${klass.id}" type="button">Открыть группу</button>
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
               <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
@@ -2284,7 +2285,7 @@ function showSettingsDetail(section) {
         <div><h2 class="card-title">Водяной знак каталога</h2><p class="muted">При экспорте публичного каталога знак будет нанесен поверх превью фото.</p></div>
         <label class="checkbox-row"><input type="checkbox" data-watermark-enabled ${watermark.enabled ? "checked" : ""} /><span>Включить водяной знак</span></label>
         <label class="field-label"><span>Текст</span><input class="input" data-watermark-text placeholder="Ваше имя, студия или телефон" value="${escapeAttr(watermark.text)}" /></label>
-        <label class="field-label"><span>Прозрачность</span><input class="input" data-watermark-opacity type="range" min="0.15" max="0.65" step="0.05" value="${escapeAttr(String(watermark.opacity))}" /></label>
+        <label class="field-label"><span>Прозрачность</span><input class="input" data-watermark-opacity type="range" min="0.25" max="0.85" step="0.05" value="${escapeAttr(String(watermark.opacity))}" /></label>
         <div class="watermark-logo-row">
           ${watermark.logoDataUrl ? `<img class="watermark-logo-preview" src="${watermark.logoDataUrl}" alt="Логотип водяного знака" />` : '<div class="watermark-logo-preview empty">Лого</div>'}
           <div class="toolbar">
@@ -2586,11 +2587,15 @@ function bindViewActions() {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button") && !node.dataset.showClassStudents) return;
       if (event.target.closest("details") && !node.dataset.showClassStudents) return;
-      state.classId = node.dataset.openClass || node.dataset.showClassStudents;
-      state.preserveScroll = true;
-      renderClasses();
+      openClassStudents(node.dataset.openClass || node.dataset.showClassStudents);
+    });
+    node.addEventListener("keydown", (event) => {
+      if (event.target.closest("button")) return;
+      if (event.target.closest("details")) return;
+      if (event.key === "Enter" || event.key === " ") openClassStudents(node.dataset.openClass || node.dataset.showClassStudents);
     });
   });
+  view.querySelectorAll("[data-open-class-action]").forEach((node) => node.addEventListener("click", () => openClassStudents(node.dataset.openClassAction)));
   view.querySelector("[data-close-class-students]")?.addEventListener("click", () => {
     state.classId = null;
     state.preserveScroll = true;
@@ -2900,21 +2905,59 @@ function bindDetailsMenus() {
   menus.forEach((menu) => {
     menu.addEventListener("toggle", () => {
       if (!menu.open) {
-        menu.classList.remove("menu-up");
+        menu.classList.remove("menu-up", "menu-fixed");
+        clearMenuPosition(menu);
+        menu.closest(".list-card, .class-card, .student-card, .service-card")?.classList.remove("menu-host-open");
         return;
       }
       menus.forEach((other) => {
         if (other !== menu) other.open = false;
       });
+      menu.closest(".list-card, .class-card, .student-card, .service-card")?.classList.add("menu-host-open");
       const panel = menu.querySelector(".menu-panel");
       const summary = menu.querySelector("summary");
       const panelHeight = panel?.offsetHeight || 190;
       const navReserve = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-h")) || 72;
       const summaryRect = summary?.getBoundingClientRect();
       const freeBelow = summaryRect ? window.innerHeight - summaryRect.bottom - navReserve - 14 : panelHeight;
-      menu.classList.toggle("menu-up", freeBelow < panelHeight);
+      const freeAbove = summaryRect ? summaryRect.top - 14 : 0;
+      if (freeBelow < Math.min(panelHeight, 260) && freeAbove < Math.min(panelHeight, 220)) {
+        positionMenuPanel(menu, panel, summaryRect, navReserve);
+        return;
+      }
+      clearMenuPosition(menu);
+      menu.classList.toggle("menu-up", freeBelow < panelHeight && freeAbove > freeBelow);
     });
   });
+}
+
+function openClassStudents(classId) {
+  const klass = classById(classId);
+  if (!klass) return notify("Группа не найдена.");
+  state.projectId = klass.projectId;
+  state.classId = klass.id;
+  state.preserveScroll = true;
+  renderClasses();
+}
+
+function positionMenuPanel(menu, panel, summaryRect, navReserve) {
+  if (!panel || !summaryRect) return;
+  menu.classList.remove("menu-up");
+  menu.classList.add("menu-fixed");
+  const margin = 12;
+  const panelWidth = Math.min(Math.max(panel.offsetWidth || 190, 180), window.innerWidth - margin * 2);
+  const maxHeight = Math.max(180, window.innerHeight - navReserve - margin * 2);
+  const left = Math.min(window.innerWidth - panelWidth - margin, Math.max(margin, summaryRect.right - panelWidth));
+  const preferredTop = summaryRect.bottom + 8;
+  const top = Math.min(Math.max(margin, preferredTop), Math.max(margin, window.innerHeight - navReserve - maxHeight - margin));
+  menu.style.setProperty("--menu-left", `${left}px`);
+  menu.style.setProperty("--menu-top", `${top}px`);
+  menu.style.setProperty("--menu-width", `${panelWidth}px`);
+  menu.style.setProperty("--menu-max-height", `${maxHeight}px`);
+}
+
+function clearMenuPosition(menu) {
+  ["--menu-left", "--menu-top", "--menu-width", "--menu-max-height"].forEach((prop) => menu.style.removeProperty(prop));
 }
 
 async function addProject(targetRoute = "home") {
@@ -2976,6 +3019,9 @@ async function setClassColor(payload) {
 }
 
 function showStudentForm(classId) {
+  const klass = classById(classId);
+  if (!klass) return notify("Группа не найдена.");
+  state.projectId = klass.projectId;
   state.classId = classId;
   renderClasses();
   requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
@@ -5211,9 +5257,9 @@ function drawCatalogWatermark(context, canvas, watermark, logo) {
   const height = canvas.height;
   const opacity = normalizeWatermarkOpacity(watermark.opacity);
   const text = watermark.text || "";
-  const tileX = Math.max(260, width / 2.8);
-  const tileY = Math.max(180, height / 3.2);
-  const fontSize = Math.max(24, Math.min(64, width / 15));
+  const tileX = Math.max(190, width / 3.6);
+  const tileY = Math.max(140, height / 4.2);
+  const fontSize = Math.max(26, Math.min(76, width / 12));
   context.save();
   context.globalAlpha = opacity;
   context.textAlign = "center";
@@ -5225,7 +5271,7 @@ function drawCatalogWatermark(context, canvas, watermark, logo) {
       context.translate(x + tileX / 2, y + tileY / 2);
       context.rotate(-Math.PI / 8);
       if (logo) {
-        const logoWidth = Math.min(width * 0.22, tileX * 0.48, logo.naturalWidth || logo.width);
+        const logoWidth = Math.min(width * 0.34, tileX * 0.7, logo.naturalWidth || logo.width);
         const logoHeight = logoWidth * ((logo.naturalHeight || logo.height) / Math.max(1, logo.naturalWidth || logo.width));
         context.drawImage(logo, -logoWidth / 2, -logoHeight / 2 - (text ? fontSize * 0.55 : 0), logoWidth, logoHeight);
       }
@@ -5239,6 +5285,35 @@ function drawCatalogWatermark(context, canvas, watermark, logo) {
       }
       context.restore();
     }
+  }
+  context.restore();
+  drawCatalogWatermarkHero(context, canvas, watermark, logo, text);
+}
+
+function drawCatalogWatermarkHero(context, canvas, watermark, logo, text) {
+  const width = canvas.width;
+  const height = canvas.height;
+  const opacity = Math.min(0.9, normalizeWatermarkOpacity(watermark.opacity) + 0.12);
+  const fontSize = Math.max(34, Math.min(92, width / 9));
+  context.save();
+  context.translate(width / 2, height / 2);
+  context.rotate(-Math.PI / 9);
+  context.globalAlpha = opacity;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `900 ${fontSize}px Arial, sans-serif`;
+  if (logo) {
+    const logoWidth = Math.min(width * 0.42, logo.naturalWidth || logo.width);
+    const logoHeight = logoWidth * ((logo.naturalHeight || logo.height) / Math.max(1, logo.naturalWidth || logo.width));
+    context.drawImage(logo, -logoWidth / 2, -logoHeight / 2 - (text ? fontSize * 0.55 : 0), logoWidth, logoHeight);
+  }
+  if (text) {
+    const textY = logo ? fontSize * 0.85 : 0;
+    context.lineWidth = Math.max(5, fontSize / 10);
+    context.strokeStyle = "rgba(255,255,255,.92)";
+    context.fillStyle = "rgba(17,24,39,.92)";
+    context.strokeText(text, 0, textY);
+    context.fillText(text, 0, textY);
   }
   context.restore();
 }
@@ -7459,8 +7534,8 @@ function catalogWatermarkSettings() {
 
 function normalizeWatermarkOpacity(value) {
   const number = Number(value);
-  if (!Number.isFinite(number)) return 0.32;
-  return Math.min(0.65, Math.max(0.15, number));
+  if (!Number.isFinite(number)) return 0.48;
+  return Math.min(0.85, Math.max(0.25, number));
 }
 
 async function saveWatermarkSettingsFromView() {

@@ -1365,6 +1365,11 @@ p {
   z-index: 2;
 }
 
+.menu-host-open {
+  position: relative;
+  z-index: 90;
+}
+
 .item-menu summary {
   display: grid;
   place-items: center;
@@ -1863,9 +1868,11 @@ p {
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
-  z-index: 60;
+  z-index: 1000;
   display: grid;
   min-width: 170px;
+  max-height: min(72vh, 520px);
+  overflow: auto;
   padding: 8px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   border-radius: 16px;
@@ -1879,7 +1886,17 @@ p {
 }
 
 .item-menu[open] {
-  z-index: 60;
+  z-index: 1000;
+}
+
+.item-menu.menu-fixed .menu-panel {
+  position: fixed;
+  top: var(--menu-top);
+  left: var(--menu-left);
+  right: auto;
+  bottom: auto;
+  width: var(--menu-width);
+  max-height: var(--menu-max-height);
 }
 
 .menu-panel button {
