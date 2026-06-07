@@ -2530,6 +2530,7 @@ function studentCard(student) {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
   const c = completion(student.id);
+  const price = studentTotalPrice(student);
   const previewUrl = studentAvatarUrl(student);
   const fullName = `${student.lastName} ${student.firstName}`.trim();
   const preview = previewUrl
