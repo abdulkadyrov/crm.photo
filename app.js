@@ -1,4 +1,6 @@
 const DB_NAME = "school-photo-flow";
+const APP_NAME = "Vakha Studio";
+const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
 const DB_VERSION = 4;
 const STORE_NAMES = [
   "projects",
@@ -76,7 +78,8 @@ const OPERATOR_ROLES = {
   photographer: "Фотограф",
   designer: "Дизайнер"
 };
-const TRANSFER_APP_NAME = "School Photo Flow";
+const TRANSFER_APP_NAME = APP_NAME;
+const TRANSFER_LEGACY_APP_NAMES = ["School Photo Flow"];
 const TRANSFER_SCHEMA_VERSION = 1;
 const TRANSFER_STORE_MAP = {
   operators: "operators",
@@ -740,7 +743,7 @@ function navigateContextBack() {
   return history.length > 1 ? history.back() : navigate("home");
 }
 
-function setShell({ heading, context = "Фото CRM", summary = "" }) {
+function setShell({ heading, context = APP_NAME, summary = "" }) {
   title.textContent = heading;
   screenContext.textContent = context;
   screenSummary.textContent = summary;
@@ -754,11 +757,14 @@ function renderHome() {
   const total = students.reduce((sum, student) => sum + completion(student.id).total, 0);
   setShell({
     heading: "Главная",
-    context: projects[0]?.name || "School Photo Flow",
+    context: projects[0]?.name || APP_NAME,
     summary: `${classes.length} групп • ${students.length} учеников · ${done} из ${total} задач выполнено`
   });
   view.innerHTML = `
     <section class="crm-overview">
+      <article class="brand-hero" aria-label="${APP_NAME}">
+        <img class="brand-hero-logo" src="${APP_LOGO_SRC}" alt="${APP_NAME}" />
+      </article>
       <div class="toolbar home-toolbar">
         <div>
           <h2 class="card-title">Проекты съемки</h2>
@@ -2253,7 +2259,7 @@ function settingsProfileCard() {
 }
 
 function renderSettings() {
-  setShell({ heading: "Настройки", context: "School Photo Flow", summary: "Профиль · PDF · импорт и экспорт" });
+  setShell({ heading: "Настройки", context: APP_NAME, summary: "Профиль · PDF · импорт и экспорт" });
   view.innerHTML = `
     <section class="settings-list">
       ${settingsProfileCard()}
@@ -6098,7 +6104,7 @@ async function createTransferImportDraft(entries, importMode = "auto") {
   const dataEntry = entries.find((entry) => entry.path.endsWith("data.json"));
   if (!manifestEntry || !dataEntry) throw new Error("manifest.json or data.json not found");
   const manifest = JSON.parse(new TextDecoder().decode(manifestEntry.data));
-  if (manifest.app !== TRANSFER_APP_NAME) throw new Error("Unsupported transfer archive");
+  if (![TRANSFER_APP_NAME, ...TRANSFER_LEGACY_APP_NAMES].includes(manifest.app)) throw new Error("Unsupported transfer archive");
   const rawData = JSON.parse(new TextDecoder().decode(dataEntry.data));
   const exportType = manifest.exportType || "full_backup";
   const mode = TRANSFER_IMPORT_SCOPES[importMode] ? importMode : exportType;

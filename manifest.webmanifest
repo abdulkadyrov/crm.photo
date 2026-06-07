@@ -1,7 +1,7 @@
 {
-  "name": "Фото CRM",
-  "short_name": "Фото CRM",
-  "description": "Офлайн PWA для школьных фото- и видеосъемок.",
+  "name": "Vakha Studio",
+  "short_name": "Vakha Studio",
+  "description": "Офлайн PWA для школьных фото- и видеосъемок Vakha Studio.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#F7F7F7",

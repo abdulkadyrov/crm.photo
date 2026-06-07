@@ -1,8 +1,8 @@
 {
-  "name": "school-photo-flow",
+  "name": "vakha-studio",
   "version": "0.1.0",
   "private": true,
-  "description": "Офлайн PWA для школьных фото- и видеосъемок.",
+  "description": "Офлайн PWA для школьных фото- и видеосъемок Vakha Studio.",
   "scripts": {
     "dev": "python3 -m http.server 4173",
     "start": "python3 -m http.server 4173"

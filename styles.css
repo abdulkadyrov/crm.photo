@@ -661,6 +661,26 @@ p {
   margin-bottom: 22px;
 }
 
+.brand-hero {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  min-height: clamp(150px, 24vw, 240px);
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid rgba(245, 211, 124, 0.2);
+  border-radius: var(--radius);
+  background: #010101;
+  box-shadow: 0 22px 62px rgba(0, 0, 0, 0.18);
+}
+
+.brand-hero-logo {
+  display: block;
+  width: min(100%, 720px);
+  height: auto;
+  max-height: 210px;
+  object-fit: contain;
+}
+
 .search-box {
   display: flex;
   align-items: center;

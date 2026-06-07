@@ -1,4 +1,4 @@
-const CACHE_NAME = "spf-cache-v22";
+const CACHE_NAME = "vakha-studio-cache-v23";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./app.js",
   "./vendor/jsQR.js",
   "./manifest.webmanifest",
+  "./icons/vakha-studio-logo.png",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg"
 ];
