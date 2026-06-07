@@ -137,6 +137,7 @@ const state = {
   route: "home",
   projectId: null,
   classId: null,
+  studentFormClassId: null,
   studentId: null,
   catalogId: null,
   filter: "all",
@@ -631,7 +632,7 @@ function bindShell() {
   document.querySelectorAll("[data-route]").forEach((button) => {
     button.addEventListener("click", () => {
       const route = button.dataset.route;
-      if (route === "classes") return navigate("classes", { classId: null });
+      if (route === "classes") return navigate("classes", { classId: null, studentFormClassId: null });
       navigate(route);
     });
   });
@@ -673,6 +674,7 @@ function routeSnapshot() {
     route: state.route,
     projectId: state.projectId,
     classId: state.classId,
+    studentFormClassId: state.studentFormClassId,
     query: state.query,
     filter: state.filter
   };
@@ -722,6 +724,7 @@ function addContextBackButton() {
 function navigateContextBack() {
   if (state.route === "classes" && state.classId) {
     state.classId = null;
+    state.studentFormClassId = null;
     return renderClasses();
   }
   if (state.route === "student") return navigateBackFromStudent();
@@ -850,13 +853,16 @@ function renderClasses() {
   const doneTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const totalTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).total, 0);
   if (state.classId && !classes.some((klass) => klass.id === state.classId)) state.classId = null;
+  if (state.studentFormClassId && !classes.some((klass) => klass.id === state.studentFormClassId)) state.studentFormClassId = null;
+  const isClassOpen = Boolean(state.classId);
+  const formClassId = state.studentFormClassId;
   setShell({
     heading: project?.name || "Группы",
     context: "Проекты",
     summary: `${classes.length} групп · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
-    ${state.classId ? "" : `<section class="projects-actions">
+    ${isClassOpen ? "" : `<section class="projects-actions">
       <select class="select project-select" data-project-select aria-label="Проект">
         ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
       </select>
@@ -865,8 +871,8 @@ function renderClasses() {
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
       </div>
     </section>`}
-    ${state.classId ? studentQuickForm(state.classId) : ""}
-    ${state.classId ? "" : `
+    ${formClassId ? studentQuickForm(formClassId) : ""}
+    ${isClassOpen ? "" : `
       <section class="class-order-toolbar">
         <label>
           <span>Порядок групп</span>
@@ -881,7 +887,7 @@ function renderClasses() {
       </section>
       ${state.classStatsId ? classStatsPanel(state.classStatsId) : ""}
     `}
-    ${state.classId ? classStudentSection(state.classId) : ""}
+    ${isClassOpen ? classStudentSection(state.classId) : ""}
   `;
   bindViewActions();
   addContextBackButton();
@@ -895,7 +901,10 @@ function classStudentSection(classId) {
     <section class="class-section">
       <div class="toolbar">
         <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
-        <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
+        <div class="row">
+          <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
+          <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
+        </div>
       </div>
       <div class="student-list">
         ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в группу.</p>'}
@@ -2575,11 +2584,11 @@ function bindViewActions() {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
       if (event.target.closest("details")) return;
-      navigate("classes", { projectId: node.dataset.openProject, classId: null });
+      navigate("classes", { projectId: node.dataset.openProject, classId: null, studentFormClassId: null });
     });
   });
   view.querySelectorAll("[data-open-project-action]").forEach((node) => {
-    node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction, classId: null }));
+    node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction, classId: null, studentFormClassId: null }));
   });
   view.querySelectorAll("[data-add-project]").forEach((node) => node.addEventListener("click", () => addProject(node.dataset.addProject)));
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
@@ -2598,6 +2607,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-open-class-action]").forEach((node) => node.addEventListener("click", () => openClassStudents(node.dataset.openClassAction)));
   view.querySelector("[data-close-class-students]")?.addEventListener("click", () => {
     state.classId = null;
+    state.studentFormClassId = null;
     state.preserveScroll = true;
     renderClasses();
   });
@@ -2623,7 +2633,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-assign-operator-class]").forEach((node) => node.addEventListener("click", () => showAssignOperatorPanel("class", node.dataset.assignOperatorClass)));
   view.querySelector("[data-student-form]")?.addEventListener("submit", handleStudentFormSubmit);
   view.querySelector("[data-cancel-student-form]")?.addEventListener("click", () => {
-    state.classId = null;
+    state.studentFormClassId = null;
     renderClasses();
   });
   view.querySelectorAll("[data-open-student]").forEach((node) => {
@@ -2936,6 +2946,7 @@ function openClassStudents(classId) {
   if (!klass) return notify("Группа не найдена.");
   state.projectId = klass.projectId;
   state.classId = klass.id;
+  state.studentFormClassId = null;
   state.preserveScroll = true;
   renderClasses();
 }
@@ -3023,6 +3034,7 @@ function showStudentForm(classId) {
   if (!klass) return notify("Группа не найдена.");
   state.projectId = klass.projectId;
   state.classId = classId;
+  state.studentFormClassId = classId;
   renderClasses();
   requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
 }
@@ -3040,12 +3052,14 @@ async function handleStudentFormSubmit(event) {
   });
   if (!student) return;
   if (submitter?.value === "open") {
+    state.studentFormClassId = null;
     state.classId = null;
     navigate("student", { studentId: student.id });
     return;
   }
   await refreshData();
   notify("Ученик сохранен.");
+  state.studentFormClassId = form.dataset.studentForm;
   renderClasses();
   requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
 }
@@ -4239,6 +4253,7 @@ async function clearAllData() {
   await refreshData();
   state.projectId = null;
   state.classId = null;
+  state.studentFormClassId = null;
   state.studentId = null;
   navigate("home");
 }
@@ -4831,6 +4846,7 @@ function navigateBackFromStudent() {
     navigate(target.route, {
       projectId: target.projectId,
       classId: target.classId,
+      studentFormClassId: target.studentFormClassId || null,
       query: target.query,
       filter: target.filter
     });
@@ -4838,7 +4854,7 @@ function navigateBackFromStudent() {
   }
   const student = studentById(state.studentId);
   const klass = classById(student?.classId);
-  navigate("classes", { projectId: klass?.projectId || state.projectId, classId: null });
+  navigate("classes", { projectId: klass?.projectId || state.projectId, classId: null, studentFormClassId: null });
 }
 
 async function detectQrFromVideo(video, detector, canvas) {
