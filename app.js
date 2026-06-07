@@ -1,11 +1,13 @@
 const DB_NAME = "school-photo-flow";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_NAMES = [
   "projects",
   "classes",
   "students",
   "orders",
   "media",
+  "operators",
+  "operatorEvents",
   "templates",
   "settings",
   "catalog",
@@ -63,35 +65,52 @@ const STATUS_EXPORT_DEFAULT = {
 };
 const SETTING_IDS = {
   initialized: "spf-initialized",
-  catalogWatermark: "spf-catalog-watermark"
+  catalogWatermark: "spf-catalog-watermark",
+  serviceCategories: "spf-service-categories"
+};
+const OPERATOR_STORAGE_KEY = "spf-current-operator-id";
+const OPERATOR_SKIP_SESSION_KEY = "spf-skip-operator-gate";
+const UNKNOWN_OPERATOR_ID = "unknown_operator";
+const OPERATOR_ROLES = {
+  owner: "Владелец",
+  photographer: "Фотограф",
+  designer: "Дизайнер"
 };
 const TRANSFER_APP_NAME = "School Photo Flow";
 const TRANSFER_SCHEMA_VERSION = 1;
 const TRANSFER_STORE_MAP = {
+  operators: "operators",
+  operatorEvents: "operatorEvents",
   projects: "projects",
   classes: "classes",
   students: "students",
   services: "catalog",
   orders: "orders",
+  media: "media",
   settings: "settings",
   checklistTemplates: "templates"
 };
-const TRANSFER_STORE_ORDER = ["projects", "classes", "services", "checklistTemplates", "settings", "students", "orders"];
+const TRANSFER_STORE_ORDER = ["operators", "operatorEvents", "projects", "classes", "services", "checklistTemplates", "settings", "students", "orders", "media"];
 const TRANSFER_COUNT_LABELS = {
+  operators: "сотрудников",
+  operatorEvents: "действий",
   projects: "проектов",
   classes: "классов",
   students: "учеников",
   services: "услуг",
   orders: "заказов",
+  media: "медиа",
   settings: "настроек",
   checklistTemplates: "шаблонов"
 };
 const TRANSFER_IMPORT_SCOPES = {
-  project: ["projects", "classes", "students", "orders", "services", "settings", "checklistTemplates"],
-  class: ["projects", "classes", "students", "orders", "services", "settings", "checklistTemplates"],
+  project: ["operators", "projects", "classes", "students", "orders", "media", "services", "settings", "checklistTemplates"],
+  class: ["operators", "projects", "classes", "students", "orders", "media", "services", "settings", "checklistTemplates"],
+  operators: ["operators"],
   services: ["services"],
-  settings: ["settings", "checklistTemplates"],
-  full_backup: ["projects", "classes", "students", "orders", "services", "settings", "checklistTemplates"]
+  settings: ["operators", "settings", "checklistTemplates"],
+  work_config: ["operators", "services", "settings", "checklistTemplates"],
+  full_backup: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "services", "settings", "checklistTemplates"]
 };
 const CLASS_SORT_MODES = {
   manual: "Ручной порядок",
@@ -128,6 +147,9 @@ const state = {
   serviceSort: "manual",
   serviceCategoryFilter: "all",
   selectedServiceIds: new Set(),
+  currentOperatorId: localStorage.getItem(OPERATOR_STORAGE_KEY) || "",
+  profileOperatorId: "",
+  unknownOperatorWarned: false,
   db: null,
   data: emptyData(),
   currentCapture: null,
@@ -200,7 +222,13 @@ async function init() {
   await seedIfNeeded();
   await seedCatalogIfNeeded();
   await refreshData();
+  normalizeCurrentOperator();
   bindShell();
+  if (shouldShowOperatorGate()) {
+    renderOperatorGate();
+    registerServiceWorker();
+    return;
+  }
   navigateFromUrl() || navigate("home");
   registerServiceWorker();
 }
@@ -227,6 +255,8 @@ function emptyData() {
     students: [],
     orders: [],
     media: [],
+    operators: [],
+    operatorEvents: [],
     templates: [],
     settings: [],
     catalog: []
@@ -288,6 +318,241 @@ async function refreshData() {
   STORE_NAMES.forEach((name, index) => {
     state.data[name] = entries[index];
   });
+}
+
+function normalizeCurrentOperator() {
+  const stored = localStorage.getItem(OPERATOR_STORAGE_KEY) || "";
+  const operator = state.data.operators.find((item) => item.id === stored && item.isActive !== false);
+  if (operator) {
+    state.currentOperatorId = operator.id;
+    return;
+  }
+  state.currentOperatorId = "";
+  localStorage.removeItem(OPERATOR_STORAGE_KEY);
+}
+
+function shouldShowOperatorGate() {
+  if (sessionStorage.getItem(OPERATOR_SKIP_SESSION_KEY) === "true") return false;
+  if (!state.data.operators.length) return true;
+  return !currentOperator() && activeOperators().length > 0;
+}
+
+function renderOperatorGate() {
+  const hasOperators = state.data.operators.length > 0;
+  setShell({
+    heading: hasOperators ? "Кто работает?" : "Создать главный профиль",
+    context: "Локальный профиль",
+    summary: hasOperators ? "Выберите сотрудника и введите код" : "Первичная настройка владельца"
+  });
+  document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+  const active = activeOperators();
+  view.innerHTML = hasOperators ? `
+    <section class="operator-gate">
+      <form class="panel grid operator-auth-card" data-operator-login>
+        <div>
+          <h2 class="card-title">Кто работает?</h2>
+          <p class="muted">Код нужен только чтобы случайно не войти под чужим именем.</p>
+        </div>
+        <div class="operator-choice-list">
+          ${active.map((operator, index) => `
+            <label class="operator-choice">
+              <input type="radio" name="operatorId" value="${operator.id}" ${index === 0 ? "checked" : ""} />
+              <span class="operator-avatar">${escapeHtml(operatorInitials(operator))}</span>
+              <span><strong>${escapeHtml(operator.name)}</strong><small>${escapeHtml(operatorRoleLabel(operator.role))}</small></span>
+            </label>
+          `).join("") || '<p class="muted">Активных сотрудников нет.</p>'}
+        </div>
+        <label class="field-label"><span>Код</span><input class="input" name="code" inputmode="numeric" pattern="[0-9]{4,6}" autocomplete="off" placeholder="4-6 цифр" /></label>
+        <div class="toolbar">
+          <button class="secondary-button" data-skip-operator-gate type="button">Продолжить без профиля</button>
+          <button class="primary-button" type="submit">Войти</button>
+        </div>
+      </form>
+    </section>
+  ` : `
+    <section class="operator-gate">
+      <form class="panel grid operator-auth-card" data-owner-setup>
+        <div>
+          <h2 class="card-title">Создать главный профиль</h2>
+          <p class="muted">Этот профиль будет владельцем на главном компьютере.</p>
+        </div>
+        <label class="field-label"><span>Имя</span><input class="input" name="name" required autocomplete="name" placeholder="Например: Расул" /></label>
+        <label class="field-label"><span>Код</span><input class="input" name="code" required inputmode="numeric" pattern="[0-9]{4,6}" autocomplete="off" placeholder="4-6 цифр" /></label>
+        <div class="detail-stat"><span>Роль</span><strong>Владелец</strong></div>
+        <div class="toolbar">
+          <button class="secondary-button" data-skip-operator-gate type="button">Продолжить без профиля</button>
+          <button class="primary-button" type="submit">Создать профиль</button>
+        </div>
+      </form>
+    </section>
+  `;
+  view.querySelector("[data-owner-setup]")?.addEventListener("submit", handleOwnerSetup);
+  view.querySelector("[data-operator-login]")?.addEventListener("submit", handleOperatorLogin);
+  view.querySelector("[data-skip-operator-gate]")?.addEventListener("click", continueWithoutOperator);
+  injectIcons();
+}
+
+async function handleOwnerSetup(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const name = form.elements.name.value.trim();
+  const code = normalizeOperatorCode(form.elements.code.value);
+  if (!name) return notify("Введите имя владельца.");
+  if (!code) return notify("Код должен быть из 4-6 цифр.");
+  const operator = createOperatorRecord({ name, code, role: "owner" });
+  await put("operators", operator);
+  await refreshData();
+  setCurrentOperator(operator.id);
+  notify("Главный профиль создан.");
+  navigateFromUrl() || navigate("home");
+}
+
+async function handleOperatorLogin(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const operator = operatorById(new FormData(form).get("operatorId"));
+  const code = normalizeOperatorCode(form.elements.code.value);
+  if (!operator) return notify("Выберите сотрудника.");
+  if (operator.code !== code) return notify("Неверный код сотрудника.");
+  setCurrentOperator(operator.id);
+  notify(`Вход: ${operator.name}.`);
+  navigateFromUrl() || navigate("home");
+}
+
+function continueWithoutOperator() {
+  sessionStorage.setItem(OPERATOR_SKIP_SESSION_KEY, "true");
+  state.currentOperatorId = "";
+  localStorage.removeItem(OPERATOR_STORAGE_KEY);
+  notify("Профиль не выбран. Действия будут сохранены как неизвестный сотрудник.");
+  navigateFromUrl() || navigate("home");
+}
+
+function setCurrentOperator(operatorId) {
+  state.currentOperatorId = operatorId || "";
+  sessionStorage.removeItem(OPERATOR_SKIP_SESSION_KEY);
+  if (operatorId) localStorage.setItem(OPERATOR_STORAGE_KEY, operatorId);
+  else localStorage.removeItem(OPERATOR_STORAGE_KEY);
+}
+
+function activeOperators() {
+  return state.data.operators.filter((operator) => operator.isActive !== false);
+}
+
+function operatorById(operatorId) {
+  const id = String(operatorId || "");
+  if (!id) return null;
+  return state.data.operators.find((operator) => operator.id === id || (operator.aliases || []).includes(id)) || null;
+}
+
+function currentOperator() {
+  const operator = operatorById(state.currentOperatorId);
+  return operator?.isActive === false ? null : operator;
+}
+
+function currentOperatorIdForAction({ warn = true } = {}) {
+  const operator = currentOperator();
+  if (operator) return operator.id;
+  if (warn) warnUnknownOperator();
+  return UNKNOWN_OPERATOR_ID;
+}
+
+function warnUnknownOperator() {
+  if (state.unknownOperatorWarned) return;
+  state.unknownOperatorWarned = true;
+  notify("Профиль не выбран. Действия будут сохранены как неизвестный сотрудник.");
+}
+
+function createOperatorRecord({ name, code, role = "photographer", id = "" }) {
+  const time = now();
+  return {
+    id: id || uid("operator"),
+    name: String(name || "").trim(),
+    code: normalizeOperatorCode(code),
+    role: normalizeOperatorRole(role),
+    isActive: true,
+    createdAt: time,
+    updatedAt: time
+  };
+}
+
+function normalizeOperatorCode(value) {
+  const code = String(value || "").replace(/\D/g, "");
+  return /^\d{4,6}$/.test(code) ? code : "";
+}
+
+function normalizeOperatorRole(role) {
+  return OPERATOR_ROLES[role] ? role : "photographer";
+}
+
+function operatorRoleLabel(role) {
+  return OPERATOR_ROLES[role] || "Неизвестный сотрудник";
+}
+
+function operatorDisplayName(operatorId) {
+  if (operatorId === UNKNOWN_OPERATOR_ID) return "Неизвестный сотрудник";
+  return operatorById(operatorId)?.name || "Неизвестный сотрудник";
+}
+
+function operatorInitials(operator) {
+  const parts = String(operator?.name || "?").trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((part) => part[0] || "").join("").toUpperCase() || "?";
+}
+
+function stampCreated(record, { warn = true } = {}) {
+  const time = now();
+  const operatorId = currentOperatorIdForAction({ warn });
+  return {
+    ...record,
+    createdAt: record.createdAt || time,
+    updatedAt: time,
+    createdBy: record.createdBy || operatorId,
+    updatedBy: operatorId
+  };
+}
+
+function stampUpdated(record, { warn = true } = {}) {
+  return {
+    ...record,
+    updatedAt: now(),
+    updatedBy: currentOperatorIdForAction({ warn })
+  };
+}
+
+function stampImported(record, { warn = true } = {}) {
+  const operatorId = currentOperatorIdForAction({ warn });
+  const time = now();
+  return {
+    ...record,
+    createdAt: record.createdAt || time,
+    updatedAt: time,
+    createdBy: record.createdBy || operatorId,
+    updatedBy: operatorId,
+    importedBy: operatorId,
+    importedAt: time
+  };
+}
+
+function stampExported(record, { warn = true } = {}) {
+  return {
+    ...record,
+    exportedBy: currentOperatorIdForAction({ warn }),
+    exportedAt: now()
+  };
+}
+
+async function recordOperatorEvent(type, patch = {}) {
+  const operatorId = patch.operatorId || currentOperatorIdForAction({ warn: false });
+  const event = {
+    id: uid("operator_event"),
+    type,
+    operatorId,
+    createdAt: now(),
+    ...patch
+  };
+  if (type === "export") event.exportedBy = operatorId;
+  if (type === "import") event.importedBy = operatorId;
+  await put("operatorEvents", event);
+  return event;
 }
 
 async function seedIfNeeded() {
@@ -386,7 +651,7 @@ function navigate(route, params = {}) {
   Object.assign(state, params, { route });
   document.querySelectorAll(".nav-item").forEach((item) => {
     const itemRoute = item.dataset.route;
-    item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")) || (itemRoute === "settings" && ["settings", "services", "serviceDetail", "catalog"].includes(route)));
+    item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")) || (itemRoute === "settings" && ["settings", "profile", "services", "serviceDetail", "catalog"].includes(route)));
   });
   render();
   if (prevRoute !== route) window.scrollTo(0, 0);
@@ -412,6 +677,7 @@ function render() {
     scan: renderScan,
     classes: renderClasses,
     catalog: renderCatalog,
+    profile: renderProfile,
     serviceDetail: renderServiceDetail,
     albums: renderAlbums,
     albumProject: renderAlbumProject,
@@ -452,6 +718,7 @@ function navigateContextBack() {
   if (state.route === "services") return navigate("settings");
   if (state.route === "serviceDetail") return navigate("services");
   if (state.route === "catalog") return navigate("settings");
+  if (state.route === "profile") return navigate("settings");
   if (state.route === "albumProject") return navigate("albums");
   if (state.route === "albumClass") {
     const klass = albumClassById(state.albumClassId);
@@ -525,6 +792,7 @@ function projectCard(project) {
   const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id)).filter(matchesFilter).filter(matchesSearch);
   const done = students.filter((student) => completion(student.id).done).length;
   const pct = students.length ? Math.round((done / students.length) * 100) : 0;
+  const finance = projectFinancialStats(project.id);
   return `
     <article class="list-card card-button" data-open-project="${project.id}">
       <div class="list-card-main">
@@ -534,6 +802,8 @@ function projectCard(project) {
           <p class="muted">${classes.length} групп · ${students.length} учеников</p>
           <div class="progress-label"><span>Прогресс ${pct}%</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
+          <div class="progress-label"><span>Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</span><strong>${finance.paymentPercent}%</strong></div>
+          <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
         </div>
         <details class="item-menu">
           <summary aria-label="Меню проекта">...</summary>
@@ -541,6 +811,7 @@ function projectCard(project) {
             <button data-open-project-action="${project.id}" type="button">Открыть</button>
             <button data-export-status-project="${project.id}" type="button">Экспорт</button>
             <button data-export-project="${project.id}" type="button">ZIP проекта</button>
+            <button data-assign-operator-project="${project.id}" type="button">Назначить сотрудника</button>
             <button data-rename-project="${project.id}" type="button">Переименовать</button>
             <button class="danger-text" data-delete-project="${project.id}" type="button">Удалить</button>
           </div>
@@ -627,6 +898,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
   const allStudents = state.data.students.filter((student) => student.classId === klass.id);
   const done = allStudents.filter((student) => completion(student.id).done).length;
   const pct = allStudents.length ? Math.round((done / allStudents.length) * 100) : 0;
+  const finance = classFinancialStats(klass.id);
   const color = classColorOption(klass.color, klass.name);
   const manualMoveDisabled = sortMode !== "manual";
   return `
@@ -646,6 +918,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
               <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
               <button data-export-class="${klass.id}" type="button">ZIP группы</button>
+              <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
               <button data-move-class="${klass.id}:up" ${manualMoveDisabled || index === 0 ? "disabled" : ""} type="button">Выше</button>
               <button data-move-class="${klass.id}:down" ${manualMoveDisabled || index >= total - 1 ? "disabled" : ""} type="button">Ниже</button>
@@ -662,6 +935,11 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
           <strong>${pct}%</strong>
         </div>
         <div class="progress"><span style="width:${pct}%"></span></div>
+        <div class="progress-label">
+          <span>Оплата: ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</span>
+          <strong>${finance.paymentPercent}%</strong>
+        </div>
+        <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
       </div>
     </article>
   `;
@@ -1089,14 +1367,9 @@ function studentQuickForm(classId) {
         </label>
         <label class="field-label">
           <span>Услуги</span>
-          <div class="service-picker">
-            ${state.data.catalog.map((item) => `
-              <label class="checkbox-row">
-                <input type="checkbox" name="catalogIds" value="${item.id}" ${item.id === selectedCatalogId ? "checked" : ""} />
-                <span>${escapeHtml(serviceName(item))}</span>
-              </label>
-            `).join("") || '<p class="muted">Сначала добавьте услугу.</p>'}
-          </div>
+          <select class="select" name="catalogIds">
+            ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(serviceName(item))}</option>`).join("")}
+          </select>
         </label>
         <label class="field-label">
           <span>Оплата</span>
@@ -1133,7 +1406,9 @@ function renderStudent() {
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Услуги не выбраны";
+  const orderPrice = studentTotalPrice(student);
   const c = completion(student.id);
+  const price = studentTotalPrice(student);
   setShell({ heading: `${student.firstName} ${student.lastName}`, context: project?.name || "Ученик", summary: klass?.name || "" });
   view.innerHTML = `
     <section class="split">
@@ -1152,6 +1427,7 @@ function renderStudent() {
           <div class="detail-stats">
             <div class="detail-stat"><span>Статус</span><strong>${orderStatusLabel(student)}</strong></div>
             <div class="detail-stat"><span>Оплата</span><strong>${paymentLabel(student.paymentStatus)}</strong></div>
+            <div class="detail-stat"><span>Сумма</span><strong>${escapeHtml(formatMoney(orderPrice))}</strong></div>
             <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(selectedCatalogTitle)}</strong></div>
             <div class="detail-stat"><span>Прогресс</span><strong>${c.percent}%</strong></div>
           </div>
@@ -1186,13 +1462,17 @@ function renderStudent() {
         <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
         <div class="field-label">
           <span>Услуги ученика</span>
-          <div class="service-picker">
-            ${state.data.catalog.map((item) => `
-              <label class="checkbox-row">
-                <input type="checkbox" data-student-service="${student.id}" value="${item.id}" ${selectedCatalogIds.includes(item.id) ? "checked" : ""} />
-                <span>${escapeHtml(serviceName(item))}</span>
-              </label>
-            `).join("") || '<p class="muted">Добавьте услуги в разделе настроек.</p>'}
+          <div class="service-dropdown-picker">
+            <select class="select" data-add-student-service="${student.id}" aria-label="Добавить услугу">
+              <option value="">Выбрать услугу</option>
+              ${state.data.catalog.filter((item) => !selectedCatalogIds.includes(item.id)).map((item) => `<option value="${item.id}">${escapeHtml(serviceName(item))} · ${escapeHtml(formatPrice(item.price))}</option>`).join("")}
+            </select>
+            <div class="service-chip-list">
+              ${selectedCatalogIds.map((id) => {
+                const item = catalogItemById(id);
+                return item ? `<span class="service-chip">${escapeHtml(serviceName(item))}<button data-remove-student-service="${student.id}:${item.id}" type="button" aria-label="Убрать услугу">×</button></span>` : "";
+              }).join("") || '<p class="muted">Услуги не выбраны.</p>'}
+            </div>
           </div>
         </div>
         <label class="field-label">
@@ -1464,7 +1744,10 @@ function renderServices() {
         <h2 class="card-title">Пакеты съемки</h2>
         <p class="muted">Услуги, стоимость и набор ракурсов.</p>
       </div>
-      <button class="primary-button" data-add-catalog type="button"><span data-icon="plus"></span>Услуга</button>
+      <div class="row">
+        <button class="secondary-button" data-manage-service-categories type="button">Категории</button>
+        <button class="primary-button" data-add-catalog type="button"><span data-icon="plus"></span>Услуга</button>
+      </div>
     </section>
     <section class="service-order-toolbar">
       <label class="field-label compact-field"><span>Порядок</span><select class="select" data-service-sort>
@@ -1654,11 +1937,306 @@ function catalogAngleRow(item, angle) {
   `;
 }
 
+function renderProfile() {
+  const operator = currentOperator();
+  const isOwner = operator?.role === "owner";
+  const profileId = operator?.id || UNKNOWN_OPERATOR_ID;
+  const selectedId = state.profileOperatorId || profileId;
+  const selectedOperator = operatorById(selectedId) || (selectedId === UNKNOWN_OPERATOR_ID ? { id: UNKNOWN_OPERATOR_ID, name: "Неизвестный сотрудник", role: "" } : null);
+  const profileStats = buildOperatorStats(profileId);
+  const teamStats = operatorStatsList();
+  setShell({
+    heading: "Мой профиль",
+    context: operator ? `${operator.name} · ${operatorRoleLabel(operator.role)}` : "Профиль не выбран",
+    summary: "Профиль, роль и статистика работы"
+  });
+  view.innerHTML = `
+    <section class="profile-page">
+      ${!operator ? profileUnknownPanel() : ""}
+      <article class="panel profile-summary-card">
+        <div class="profile-main">
+          <span class="operator-avatar large">${escapeHtml(operatorInitials(operator || { name: "?" }))}</span>
+          <div>
+            <h2 class="card-title">${escapeHtml(operator?.name || "Неизвестный сотрудник")}</h2>
+            <p class="muted">${escapeHtml(operator ? operatorRoleLabel(operator.role) : "Профиль не выбран")}</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          ${operator ? '<button class="secondary-button compact" data-logout-operator type="button">Сменить профиль</button>' : '<button class="primary-button compact" data-open-operator-login type="button">Выбрать профиль</button>'}
+        </div>
+      </article>
+      ${operatorStatsPanel(profileStats)}
+      ${isOwner ? `
+        <article class="panel grid">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Управление сотрудниками</h2>
+              <p class="muted">${state.data.operators.length} сотрудников в локальной базе.</p>
+            </div>
+            <button class="primary-button compact" data-add-operator type="button"><span data-icon="plus"></span>Добавить сотрудника</button>
+          </div>
+          <div class="operator-list">
+            ${state.data.operators.map(operatorListRow).join("") || empty("Сотрудников пока нет")}
+          </div>
+          <div class="toolbar profile-transfer-actions">
+            <button class="secondary-button" data-export-operators type="button">Экспорт сотрудников</button>
+            <button class="secondary-button" data-import-operators type="button">Импорт сотрудников</button>
+          </div>
+        </article>
+        <article class="panel grid">
+          <div>
+            <h2 class="card-title">Статистика команды</h2>
+            <p class="muted">Считается по созданным, обновленным, импортированным и экспортированным данным.</p>
+          </div>
+          <div class="team-stat-grid">
+            ${teamStats.map((item) => teamStatCard(item, item.operator.id === selectedId)).join("")}
+          </div>
+        </article>
+        ${selectedOperator ? operatorDetailPanel(selectedOperator, buildOperatorStats(selectedOperator.id)) : ""}
+      ` : ""}
+    </section>
+    <button class="fab-back" data-back-settings type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
+  `;
+  bindViewActions();
+}
+
+function profileUnknownPanel() {
+  return `
+    <article class="panel profile-warning">
+      <strong>Профиль не выбран</strong>
+      <span>Действия будут сохранены как неизвестный сотрудник.</span>
+    </article>
+  `;
+}
+
+function operatorStatsPanel(stats) {
+  return `
+    <article class="panel grid">
+      <div class="stats finance-stats profile-stat-grid">
+        <div class="stat"><strong>${stats.projects}</strong><span class="muted">Проектов создано</span></div>
+        <div class="stat"><strong>${stats.classes}</strong><span class="muted">Классов создано</span></div>
+        <div class="stat"><strong>${stats.students}</strong><span class="muted">Учеников добавлено</span></div>
+        <div class="stat"><strong>${stats.media}</strong><span class="muted">Фото/видео добавлено</span></div>
+        <div class="stat"><strong>${stats.imports}</strong><span class="muted">Импортов выполнено</span></div>
+        <div class="stat"><strong>${stats.exports}</strong><span class="muted">Экспортов сделано</span></div>
+        <div class="stat"><strong>${stats.tasks}</strong><span class="muted">Задач выполнено</span></div>
+        <div class="stat"><strong>${stats.readyStudents}</strong><span class="muted">Учеников готово</span></div>
+        <div class="stat"><strong>${stats.unpaidStudents}</strong><span class="muted">Не оплачено</span></div>
+        <div class="stat"><strong>${escapeHtml(formatActivityDate(stats.lastActivity))}</strong><span class="muted">Последняя активность</span></div>
+      </div>
+    </article>
+  `;
+}
+
+function operatorListRow(operator) {
+  return `
+    <div class="operator-row">
+      <span class="operator-avatar">${escapeHtml(operatorInitials(operator))}</span>
+      <div>
+        <strong>${escapeHtml(operator.name)}</strong>
+        <small>${escapeHtml(operatorRoleLabel(operator.role))} · ${operator.isActive === false ? "отключен" : "активен"}</small>
+      </div>
+      <div class="row">
+        <button class="secondary-button compact" data-edit-operator="${operator.id}" type="button">Изменить</button>
+        <button class="secondary-button compact" data-toggle-operator="${operator.id}" type="button">${operator.isActive === false ? "Включить" : "Отключить"}</button>
+      </div>
+    </div>
+  `;
+}
+
+function teamStatCard(item, selected = false) {
+  const stats = item.stats;
+  return `
+    <button class="team-stat-card ${selected ? "selected" : ""}" data-profile-operator="${item.operator.id}" type="button">
+      <div class="profile-main">
+        <span class="operator-avatar">${escapeHtml(operatorInitials(item.operator))}</span>
+        <div>
+          <strong>${escapeHtml(item.operator.name)}</strong>
+          <small>${escapeHtml(operatorRoleLabel(item.operator.role))}</small>
+        </div>
+      </div>
+      <div class="team-stat-lines">
+        <span>классов: ${stats.classes}</span>
+        <span>учеников: ${stats.students}</span>
+        <span>фото: ${stats.media}</span>
+        <span>готово: ${stats.readyStudents}</span>
+        <span>последняя активность: ${escapeHtml(formatActivityDate(stats.lastActivity))}</span>
+      </div>
+    </button>
+  `;
+}
+
+function operatorDetailPanel(operator, stats) {
+  return `
+    <article class="panel grid">
+      <div>
+        <h2 class="card-title">${escapeHtml(operator.name)}</h2>
+        <p class="muted">Подробная статистика по проектам, классам, датам, импортам и экспортам.</p>
+      </div>
+      <div class="profile-detail-grid">
+        ${operatorDetailGroup("По проектам", stats.projectDetails)}
+        ${operatorDetailGroup("По классам", stats.classDetails)}
+        ${operatorDetailGroup("По датам", stats.dateDetails)}
+        ${operatorDetailGroup("Импорт / экспорт", stats.transferDetails)}
+      </div>
+    </article>
+  `;
+}
+
+function operatorDetailGroup(title, rows) {
+  return `
+    <div class="profile-detail-card">
+      <h3 class="mini-heading">${escapeHtml(title)}</h3>
+      <div class="import-draft-list">
+        ${rows.map((row) => `<div class="import-draft-row"><strong>${escapeHtml(row.label)}</strong><span>${escapeHtml(row.value)}</span></div>`).join("") || '<p class="muted">Пока нет данных.</p>'}
+      </div>
+    </div>
+  `;
+}
+
+function operatorStatsList() {
+  const known = state.data.operators.map((operator) => ({ operator, stats: buildOperatorStats(operator.id) }));
+  const unknownStats = buildOperatorStats(UNKNOWN_OPERATOR_ID);
+  if (unknownStats.totalActivity) known.push({ operator: { id: UNKNOWN_OPERATOR_ID, name: "Неизвестный сотрудник", role: "" }, stats: unknownStats });
+  return known;
+}
+
+function buildOperatorStats(operatorId) {
+  const projects = state.data.projects.filter((item) => recordMatchesOperator(item, operatorId, ["createdBy"]));
+  const classes = state.data.classes.filter((item) => recordMatchesOperator(item, operatorId, ["createdBy"]));
+  const students = state.data.students.filter((item) => recordMatchesOperator(item, operatorId, ["createdBy"]));
+  const media = state.data.media.filter((item) => recordMatchesOperator(item, operatorId, ["createdBy", "importedBy", "capturedBy"]));
+  const importEvents = state.data.operatorEvents.filter((item) => item.type === "import" && recordMatchesOperator(item, operatorId, ["operatorId", "importedBy"]));
+  const exportEvents = state.data.operatorEvents.filter((item) => item.type === "export" && recordMatchesOperator(item, operatorId, ["operatorId", "exportedBy"]));
+  const exportedRecords = [...state.data.projects, ...state.data.classes, ...state.data.students].filter((item) => recordMatchesOperator(item, operatorId, ["exportedBy"]));
+  const tasks = state.data.orders.flatMap((order) => (order.items || []).map((item) => ({ ...item, order })))
+    .filter((item) => item.status === "done" && recordMatchesOperator(item, operatorId, ["completedBy", "updatedBy"]));
+  const readyStudents = state.data.students.filter((student) => ["ready", "delivered"].includes(currentOrderStatus(student)) && (
+    recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]) || studentHasCompletedTaskByOperator(student.id, operatorId)
+  ));
+  const unpaidStudents = state.data.students.filter((student) => student.paymentStatus !== "paid" && recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]));
+  const lastActivity = latestActivityDate({ projects, classes, students, media, events: [...importEvents, ...exportEvents], tasks });
+  return {
+    projects: projects.length,
+    classes: classes.length,
+    students: students.length,
+    media: media.length,
+    imports: importEvents.length || media.filter((item) => recordMatchesOperator(item, operatorId, ["importedBy"])).length,
+    exports: exportEvents.length || exportedRecords.length,
+    tasks: tasks.length,
+    readyStudents: readyStudents.length,
+    unpaidStudents: unpaidStudents.length,
+    lastActivity,
+    totalActivity: projects.length + classes.length + students.length + media.length + importEvents.length + exportEvents.length + tasks.length,
+    projectDetails: operatorProjectDetails(operatorId),
+    classDetails: operatorClassDetails(operatorId),
+    dateDetails: operatorDateDetails(operatorId),
+    transferDetails: operatorTransferDetails(operatorId)
+  };
+}
+
+function recordMatchesOperator(record, operatorId, fields) {
+  const ids = operatorComparisonIds(operatorId);
+  const values = fields.map((field) => record?.[field]).filter(Boolean);
+  if (operatorId === UNKNOWN_OPERATOR_ID) return values.length === 0 || values.some((value) => ids.has(String(value)));
+  return values.some((value) => ids.has(String(value)));
+}
+
+function operatorComparisonIds(operatorId) {
+  const ids = new Set([String(operatorId || "")]);
+  const operator = operatorById(operatorId);
+  (operator?.aliases || []).forEach((id) => ids.add(String(id)));
+  return ids;
+}
+
+function studentHasCompletedTaskByOperator(studentId, operatorId) {
+  const order = orderByStudent(studentId);
+  return (order.items || []).some((item) => item.status === "done" && recordMatchesOperator(item, operatorId, ["completedBy", "updatedBy"]));
+}
+
+function latestActivityDate(groups) {
+  const dates = [];
+  Object.values(groups).flat().forEach((item) => {
+    ["createdAt", "updatedAt", "importedAt", "exportedAt", "completedAt"].forEach((key) => {
+      if (item?.[key]) dates.push(item[key]);
+    });
+  });
+  return dates.sort().pop() || "";
+}
+
+function formatActivityDate(value) {
+  if (!value) return "нет";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "нет";
+  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
+function operatorProjectDetails(operatorId) {
+  return state.data.projects.map((project) => {
+    const classes = classesByProject(project.id);
+    const classIds = new Set(classes.map((klass) => klass.id));
+    const students = state.data.students.filter((student) => classIds.has(student.classId));
+    const media = state.data.media.filter((item) => students.some((student) => student.id === item.studentId) && recordMatchesOperator(item, operatorId, ["createdBy", "importedBy", "capturedBy"]));
+    const ownStudents = students.filter((student) => recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]));
+    if (!media.length && !ownStudents.length && !recordMatchesOperator(project, operatorId, ["createdBy", "updatedBy", "exportedBy"])) return null;
+    return { label: project.name, value: `${ownStudents.length} учеников · ${media.length} фото` };
+  }).filter(Boolean).slice(0, 12);
+}
+
+function operatorClassDetails(operatorId) {
+  return state.data.classes.map((klass) => {
+    const students = state.data.students.filter((student) => student.classId === klass.id);
+    const ownStudents = students.filter((student) => recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]));
+    const media = state.data.media.filter((item) => students.some((student) => student.id === item.studentId) && recordMatchesOperator(item, operatorId, ["createdBy", "importedBy", "capturedBy"]));
+    if (!media.length && !ownStudents.length && !recordMatchesOperator(klass, operatorId, ["createdBy", "updatedBy", "exportedBy"])) return null;
+    return { label: `${projectById(klass.projectId)?.name || "Проект"} · ${klass.name}`, value: `${ownStudents.length} учеников · ${media.length} фото` };
+  }).filter(Boolean).slice(0, 12);
+}
+
+function operatorDateDetails(operatorId) {
+  const days = new Map();
+  const add = (dateValue, count = 1) => {
+    if (!dateValue) return;
+    const day = String(dateValue).slice(0, 10);
+    days.set(day, (days.get(day) || 0) + count);
+  };
+  state.data.students.filter((item) => recordMatchesOperator(item, operatorId, ["createdBy", "updatedBy"])).forEach((item) => add(item.createdAt || item.updatedAt));
+  state.data.media.filter((item) => recordMatchesOperator(item, operatorId, ["createdBy", "importedBy", "capturedBy"])).forEach((item) => add(item.importedAt || item.createdAt));
+  state.data.operatorEvents.filter((item) => recordMatchesOperator(item, operatorId, ["operatorId", "importedBy", "exportedBy"])).forEach((item) => add(item.createdAt));
+  return Array.from(days.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, 10)
+    .map(([day, count]) => ({ label: new Date(day).toLocaleDateString("ru-RU"), value: `${count} действий` }));
+}
+
+function operatorTransferDetails(operatorId) {
+  const imports = state.data.operatorEvents.filter((item) => item.type === "import" && recordMatchesOperator(item, operatorId, ["operatorId", "importedBy"]));
+  const exports = state.data.operatorEvents.filter((item) => item.type === "export" && recordMatchesOperator(item, operatorId, ["operatorId", "exportedBy"]));
+  return [
+    ...imports.slice(-6).map((item) => ({ label: `Импорт ${item.targetType || ""}`.trim(), value: formatActivityDate(item.createdAt) })),
+    ...exports.slice(-6).map((item) => ({ label: `Экспорт ${item.targetType || ""}`.trim(), value: formatActivityDate(item.createdAt) }))
+  ].slice(-12).reverse();
+}
+
+function settingsProfileCard() {
+  const operator = currentOperator();
+  const subtitle = operator
+    ? (operator.role === "owner" ? `${operatorRoleLabel(operator.role)} · ${state.data.operators.length} сотрудников` : `${operator.name} · ${operatorRoleLabel(operator.role)}`)
+    : "Профиль не выбран";
+  return `
+    <button class="settings-row profile-settings-row" data-open-profile type="button">
+      <span class="operator-avatar">${escapeHtml(operatorInitials(operator || { name: "?" }))}</span>
+      <div><strong>Мой профиль</strong><small>Профиль, роль и статистика работы</small><small>${escapeHtml(subtitle)}</small></div>
+      <b>›</b>
+    </button>
+  `;
+}
+
 function renderSettings() {
-  setShell({ heading: "Настройки", context: "School Photo Flow", summary: "Шаблоны · PDF · импорт и экспорт" });
+  setShell({ heading: "Настройки", context: "School Photo Flow", summary: "Профиль · PDF · импорт и экспорт" });
   view.innerHTML = `
     <section class="settings-list">
-      <button class="settings-row" data-settings-detail="checklists" type="button"><span>📋</span><div><strong>Шаблоны чеклистов</strong><small>Настройка задач заказа</small></div><b>›</b></button>
+      ${settingsProfileCard()}
       <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>PDF статусы</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
@@ -1709,13 +2287,47 @@ function showSettingsDetail(section) {
     transfer: `
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
-        <label class="field-label"><span>Проект</span><select class="select" data-transfer-project>${state.data.projects.map((project) => `<option value="${project.id}" ${project.id === state.projectId ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}</select></label>
-        <div class="toolbar"><button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button><button class="secondary-button" data-import-project type="button">Импорт проекта</button></div>
-        <label class="field-label"><span>Класс / группа</span><select class="select" data-transfer-class>${state.data.classes.map((klass) => `<option value="${klass.id}" ${klass.id === state.classId ? "selected" : ""}>${escapeHtml(`${projectById(klass.projectId)?.name || ""} · ${klass.name}`)}</option>`).join("")}</select></label>
-        <div class="toolbar"><button class="secondary-button" data-export-selected-class type="button">Экспорт класса/группы</button><button class="secondary-button" data-import-class type="button">Импорт класса/группы</button></div>
-        <div class="toolbar"><button class="secondary-button" data-export-services type="button">Экспорт услуг</button><button class="secondary-button" data-import-services type="button">Импорт услуг ZIP</button><button class="secondary-button" data-import-services-folder type="button">Импорт папки услуг</button><button class="secondary-button" data-export-catalog type="button">Экспорт публичного каталога</button></div>
-        <div class="toolbar"><button class="secondary-button" data-export-settings type="button">Экспорт настроек</button><button class="secondary-button" data-import-settings type="button">Импорт настроек</button></div>
-        <div class="toolbar"><button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button><button class="secondary-button" data-import-zip type="button">Импорт всех данных</button></div>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Рабочая конфигурация</h3>
+          <p class="muted">Сотрудники, услуги, категории и настройки для телефона сотрудника.</p>
+          <div class="transfer-button-row">
+            <button class="primary-button" data-export-work-config type="button">Экспорт рабочей конфигурации</button>
+            <button class="secondary-button" data-import-work-config type="button">Импорт рабочей конфигурации</button>
+            <button class="secondary-button" data-import-settings type="button">Импорт только настроек</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Проект</h3>
+          <label class="field-label"><span>Проект</span><select class="select" data-transfer-project>${state.data.projects.map((project) => `<option value="${project.id}" ${project.id === state.projectId ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}</select></label>
+          <div class="transfer-button-row">
+            <button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button>
+            <button class="secondary-button" data-import-project type="button">Импорт проекта</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Класс / группа</h3>
+          <label class="field-label"><span>Класс / группа</span><select class="select" data-transfer-class>${state.data.classes.map((klass) => `<option value="${klass.id}" ${klass.id === state.classId ? "selected" : ""}>${escapeHtml(`${projectById(klass.projectId)?.name || ""} · ${klass.name}`)}</option>`).join("")}</select></label>
+          <div class="transfer-button-row">
+            <button class="secondary-button" data-export-selected-class type="button">Экспорт класса/группы</button>
+            <button class="secondary-button" data-import-class type="button">Импорт класса/группы</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Услуги и каталог</h3>
+          <div class="transfer-button-row">
+            <button class="secondary-button" data-export-services type="button">Экспорт услуг</button>
+            <button class="secondary-button" data-import-services type="button">Импорт услуг ZIP</button>
+            <button class="secondary-button" data-import-services-folder type="button">Импорт папки услуг</button>
+            <button class="secondary-button" data-export-catalog type="button">Экспорт публичного каталога</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Все данные</h3>
+          <div class="transfer-button-row">
+            <button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button>
+            <button class="secondary-button" data-import-zip type="button">Импорт всех данных</button>
+          </div>
+        </section>
       </article>`,
     demo: `
       <article class="panel grid"><h2 class="card-title">Демо-данные</h2><button class="danger-button" data-clear-all type="button">Очистить все данные</button><button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button></article>`
@@ -1723,6 +2335,167 @@ function showSettingsDetail(section) {
   if (!content) return;
   view.innerHTML = `<section class="grid">${content}</section><button class="fab-back" data-back-settings type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>`;
   bindViewActions();
+}
+
+function showOperatorEditor(operatorId = "") {
+  if (currentOperator()?.role !== "owner") return notify("Управление сотрудниками доступно только владельцу.");
+  const operator = operatorById(operatorId);
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop operator-editor-backdrop";
+  panel.innerHTML = `
+    <form class="qr-panel operator-editor-panel" data-operator-editor>
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${operator ? "Изменить сотрудника" : "Добавить сотрудника"}</h2>
+          <p class="muted">Профиль работает только локально, без сервера.</p>
+        </div>
+        <button class="icon-button" data-close-operator-editor type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <label class="field-label"><span>Имя</span><input class="input" name="name" required value="${escapeAttr(operator?.name || "")}" placeholder="Имя сотрудника" /></label>
+      <label class="field-label"><span>Код</span><input class="input" name="code" required inputmode="numeric" pattern="[0-9]{4,6}" value="${escapeAttr(operator?.code || "")}" placeholder="4-6 цифр" /></label>
+      <label class="field-label"><span>Роль</span><select class="select" name="role">
+        ${Object.entries(OPERATOR_ROLES).map(([value, label]) => `<option value="${value}" ${normalizeOperatorRole(operator?.role) === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+      </select></label>
+      <div class="toolbar">
+        <button class="primary-button" type="submit">Сохранить</button>
+        <button class="secondary-button" data-close-operator-editor type="button">Отмена</button>
+      </div>
+    </form>
+  `;
+  const close = () => panel.remove();
+  panel.querySelectorAll("[data-close-operator-editor]").forEach((node) => node.addEventListener("click", close));
+  panel.querySelector("[data-operator-editor]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveOperatorFromEditor(event.currentTarget, operator, close);
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+async function saveOperatorFromEditor(form, operator, close) {
+  const fields = form.elements;
+  const name = fields.name.value.trim();
+  const code = normalizeOperatorCode(fields.code.value);
+  const role = normalizeOperatorRole(fields.role.value);
+  if (!name) return notify("Введите имя сотрудника.");
+  if (!code) return notify("Код должен быть из 4-6 цифр.");
+  const duplicateName = state.data.operators.find((item) => item.id !== operator?.id && item.name.trim().toLowerCase() === name.toLowerCase());
+  if (duplicateName && !confirm(`Сотрудник "${name}" уже есть. Сохранить все равно?`)) return;
+  const next = operator
+    ? { ...operator, name, code, role, updatedAt: now() }
+    : createOperatorRecord({ name, code, role });
+  await put("operators", next);
+  await refreshData();
+  close();
+  notify(operator ? "Сотрудник сохранен." : "Сотрудник добавлен.");
+  renderProfile();
+}
+
+async function toggleOperatorActive(operatorId) {
+  if (currentOperator()?.role !== "owner") return notify("Управление сотрудниками доступно только владельцу.");
+  const operator = operatorById(operatorId);
+  if (!operator) return;
+  if (operator.id === state.currentOperatorId && operator.isActive !== false) return notify("Нельзя отключить текущий профиль.");
+  await put("operators", { ...operator, isActive: operator.isActive === false, updatedAt: now() });
+  await refreshData();
+  notify(operator.isActive === false ? "Сотрудник включен." : "Сотрудник отключен.");
+  renderProfile();
+}
+
+async function exportOperators() {
+  if (currentOperator()?.role !== "owner") return notify("Экспорт сотрудников доступен владельцу.");
+  const blob = createZip(await buildTransferExportFiles("operators"));
+  downloadBlob(blob, `SPF_operators_${new Date().toISOString().slice(0, 10)}.zip`);
+  await recordOperatorEvent("export", { targetType: "operators" });
+  notify("Сотрудники экспортированы.");
+}
+
+function showAssignOperatorPanel(scope, targetId) {
+  if (currentOperator()?.role !== "owner") return notify("Назначать сотрудника может только владелец.");
+  const operators = activeOperators();
+  if (!operators.length) return notify("Сначала добавьте сотрудника.");
+  const title = scope === "project" ? projectById(targetId)?.name : classById(targetId)?.name;
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop operator-assign-backdrop";
+  panel.innerHTML = `
+    <form class="qr-panel operator-editor-panel" data-assign-operator-form>
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Назначить сотрудника</h2>
+          <p class="muted">${escapeHtml(title || "Выбранные данные")}</p>
+        </div>
+        <button class="icon-button" data-close-assign-operator type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <label class="field-label"><span>Сотрудник</span><select class="select" name="operatorId">
+        ${operators.map((operator) => `<option value="${operator.id}">${escapeHtml(operator.name)} · ${escapeHtml(operatorRoleLabel(operator.role))}</option>`).join("")}
+      </select></label>
+      <p class="muted">Будут назначены авторы проекта/группы, учеников, заказов и импортированных медиа внутри выбранной области.</p>
+      <div class="toolbar">
+        <button class="secondary-button" data-close-assign-operator type="button">Отмена</button>
+        <button class="primary-button" type="submit">Назначить</button>
+      </div>
+    </form>
+  `;
+  const close = () => panel.remove();
+  panel.querySelectorAll("[data-close-assign-operator]").forEach((node) => node.addEventListener("click", close));
+  panel.querySelector("[data-assign-operator-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const operatorId = new FormData(event.currentTarget).get("operatorId");
+    await assignOperatorToScope(scope, targetId, operatorId);
+    close();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+async function assignOperatorToScope(scope, targetId, operatorId) {
+  const operator = operatorById(operatorId);
+  if (!operator) return notify("Сотрудник не найден.");
+  const classIds = new Set();
+  const studentIds = new Set();
+  if (scope === "project") {
+    const project = projectById(targetId);
+    if (!project) return;
+    await put("projects", assignOperatorFields(project, operator.id));
+    classesByProject(project.id).forEach((klass) => classIds.add(klass.id));
+  }
+  if (scope === "class") classIds.add(targetId);
+  for (const klass of state.data.classes.filter((item) => classIds.has(item.id))) {
+    await put("classes", assignOperatorFields(klass, operator.id));
+  }
+  state.data.students.filter((student) => classIds.has(student.classId)).forEach((student) => studentIds.add(student.id));
+  for (const student of state.data.students.filter((item) => studentIds.has(item.id))) {
+    await put("students", assignOperatorFields(student, operator.id));
+  }
+  for (const order of state.data.orders.filter((item) => studentIds.has(item.studentId))) {
+    await put("orders", assignOperatorFields(order, operator.id));
+  }
+  for (const media of state.data.media.filter((item) => studentIds.has(item.studentId))) {
+    await put("media", assignOperatorFields(media, operator.id, true));
+  }
+  await refreshData();
+  notify(`Назначено: ${operator.name}.`);
+  state.preserveScroll = true;
+  render();
+}
+
+function assignOperatorFields(record, operatorId, media = false) {
+  const next = {
+    ...record,
+    createdBy: operatorId,
+    updatedBy: operatorId,
+    updatedAt: now()
+  };
+  if (media) {
+    next.importedBy = record.importedBy || operatorId;
+    next.capturedBy = record.capturedBy || operatorId;
+  }
+  if (Array.isArray(next.items)) {
+    next.items = next.items.map((item) => item.status === "done"
+      ? { ...item, updatedBy: operatorId, completedBy: item.completedBy || operatorId, completedAt: item.completedAt || now() }
+      : { ...item, updatedBy: operatorId });
+  }
+  return next;
 }
 
 function studentCard(student) {
@@ -1753,6 +2526,7 @@ function studentCard(student) {
           <div class="student-statuses">
             <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
             <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
+            <span class="price-pill">${student.paymentStatus === "paid" ? "Оплачено" : "К оплате"} ${escapeHtml(formatMoney(price))}</span>
           </div>
         </div>
         <details class="item-menu student-menu">
@@ -1828,6 +2602,8 @@ function bindViewActions() {
   view.querySelectorAll("[data-rename-project]").forEach((node) => node.addEventListener("click", () => renameProject(node.dataset.renameProject)));
   view.querySelectorAll("[data-delete-class]").forEach((node) => node.addEventListener("click", () => deleteClass(node.dataset.deleteClass)));
   view.querySelectorAll("[data-delete-student]").forEach((node) => node.addEventListener("click", () => deleteStudent(node.dataset.deleteStudent)));
+  view.querySelectorAll("[data-assign-operator-project]").forEach((node) => node.addEventListener("click", () => showAssignOperatorPanel("project", node.dataset.assignOperatorProject)));
+  view.querySelectorAll("[data-assign-operator-class]").forEach((node) => node.addEventListener("click", () => showAssignOperatorPanel("class", node.dataset.assignOperatorClass)));
   view.querySelector("[data-student-form]")?.addEventListener("submit", handleStudentFormSubmit);
   view.querySelector("[data-cancel-student-form]")?.addEventListener("click", () => {
     state.classId = null;
@@ -1863,10 +2639,18 @@ function bindViewActions() {
   view.querySelector("[data-toggle-payment]")?.addEventListener("click", (event) => togglePayment(event.currentTarget.dataset.togglePayment));
   view.querySelector("[data-back-from-student]")?.addEventListener("click", navigateBackFromStudent);
   view.querySelectorAll("[data-edit-student]").forEach((node) => node.addEventListener("click", (event) => editStudent(event.currentTarget.dataset.editStudent)));
-  view.querySelectorAll("[data-student-service]").forEach((node) => node.addEventListener("change", () => {
-    const studentId = node.dataset.studentService;
-    const catalogIds = Array.from(view.querySelectorAll(`[data-student-service="${studentId}"]:checked`)).map((input) => input.value);
-    updateStudentServices(studentId, catalogIds);
+  view.querySelector("[data-add-student-service]")?.addEventListener("change", (event) => {
+    const studentId = event.currentTarget.dataset.addStudentService;
+    const catalogId = event.currentTarget.value;
+    const student = studentById(studentId);
+    if (!student || !catalogId) return;
+    updateStudentServices(studentId, [...selectedCatalogIdsForStudent(student), catalogId]);
+  });
+  view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
+    const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
+    const student = studentById(studentId);
+    if (!student) return;
+    updateStudentServices(studentId, selectedCatalogIdsForStudent(student).filter((id) => id !== catalogId));
   }));
   view.querySelector("[data-order-status]")?.addEventListener("change", (event) => updateOrderStatus(event.target.dataset.orderStatus, event.target.value));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
@@ -1905,7 +2689,12 @@ function bindViewActions() {
     state.zipImportMode = "settings";
     zipInput.click();
   });
+  view.querySelector("[data-import-work-config]")?.addEventListener("click", () => {
+    state.zipImportMode = "work_config";
+    zipInput.click();
+  });
   view.querySelector("[data-export-settings]")?.addEventListener("click", exportSettings);
+  view.querySelector("[data-export-work-config]")?.addEventListener("click", exportWorkConfig);
   view.querySelector("[data-export-services]")?.addEventListener("click", exportServices);
   view.querySelector("[data-export-selected-project]")?.addEventListener("click", () => exportProject(view.querySelector("[data-transfer-project]")?.value || state.projectId));
   view.querySelector("[data-export-selected-class]")?.addEventListener("click", () => exportClass(view.querySelector("[data-transfer-class]")?.value || state.classId));
@@ -1939,8 +2728,29 @@ function bindViewActions() {
   }));
   view.querySelector("[data-open-services]")?.addEventListener("click", () => navigate("services"));
   view.querySelector("[data-open-public-catalog]")?.addEventListener("click", () => navigate("catalog"));
+  view.querySelector("[data-open-profile]")?.addEventListener("click", () => navigate("profile"));
+  view.querySelector("[data-open-operator-login]")?.addEventListener("click", () => {
+    sessionStorage.removeItem(OPERATOR_SKIP_SESSION_KEY);
+    renderOperatorGate();
+  });
+  view.querySelector("[data-logout-operator]")?.addEventListener("click", () => {
+    setCurrentOperator("");
+    renderOperatorGate();
+  });
+  view.querySelector("[data-add-operator]")?.addEventListener("click", () => showOperatorEditor());
+  view.querySelectorAll("[data-edit-operator]").forEach((node) => node.addEventListener("click", () => showOperatorEditor(node.dataset.editOperator)));
+  view.querySelectorAll("[data-toggle-operator]").forEach((node) => node.addEventListener("click", () => toggleOperatorActive(node.dataset.toggleOperator)));
+  view.querySelector("[data-export-operators]")?.addEventListener("click", exportOperators);
+  view.querySelector("[data-import-operators]")?.addEventListener("click", () => {
+    state.zipImportMode = "operators";
+    zipInput.click();
+  });
+  view.querySelectorAll("[data-profile-operator]").forEach((node) => node.addEventListener("click", () => {
+    state.profileOperatorId = node.dataset.profileOperator;
+    renderProfile();
+  }));
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
-  view.querySelector("[data-back-settings]")?.addEventListener("click", () => renderSettings());
+  view.querySelector("[data-back-settings]")?.addEventListener("click", () => navigate("settings"));
   view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);
   view.querySelectorAll("[data-catalog-audience]").forEach((node) => node.addEventListener("click", () => {
     state.catalogAudience = node.dataset.catalogAudience;
@@ -1967,6 +2777,7 @@ function bindViewActions() {
     });
   });
   view.querySelector("[data-add-catalog]")?.addEventListener("click", addCatalogItem);
+  view.querySelector("[data-manage-service-categories]")?.addEventListener("click", showServiceCategoryManager);
   view.querySelector("[data-service-sort]")?.addEventListener("change", (event) => {
     state.serviceSort = event.currentTarget.value;
     renderServices();
@@ -2098,7 +2909,7 @@ async function addProject(targetRoute = "home") {
   const name = prompt("Название проекта");
   if (!name) return;
   const projectId = uid("project");
-  await put("projects", { id: projectId, name: name.trim(), createdAt: now(), templateId: state.data.templates[0]?.id });
+  await put("projects", stampCreated({ id: projectId, name: name.trim(), templateId: state.data.templates[0]?.id }));
   await refreshData();
   navigate(targetRoute === "classes" ? "classes" : "home", { projectId });
 }
@@ -2108,7 +2919,7 @@ async function addClass(projectId) {
   const name = prompt("Название группы");
   if (!name) return;
   const orderIndex = nextClassOrderIndex(projectId);
-  await put("classes", { id: uid("class"), projectId, name: name.trim(), orderIndex });
+  await put("classes", stampCreated({ id: uid("class"), projectId, name: name.trim(), orderIndex }));
   await refreshData();
   navigate("classes", { projectId });
 }
@@ -2116,7 +2927,7 @@ async function addClass(projectId) {
 async function updateProjectClassSort(projectId, sortMode) {
   const project = projectById(projectId);
   if (!project || !CLASS_SORT_MODES[sortMode]) return;
-  await put("projects", { ...project, classSort: sortMode });
+  await put("projects", stampUpdated({ ...project, classSort: sortMode }));
   await refreshData();
   state.preserveScroll = true;
   renderClasses();
@@ -2134,9 +2945,9 @@ async function moveClass(payload) {
   const reordered = [...classes];
   [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
   for (let orderIndex = 0; orderIndex < reordered.length; orderIndex += 1) {
-    await put("classes", { ...reordered[orderIndex], orderIndex });
+    await put("classes", stampUpdated({ ...reordered[orderIndex], orderIndex }));
   }
-  if (classSortMode(project) !== "manual") await put("projects", { ...project, classSort: "manual" });
+  if (classSortMode(project) !== "manual") await put("projects", stampUpdated({ ...project, classSort: "manual" }));
   await refreshData();
   state.preserveScroll = true;
   renderClasses();
@@ -2146,7 +2957,7 @@ async function setClassColor(payload) {
   const [classId, color] = String(payload || "").split(":");
   const klass = classById(classId);
   if (!klass || !CLASS_COLOR_OPTIONS.some((option) => option.id === color)) return;
-  await put("classes", { ...klass, color });
+  await put("classes", stampUpdated({ ...klass, color }));
   await refreshData();
   state.preserveScroll = true;
   renderClasses();
@@ -2191,9 +3002,9 @@ async function addStudent({ classId, fio, catalogId = "", catalogIds = [], payme
   const selectedCatalogIds = normalizeCatalogIds(catalogIds.length ? catalogIds : [catalogId || state.data.catalog[0]?.id || ""]);
   const selectedCatalogId = selectedCatalogIds[0] || "";
   const id = uid("student");
-  const student = { id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus, status: "not_started" };
+  const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus, status: "not_started" });
   await put("students", student);
-  await put("orders", { id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: orderStatus, items: orderItemsFromCatalogs(selectedCatalogIds) });
+  await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: orderStatus, items: orderItemsFromCatalogs(selectedCatalogIds) }));
   return student;
 }
 
@@ -2203,7 +3014,7 @@ async function editStudent(studentId) {
   const fio = prompt("ФИО ученика", `${student.lastName} ${student.firstName}`.trim());
   if (!fio) return;
   const { firstName, lastName } = splitFullName(fio);
-  await put("students", { ...student, firstName, lastName });
+  await put("students", stampUpdated({ ...student, firstName, lastName }));
   await refreshData();
   state.preserveScroll = true;
   renderStudent();
@@ -2228,7 +3039,7 @@ async function renameProject(projectId) {
   if (!project) return;
   const name = prompt("Название проекта", project.name);
   if (!name?.trim()) return;
-  await put("projects", { ...project, name: name.trim() });
+  await put("projects", stampUpdated({ ...project, name: name.trim() }));
   await refreshData();
   notify("Проект переименован.");
   navigate("home");
@@ -2251,7 +3062,7 @@ async function renameClass(classId) {
   if (!klass) return;
   const name = prompt("Название группы", klass.name);
   if (!name?.trim()) return;
-  await put("classes", { ...klass, name: name.trim() });
+  await put("classes", stampUpdated({ ...klass, name: name.trim() }));
   await refreshData();
   notify("Группа переименована.");
   navigate("classes", { projectId: klass.projectId });
@@ -2290,8 +3101,8 @@ async function updateStudentServices(studentId, catalogIds) {
   if (!selectedCatalogIds.length) return notify("Выберите хотя бы одну услугу.");
   const order = orderByStudent(studentId);
   const nextItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
-  await put("students", { ...student, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds });
-  await put("orders", { ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems });
+  await put("students", stampUpdated({ ...student, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds }));
+  await put("orders", stampUpdated({ ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems }));
   await refreshData();
   notify("Услуги и чеклист ученика обновлены.");
   state.preserveScroll = true;
@@ -2602,7 +3413,7 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
     createdAt: item?.createdAt || now(),
     updatedAt: now()
   };
-  await put("catalog", next);
+  await put("catalog", item ? stampUpdated(next) : stampCreated(next));
   await refreshData();
   close();
   notify(item ? "Услуга сохранена." : "Услуга создана.");
@@ -2626,7 +3437,7 @@ async function duplicateCatalogItem(itemId) {
     createdAt: now(),
     updatedAt: now()
   };
-  await put("catalog", copy);
+  await put("catalog", stampCreated(copy));
   await refreshData();
   notify("Услуга продублирована.");
   renderServices();
@@ -2660,7 +3471,7 @@ function toggleServiceSelection(itemId, checked) {
 async function toggleServicePopular(itemId) {
   const item = catalogItemById(itemId);
   if (!item) return;
-  await put("catalog", { ...item, popular: !isServicePopular(item), updatedAt: now() });
+  await put("catalog", stampUpdated({ ...item, popular: !isServicePopular(item) }));
   await refreshData();
   renderServices();
 }
@@ -2675,7 +3486,7 @@ async function moveService(itemId, direction) {
   reordered[currentIndex] = reordered[nextIndex];
   reordered[nextIndex] = moving;
   for (const [index, item] of reordered.entries()) {
-    await put("catalog", { ...item, orderIndex: index, updatedAt: now() });
+    await put("catalog", stampUpdated({ ...item, orderIndex: index }));
   }
   await refreshData();
   renderServices();
@@ -2687,7 +3498,7 @@ async function bulkUpdateServicePrice() {
   if (!price) return notify("Введите цену для выбранных услуг.");
   const items = selectedServiceItems();
   if (!items.length) return notify("Выберите услуги.");
-  await updateSelectedServices((item) => ({ ...item, price, updatedAt: now() }));
+  await updateSelectedServices((item) => stampUpdated({ ...item, price }));
   notify(`Цена применена: ${items.length} услуг.`);
 }
 
@@ -2695,7 +3506,7 @@ async function bulkUpdateServiceCategory() {
   const category = normalizeServiceCategory(view.querySelector("[data-bulk-category]")?.value || "");
   const items = selectedServiceItems();
   if (!items.length) return notify("Выберите услуги.");
-  await updateSelectedServices((item) => ({ ...item, category, updatedAt: now() }));
+  await updateSelectedServices((item) => stampUpdated({ ...item, category }));
   notify(category ? `Категория "${category}" применена.` : "Категория очищена.");
 }
 
@@ -2703,7 +3514,7 @@ async function bulkUpdateServiceGender() {
   const gender = normalizeServiceGender(view.querySelector("[data-bulk-gender]")?.value || "unisex");
   const items = selectedServiceItems();
   if (!items.length) return notify("Выберите услуги.");
-  await updateSelectedServices((item) => ({ ...item, gender, updatedAt: now() }));
+  await updateSelectedServices((item) => stampUpdated({ ...item, gender }));
   notify(`Аудитория применена: ${serviceGenderLabel(gender)}.`);
 }
 
@@ -2714,10 +3525,9 @@ async function bulkCopyServiceAngles() {
   if (!source) return notify("Выберите услугу-источник.");
   if (!items.length) return notify("Выберите услуги.");
   const sourceAngles = (source.angles || []).map((angle) => ({ ...angle }));
-  await updateSelectedServices((item) => ({
+  await updateSelectedServices((item) => stampUpdated({
     ...item,
-    angles: sourceAngles.map((angle) => ({ ...angle, serviceId: item.id })),
-    updatedAt: now()
+    angles: sourceAngles.map((angle) => ({ ...angle, serviceId: item.id }))
   }));
   notify(`Ракурсы скопированы: ${items.length} услуг.`);
 }
@@ -2806,7 +3616,7 @@ async function saveAngleEditor(form, item, angle, allowOnlyName, close) {
   const angles = angle
     ? (item.angles || []).map((entry) => entry.id === angle.id ? nextAngle : entry)
     : [...(item.angles || []), nextAngle];
-  await put("catalog", { ...item, angles, updatedAt: now() });
+  await put("catalog", stampUpdated({ ...item, angles }));
   await refreshData();
   close();
   notify(angle ? "Ракурс сохранен." : "Ракурс добавлен.");
@@ -2816,7 +3626,7 @@ async function saveAngleEditor(form, item, angle, allowOnlyName, close) {
 async function deleteCatalogAngle(itemId, angleId) {
   const item = catalogItemById(itemId);
   if (!item || !confirm("Удалить ракурс?")) return;
-  await put("catalog", { ...item, angles: (item.angles || []).filter((entry) => entry.id !== angleId) });
+  await put("catalog", stampUpdated({ ...item, angles: (item.angles || []).filter((entry) => entry.id !== angleId) }));
   await refreshData();
   renderServiceDetail();
 }
@@ -2932,12 +3742,12 @@ async function generateReferenceSet(itemId) {
   const cleanSubject = subject.trim();
   const promptText = buildReferenceAiPrompt(cleanSubject);
   const nextAngles = mergeReferenceAngles(item.angles || [], cleanSubject);
-  await put("catalog", {
+  await put("catalog", stampUpdated({
     ...item,
     angles: nextAngles,
     orderInfo: item.orderInfo || "Набор референсов для портретной съемки.",
     requirements: item.requirements || "Одинаковый свет, чистый фон, спокойная поза, без лишних предметов в кадре."
-  });
+  }));
   const copied = await copyText(promptText);
   if (!copied) prompt("Скопируйте промпт для ChatGPT / генератора изображений", promptText);
   await refreshData();
@@ -3048,7 +3858,7 @@ function escapeSvg(value) {
 }
 
 function captureMedia(type, orderType) {
-  state.currentCapture = { studentId: state.studentId, type, orderType };
+  state.currentCapture = { studentId: state.studentId, type, orderType, source: "capture" };
   mediaInput.accept = type === "video" ? "video/*" : "image/*";
   mediaInput.capture = "environment";
   mediaInput.value = "";
@@ -3056,7 +3866,7 @@ function captureMedia(type, orderType) {
 }
 
 function importMediaFromDevice(orderType) {
-  state.currentCapture = { studentId: state.studentId, type: "photo", orderType };
+  state.currentCapture = { studentId: state.studentId, type: "photo", orderType, source: "device_import" };
   mediaInput.accept = "image/*,video/*";
   mediaInput.removeAttribute("capture");
   mediaInput.value = "";
@@ -3072,15 +3882,21 @@ async function handleMediaInput(event) {
   const ext = extensionFor(file, type);
   const fileName = safeFileName(`${klass.name}_${student.lastName}_${student.firstName}_${state.currentCapture.orderType}.${ext}`);
   const id = uid("media");
-  await put("media", {
+  const operatorId = currentOperatorIdForAction();
+  const mediaRecord = {
     id,
     studentId: student.id,
     type,
     fileName,
     orderType: state.currentCapture.orderType,
+    createdBy: operatorId,
+    importedBy: state.currentCapture.source === "device_import" ? operatorId : undefined,
+    capturedBy: state.currentCapture.source === "capture" ? operatorId : undefined,
     createdAt: now(),
     blob: file
-  });
+  };
+  if (mediaRecord.importedBy) mediaRecord.importedAt = mediaRecord.createdAt;
+  await put("media", mediaRecord);
   await attachFileToOrder(student.id, state.currentCapture.orderType, id);
   await refreshData();
   notify(`${fileName} привязан к ученику.`);
@@ -3101,6 +3917,7 @@ async function handleAlbumMediaInput(event) {
     fileType,
     blobId: uid("blob"),
     blob: file,
+    createdBy: currentOperatorIdForAction(),
     createdAt: now()
   };
   await put("albumMedia", media);
@@ -3145,7 +3962,7 @@ async function handleReferenceInput(event) {
   if (!item) return;
   const refDataUrl = await fileToOptimizedImageDataUrl(file, { maxSize: 1600, quality: 0.84 });
   const angles = (item.angles || []).map((angle) => angle.id === angleId ? { ...angle, refDataUrl, refName: file.name } : angle);
-  await put("catalog", { ...item, angles });
+  await put("catalog", stampUpdated({ ...item, angles }));
   state.currentReference = null;
   event.target.value = "";
   await refreshData();
@@ -3194,7 +4011,7 @@ async function handlePreviewInput(event) {
     const item = catalogItemById(task.itemId);
     if (!item) return;
     const previewDataUrl = await fileToOptimizedImageDataUrl(file, { maxSize: 1600, quality: 0.84 });
-    await put("catalog", { ...item, previewDataUrl, previewImageId: item.previewImageId || `${item.id}_preview_image`, previewName: file.name || "preview", updatedAt: now() });
+    await put("catalog", stampUpdated({ ...item, previewDataUrl, previewImageId: item.previewImageId || `${item.id}_preview_image`, previewName: file.name || "preview" }));
     await refreshData();
     notify("Превью услуги сохранено.");
     if (state.route === "serviceDetail") renderServiceDetail();
@@ -3205,18 +4022,28 @@ async function handlePreviewInput(event) {
 async function attachFileToOrder(studentId, type, fileId) {
   const order = orderByStudent(studentId);
   const item = order.items.find((entry) => entry.type === type) || order.items[0];
+  const operatorId = currentOperatorIdForAction();
   item.fileIds = Array.from(new Set([...item.fileIds, fileId]));
   item.status = "done";
-  await put("orders", { ...order, status: order.status === "delivered" ? order.status : "processing" });
+  item.updatedBy = operatorId;
+  item.completedBy = operatorId;
+  item.completedAt = now();
+  await put("orders", stampUpdated({ ...order, status: order.status === "delivered" ? order.status : "processing" }));
   const student = studentById(studentId);
-  if (student && currentOrderStatus(student) !== "delivered") await put("students", { ...student, orderStatus: "processing" });
+  if (student && currentOrderStatus(student) !== "delivered") await put("students", stampUpdated({ ...student, orderStatus: "processing" }));
 }
 
 async function markTaskDone(studentId, type) {
   if (!type) return;
   const order = orderByStudent(studentId);
   const item = order.items.find((entry) => entry.type === type);
-  if (item) item.status = "done";
+  if (item) {
+    const operatorId = currentOperatorIdForAction();
+    item.status = "done";
+    item.updatedBy = operatorId;
+    item.completedBy = operatorId;
+    item.completedAt = now();
+  }
   await saveOrderWithAutoStatus(studentId, order);
   await refreshData();
   state.preserveScroll = true;
@@ -3226,7 +4053,15 @@ async function markTaskDone(studentId, type) {
 async function toggleTask(studentId, type) {
   const order = orderByStudent(studentId);
   const item = order.items.find((entry) => entry.type === type);
-  if (item) item.status = item.status === "done" ? "pending" : "done";
+  if (item) {
+    const operatorId = currentOperatorIdForAction();
+    item.status = item.status === "done" ? "pending" : "done";
+    item.updatedBy = operatorId;
+    if (item.status === "done") {
+      item.completedBy = operatorId;
+      item.completedAt = now();
+    }
+  }
   await saveOrderWithAutoStatus(studentId, order);
   await refreshData();
   state.preserveScroll = true;
@@ -3235,7 +4070,7 @@ async function toggleTask(studentId, type) {
 
 async function updatePayment(studentId, paymentStatus) {
   const student = studentById(studentId);
-  await put("students", { ...student, paymentStatus });
+  await put("students", stampUpdated({ ...student, paymentStatus }));
   await refreshData();
   state.preserveScroll = true;
   renderStudent();
@@ -3252,8 +4087,8 @@ async function resetOrder(studentId) {
   order.items = order.items.map((item) => ({ ...item, status: "pending", fileIds: [] }));
   order.status = "not_started";
   const student = studentById(studentId);
-  if (student) await put("students", { ...student, orderStatus: "not_started" });
-  await put("orders", order);
+  if (student) await put("students", stampUpdated({ ...student, orderStatus: "not_started" }));
+  await put("orders", stampUpdated(order));
   await refreshData();
   state.preserveScroll = true;
   renderStudent();
@@ -3262,17 +4097,17 @@ async function resetOrder(studentId) {
 async function saveOrderWithAutoStatus(studentId, order) {
   const done = order.items.length > 0 && order.items.every((item) => item.status === "done");
   const nextStatus = done ? "ready" : (order.status === "delivered" ? "delivered" : "processing");
-  await put("orders", { ...order, status: nextStatus });
+  await put("orders", stampUpdated({ ...order, status: nextStatus }));
   const student = studentById(studentId);
-  if (student && currentOrderStatus(student) !== "delivered") await put("students", { ...student, orderStatus: nextStatus });
+  if (student && currentOrderStatus(student) !== "delivered") await put("students", stampUpdated({ ...student, orderStatus: nextStatus }));
 }
 
 async function updateOrderStatus(studentId, orderStatus) {
   const student = studentById(studentId);
   if (!student || !ORDER_STATUSES[orderStatus]) return;
   const order = orderByStudent(studentId);
-  await put("students", { ...student, orderStatus });
-  await put("orders", { ...order, status: orderStatus });
+  await put("students", stampUpdated({ ...student, orderStatus }));
+  await put("orders", stampUpdated({ ...order, status: orderStatus }));
   await refreshData();
   state.preserveScroll = true;
   renderStudent();
@@ -3296,7 +4131,7 @@ async function saveTemplate() {
   const labels = Object.fromEntries(uniqueRows.map((row) => [row.type, row.label]));
   await put("templates", { id, name, items: uniqueRows.map((row) => row.type), labels, scope: "default" });
   for (const order of state.data.orders) {
-    await put("orders", { ...order, items: mergeOrderItems(order.items || [], uniqueRows.map((row) => row.type), labels) });
+    await put("orders", stampUpdated({ ...order, items: mergeOrderItems(order.items || [], uniqueRows.map((row) => row.type), labels) }));
   }
   await refreshData();
   notify("Шаблон сохранен и применен.");
@@ -3318,10 +4153,10 @@ async function applyCatalogAsTemplate(itemId) {
   const items = catalogAngleTypes(item);
   if (!items.length) return notify("В услуге нет ракурсов.");
   for (const order of state.data.orders) {
-    await put("orders", { ...order, catalogId: itemId, catalogIds: [itemId], items: orderItemsFromCatalogs([itemId], order.items || []) });
+    await put("orders", stampUpdated({ ...order, catalogId: itemId, catalogIds: [itemId], items: orderItemsFromCatalogs([itemId], order.items || []) }));
   }
   for (const student of state.data.students) {
-    await put("students", { ...student, catalogId: itemId, catalogIds: [itemId] });
+    await put("students", stampUpdated({ ...student, catalogId: itemId, catalogIds: [itemId] }));
   }
   await refreshData();
   notify("Услуга назначена всем ученикам.");
@@ -3396,7 +4231,7 @@ async function createStudentFromMissingQr(qrId) {
   const { firstName, lastName } = splitFullName(fio);
   const selectedCatalogId = state.data.catalog[0]?.id || "";
   const selectedCatalogIds = selectedCatalogId ? [selectedCatalogId] : [];
-  const student = {
+  const student = stampCreated({
     id: qrId,
     classId,
     firstName,
@@ -3407,16 +4242,16 @@ async function createStudentFromMissingQr(qrId) {
     paymentStatus: "unpaid",
     orderStatus: "not_started",
     status: "not_started"
-  };
+  });
   await put("students", student);
-  await put("orders", {
+  await put("orders", stampCreated({
     id: `order_${qrId}`,
     studentId: qrId,
     catalogId: selectedCatalogId,
     catalogIds: selectedCatalogIds,
     status: "not_started",
     items: orderItemsFromCatalogs(selectedCatalogIds)
-  });
+  }));
   await refreshData();
   notify("Ученик создан из QR.");
   navigate("student", { studentId: qrId });
@@ -3427,8 +4262,8 @@ async function ensureQrFallbackClass() {
   if (existing) return existing;
   const projectId = uid("project");
   const classId = uid("class");
-  await put("projects", { id: projectId, name: "QR импорт", createdAt: now(), templateId: state.data.templates[0]?.id });
-  await put("classes", { id: classId, projectId, name: "Без группы" });
+  await put("projects", stampCreated({ id: projectId, name: "QR импорт", templateId: state.data.templates[0]?.id }));
+  await put("classes", stampCreated({ id: classId, projectId, name: "Без группы" }));
   await refreshData();
   return classId;
 }
@@ -3526,6 +4361,7 @@ async function importShotForStudent(student, file, meta = {}) {
   const baseName = file.name.replace(/\.[^.]+$/, "");
   const fileName = safeFileName(`${klass?.name || "class"}_${student.lastName}_${student.firstName}_${orderType}_${baseName}.${ext}`);
   const id = uid("media");
+  const operatorId = currentOperatorIdForAction();
   await put("media", {
     id,
     studentId: student.id,
@@ -3536,6 +4372,9 @@ async function importShotForStudent(student, file, meta = {}) {
     importSessionId: meta.importSessionId || "",
     orderIndex: Number.isFinite(meta.orderIndex) ? meta.orderIndex : null,
     source: meta.source || "",
+    createdBy: operatorId,
+    importedBy: operatorId,
+    importedAt: now(),
     createdAt: now(),
     blob: file
   });
@@ -3708,6 +4547,7 @@ async function confirmImportDraft(draft) {
     await saveUnassignedImportPhoto(photo, draft.id);
     saved += 1;
   }
+  await recordOperatorEvent("import", { targetType: "qr_media", targetId: draft.id, count: saved });
   await refreshData();
   closeImportDraftPanel();
   notify(`Импорт подтвержден: сохранено ${saved}, QR ${draft.qrMarkers.length}, не распределено ${draft.unassigned.length}.`);
@@ -3727,6 +4567,9 @@ async function saveUnassignedImportPhoto(photo, importSessionId) {
     orderIndex: photo.orderIndex,
     source: "qr_import",
     unassigned: true,
+    createdBy: currentOperatorIdForAction(),
+    importedBy: currentOperatorIdForAction(),
+    importedAt: now(),
     createdAt: now(),
     blob: photo.file
   });
@@ -3880,6 +4723,9 @@ async function importAlbumShotForOwner(owner, file) {
     fileType,
     blobId: uid("blob"),
     blob: file,
+    createdBy: currentOperatorIdForAction(),
+    importedBy: currentOperatorIdForAction(),
+    importedAt: now(),
     createdAt: now()
   };
   await put("albumMedia", media);
@@ -4119,17 +4965,28 @@ function normalizeQrToken(value) {
 }
 
 async function exportZip(studentId = null) {
+  if (studentId) {
+    const student = studentById(studentId);
+    if (student) {
+      await put("students", stampExported(student));
+      await refreshData();
+    }
+  }
   const files = studentId ? await buildExportFiles(studentId) : await buildFullExportFiles();
   const blob = createZip(files);
   downloadBlob(blob, `SPF_${studentId ? "student" : "full"}_${new Date().toISOString().slice(0, 10)}.zip`);
+  await recordOperatorEvent("export", { targetType: studentId ? "student" : "full", targetId: studentId || "" });
   notify("ZIP экспортирован.");
 }
 
 async function exportProject(projectId) {
   const project = projectById(projectId);
   if (!project) return notify("Выберите проект для экспорта.");
+  await put("projects", stampExported(project));
+  await refreshData();
   const blob = createZip(await buildTransferExportFiles("project", { projectId }));
   downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+  await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
   notify("Проект экспортирован.");
 }
 
@@ -4140,8 +4997,11 @@ async function importProject(file) {
 async function exportClass(classId) {
   const klass = classById(classId);
   if (!klass) return notify("Выберите класс/группу для экспорта.");
+  await put("classes", stampExported(klass));
+  await refreshData();
   const blob = createZip(await buildTransferExportFiles("class", { classId }));
   downloadBlob(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+  await recordOperatorEvent("export", { targetType: "class", targetId: classId });
   notify("Класс/группа экспортирован.");
 }
 
@@ -4152,12 +5012,14 @@ async function importClass(file) {
 async function exportServices() {
   const blob = createZip(await buildTransferExportFiles("services"));
   downloadBlob(blob, `SPF_services_${new Date().toISOString().slice(0, 10)}.zip`);
+  await recordOperatorEvent("export", { targetType: "services" });
   notify("Услуги экспортированы.");
 }
 
 async function exportPublicCatalog() {
   const blob = createZip(await buildPublicCatalogExportFiles());
   downloadBlob(blob, "catalog_export.zip");
+  await recordOperatorEvent("export", { targetType: "public_catalog" });
   notify("Каталог экспортирован.");
 }
 
@@ -4168,6 +5030,7 @@ async function importServices(file) {
 async function exportSettings() {
   const blob = createZip(await buildTransferExportFiles("settings"));
   downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
+  await recordOperatorEvent("export", { targetType: "settings" });
   notify("Настройки экспортированы.");
 }
 
@@ -4178,7 +5041,15 @@ async function importSettings(file) {
 async function exportFullBackup() {
   const blob = createZip(await buildTransferExportFiles("full_backup"));
   downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+  await recordOperatorEvent("export", { targetType: "full_backup" });
   notify("Полный ZIP экспортирован.");
+}
+
+async function exportWorkConfig() {
+  const blob = createZip(await buildTransferExportFiles("work_config"));
+  downloadBlob(blob, `SPF_work_config_${new Date().toISOString().slice(0, 10)}.zip`);
+  await recordOperatorEvent("export", { targetType: "work_config" });
+  notify("Рабочая конфигурация экспортирована.");
 }
 
 async function importFullBackup(file) {
@@ -4192,6 +5063,8 @@ async function exportSettingsZip() {
       kind: "spf_settings",
       version: 1,
       exportedAt: now(),
+      exportedBy: currentOperatorIdForAction({ warn: false }),
+      operators: state.data.operators,
       templates: state.data.templates,
       settings: state.data.settings,
       catalog: state.data.catalog
@@ -4203,13 +5076,14 @@ async function exportSettingsZip() {
 
 async function buildTransferExportFiles(exportType, scope = {}) {
   const data = buildTransferData(exportType, scope);
-  const mediaFiles = collectTransferMediaFiles(data);
+  const mediaFiles = await collectTransferMediaFiles(data);
   const exportData = stripTransferMediaDataUrls(data);
   const manifest = {
     app: TRANSFER_APP_NAME,
     schemaVersion: TRANSFER_SCHEMA_VERSION,
     exportType,
     exportedAt: now(),
+    exportedBy: currentOperatorIdForAction({ warn: false }),
     containsMedia: mediaFiles.length > 0
   };
   return [
@@ -4873,11 +5747,13 @@ function buildTransferData(exportType, scope = {}) {
     const students = state.data.students.filter((student) => classIds.has(student.classId));
     const serviceIds = serviceIdsForStudents(students);
     return fillTransferData(base, {
+      operators: state.data.operators,
       projects: [project],
       classes,
       students,
       services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
+      media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
       settings: state.data.settings,
       checklistTemplates: state.data.templates
     });
@@ -4889,11 +5765,13 @@ function buildTransferData(exportType, scope = {}) {
     const students = state.data.students.filter((student) => student.classId === klass.id);
     const serviceIds = serviceIdsForStudents(students);
     return fillTransferData(base, {
+      operators: state.data.operators,
       projects: [project],
       classes: [klass],
       students,
       services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
+      media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
       settings: state.data.settings,
       checklistTemplates: state.data.templates
     });
@@ -4901,15 +5779,29 @@ function buildTransferData(exportType, scope = {}) {
   if (exportType === "services") {
     return fillTransferData(base, { services: manualOrderedServices(state.data.catalog) });
   }
+  if (exportType === "operators") {
+    return fillTransferData(base, { operators: state.data.operators });
+  }
   if (exportType === "settings") {
-    return fillTransferData(base, { settings: state.data.settings, checklistTemplates: state.data.templates });
+    return fillTransferData(base, { operators: state.data.operators, settings: state.data.settings, checklistTemplates: state.data.templates });
+  }
+  if (exportType === "work_config") {
+    return fillTransferData(base, {
+      operators: state.data.operators,
+      services: manualOrderedServices(state.data.catalog),
+      settings: state.data.settings,
+      checklistTemplates: state.data.templates
+    });
   }
   return fillTransferData(base, {
+    operators: state.data.operators,
+    operatorEvents: state.data.operatorEvents,
     projects: state.data.projects,
     classes: state.data.classes,
     students: state.data.students,
     services: state.data.catalog,
     orders: state.data.orders,
+    media: state.data.media,
     settings: state.data.settings,
     checklistTemplates: state.data.templates
   });
@@ -4917,11 +5809,14 @@ function buildTransferData(exportType, scope = {}) {
 
 function emptyTransferData() {
   return {
+    operators: [],
+    operatorEvents: [],
     projects: [],
     classes: [],
     students: [],
     services: [],
     orders: [],
+    media: [],
     tasks: [],
     settings: [],
     statuses: [],
@@ -4939,12 +5834,15 @@ function fillTransferData(target, patch) {
 }
 
 function withTransferAliases(dataKey, record) {
-  const next = clonePlainRecord(record);
+  const next = dataKey === "media" ? { ...record } : clonePlainRecord(record);
+  if (dataKey === "operators") next.operatorId = next.operatorId || next.id;
+  if (dataKey === "operatorEvents") next.eventId = next.eventId || next.id;
   if (dataKey === "projects") next.projectId = next.projectId || next.id;
   if (dataKey === "classes") next.classId = next.classId || next.id;
   if (dataKey === "students") next.studentId = next.studentId || next.id;
   if (dataKey === "services") next.serviceId = next.serviceId || next.id;
   if (dataKey === "orders") next.orderId = next.orderId || next.id;
+  if (dataKey === "media") next.mediaId = next.mediaId || next.id;
   return next;
 }
 
@@ -4968,7 +5866,7 @@ function transferTasksFromOrders(orders) {
   })));
 }
 
-function collectTransferMediaFiles(data) {
+async function collectTransferMediaFiles(data) {
   const files = [];
   const taken = new Set();
   (data.services || []).forEach((service) => {
@@ -4977,6 +5875,13 @@ function collectTransferMediaFiles(data) {
     (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}`, angle.refDataUrl));
     (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}_video`, angle.videoRefDataUrl));
   });
+  for (const item of data.media || []) {
+    if (!item.blob) continue;
+    const path = `media/student_files/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
+    if (taken.has(path)) continue;
+    taken.add(path);
+    files.push({ path, data: new Uint8Array(await item.blob.arrayBuffer()) });
+  }
   return files;
 }
 
@@ -5006,6 +5911,9 @@ function stripTransferMediaDataUrls(data) {
       if (dataUrlToBytes(angle.videoRefDataUrl)) angle.videoRefDataUrl = "";
     });
   });
+  (next.media || []).forEach((item) => {
+    delete item.blob;
+  });
   return next;
 }
 
@@ -5023,6 +5931,13 @@ function hydrateTransferMediaData(data, entries) {
       if (refEntry) angle.refDataUrl = zipEntryToDataUrl(refEntry);
       if (videoRefEntry) angle.videoRefDataUrl = zipEntryToDataUrl(videoRefEntry);
     });
+  });
+  (data.media || []).forEach((item) => {
+    const entry = entries.find((entry) => {
+      const normalized = String(entry.path || "").replace(/\\/g, "/");
+      return normalized.endsWith(`media/student_files/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName}`);
+    });
+    item.blob = new Blob(entry ? [entry.data] : [], { type: item.type === "video" ? "video/mp4" : "image/jpeg" });
   });
   return data;
 }
@@ -5101,8 +6016,11 @@ function normalizeTransferRecordId(dataKey, record) {
     projects: "projectId",
     classes: "classId",
     students: "studentId",
+    operators: "operatorId",
+    operatorEvents: "eventId",
     services: "serviceId",
     orders: "orderId",
+    media: "mediaId",
     settings: "settingId",
     checklistTemplates: "templateId"
   }[dataKey];
@@ -5129,7 +6047,13 @@ function transferImportStats(data) {
 }
 
 function sameTransferRecord(existing, incoming) {
-  return stableJson(existing) === stableJson(incoming);
+  return stableJson(stripRuntimeFields(existing)) === stableJson(stripRuntimeFields(incoming));
+}
+
+function stripRuntimeFields(record) {
+  const next = { ...(record || {}) };
+  delete next.blob;
+  return next;
 }
 
 function stableJson(value) {
@@ -5141,11 +6065,14 @@ function stableJson(value) {
 }
 
 function transferRecordLabel(dataKey, record) {
+  if (dataKey === "operators") return record.name || record.id;
+  if (dataKey === "operatorEvents") return record.type || record.id;
   if (dataKey === "projects") return record.name || record.id;
   if (dataKey === "classes") return record.name || record.id;
   if (dataKey === "students") return `${record.lastName || ""} ${record.firstName || ""}`.trim() || record.qrId || record.id;
   if (dataKey === "services") return record.name || record.title || record.id;
   if (dataKey === "orders") return record.studentId || record.id;
+  if (dataKey === "media") return record.fileName || record.id;
   if (dataKey === "checklistTemplates") return record.name || record.id;
   return record.title || record.name || record.id;
 }
@@ -5168,6 +6095,8 @@ function showTransferImportPreview(draft) {
         ${transferPreviewStat("Классов", draft.stats.added.classes, draft.stats.updated.classes)}
         ${transferPreviewStat("Учеников", draft.stats.added.students, draft.stats.updated.students)}
         ${transferPreviewStat("Услуг", draft.stats.added.services, draft.stats.updated.services)}
+        ${transferPreviewStat("Сотрудников", draft.stats.added.operators, draft.stats.updated.operators)}
+        ${transferPreviewStat("Медиа", draft.stats.added.media, draft.stats.updated.media)}
       </div>
       <div class="import-draft-list">
         <div class="import-draft-row ${draft.stats.conflicts.length ? "warning" : ""}"><strong>Конфликты</strong><span>${draft.stats.conflicts.length ? "есть" : "нет"}</span></div>
@@ -5226,6 +6155,7 @@ async function confirmTransferImport(draft, panel) {
     conflict.resolution = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`)?.value || "update";
   });
   const result = await applyTransferImport(draft);
+  await recordOperatorEvent("import", { targetType: draft.mode || draft.manifest.exportType || "transfer", targetId: draft.id });
   await refreshData();
   closeTransferImportPreview();
   notify(`Импорт завершен: добавлено ${result.added}, обновлено ${result.updated}, пропущено ${result.skipped}.`);
@@ -5245,8 +6175,20 @@ async function applyTransferImport(draft) {
         result.skipped += 1;
         continue;
       }
+      if (dataKey === "operators" && conflict?.resolution === "copy") conflict.resolution = "update";
       const exists = Boolean((state.data[store] || []).some((item) => item.id === originalRecord.id));
       const record = remapTransferRecord(dataKey, originalRecord, idMaps);
+      if (dataKey === "operators" && !exists) {
+        const nameDecision = await resolveOperatorNameImport(record);
+        if (nameDecision === "skip") {
+          result.skipped += 1;
+          continue;
+        }
+        if (nameDecision === "merge") {
+          result.updated += 1;
+          continue;
+        }
+      }
       if (conflict?.resolution === "copy") {
         const copyId = uid(transferIdPrefix(dataKey));
         idMaps[dataKey].set(originalRecord.id, copyId);
@@ -5260,6 +6202,81 @@ async function applyTransferImport(draft) {
     }
   }
   return result;
+}
+
+async function resolveOperatorNameImport(incoming) {
+  const incomingName = String(incoming.name || "").trim().toLowerCase();
+  if (!incomingName) return "add";
+  const existing = state.data.operators.find((operator) => operator.id !== incoming.id && String(operator.name || "").trim().toLowerCase() === incomingName);
+  if (!existing) return "add";
+  const answer = prompt(
+    `Найден сотрудник с таким именем, но другим ID:\n${incoming.name}\n\n1. Объединить\n2. Добавить как нового\n3. Пропустить`,
+    "1"
+  );
+  if (answer === "1") {
+    await mergeImportedOperator(existing, incoming);
+    return "merge";
+  }
+  if (answer === "2") return "add";
+  return "skip";
+}
+
+async function mergeImportedOperator(existing, incoming) {
+  const aliases = Array.from(new Set([
+    ...(existing.aliases || []),
+    ...(incoming.aliases || []),
+    existing.id
+  ].filter((id) => id && id !== incoming.id)));
+  await reassignOperatorReferences(existing.id, incoming.id);
+  await put("operators", {
+    ...existing,
+    ...incoming,
+    id: incoming.id,
+    aliases,
+    createdAt: existing.createdAt || incoming.createdAt || now(),
+    updatedAt: now()
+  });
+  if (existing.id !== incoming.id) await del("operators", existing.id);
+  if (state.currentOperatorId === existing.id) setCurrentOperator(incoming.id);
+}
+
+async function reassignOperatorReferences(oldId, newId) {
+  for (const store of STORE_NAMES) {
+    if (store === "operators") continue;
+    const records = state.data[store] || [];
+    for (const record of records) {
+      const next = replaceOperatorReference(record, oldId, newId);
+      if (next !== record) await put(store, next);
+    }
+  }
+}
+
+function replaceOperatorReference(record, oldId, newId) {
+  const fields = ["createdBy", "updatedBy", "importedBy", "capturedBy", "exportedBy", "completedBy", "operatorId"];
+  let changed = false;
+  const next = { ...record };
+  fields.forEach((field) => {
+    if (next[field] === oldId) {
+      next[field] = newId;
+      changed = true;
+    }
+  });
+  if (Array.isArray(next.items)) {
+    const items = next.items.map((item) => {
+      const patched = { ...item };
+      let itemChanged = false;
+      fields.forEach((field) => {
+        if (patched[field] === oldId) {
+          patched[field] = newId;
+          itemChanged = true;
+        }
+      });
+      if (itemChanged) changed = true;
+      return itemChanged ? patched : item;
+    });
+    if (changed) next.items = items;
+  }
+  return changed ? next : record;
 }
 
 function remapTransferRecord(dataKey, record, idMaps) {
@@ -5280,16 +6297,20 @@ function remapTransferRecord(dataKey, record, idMaps) {
       next.items = (next.items || []).map((item) => remapOrderItemServices(item, idMaps.services));
     }
   }
+  if (dataKey === "media" && idMaps.students?.has(next.studentId)) next.studentId = idMaps.students.get(next.studentId);
   return next;
 }
 
 function appRecordFromTransfer(dataKey, record) {
-  const next = clonePlainRecord(record);
+  const next = dataKey === "media" ? { ...record } : clonePlainRecord(record);
   if (dataKey === "projects") delete next.projectId;
+  if (dataKey === "operators") delete next.operatorId;
+  if (dataKey === "operatorEvents") delete next.eventId;
   if (dataKey === "classes") delete next.classId;
   if (dataKey === "students") delete next.studentId;
   if (dataKey === "services") delete next.serviceId;
   if (dataKey === "orders") delete next.orderId;
+  if (dataKey === "media") delete next.mediaId;
   if (dataKey === "settings") delete next.settingId;
   if (dataKey === "checklistTemplates") delete next.templateId;
   return next;
@@ -5305,10 +6326,13 @@ function remapOrderItemServices(item, serviceMap) {
 function transferIdPrefix(dataKey) {
   return {
     projects: "project",
+    operators: "operator",
+    operatorEvents: "operator_event",
     classes: "class",
     students: "student",
     services: "catalog",
     orders: "order",
+    media: "media",
     settings: "setting",
     checklistTemplates: "template"
   }[dataKey] || "copy";
@@ -5373,6 +6397,7 @@ function exportStatusPdf({ classId = "", projectId = "" } = {}) {
   `);
   win.document.close();
   win.focus();
+  recordOperatorEvent("export", { targetType: "status_pdf", targetId: classId || projectId || "" });
   notify("PDF отчет открыт.");
 }
 
@@ -5462,6 +6487,7 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
   `);
   win.document.close();
   win.focus();
+  recordOperatorEvent("export", { targetType: "album_status_pdf", targetId: classId || albumProjectId || "" });
   notify("PDF статистики альбомов открыт.");
 }
 
@@ -5473,6 +6499,8 @@ async function buildExportFiles(studentId) {
     projects: state.data.projects,
     classes: state.data.classes,
     students: selectedStudents,
+    operators: state.data.operators,
+    operatorEvents: state.data.operatorEvents,
     orders: state.data.orders.filter((order) => selectedStudents.some((student) => student.id === order.studentId)),
     templates: state.data.templates,
     settings: state.data.settings,
@@ -5580,6 +6608,7 @@ async function handleZipInput(event) {
     if (settingsEntry || state.zipImportMode === "settings") {
       if (!settingsEntry) throw new Error("spf-settings.json not found");
       await importSettingsMeta(JSON.parse(new TextDecoder().decode(settingsEntry.data)));
+      await recordOperatorEvent("import", { targetType: "settings" });
       await refreshData();
       notify("Настройки импортированы.");
       renderSettings();
@@ -5587,6 +6616,7 @@ async function handleZipInput(event) {
     }
     if (fullEntry) {
       await importFullMeta(JSON.parse(new TextDecoder().decode(fullEntry.data)), entries);
+      await recordOperatorEvent("import", { targetType: "full_backup" });
       await refreshData();
       notify("Все данные импортированы.");
       navigate("home");
@@ -5598,7 +6628,7 @@ async function handleZipInput(event) {
       return;
     }
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
-    for (const store of ["projects", "classes", "students", "orders", "templates", "settings", "catalog"]) {
+    for (const store of ["operators", "operatorEvents", "projects", "classes", "students", "orders", "templates", "settings", "catalog"]) {
       for (const record of meta[store] || []) await put(store, record);
     }
     const mediaRecords = meta.media || [];
@@ -5607,6 +6637,7 @@ async function handleZipInput(event) {
       const blob = entry ? new Blob([entry.data], { type: record.type === "video" ? "video/mp4" : "image/jpeg" }) : new Blob([]);
       await put("media", { ...record, blob });
     }
+    await recordOperatorEvent("import", { targetType: "legacy_zip" });
     await refreshData();
     notify("ZIP импортирован.");
     navigate("home");
@@ -5644,7 +6675,7 @@ async function filesToZipLikeEntries(files) {
 }
 
 async function importSettingsMeta(meta) {
-  for (const store of ["templates", "settings", "catalog"]) {
+  for (const store of ["operators", "templates", "settings", "catalog"]) {
     for (const record of meta[store] || []) await put(store, record);
   }
 }
@@ -5672,6 +6703,7 @@ async function exportAlbumClassZip(classId) {
   const files = await buildAlbumExportFiles(klass);
   const blob = createZip(files);
   downloadBlob(blob, `${safeFileName(`${klass.name}_album_export`)}.zip`);
+  await recordOperatorEvent("export", { targetType: "album_class", targetId: classId });
   notify("ZIP альбома экспортирован.");
 }
 
@@ -5751,6 +6783,7 @@ async function handleAlbumZipInput(event) {
     if (!dataEntry) {
       const result = await importAlbumShootEntries(entries);
       if (!result.assignedCount && !result.qrCount) throw new Error("spf-album-data.json not found");
+      await recordOperatorEvent("import", { targetType: "album_media", count: result.assignedCount });
       await refreshData();
       notify(`ZIP альбомной съемки: QR ${result.qrCount}, файлов ${result.assignedCount}${result.skippedCount ? `, пропущено ${result.skippedCount}` : ""}.`);
       if (state.albumClassId) renderAlbumClass();
@@ -5769,6 +6802,7 @@ async function handleAlbumZipInput(event) {
       const blob = new Blob(entry ? [entry.data] : [], { type: albumMimeType(media) });
       await put("albumMedia", { ...media, blob });
     }
+    await recordOperatorEvent("import", { targetType: "album_class", targetId: klass.id });
     await refreshData();
     notify("ZIP альбома импортирован.");
     navigate("albumClass", { albumClassId: klass.id, albumProjectId: project.id, albumTab: "students" });
@@ -6550,12 +7584,107 @@ function serviceCategoryLabel(itemOrCategory) {
 }
 
 function serviceCategoryOptions({ includeDefaults = true } = {}) {
-  const values = new Set(includeDefaults ? SERVICE_DEFAULT_CATEGORIES : []);
+  const values = new Set(includeDefaults ? serviceCategorySettings().categories : []);
   state.data.catalog.forEach((item) => {
     const category = serviceCategory(item);
     if (category) values.add(category);
   });
   return Array.from(values).sort((a, b) => a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" }));
+}
+
+function serviceCategorySettings() {
+  const saved = state.data.settings.find((item) => item.id === SETTING_IDS.serviceCategories);
+  const categories = Array.isArray(saved?.categories) && saved.categories.length ? saved.categories : SERVICE_DEFAULT_CATEGORIES;
+  return {
+    id: SETTING_IDS.serviceCategories,
+    categories: Array.from(new Set(categories.map(normalizeServiceCategory).filter(Boolean)))
+  };
+}
+
+async function saveServiceCategorySettings(categories) {
+  await put("settings", stampUpdated({
+    ...serviceCategorySettings(),
+    categories: Array.from(new Set(categories.map(normalizeServiceCategory).filter(Boolean)))
+  }));
+  await refreshData();
+}
+
+function showServiceCategoryManager() {
+  const categories = serviceCategoryOptions();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop service-category-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel service-category-panel" role="dialog" aria-modal="true" aria-label="Категории услуг">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Категории услуг</h2>
+          <p class="muted">Добавляйте и переименовывайте категории для фильтра услуг.</p>
+        </div>
+        <button class="icon-button" data-close-service-categories type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="import-draft-list">
+        ${categories.map((category) => `
+          <div class="import-draft-row">
+            <strong>${escapeHtml(category)}</strong>
+            <span class="row">
+              <button class="secondary-button compact" data-edit-service-category="${escapeAttr(category)}" type="button">Изменить</button>
+              <button class="secondary-button compact" data-delete-service-category="${escapeAttr(category)}" type="button">Удалить</button>
+            </span>
+          </div>
+        `).join("") || '<p class="muted">Категорий пока нет.</p>'}
+      </div>
+      <form class="import-draft-assign" data-add-service-category-form>
+        <input class="input" name="category" placeholder="Новая категория" />
+        <button class="primary-button compact" type="submit">Добавить</button>
+      </form>
+    </section>
+  `;
+  const close = () => panel.remove();
+  panel.querySelector("[data-close-service-categories]")?.addEventListener("click", close);
+  panel.querySelector("[data-add-service-category-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const category = normalizeServiceCategory(new FormData(event.currentTarget).get("category"));
+    if (!category) return notify("Введите название категории.");
+    await saveServiceCategorySettings([...serviceCategoryOptions(), category]);
+    close();
+    showServiceCategoryManager();
+  });
+  panel.querySelectorAll("[data-edit-service-category]").forEach((node) => node.addEventListener("click", async () => {
+    const oldName = node.dataset.editServiceCategory;
+    const nextName = normalizeServiceCategory(prompt("Новое название категории", oldName));
+    if (!nextName || nextName === oldName) return;
+    await renameServiceCategory(oldName, nextName);
+    close();
+    showServiceCategoryManager();
+  }));
+  panel.querySelectorAll("[data-delete-service-category]").forEach((node) => node.addEventListener("click", async () => {
+    const category = node.dataset.deleteServiceCategory;
+    if (!confirm(`Удалить категорию "${category}"? У услуг эта категория будет очищена.`)) return;
+    await deleteServiceCategory(category);
+    close();
+    showServiceCategoryManager();
+  }));
+  document.body.append(panel);
+  injectIcons();
+}
+
+async function renameServiceCategory(oldName, nextName) {
+  const categories = serviceCategoryOptions().map((category) => category === oldName ? nextName : category);
+  await saveServiceCategorySettings(categories);
+  for (const item of state.data.catalog.filter((service) => serviceCategory(service) === oldName)) {
+    await put("catalog", stampUpdated({ ...item, category: nextName }));
+  }
+  await refreshData();
+  renderServices();
+}
+
+async function deleteServiceCategory(category) {
+  await saveServiceCategorySettings(serviceCategoryOptions().filter((item) => item !== category));
+  for (const item of state.data.catalog.filter((service) => serviceCategory(service) === category)) {
+    await put("catalog", stampUpdated({ ...item, category: "" }));
+  }
+  await refreshData();
+  renderServices();
 }
 
 function serviceMatchesCategoryFilter(item) {
