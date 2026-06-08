@@ -4557,7 +4557,11 @@ async function handlePreviewInput(event) {
 
 async function attachFileToOrder(studentId, type, fileId) {
   const order = orderByStudent(studentId);
-  const item = order.items.find((entry) => entry.type === type) || order.items[0];
+  let item = order.items.find((entry) => entry.type === type) || order.items[0];
+  if (!item) {
+    item = { type, status: "pending", fileIds: [] };
+    order.items = [item];
+  }
   const operatorId = currentOperatorIdForAction();
   item.fileIds = Array.from(new Set([...item.fileIds, fileId]));
   item.status = "done";
@@ -8170,7 +8174,27 @@ function statusLabel(student) {
 }
 
 function orderByStudent(studentId) {
-  return state.data.orders.find((order) => order.studentId === studentId) || { id: `order_${studentId}`, studentId, items: defaultOrderItems() };
+  const student = studentById(studentId);
+  const order = state.data.orders.find((entry) => entry.studentId === studentId) || { id: `order_${studentId}`, studentId, items: [] };
+  return normalizeOrderForStudent(student, order);
+}
+
+function normalizeOrderForStudent(student, order) {
+  if (!student) return { ...order, items: order.items?.length ? order.items : defaultOrderItems() };
+  const selectedCatalogIds = selectedCatalogIdsForStudent(student);
+  if (!selectedCatalogIds.length) {
+    return { ...order, items: [] };
+  }
+  const serviceItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
+  const serviceTypes = new Set(serviceItems.map((item) => item.type));
+  const hasOnlyServiceItems = (order.items || []).length > 0 && (order.items || []).every((item) => serviceTypes.has(item.type));
+  if (hasOnlyServiceItems && serviceItems.length === order.items.length) return order;
+  return {
+    ...order,
+    catalogId: selectedCatalogIds[0],
+    catalogIds: selectedCatalogIds,
+    items: serviceItems
+  };
 }
 
 function mediaByStudent(studentId) {
@@ -8463,7 +8487,7 @@ function orderItemsFromCatalogs(catalogIds, existingItems = []) {
     });
   });
   if (items.length) return items;
-  return orderItemsFromTemplate();
+  return selected.length ? [] : orderItemsFromTemplate();
 }
 
 function mergeOrderItems(existingItems, nextTypes, labels = {}) {
@@ -8499,7 +8523,7 @@ function templateItemsForSettings(template) {
 }
 
 function selectedCatalogIdsForStudent(student) {
-  return normalizeCatalogIds(student?.catalogIds?.length ? student.catalogIds : [student?.catalogId || state.data.catalog[0]?.id || ""]);
+  return normalizeCatalogIds(student?.catalogIds?.length ? student.catalogIds : (student?.catalogId ? [student.catalogId] : []));
 }
 
 function normalizeCatalogIds(catalogIds) {
