@@ -950,6 +950,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
               <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
               <button data-export-class="${klass.id}" type="button">ZIP группы</button>
+              <button data-mark-printed-class="${klass.id}" type="button">Отметить печать</button>
               <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
               <button data-move-class="${klass.id}:up" ${manualMoveDisabled || index === 0 ? "disabled" : ""} type="button">Выше</button>
@@ -1522,6 +1523,7 @@ function renderStudent() {
         <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
         <button class="secondary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
         <button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт готовых фото</button>
+        ${finalStats.total && finalStats.printed < finalStats.total ? `<button class="secondary-button" data-mark-printed-student="${student.id}" type="button">Отметить как напечатано</button>` : ""}
         <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
         <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
         <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
@@ -1548,7 +1550,7 @@ function taskRow(item, studentId) {
         </div>
       </div>
       <button class="${item.status === "done" ? "secondary-button" : "primary-button"} compact" data-toggle-task="${studentId}:${item.type}" type="button">
-        ${item.status === "done" ? "Готово" : "Ожидает"}
+        ${item.status === "done" ? "Снято" : "Ожидает"}
       </button>
     </div>
   `;
@@ -2773,6 +2775,8 @@ function bindViewActions() {
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
   view.querySelectorAll("[data-export-final-works]").forEach((node) => node.addEventListener("click", () => exportFinalWorksFromDataset(node.dataset.exportFinalWorks)));
+  view.querySelectorAll("[data-mark-printed-student]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForStudent(node.dataset.markPrintedStudent)));
+  view.querySelectorAll("[data-mark-printed-class]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForClass(node.dataset.markPrintedClass)));
   view.querySelectorAll("[data-view-media]").forEach((node) => node.addEventListener("click", (event) => {
     event.stopPropagation();
     showMediaPreview(node.dataset.viewMedia);
@@ -4194,6 +4198,8 @@ async function handleFinalWorkInput(event) {
   }
   state.currentFinalWork = null;
   await refreshData();
+  await markStudentOrderReadyAfterFinalWork(student.id);
+  await refreshData();
   notify("Готовая работа сохранена.");
   document.querySelector(".montage-backdrop")?.remove();
   showMontagePanel(student.id, service.id, target.sourceMediaId);
@@ -4372,6 +4378,28 @@ async function markFinalWorksPrinted(ids) {
   await refreshData();
   notify("Готовые работы отмечены как напечатанные.");
   render();
+}
+
+async function markFinalWorksPrintedForStudent(studentId) {
+  const works = state.data.finalWorks.filter((work) => work.studentId === studentId && work.status !== "printed" && work.status !== "delivered");
+  if (!works.length) return notify("Нет готовых работ для отметки печати.");
+  if (!confirm(`Отметить как напечатанные: ${works.length}?`)) return;
+  await markFinalWorksPrinted(works.map((work) => work.id));
+}
+
+async function markFinalWorksPrintedForClass(classId) {
+  const works = state.data.finalWorks.filter((work) => work.groupId === classId && work.status !== "printed" && work.status !== "delivered");
+  if (!works.length) return notify("В группе нет готовых работ для отметки печати.");
+  if (!confirm(`Отметить как напечатанные все готовые работы группы: ${works.length}?`)) return;
+  await markFinalWorksPrinted(works.map((work) => work.id));
+}
+
+async function markStudentOrderReadyAfterFinalWork(studentId) {
+  const student = studentById(studentId);
+  if (!student || currentOrderStatus(student) === "delivered") return;
+  const order = orderByStudent(studentId);
+  await put("orders", stampUpdated({ ...order, status: "ready" }));
+  await put("students", stampUpdated({ ...student, orderStatus: "ready" }));
 }
 
 window.markFinalWorksPrintedFromPrintWindow = markFinalWorksPrinted;
@@ -4568,9 +4596,7 @@ async function attachFileToOrder(studentId, type, fileId) {
   item.updatedBy = operatorId;
   item.completedBy = operatorId;
   item.completedAt = now();
-  await put("orders", stampUpdated({ ...order, status: order.status === "delivered" ? order.status : "processing" }));
-  const student = studentById(studentId);
-  if (student && currentOrderStatus(student) !== "delivered") await put("students", stampUpdated({ ...student, orderStatus: "processing" }));
+  await saveOrderWithAutoStatus(studentId, order);
 }
 
 async function markTaskDone(studentId, type) {
