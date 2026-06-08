@@ -1,7 +1,7 @@
 const DB_NAME = "school-photo-flow";
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORE_NAMES = [
   "projects",
   "classes",
@@ -18,7 +18,8 @@ const STORE_NAMES = [
   "albumStudents",
   "albumGroupMedia",
   "albumTeachers",
-  "albumMedia"
+  "albumMedia",
+  "finalWorks"
 ];
 const ORDER_TYPES = {
   portrait: "Портрет",
@@ -68,7 +69,8 @@ const STATUS_EXPORT_DEFAULT = {
 const SETTING_IDS = {
   initialized: "spf-initialized",
   catalogWatermark: "spf-catalog-watermark",
-  serviceCategories: "spf-service-categories"
+  serviceCategories: "spf-service-categories",
+  finalWorkPrint: "spf-final-work-print"
 };
 const OPERATOR_STORAGE_KEY = "spf-current-operator-id";
 const OPERATOR_SKIP_SESSION_KEY = "spf-skip-operator-gate";
@@ -160,6 +162,7 @@ const state = {
   currentReference: null,
   currentPreview: null,
   currentAlbumMedia: null,
+  currentFinalWork: null,
   currentImportDraft: null,
   zipImportMode: "auto",
   albumProjectId: null,
@@ -215,6 +218,7 @@ const zipInput = document.querySelector("#zip-input");
 const transferFolderInput = document.querySelector("#transfer-folder-input");
 const albumMediaInput = document.querySelector("#album-media-input");
 const albumZipInput = document.querySelector("#album-zip-input");
+const finalWorkInput = document.querySelector("#final-work-input");
 
 init();
 
@@ -263,7 +267,8 @@ function emptyData() {
     operatorEvents: [],
     templates: [],
     settings: [],
-    catalog: []
+    catalog: [],
+    finalWorks: []
   };
 }
 
@@ -653,6 +658,7 @@ function bindShell() {
   transferFolderInput?.addEventListener("change", handleTransferFolderInput);
   albumMediaInput.addEventListener("change", handleAlbumMediaInput);
   albumZipInput.addEventListener("change", handleAlbumZipInput);
+  finalWorkInput?.addEventListener("change", handleFinalWorkInput);
 }
 
 function navigate(route, params = {}) {
@@ -1429,6 +1435,7 @@ function renderStudent() {
   const project = projectById(klass?.projectId);
   const order = orderByStudent(student.id);
   const media = mediaByStudent(student.id);
+  const finalStats = finalWorkStatsForStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Услуги не выбраны";
@@ -1456,6 +1463,8 @@ function renderStudent() {
             <div class="detail-stat"><span>Сумма</span><strong>${escapeHtml(formatMoney(orderPrice))}</strong></div>
             <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(selectedCatalogTitle)}</strong></div>
             <div class="detail-stat"><span>Прогресс</span><strong>${c.percent}%</strong></div>
+            <div class="detail-stat"><span>Готовые работы</span><strong>${finalStats.total}</strong></div>
+            <div class="detail-stat"><span>Напечатано</span><strong>${finalStats.printed}</strong></div>
           </div>
           <div class="action-grid">
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
@@ -1511,6 +1520,8 @@ function renderStudent() {
           ${student.paymentStatus === "paid" ? "Отметить как не оплачено" : "Оплачено"}
         </button>
         <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
+        <button class="secondary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
+        <button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт готовых фото</button>
         <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
         <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
         <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
@@ -2267,6 +2278,7 @@ function renderSettings() {
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>QR, положение и экспорт HTML</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
@@ -2280,6 +2292,7 @@ function showSettingsDetail(section) {
   const items = templateItemsForSettings(template);
   const exportTemplate = getStatusExportTemplate();
   const watermark = catalogWatermarkSettings();
+  const finalPrint = finalWorkPrintSettings();
   const content = {
     checklists: `
       <article class="panel grid">
@@ -2309,6 +2322,25 @@ function showSettingsDetail(section) {
           </div>
         </div>
         <button class="primary-button" data-save-watermark-settings type="button">Сохранить водяной знак</button>
+      </article>`,
+    finalPrint: `
+      <article class="panel grid">
+        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">Служебный QR добавляется только в копию для печати.</p></div>
+        <label class="checkbox-row"><input type="checkbox" data-final-print-qr-enabled ${finalPrint.qrEnabled ? "checked" : ""} /><span>Включить QR для печати</span></label>
+        <label class="field-label"><span>Положение QR</span><select class="select" data-final-print-qr-position>
+          ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${value}</option>`).join("")}
+        </select></label>
+        <label class="field-label"><span>Размер QR</span><select class="select" data-final-print-qr-size>
+          ${["small", "medium", "large"].map((value) => `<option value="${value}" ${value === finalPrint.qrSize ? "selected" : ""}>${value}</option>`).join("")}
+        </select></label>
+        <label class="field-label"><span>Отступ QR</span><select class="select" data-final-print-qr-margin>
+          ${["5px", "10px", "20px"].map((value) => `<option value="${value}" ${value === finalPrint.qrMargin ? "selected" : ""}>${value}</option>`).join("")}
+        </select></label>
+        <div class="transfer-button-row">
+          <button class="primary-button" data-save-final-print-settings type="button">Сохранить настройки</button>
+          <button class="secondary-button" data-export-final-works="project:${state.projectId || state.data.projects[0]?.id || ""}" type="button">Экспорт проекта</button>
+          <button class="secondary-button" data-export-final-works="class:${state.classId || state.data.classes[0]?.id || ""}" type="button">Экспорт группы</button>
+        </div>
       </article>`,
     transfer: `
       <article class="panel grid">
@@ -2536,6 +2568,7 @@ function studentCard(student) {
   const preview = previewUrl
     ? `<img class="student-thumb" src="${previewUrl}" alt="${escapeAttr(fullName)}" loading="lazy" />`
     : '<div class="student-thumb empty"><span>👤</span><small>Нет фото</small></div>';
+  const finalStats = finalWorkStatsForStudent(student.id);
   return `
     <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
       <div class="student-card-grid">
@@ -2556,6 +2589,7 @@ function studentCard(student) {
             <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
             <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
             <span class="price-pill">${student.paymentStatus === "paid" ? "Оплачено" : "К оплате"} ${escapeHtml(formatMoney(price))}</span>
+            ${finalStats.total ? `<span class="status-pill ready">Готовые работы: ${finalStats.total}</span><span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "processing"}">Напечатано: ${finalStats.printed}</span>` : ""}
           </div>
         </div>
         <details class="item-menu student-menu">
@@ -2564,6 +2598,7 @@ function studentCard(student) {
             <button data-open-student-action="${student.id}" type="button">Открыть</button>
             <button data-edit-student="${student.id}" type="button">Редактировать</button>
             <button data-generate-qr="${student.id}" type="button">QR</button>
+            <button data-open-montage="${student.id}" type="button">Монтаж</button>
             <button data-show-student-references="${student.id}" type="button">Референсы</button>
             <button data-export-student="${student.id}" type="button">Экспорт</button>
             <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
@@ -2736,12 +2771,15 @@ function bindViewActions() {
   view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", () => exportProject(node.dataset.exportProject)));
   view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
+  view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
+  view.querySelectorAll("[data-export-final-works]").forEach((node) => node.addEventListener("click", () => exportFinalWorksFromDataset(node.dataset.exportFinalWorks)));
   view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
   view.querySelectorAll("[data-rename-class]").forEach((node) => node.addEventListener("click", () => renameClass(node.dataset.renameClass)));
   view.querySelectorAll("[data-export-status-project]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ projectId: node.dataset.exportStatusProject })));
   view.querySelector("[data-save-template]")?.addEventListener("click", saveTemplate);
   view.querySelector("[data-save-status-export-template]")?.addEventListener("click", saveStatusExportTemplate);
   view.querySelector("[data-save-watermark-settings]")?.addEventListener("click", saveWatermarkSettingsFromView);
+  view.querySelector("[data-save-final-print-settings]")?.addEventListener("click", saveFinalPrintSettingsFromView);
   view.querySelector("[data-upload-watermark-logo]")?.addEventListener("click", uploadWatermarkLogo);
   view.querySelector("[data-remove-watermark-logo]")?.addEventListener("click", removeWatermarkLogo);
   view.querySelector("[data-add-template-item]")?.addEventListener("click", addTemplateEditorItem);
@@ -3952,6 +3990,373 @@ function importMediaFromDevice(orderType) {
   mediaInput.click();
 }
 
+function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "") {
+  const student = studentById(studentId);
+  if (!student) return notify("Ученик не найден.");
+  const klass = classById(student.classId);
+  const project = projectById(klass?.projectId);
+  const services = selectedCatalogIdsForStudent(student).map(catalogItemById).filter(Boolean);
+  const service = services.find((item) => item.id === selectedServiceId) || services[0];
+  const photos = mediaByStudent(student.id).filter((item) => item.type === "photo" || item.type === "image");
+  const source = photos.find((item) => item.id === selectedMediaId)
+    || photos.find((item) => item.orderType === "portrait")
+    || photos[0];
+  const reference = service ? montageReferenceForService(service) : null;
+  const promptText = service ? servicePrompt(service) : "";
+  const works = service ? finalWorksForStudent(student.id).filter((work) => work.serviceId === service.id) : [];
+  const sourceUrl = source?.blob ? URL.createObjectURL(source.blob) : "";
+  const referenceUrl = reference?.url || "";
+  document.querySelector(".montage-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop montage-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel montage-panel" role="dialog" aria-modal="true" aria-label="Монтаж">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Монтаж</h2>
+          <p class="muted">${escapeHtml(`${student.lastName} ${student.firstName}`.trim())} · ${escapeHtml(project?.name || "Проект")} · ${escapeHtml(klass?.name || "Группа")}</p>
+        </div>
+        <button class="icon-button" data-close-montage type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="grid">
+        ${services.length > 1 ? `<label class="field-label"><span>Услуга</span><select class="select" data-montage-service>${services.map((item) => `<option value="${item.id}" ${item.id === service?.id ? "selected" : ""}>${escapeHtml(serviceName(item))}</option>`).join("")}</select></label>` : `<div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(service ? serviceName(service) : "Услуги не выбраны")}</strong></div>`}
+        <div class="montage-grid">
+          <article class="panel grid">
+            <div class="card-header"><h3 class="card-title">Фото ребёнка</h3></div>
+            ${sourceUrl ? `<img class="montage-preview" src="${sourceUrl}" alt="${escapeAttr(source.fileName)}" />` : '<div class="empty">Фото ученика не найдено</div>'}
+            ${photos.length > 1 ? `<select class="select" data-montage-source>${photos.map((item) => `<option value="${item.id}" ${item.id === source?.id ? "selected" : ""}>${escapeHtml(item.fileName || item.id)}</option>`).join("")}</select>` : ""}
+            <div class="toolbar">
+              ${sourceUrl ? `<button class="secondary-button compact" data-open-url="${escapeAttr(sourceUrl)}" type="button">Открыть</button><button class="secondary-button compact" data-download-media="${source.id}" type="button">Скачать</button>` : ""}
+            </div>
+          </article>
+          <article class="panel grid">
+            <div class="card-header"><h3 class="card-title">Референс услуги</h3>${reference?.isVideo ? '<span class="status-pill processing">Видео</span>' : ""}</div>
+            ${referenceUrl ? (reference.isVideo ? `<video class="montage-preview" src="${referenceUrl}" controls playsinline></video>` : `<img class="montage-preview" src="${referenceUrl}" alt="${escapeAttr(reference.name || serviceName(service))}" />`) : '<div class="empty">Референс не добавлен</div>'}
+            <div class="toolbar">
+              ${referenceUrl ? `<button class="secondary-button compact" data-open-url="${escapeAttr(referenceUrl)}" type="button">Открыть</button><button class="secondary-button compact" data-download-url="${escapeAttr(referenceUrl)}" data-download-name="${escapeAttr(reference.name || "reference")}" type="button">Скачать</button>` : ""}
+            </div>
+          </article>
+        </div>
+        <article class="panel grid">
+          <div class="card-header"><h3 class="card-title">Prompt</h3>${promptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
+          ${promptText ? `<div class="prompt-box">${escapeHtml(promptText)}</div>` : '<p class="muted">Промпт не добавлен.</p>'}
+        </article>
+        <article class="panel grid">
+          <div class="card-header"><h3 class="card-title">Результат</h3><span class="muted">${works.length ? `Готовых работ: ${works.length}` : "Пока нет"}</span></div>
+          <div class="toolbar">
+            <button class="primary-button" data-add-final-work type="button"><span data-icon="plus"></span>Добавить результат</button>
+            ${works.length ? `<button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт для печати</button>` : ""}
+          </div>
+        </article>
+      </div>
+    </section>
+  `;
+  const close = () => {
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    panel.remove();
+  };
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-montage]")) close();
+  });
+  panel.querySelector("[data-montage-service]")?.addEventListener("change", (event) => {
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    panel.remove();
+    showMontagePanel(student.id, event.currentTarget.value, source?.id || "");
+  });
+  panel.querySelector("[data-montage-source]")?.addEventListener("change", (event) => {
+    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    panel.remove();
+    showMontagePanel(student.id, service?.id || "", event.currentTarget.value);
+  });
+  panel.querySelector("[data-copy-montage-prompt]")?.addEventListener("click", async () => {
+    await copyText(promptText);
+    notify("Промпт скопирован");
+  });
+  panel.querySelector("[data-add-final-work]")?.addEventListener("click", () => {
+    if (!service) return notify("Выберите услугу для монтажа.");
+    state.currentFinalWork = { studentId: student.id, serviceId: service.id, sourceMediaId: source?.id || "", referenceMediaId: reference?.id || "" };
+    finalWorkInput.value = "";
+    finalWorkInput.click();
+  });
+  panel.querySelectorAll("[data-open-url]").forEach((node) => node.addEventListener("click", () => window.open(node.dataset.openUrl, "_blank")));
+  panel.querySelectorAll("[data-download-media]").forEach((node) => node.addEventListener("click", () => downloadMediaRecord(node.dataset.downloadMedia)));
+  panel.querySelectorAll("[data-download-url]").forEach((node) => node.addEventListener("click", () => {
+    downloadUrl(node.dataset.downloadUrl, node.dataset.downloadName || "reference");
+  }));
+  panel.querySelectorAll("[data-export-final-works]").forEach((node) => node.addEventListener("click", () => exportFinalWorksFromDataset(node.dataset.exportFinalWorks)));
+  document.body.append(panel);
+  injectIcons();
+}
+
+async function handleFinalWorkInput(event) {
+  const file = event.target.files?.[0];
+  const target = state.currentFinalWork;
+  event.target.value = "";
+  if (!file || !target) return;
+  if (!fileLooksImage(file)) return notify("Выберите изображение результата.");
+  const student = studentById(target.studentId);
+  const service = catalogItemById(target.serviceId);
+  const klass = classById(student?.classId);
+  if (!student || !service || !klass) return notify("Не удалось сохранить результат.");
+  const existing = finalWorksForStudent(student.id).filter((work) => work.serviceId === service.id);
+  let replaceWork = null;
+  if (existing.length) {
+    const answer = prompt("По этой услуге уже есть готовая работа.\n1 - заменить результат\n2 - добавить ещё один вариант\n3 - отменить", "2");
+    if (answer === "3" || answer === null) return;
+    if (answer === "1") replaceWork = existing[existing.length - 1];
+    if (answer !== "1" && answer !== "2") return notify("Действие отменено.");
+  }
+  const mediaId = uid("media");
+  const ext = extensionFor(file, "photo");
+  const fileName = safeFileName(`${klass.name}_${student.lastName}_${student.firstName}_${serviceName(service)}_final.${ext}`);
+  await put("media", {
+    id: mediaId,
+    studentId: student.id,
+    type: "final_work",
+    fileName,
+    orderType: "final_work",
+    serviceId: service.id,
+    createdBy: currentOperatorIdForAction(),
+    createdAt: now(),
+    blob: file
+  });
+  if (replaceWork) {
+    await put("finalWorks", stampUpdated({
+      ...replaceWork,
+      sourceMediaId: target.sourceMediaId || replaceWork.sourceMediaId,
+      referenceMediaId: target.referenceMediaId || replaceWork.referenceMediaId,
+      resultMediaId: mediaId,
+      status: "ready"
+    }));
+  } else {
+    const work = createFinalWorkRecord({
+      projectId: klass.projectId,
+      groupId: klass.id,
+      studentId: student.id,
+      serviceId: service.id,
+      sourceMediaId: target.sourceMediaId,
+      referenceMediaId: target.referenceMediaId,
+      resultMediaId: mediaId
+    });
+    await put("finalWorks", work);
+  }
+  state.currentFinalWork = null;
+  await refreshData();
+  notify("Готовая работа сохранена.");
+  document.querySelector(".montage-backdrop")?.remove();
+  showMontagePanel(student.id, service.id, target.sourceMediaId);
+}
+
+function montageReferenceForService(service) {
+  const imageUrl = String(service?.previewImage || servicePreviewImageDataUrl(service) || "").trim();
+  if (imageUrl) return { id: servicePreviewImageId(service), url: imageUrl, name: `${serviceName(service)}_preview`, isVideo: false };
+  const angle = (service?.angles || []).find((item) => item.refDataUrl) || (service?.angles || [])[0];
+  if (angle?.refDataUrl) return { id: angle.id, url: angle.refDataUrl, name: angle.refName || angle.name || "reference", isVideo: false };
+  const videoUrl = String(service?.previewVideo || servicePreviewVideoDataUrl(service) || angle?.videoRefDataUrl || "").trim();
+  if (videoUrl) return { id: servicePreviewVideoId(service) || angle?.id || "", url: videoUrl, name: angle?.videoRefName || "reference-video", isVideo: true };
+  return null;
+}
+
+function createFinalWorkRecord(input) {
+  const id = uid("final");
+  const payload = {
+    type: "final_work_print",
+    finalWorkId: id,
+    studentId: input.studentId,
+    groupId: input.groupId,
+    projectId: input.projectId,
+    serviceId: input.serviceId
+  };
+  return stampCreated({
+    id,
+    projectId: input.projectId,
+    groupId: input.groupId,
+    studentId: input.studentId,
+    serviceId: input.serviceId,
+    sourceMediaId: input.sourceMediaId || "",
+    referenceMediaId: input.referenceMediaId || "",
+    resultMediaId: input.resultMediaId,
+    printQrPayload: JSON.stringify(payload),
+    status: "ready"
+  });
+}
+
+function finalWorksForStudent(studentId) {
+  return state.data.finalWorks.filter((work) => work.studentId === studentId);
+}
+
+function finalWorkStatsForStudent(studentId) {
+  const works = finalWorksForStudent(studentId);
+  return { total: works.length, printed: works.filter((work) => work.status === "printed" || work.status === "delivered").length };
+}
+
+function finalWorkPrintSettings() {
+  const saved = state.data.settings.find((item) => item.id === SETTING_IDS.finalWorkPrint) || {};
+  return {
+    id: SETTING_IDS.finalWorkPrint,
+    qrEnabled: saved.qrEnabled !== false,
+    qrPosition: ["bottom-right", "bottom-left", "top-right", "top-left"].includes(saved.qrPosition) ? saved.qrPosition : "bottom-right",
+    qrSize: ["small", "medium", "large"].includes(saved.qrSize) ? saved.qrSize : "small",
+    qrMargin: ["5px", "10px", "20px"].includes(saved.qrMargin) ? saved.qrMargin : "10px"
+  };
+}
+
+async function saveFinalPrintSettingsFromView() {
+  await put("settings", {
+    id: SETTING_IDS.finalWorkPrint,
+    qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
+    qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
+    qrSize: view.querySelector("[data-final-print-qr-size]")?.value || "small",
+    qrMargin: view.querySelector("[data-final-print-qr-margin]")?.value || "10px"
+  });
+  await refreshData();
+  notify("Настройки печати сохранены.");
+  showSettingsDetail("finalPrint");
+}
+
+async function exportFinalWorksFromDataset(datasetValue) {
+  const [scope, id] = String(datasetValue || "").split(":");
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return notify("Разрешите открытие нового окна для печати.");
+  printWindow.document.write("<p>Готовлю печать...</p>");
+  const works = finalWorksForScope(scope, id);
+  if (!works.length) {
+    printWindow.document.body.textContent = "Готовые работы не найдены.";
+    return notify("Готовые работы не найдены.");
+  }
+  const filter = prompt("Фильтр печати:\n1 - все готовые\n2 - только не напечатанные\n3 - только по услуге", "2");
+  if (filter === null) return printWindow.close();
+  let selected = works;
+  if (filter === "2") selected = selected.filter((work) => work.status !== "printed" && work.status !== "delivered");
+  if (filter === "3") {
+    const serviceId = chooseFinalWorkServiceId(selected);
+    if (!serviceId) return printWindow.close();
+    selected = selected.filter((work) => work.serviceId === serviceId);
+  }
+  if (!selected.length) {
+    printWindow.document.body.textContent = "Нет готовых работ по выбранному фильтру.";
+    return notify("Нет готовых работ по выбранному фильтру.");
+  }
+  const pages = [];
+  for (const work of selected) {
+    const media = mediaById(work.resultMediaId);
+    if (!media?.blob) continue;
+    const imageUrl = await finalWorkPrintImageUrl(work, media);
+    pages.push(`<section class="print-page"><img src="${imageUrl}" alt="" /></section>`);
+  }
+  printWindow.document.open();
+  printWindow.document.write(finalWorksPrintHtml(pages.join(""), selected.map((work) => work.id)));
+  printWindow.document.close();
+}
+
+function finalWorksForScope(scope, id) {
+  if (scope === "student") return state.data.finalWorks.filter((work) => work.studentId === id);
+  if (scope === "class") return state.data.finalWorks.filter((work) => work.groupId === id);
+  if (scope === "project") return state.data.finalWorks.filter((work) => work.projectId === id);
+  return [];
+}
+
+function chooseFinalWorkServiceId(works) {
+  const ids = Array.from(new Set(works.map((work) => work.serviceId).filter(Boolean)));
+  if (!ids.length) return "";
+  const labels = ids.map((id, index) => `${index + 1}. ${serviceName(catalogItemById(id)) || id}`).join("\n");
+  const answer = Number.parseInt(prompt(`Выберите услугу номером:\n${labels}`, "1") || "", 10);
+  return ids[answer - 1] || "";
+}
+
+async function finalWorkPrintImageUrl(work, media) {
+  const settings = finalWorkPrintSettings();
+  if (!settings.qrEnabled) return URL.createObjectURL(media.blob);
+  const image = await loadImageFromBlob(media.blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  URL.revokeObjectURL(image.src);
+  const qrImage = await loadImageFromSvg(createQrSvg(finalWorkCompactQrPayload(work), 4));
+  const size = finalWorkQrPixelSize(settings.qrSize, canvas.width, canvas.height);
+  const margin = Number.parseInt(settings.qrMargin, 10) || 10;
+  const x = settings.qrPosition.endsWith("right") ? canvas.width - size - margin : margin;
+  const y = settings.qrPosition.startsWith("bottom") ? canvas.height - size - margin : margin;
+  context.drawImage(qrImage, x, y, size, size);
+  URL.revokeObjectURL(qrImage.src);
+  const blob = await canvasToBlob(canvas, media.blob.type || "image/png", 0.95);
+  return URL.createObjectURL(blob);
+}
+
+function finalWorkCompactQrPayload(work) {
+  return JSON.stringify({ type: "final_work_print", finalWorkId: work.id });
+}
+
+function finalWorkQrPixelSize(size, width, height) {
+  const base = Math.min(width, height);
+  const ratio = size === "large" ? 0.14 : size === "medium" ? 0.1 : 0.07;
+  return Math.max(72, Math.round(base * ratio));
+}
+
+function finalWorksPrintHtml(pagesHtml, ids) {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Печать готовых работ</title><style>
+    @page{size:A4;margin:0}
+    body{margin:0;background:#fff}
+    .print-actions{position:fixed;z-index:10;top:12px;left:12px;display:flex;gap:8px;font-family:Arial,sans-serif}
+    .print-actions button{border:0;border-radius:8px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+    .print-actions button.secondary{background:#111827}
+    .print-page{page-break-after:always;width:100vw;height:100vh;display:grid;place-items:center;background:#fff}
+    .print-page img{max-width:100%;max-height:100vh;object-fit:contain}
+    @media print{.print-actions{display:none}}
+  </style></head><body>
+    <div class="print-actions"><button onclick="window.print()">Печать</button><button class="secondary" onclick="window.opener&&window.opener.markFinalWorksPrintedFromPrintWindow(${escapeAttr(JSON.stringify(ids))})">Отметить как напечатано</button></div>
+    ${pagesHtml}
+  </body></html>`;
+}
+
+async function markFinalWorksPrinted(ids) {
+  const set = new Set(ids || []);
+  const works = state.data.finalWorks.filter((work) => set.has(work.id));
+  for (const work of works) {
+    await put("finalWorks", stampUpdated({ ...work, status: "printed" }));
+  }
+  await refreshData();
+  notify("Готовые работы отмечены как напечатанные.");
+  render();
+}
+
+window.markFinalWorksPrintedFromPrintWindow = markFinalWorksPrinted;
+
+function mediaById(id) {
+  return state.data.media.find((item) => item.id === id);
+}
+
+function downloadMediaRecord(mediaId) {
+  const media = mediaById(mediaId);
+  if (media?.blob) downloadBlob(media.blob, media.fileName || "media");
+}
+
+function downloadUrl(url, fileName) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = safeFileName(fileName || "download");
+  link.click();
+}
+
+function loadImageFromBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = URL.createObjectURL(blob);
+  });
+}
+
+function loadImageFromSvg(svg) {
+  return loadImageFromBlob(new Blob([svg], { type: "image/svg+xml" }));
+}
+
+function canvasToBlob(canvas, type = "image/png", quality) {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+}
+
 async function handleMediaInput(event) {
   const file = event.target.files?.[0];
   if (!file || !state.currentCapture) return;
@@ -4288,6 +4693,11 @@ function handleManualQr(event) {
 }
 
 async function openQrValue(value) {
+  const printPayload = parseFinalWorkPrintQr(value);
+  if (printPayload) {
+    showFinalWorkPrintQrPanel(printPayload.finalWorkId);
+    return;
+  }
   const parsed = parseQrPayload(value);
   const student = studentFromQrValue(value);
   if (!student) {
@@ -4988,6 +5398,63 @@ function hasJsQr() {
 function parseQrPayload(value) {
   const candidates = Array.from(qrPayloadCandidates(value));
   return candidates.find((item) => item.startsWith("student_")) || candidates[0] || "";
+}
+
+function parseFinalWorkPrintQr(value) {
+  try {
+    const payload = JSON.parse(String(value || "").trim());
+    if (payload?.type === "final_work_print" && payload.finalWorkId) return payload;
+  } catch {}
+  return null;
+}
+
+function showFinalWorkPrintQrPanel(finalWorkId) {
+  const work = state.data.finalWorks.find((item) => item.id === finalWorkId);
+  if (!work) return notify("Готовая работа не найдена");
+  const student = studentById(work.studentId);
+  const klass = classById(work.groupId || student?.classId);
+  const project = projectById(work.projectId || klass?.projectId);
+  const service = catalogItemById(work.serviceId);
+  const media = mediaById(work.resultMediaId);
+  const mediaUrl = media?.blob ? URL.createObjectURL(media.blob) : "";
+  document.querySelector(".final-work-qr-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop final-work-qr-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel" role="dialog" aria-modal="true" aria-label="Готовая работа">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Готовая работа</h2>
+          <p class="muted">${escapeHtml(project?.name || "Проект")} · ${escapeHtml(klass?.name || "Группа")}</p>
+        </div>
+        <button class="icon-button" data-close-final-work-qr type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      ${mediaUrl ? `<img class="montage-preview" src="${mediaUrl}" alt="" />` : '<div class="empty">Preview не найдено</div>'}
+      <div class="detail-stats">
+        <div class="detail-stat"><span>Ученик</span><strong>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Не найден")}</strong></div>
+        <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(serviceName(service) || "Не найдена")}</strong></div>
+        <div class="detail-stat"><span>Статус</span><strong>${escapeHtml(finalWorkStatusLabel(work.status))}</strong></div>
+      </div>
+    </section>
+  `;
+  const close = () => {
+    if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+    panel.remove();
+  };
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-final-work-qr]")) close();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+function finalWorkStatusLabel(status) {
+  return {
+    ready: "Готов",
+    print_queue: "В очереди печати",
+    printed: "Напечатано",
+    delivered: "Выдано"
+  }[status] || status || "Готов";
 }
 
 function parseStudentQrPayload(rawText) {

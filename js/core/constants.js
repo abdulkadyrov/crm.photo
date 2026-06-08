@@ -1,7 +1,7 @@
 export const APP_NAME = "Vakha Studio";
 export const APP_VERSION = "0.1.0";
 export const DB_NAME = "school-photo-flow";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const ROUTES = {
   dashboard: "#dashboard",
@@ -28,5 +28,6 @@ export const STORE_NAMES = [
   "albumStudents",
   "albumGroupMedia",
   "albumTeachers",
-  "albumMedia"
+  "albumMedia",
+  "finalWorks"
 ];
