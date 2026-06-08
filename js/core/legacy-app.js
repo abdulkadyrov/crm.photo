@@ -1051,14 +1051,14 @@ function renderSearch() {
 }
 
 function renderScan() {
-  setShell({ heading: "QR", context: "Сканер", summary: "Быстрое открытие ученика по QR" });
+  setShell({ heading: "QR", context: "Сканер", summary: "Открытие ученика и распознавание готовых работ" });
   view.innerHTML = `
     <section class="split">
       <div class="panel">
         <div class="qr-box" id="qr-box">
           <div>
-            <p class="card-title">QR → ученик → чеклист</p>
-            <p class="muted">Наведите камеру на QR или введите ID ученика вручную.</p>
+            <p class="card-title">QR → ученик / готовая работа</p>
+            <p class="muted">Наведите камеру на QR ученика или служебный QR на готовой фотографии.</p>
           </div>
         </div>
         <div class="toolbar" style="margin-top:12px">
@@ -1072,8 +1072,8 @@ function renderScan() {
       </div>
       <form class="panel grid" data-manual-qr>
         <h2 class="card-title">Ручной ввод</h2>
-        <input class="input" name="qr" placeholder="ID ученика или QR ID" required />
-        <button class="primary-button" type="submit">Открыть ученика</button>
+        <input class="input" name="qr" placeholder="ID ученика или служебный QR" required />
+        <button class="primary-button" type="submit">Распознать</button>
       </form>
     </section>
   `;
@@ -2329,7 +2329,7 @@ function showSettingsDetail(section) {
       </article>`,
     finalPrint: `
       <article class="panel grid">
-        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">Служебный QR добавляется только в копию для печати.</p></div>
+        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">Служебный QR добавляется только в копию для печати и распознается внутри приложения.</p></div>
         <label class="checkbox-row"><input type="checkbox" data-final-print-qr-enabled ${finalPrint.qrEnabled ? "checked" : ""} /><span>Включить QR для печати</span></label>
         <label class="field-label"><span>Положение QR</span><select class="select" data-final-print-qr-position>
           ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${value}</option>`).join("")}
@@ -4179,13 +4179,15 @@ async function handleFinalWorkInput(event) {
     blob: file
   });
   if (replaceWork) {
-    await put("finalWorks", stampUpdated({
+    const updatedWork = {
       ...replaceWork,
       sourceMediaId: target.sourceMediaId || replaceWork.sourceMediaId,
       referenceMediaId: target.referenceMediaId || replaceWork.referenceMediaId,
       resultMediaId: mediaId,
       status: "ready"
-    }));
+    };
+    updatedWork.printQrPayload = finalWorkCompactQrPayload(updatedWork);
+    await put("finalWorks", stampUpdated(updatedWork));
   } else {
     const work = createFinalWorkRecord({
       projectId: klass.projectId,
@@ -4219,14 +4221,6 @@ function montageReferenceForService(service) {
 
 function createFinalWorkRecord(input) {
   const id = uid("final");
-  const payload = {
-    type: "final_work_print",
-    finalWorkId: id,
-    studentId: input.studentId,
-    groupId: input.groupId,
-    projectId: input.projectId,
-    serviceId: input.serviceId
-  };
   return stampCreated({
     id,
     projectId: input.projectId,
@@ -4236,7 +4230,7 @@ function createFinalWorkRecord(input) {
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId,
-    printQrPayload: JSON.stringify(payload),
+    printQrPayload: finalWorkCompactQrPayload({ id }),
     status: "ready"
   });
 }
@@ -4345,14 +4339,40 @@ async function finalWorkPrintImageUrl(work, media) {
   return URL.createObjectURL(blob);
 }
 
+const FINAL_WORK_PRINT_QR_PREFIX = "VSF1:";
+
 function finalWorkCompactQrPayload(work) {
-  return JSON.stringify({
-    type: "final_work_print",
-    finalWorkId: work.id,
-    studentId: work.studentId || "",
-    serviceId: work.serviceId || "",
-    resultMediaId: work.resultMediaId || ""
+  return `${FINAL_WORK_PRINT_QR_PREFIX}${base64UrlEncode(work.id || "")}`;
+}
+
+function finalWorkIdFromCompactPrintQr(value) {
+  const raw = String(value || "").trim();
+  if (!raw.startsWith(FINAL_WORK_PRINT_QR_PREFIX)) return "";
+  const token = raw.slice(FINAL_WORK_PRINT_QR_PREFIX.length).trim();
+  const decoded = base64UrlDecode(token);
+  if (String(decoded || "").startsWith("final_")) return decoded;
+  return token.startsWith("final_") ? token : "";
+}
+
+function base64UrlEncode(value) {
+  const bytes = new TextEncoder().encode(String(value || ""));
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
   });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlDecode(value) {
+  try {
+    const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "";
+  }
 }
 
 function finalWorkQrPixelSize(size, width, height) {
@@ -5491,6 +5511,8 @@ function parseQrPayload(value) {
 }
 
 function parseFinalWorkPrintQr(value) {
+  const finalWorkId = finalWorkIdFromCompactPrintQr(value);
+  if (finalWorkId) return { type: "final_work_print", finalWorkId, format: "compact" };
   try {
     const payload = JSON.parse(String(value || "").trim());
     if (payload?.type === "final_work_print" && payload.finalWorkId) return payload;
@@ -5507,6 +5529,7 @@ function showFinalWorkPrintQrPanel(payload) {
   const service = catalogItemById(work.serviceId);
   const media = mediaById(work.resultMediaId);
   const mediaUrl = media?.blob ? URL.createObjectURL(media.blob) : "";
+  const studentName = `${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Не найден";
   document.querySelector(".final-work-qr-backdrop")?.remove();
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop final-work-qr-backdrop";
@@ -5514,14 +5537,16 @@ function showFinalWorkPrintQrPanel(payload) {
     <section class="qr-panel" role="dialog" aria-modal="true" aria-label="Готовая работа">
       <div class="card-header">
         <div>
-          <h2 class="card-title">Готовая работа</h2>
-          <p class="muted">${escapeHtml(project?.name || "Проект")} · ${escapeHtml(klass?.name || "Группа")}</p>
+          <h2 class="card-title">Печатный QR распознан</h2>
+          <p class="muted">Служебный QR готовой фотографии</p>
         </div>
         <button class="icon-button" data-close-final-work-qr type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
       ${mediaUrl ? `<img class="montage-preview" src="${mediaUrl}" alt="" />` : '<div class="empty">Preview не найдено</div>'}
       <div class="detail-stats">
-        <div class="detail-stat"><span>Ученик</span><strong>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Не найден")}</strong></div>
+        <div class="detail-stat"><span>Школа / проект</span><strong>${escapeHtml(project?.name || "Не найден")}</strong></div>
+        <div class="detail-stat"><span>Класс / группа</span><strong>${escapeHtml(klass?.name || "Не найден")}</strong></div>
+        <div class="detail-stat"><span>Ученик</span><strong>${escapeHtml(studentName)}</strong></div>
         <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(serviceName(service) || "Не найдена")}</strong></div>
         <div class="detail-stat"><span>Статус</span><strong>${escapeHtml(finalWorkStatusLabel(work.status))}</strong></div>
       </div>
@@ -5565,9 +5590,12 @@ function findFinalWorkFromPrintPayload(payload) {
 }
 
 function stableFinalWorkPrintPayload(value) {
+  const compactId = finalWorkIdFromCompactPrintQr(value);
+  if (compactId) return finalWorkCompactQrPayload({ id: compactId });
   try {
     const payload = typeof value === "string" ? JSON.parse(value) : value;
     if (!payload || payload.type !== "final_work_print") return "";
+    if (payload.finalWorkId) return finalWorkCompactQrPayload({ id: payload.finalWorkId });
     return JSON.stringify({
       type: "final_work_print",
       finalWorkId: payload.finalWorkId || "",
