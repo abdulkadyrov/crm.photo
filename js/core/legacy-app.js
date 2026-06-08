@@ -1568,9 +1568,9 @@ function queueList(order) {
 function mediaTile(item) {
   const url = URL.createObjectURL(item.blob);
   const node = item.type === "video"
-    ? `<video src="${url}" controls muted></video>`
-    : `<img src="${url}" alt="${escapeAttr(item.fileName)}" loading="lazy" />`;
-  return `<figure class="media-tile">${node}<p>${escapeHtml(item.fileName)}</p></figure>`;
+    ? `<video src="${url}" controls muted title="${escapeAttr(item.fileName)}"></video>`
+    : `<button class="media-tile-button" data-view-media="${item.id}" type="button" title="${escapeAttr(item.fileName)}"><img src="${url}" alt="${escapeAttr(item.fileName)}" loading="lazy" /></button>`;
+  return `<figure class="media-tile">${node}</figure>`;
 }
 
 function renderCatalog() {
@@ -2773,6 +2773,10 @@ function bindViewActions() {
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
   view.querySelectorAll("[data-export-final-works]").forEach((node) => node.addEventListener("click", () => exportFinalWorksFromDataset(node.dataset.exportFinalWorks)));
+  view.querySelectorAll("[data-view-media]").forEach((node) => node.addEventListener("click", (event) => {
+    event.stopPropagation();
+    showMediaPreview(node.dataset.viewMedia);
+  }));
   view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
   view.querySelectorAll("[data-rename-class]").forEach((node) => node.addEventListener("click", () => renameClass(node.dataset.renameClass)));
   view.querySelectorAll("[data-export-status-project]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ projectId: node.dataset.exportStatusProject })));
@@ -3788,6 +3792,46 @@ function showAngleReferencePreview(itemId, angleId) {
   injectIcons();
 }
 
+function showMediaPreview(mediaId) {
+  const media = mediaById(mediaId);
+  if (!media?.blob) return notify("Файл не найден.");
+  const url = URL.createObjectURL(media.blob);
+  showInlineMediaPreview({
+    url,
+    title: media.fileName || "Медиа",
+    isVideo: media.type === "video",
+    revokeOnClose: true
+  });
+}
+
+function showInlineMediaPreview({ url, title = "Просмотр", isVideo = false, revokeOnClose = false }) {
+  if (!url) return;
+  document.querySelector(".inline-media-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop inline-media-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel service-reference-panel inline-media-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(title)}</h2>
+        </div>
+        <button class="icon-button" data-close-inline-media type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      ${isVideo ? `<video class="reference-preview-media" src="${escapeAttr(url)}" controls playsinline></video>` : `<img class="reference-preview-media" src="${escapeAttr(url)}" alt="${escapeAttr(title)}" />`}
+    </section>
+  `;
+  const close = () => {
+    if (revokeOnClose) URL.revokeObjectURL(url);
+    panel.remove();
+  };
+  panel.querySelector("[data-close-inline-media]")?.addEventListener("click", close);
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel) close();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
 function studentReferenceEntries(studentId, taskType = "") {
   const student = studentById(studentId);
   const order = orderByStudent(studentId);
@@ -4026,28 +4070,30 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
             ${sourceUrl ? `<img class="montage-preview" src="${sourceUrl}" alt="${escapeAttr(source.fileName)}" />` : '<div class="empty">Фото ученика не найдено</div>'}
             ${photos.length > 1 ? `<select class="select" data-montage-source>${photos.map((item) => `<option value="${item.id}" ${item.id === source?.id ? "selected" : ""}>${escapeHtml(item.fileName || item.id)}</option>`).join("")}</select>` : ""}
             <div class="toolbar">
-              ${sourceUrl ? `<button class="secondary-button compact" data-open-url="${escapeAttr(sourceUrl)}" type="button">Открыть</button><button class="secondary-button compact" data-download-media="${source.id}" type="button">Скачать</button>` : ""}
+              ${sourceUrl ? `<button class="secondary-button compact" data-preview-url="${escapeAttr(sourceUrl)}" data-preview-title="${escapeAttr(source.fileName || "Фото ребёнка")}" type="button">Открыть</button><button class="secondary-button compact" data-download-media="${source.id}" type="button">Скачать</button>` : ""}
             </div>
           </article>
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Референс услуги</h3>${reference?.isVideo ? '<span class="status-pill processing">Видео</span>' : ""}</div>
             ${referenceUrl ? (reference.isVideo ? `<video class="montage-preview" src="${referenceUrl}" controls playsinline></video>` : `<img class="montage-preview" src="${referenceUrl}" alt="${escapeAttr(reference.name || serviceName(service))}" />`) : '<div class="empty">Референс не добавлен</div>'}
             <div class="toolbar">
-              ${referenceUrl ? `<button class="secondary-button compact" data-open-url="${escapeAttr(referenceUrl)}" type="button">Открыть</button><button class="secondary-button compact" data-download-url="${escapeAttr(referenceUrl)}" data-download-name="${escapeAttr(reference.name || "reference")}" type="button">Скачать</button>` : ""}
+              ${referenceUrl ? `<button class="secondary-button compact" data-preview-url="${escapeAttr(referenceUrl)}" data-preview-title="${escapeAttr(reference.name || serviceName(service) || "Референс")}" data-preview-video="${reference.isVideo ? "true" : "false"}" type="button">Открыть</button><button class="secondary-button compact" data-download-url="${escapeAttr(referenceUrl)}" data-download-name="${escapeAttr(reference.name || "reference")}" type="button">Скачать</button>` : ""}
             </div>
           </article>
         </div>
-        <article class="panel grid">
-          <div class="card-header"><h3 class="card-title">Prompt</h3>${promptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
-          ${promptText ? `<div class="prompt-box">${escapeHtml(promptText)}</div>` : '<p class="muted">Промпт не добавлен.</p>'}
-        </article>
-        <article class="panel grid">
-          <div class="card-header"><h3 class="card-title">Результат</h3><span class="muted">${works.length ? `Готовых работ: ${works.length}` : "Пока нет"}</span></div>
-          <div class="toolbar">
-            <button class="primary-button" data-add-final-work type="button"><span data-icon="plus"></span>Добавить результат</button>
-            ${works.length ? `<button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт для печати</button>` : ""}
-          </div>
-        </article>
+        <div class="montage-grid montage-secondary-grid">
+          <article class="panel grid">
+            <div class="card-header"><h3 class="card-title">Prompt</h3>${promptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
+            ${promptText ? `<div class="prompt-box montage-prompt-box">${escapeHtml(promptText)}</div>` : '<p class="muted">Промпт не добавлен.</p>'}
+          </article>
+          <article class="panel grid">
+            <div class="card-header"><h3 class="card-title">Результат</h3><span class="muted">${works.length ? `Готовых работ: ${works.length}` : "Пока нет"}</span></div>
+            <div class="toolbar">
+              <button class="primary-button" data-add-final-work type="button"><span data-icon="plus"></span>Добавить результат</button>
+              ${works.length ? `<button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт для печати</button>` : ""}
+            </div>
+          </article>
+        </div>
       </div>
     </section>
   `;
@@ -4078,7 +4124,13 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     finalWorkInput.value = "";
     finalWorkInput.click();
   });
-  panel.querySelectorAll("[data-open-url]").forEach((node) => node.addEventListener("click", () => window.open(node.dataset.openUrl, "_blank")));
+  panel.querySelectorAll("[data-preview-url]").forEach((node) => node.addEventListener("click", () => {
+    showInlineMediaPreview({
+      url: node.dataset.previewUrl,
+      title: node.dataset.previewTitle || "Просмотр",
+      isVideo: node.dataset.previewVideo === "true"
+    });
+  }));
   panel.querySelectorAll("[data-download-media]").forEach((node) => node.addEventListener("click", () => downloadMediaRecord(node.dataset.downloadMedia)));
   panel.querySelectorAll("[data-download-url]").forEach((node) => node.addEventListener("click", () => {
     downloadUrl(node.dataset.downloadUrl, node.dataset.downloadName || "reference");

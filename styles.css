@@ -353,6 +353,11 @@ p {
   width: min(720px, 100%);
 }
 
+.inline-media-panel {
+  width: min(860px, calc(100vw - 24px));
+  max-height: calc(100dvh - 36px);
+}
+
 .service-reference-summary {
   display: flex;
   flex-wrap: wrap;
@@ -2047,6 +2052,15 @@ p {
   border-radius: var(--radius);
 }
 
+.media-tile-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
 .media-tile img,
 .media-tile video {
   display: block;
@@ -2057,6 +2071,7 @@ p {
 }
 
 .media-tile p {
+  display: none;
   padding: 8px;
   overflow-wrap: anywhere;
   font-size: 0.78rem;
@@ -2573,6 +2588,15 @@ p {
 
 .montage-panel {
   width: min(980px, calc(100vw - 24px));
+  height: min(760px, calc(100dvh - 36px));
+  max-height: calc(100dvh - 36px);
+  overflow: hidden;
+  align-content: start;
+}
+
+.montage-panel > .grid {
+  min-height: 0;
+  gap: 12px;
 }
 
 .montage-grid {
@@ -2581,12 +2605,40 @@ p {
   gap: 12px;
 }
 
+.montage-grid .panel {
+  min-height: 0;
+}
+
 .montage-preview {
   width: 100%;
-  max-height: 360px;
+  max-height: min(250px, 27dvh);
   border-radius: var(--radius-sm);
   object-fit: contain;
   background: var(--surface-muted);
+}
+
+.montage-prompt-box {
+  max-height: 96px;
+  overflow: auto;
+}
+
+@media (max-height: 820px) {
+  .montage-panel {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .montage-panel .panel {
+    padding: 12px;
+  }
+
+  .montage-preview {
+    max-height: min(190px, 23dvh);
+  }
+
+  .montage-prompt-box {
+    max-height: 72px;
+  }
 }
 
 @media (max-width: 720px) {
