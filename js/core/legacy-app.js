@@ -92,10 +92,11 @@ const TRANSFER_STORE_MAP = {
   services: "catalog",
   orders: "orders",
   media: "media",
+  finalWorks: "finalWorks",
   settings: "settings",
   checklistTemplates: "templates"
 };
-const TRANSFER_STORE_ORDER = ["operators", "operatorEvents", "projects", "classes", "services", "checklistTemplates", "settings", "students", "orders", "media"];
+const TRANSFER_STORE_ORDER = ["operators", "operatorEvents", "projects", "classes", "services", "checklistTemplates", "settings", "students", "orders", "media", "finalWorks"];
 const TRANSFER_COUNT_LABELS = {
   operators: "сотрудников",
   operatorEvents: "действий",
@@ -105,17 +106,18 @@ const TRANSFER_COUNT_LABELS = {
   services: "услуг",
   orders: "заказов",
   media: "медиа",
+  finalWorks: "готовых работ",
   settings: "настроек",
   checklistTemplates: "шаблонов"
 };
 const TRANSFER_IMPORT_SCOPES = {
-  project: ["operators", "projects", "classes", "students", "orders", "media", "services", "settings", "checklistTemplates"],
-  class: ["operators", "projects", "classes", "students", "orders", "media", "services", "settings", "checklistTemplates"],
+  project: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "services", "settings", "checklistTemplates"],
+  class: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "services", "settings", "checklistTemplates"],
   operators: ["operators"],
   services: ["services"],
   settings: ["operators", "settings", "checklistTemplates"],
   work_config: ["operators", "services", "settings", "checklistTemplates"],
-  full_backup: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "services", "settings", "checklistTemplates"]
+  full_backup: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "services", "settings", "checklistTemplates"]
 };
 const CLASS_SORT_MODES = {
   manual: "Ручной порядок",
@@ -4344,7 +4346,13 @@ async function finalWorkPrintImageUrl(work, media) {
 }
 
 function finalWorkCompactQrPayload(work) {
-  return JSON.stringify({ type: "final_work_print", finalWorkId: work.id });
+  return JSON.stringify({
+    type: "final_work_print",
+    finalWorkId: work.id,
+    studentId: work.studentId || "",
+    serviceId: work.serviceId || "",
+    resultMediaId: work.resultMediaId || ""
+  });
 }
 
 function finalWorkQrPixelSize(size, width, height) {
@@ -4777,7 +4785,7 @@ function handleManualQr(event) {
 async function openQrValue(value) {
   const printPayload = parseFinalWorkPrintQr(value);
   if (printPayload) {
-    showFinalWorkPrintQrPanel(printPayload.finalWorkId);
+    showFinalWorkPrintQrPanel(printPayload);
     return;
   }
   const parsed = parseQrPayload(value);
@@ -5490,8 +5498,8 @@ function parseFinalWorkPrintQr(value) {
   return null;
 }
 
-function showFinalWorkPrintQrPanel(finalWorkId) {
-  const work = state.data.finalWorks.find((item) => item.id === finalWorkId);
+function showFinalWorkPrintQrPanel(payload) {
+  const work = findFinalWorkFromPrintPayload(payload);
   if (!work) return notify("Готовая работа не найдена");
   const student = studentById(work.studentId);
   const klass = classById(work.groupId || student?.classId);
@@ -5528,6 +5536,48 @@ function showFinalWorkPrintQrPanel(finalWorkId) {
   });
   document.body.append(panel);
   injectIcons();
+}
+
+function findFinalWorkFromPrintPayload(payload) {
+  if (!payload) return null;
+  const finalWorkId = typeof payload === "string" ? payload : payload.finalWorkId;
+  const byId = state.data.finalWorks.find((item) => item.id === finalWorkId);
+  if (byId) return byId;
+  if (typeof payload === "string") return null;
+  const payloadText = stableFinalWorkPrintPayload(payload);
+  const byPayload = state.data.finalWorks.find((item) => stableFinalWorkPrintPayload(item.printQrPayload) === payloadText);
+  if (byPayload) return byPayload;
+  if (payload.resultMediaId) {
+    const byMedia = state.data.finalWorks.find((item) => item.resultMediaId === payload.resultMediaId);
+    if (byMedia) return byMedia;
+  }
+  const studentId = payload.studentId || "";
+  const serviceId = payload.serviceId || "";
+  if (studentId && serviceId) {
+    const matches = state.data.finalWorks.filter((item) => item.studentId === studentId && item.serviceId === serviceId);
+    return matches[matches.length - 1] || null;
+  }
+  if (studentId) {
+    const matches = state.data.finalWorks.filter((item) => item.studentId === studentId);
+    return matches[matches.length - 1] || null;
+  }
+  return null;
+}
+
+function stableFinalWorkPrintPayload(value) {
+  try {
+    const payload = typeof value === "string" ? JSON.parse(value) : value;
+    if (!payload || payload.type !== "final_work_print") return "";
+    return JSON.stringify({
+      type: "final_work_print",
+      finalWorkId: payload.finalWorkId || "",
+      studentId: payload.studentId || "",
+      serviceId: payload.serviceId || "",
+      resultMediaId: payload.resultMediaId || ""
+    });
+  } catch {
+    return "";
+  }
 }
 
 function finalWorkStatusLabel(status) {
@@ -6431,6 +6481,7 @@ function buildTransferData(exportType, scope = {}) {
       services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
       media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
+      finalWorks: state.data.finalWorks.filter((work) => students.some((student) => student.id === work.studentId)),
       settings: state.data.settings,
       checklistTemplates: state.data.templates
     });
@@ -6449,6 +6500,7 @@ function buildTransferData(exportType, scope = {}) {
       services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
       media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
+      finalWorks: state.data.finalWorks.filter((work) => students.some((student) => student.id === work.studentId)),
       settings: state.data.settings,
       checklistTemplates: state.data.templates
     });
@@ -6479,6 +6531,7 @@ function buildTransferData(exportType, scope = {}) {
     services: state.data.catalog,
     orders: state.data.orders,
     media: state.data.media,
+    finalWorks: state.data.finalWorks,
     settings: state.data.settings,
     checklistTemplates: state.data.templates
   });
@@ -6494,6 +6547,7 @@ function emptyTransferData() {
     services: [],
     orders: [],
     media: [],
+    finalWorks: [],
     tasks: [],
     settings: [],
     statuses: [],
@@ -6520,6 +6574,7 @@ function withTransferAliases(dataKey, record) {
   if (dataKey === "services") next.serviceId = next.serviceId || next.id;
   if (dataKey === "orders") next.orderId = next.orderId || next.id;
   if (dataKey === "media") next.mediaId = next.mediaId || next.id;
+  if (dataKey === "finalWorks") next.finalWorkId = next.finalWorkId || next.id;
   return next;
 }
 
@@ -6698,6 +6753,7 @@ function normalizeTransferRecordId(dataKey, record) {
     services: "serviceId",
     orders: "orderId",
     media: "mediaId",
+    finalWorks: "finalWorkId",
     settings: "settingId",
     checklistTemplates: "templateId"
   }[dataKey];
@@ -6774,6 +6830,7 @@ function showTransferImportPreview(draft) {
         ${transferPreviewStat("Услуг", draft.stats.added.services, draft.stats.updated.services)}
         ${transferPreviewStat("Сотрудников", draft.stats.added.operators, draft.stats.updated.operators)}
         ${transferPreviewStat("Медиа", draft.stats.added.media, draft.stats.updated.media)}
+        ${transferPreviewStat("Готовых работ", draft.stats.added.finalWorks, draft.stats.updated.finalWorks)}
       </div>
       <div class="import-draft-list">
         <div class="import-draft-row ${draft.stats.conflicts.length ? "warning" : ""}"><strong>Конфликты</strong><span>${draft.stats.conflicts.length ? "есть" : "нет"}</span></div>
@@ -6982,6 +7039,16 @@ function remapTransferRecord(dataKey, record, idMaps) {
     }
   }
   if (dataKey === "media" && idMaps.students?.has(next.studentId)) next.studentId = idMaps.students.get(next.studentId);
+  if (dataKey === "finalWorks") {
+    if (idMaps.projects?.has(next.projectId)) next.projectId = idMaps.projects.get(next.projectId);
+    if (idMaps.classes?.has(next.groupId)) next.groupId = idMaps.classes.get(next.groupId);
+    if (idMaps.students?.has(next.studentId)) next.studentId = idMaps.students.get(next.studentId);
+    if (idMaps.services?.has(next.serviceId)) next.serviceId = idMaps.services.get(next.serviceId);
+    if (idMaps.media?.has(next.sourceMediaId)) next.sourceMediaId = idMaps.media.get(next.sourceMediaId);
+    if (idMaps.media?.has(next.referenceMediaId)) next.referenceMediaId = idMaps.media.get(next.referenceMediaId);
+    if (idMaps.media?.has(next.resultMediaId)) next.resultMediaId = idMaps.media.get(next.resultMediaId);
+    next.printQrPayload = finalWorkCompactQrPayload(next);
+  }
   return next;
 }
 
@@ -6995,6 +7062,7 @@ function appRecordFromTransfer(dataKey, record) {
   if (dataKey === "services") delete next.serviceId;
   if (dataKey === "orders") delete next.orderId;
   if (dataKey === "media") delete next.mediaId;
+  if (dataKey === "finalWorks") delete next.finalWorkId;
   if (dataKey === "settings") delete next.settingId;
   if (dataKey === "checklistTemplates") delete next.templateId;
   return next;
@@ -7017,6 +7085,7 @@ function transferIdPrefix(dataKey) {
     services: "catalog",
     orders: "order",
     media: "media",
+    finalWorks: "final",
     settings: "setting",
     checklistTemplates: "template"
   }[dataKey] || "copy";
