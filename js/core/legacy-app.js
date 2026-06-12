@@ -988,8 +988,8 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-open-class-action="${klass.id}" type="button">Открыть группу</button>
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
-              <button data-export-status-class="${klass.id}" type="button">Экспорт</button>
-              <button data-export-class="${klass.id}" type="button">ZIP группы</button>
+              <button data-export-class="${klass.id}" type="button">Экспорт</button>
+              <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button>
               <button data-mark-printed-class="${klass.id}" type="button">Отметить печать</button>
               <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
               <button data-rename-class="${klass.id}" type="button">Переименовать</button>
@@ -1019,45 +1019,72 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
 }
 
 function classStatsPanel(classId) {
+  const content = classStatsContent(classId);
+  if (!content) return "";
+  return `
+    <section class="panel class-stats-panel">
+      ${content}
+    </section>
+  `;
+}
+
+function classStatsContent(classId) {
   const klass = classById(classId);
   if (!klass) return "";
   const stats = classFinancialStats(classId);
   const project = projectById(klass.projectId);
   const projectStats = projectFinancialStats(klass.projectId);
   return `
-    <section class="panel class-stats-panel">
-      <div class="card-header">
-        <div>
-          <h2 class="card-title">Статистика группы ${escapeHtml(klass.name)}</h2>
-          <p class="muted">${escapeHtml(project?.name || "Проект")} · оплаты, долг и прогресс работ.</p>
-        </div>
-        <button class="icon-button" data-close-class-stats type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Статистика группы ${escapeHtml(klass.name)}</h2>
+        <p class="muted">${escapeHtml(project?.name || "Проект")} · оплаты, долг и прогресс работ.</p>
       </div>
-      <h3 class="mini-heading">По группе</h3>
-      <div class="stats finance-stats">
-        <div class="stat"><strong>${formatMoney(stats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
-        <div class="stat"><strong>${formatMoney(stats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
-        <div class="stat"><strong>${formatMoney(stats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
-        <div class="stat"><strong>${stats.paidStudents}/${stats.students}</strong><span class="muted">Оплатили</span></div>
-      </div>
-      <div class="finance-progress">
-        <div class="progress-label"><span>Оплата ${stats.paymentPercent}%</span><strong>${formatMoney(stats.remainingAmount)}</strong></div>
-        <div class="progress"><span style="width:${stats.paymentPercent}%"></span></div>
-      </div>
-      <div class="finance-progress">
-        <div class="progress-label"><span>Работы сделано ${stats.doneTasks} из ${stats.totalTasks}</span><strong>${stats.workPercent}%</strong></div>
-        <div class="progress"><span style="width:${stats.workPercent}%"></span></div>
-        <p class="muted">Осталось задач: ${Math.max(0, stats.totalTasks - stats.doneTasks)}</p>
-      </div>
-      <h3 class="mini-heading">По проекту</h3>
-      <div class="stats finance-stats">
-        <div class="stat"><strong>${formatMoney(projectStats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
-        <div class="stat"><strong>${formatMoney(projectStats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
-        <div class="stat"><strong>${formatMoney(projectStats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
-        <div class="stat"><strong>${projectStats.workPercent}%</strong><span class="muted">Работы готово</span></div>
-      </div>
+      <button class="icon-button" data-close-class-stats type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+    </div>
+    <h3 class="mini-heading">По группе</h3>
+    <div class="stats finance-stats">
+      <div class="stat"><strong>${formatMoney(stats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
+      <div class="stat"><strong>${formatMoney(stats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
+      <div class="stat"><strong>${formatMoney(stats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
+      <div class="stat"><strong>${stats.paidStudents}/${stats.students}</strong><span class="muted">Оплатили</span></div>
+    </div>
+    <div class="finance-progress">
+      <div class="progress-label"><span>Оплата ${stats.paymentPercent}%</span><strong>${formatMoney(stats.remainingAmount)}</strong></div>
+      <div class="progress"><span style="width:${stats.paymentPercent}%"></span></div>
+    </div>
+    <div class="finance-progress">
+      <div class="progress-label"><span>Работы сделано ${stats.doneTasks} из ${stats.totalTasks}</span><strong>${stats.workPercent}%</strong></div>
+      <div class="progress"><span style="width:${stats.workPercent}%"></span></div>
+      <p class="muted">Осталось задач: ${Math.max(0, stats.totalTasks - stats.doneTasks)}</p>
+    </div>
+    <h3 class="mini-heading">По проекту</h3>
+    <div class="stats finance-stats">
+      <div class="stat"><strong>${formatMoney(projectStats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
+      <div class="stat"><strong>${formatMoney(projectStats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
+      <div class="stat"><strong>${formatMoney(projectStats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
+      <div class="stat"><strong>${projectStats.workPercent}%</strong><span class="muted">Работы готово</span></div>
+    </div>
+  `;
+}
+
+function showClassStatsPanel(classId) {
+  const content = classStatsContent(classId);
+  if (!content) return notify("Группа не найдена.");
+  document.querySelector(".class-stats-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop class-stats-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel class-stats-panel class-stats-modal-panel" role="dialog" aria-modal="true" aria-label="Статистика группы">
+      ${content}
     </section>
   `;
+  const close = () => panel.remove();
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-class-stats]")) close();
+  });
+  document.body.append(panel);
+  injectIcons();
 }
 
 function renderSearch() {
@@ -1443,12 +1470,12 @@ function studentQuickForm(classId) {
           <span>ФИО</span>
           <input class="input" name="fio" placeholder="Иванов Иван" required autocomplete="off" />
         </label>
-        <label class="field-label">
+        <div class="field-label student-service-picker-field">
           <span>Услуги</span>
-          <select class="select" name="catalogIds">
-            ${state.data.catalog.map((item) => `<option value="${item.id}" ${item.id === selectedCatalogId ? "selected" : ""}>${escapeHtml(serviceName(item))}</option>`).join("")}
-          </select>
-        </label>
+          <div class="student-service-mini-grid">
+            ${state.data.catalog.map((item) => miniCatalogCheckbox(item, item.id === selectedCatalogId)).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
+          </div>
+        </div>
         <label class="field-label">
           <span>Оплата</span>
           <select class="select" name="paymentStatus">
@@ -1555,15 +1582,14 @@ function renderStudent() {
         <div class="field-label">
           <span>Услуги ученика</span>
           <div class="service-dropdown-picker">
-            <select class="select" data-add-student-service="${student.id}" aria-label="Добавить услугу">
-              <option value="">Выбрать услугу</option>
-              ${state.data.catalog.filter((item) => !selectedCatalogIds.includes(item.id)).map((item) => `<option value="${item.id}">${escapeHtml(serviceName(item))} · ${escapeHtml(formatPrice(item.price))}</option>`).join("")}
-            </select>
             <div class="service-chip-list">
               ${selectedCatalogIds.map((id) => {
                 const item = catalogItemById(id);
                 return item ? `<span class="service-chip">${escapeHtml(serviceName(item))}<button data-remove-student-service="${student.id}:${item.id}" type="button" aria-label="Убрать услугу">×</button></span>` : "";
               }).join("") || '<p class="muted">Услуги не выбраны.</p>'}
+            </div>
+            <div class="student-service-mini-grid">
+              ${state.data.catalog.map((item) => miniCatalogToggle(item, student.id, selectedCatalogIds.includes(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
             </div>
           </div>
         </div>
@@ -1795,6 +1821,38 @@ function catalogServiceCard(item) {
         </div>
       </div>
     </article>
+  `;
+}
+
+function miniCatalogPreview(item) {
+  const previewUrl = servicePreviewImageDataUrl(item);
+  return previewUrl
+    ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
+    : `<span>${escapeHtml(serviceName(item).slice(0, 1) || "У")}</span>`;
+}
+
+function miniCatalogCheckbox(item, selected = false) {
+  return `
+    <label class="mini-catalog-option ${selected ? "selected" : ""}">
+      <input type="checkbox" name="catalogIds" value="${item.id}" ${selected ? "checked" : ""} />
+      <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
+      <span class="mini-catalog-copy">
+        <strong>${escapeHtml(serviceName(item))}</strong>
+        <small>${escapeHtml(formatPrice(item.price))}</small>
+      </span>
+    </label>
+  `;
+}
+
+function miniCatalogToggle(item, studentId, selected = false) {
+  return `
+    <button class="mini-catalog-option ${selected ? "selected" : ""}" data-toggle-student-service="${studentId}:${item.id}" type="button">
+      <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
+      <span class="mini-catalog-copy">
+        <strong>${escapeHtml(serviceName(item))}</strong>
+        <small>${selected ? "Выбрано" : escapeHtml(formatPrice(item.price))}</small>
+      </span>
+    </button>
   `;
 }
 
@@ -2734,11 +2792,7 @@ function bindViewActions() {
     state.preserveScroll = true;
     renderClasses();
   });
-  view.querySelectorAll("[data-show-class-stats]").forEach((node) => node.addEventListener("click", () => {
-    state.classStatsId = node.dataset.showClassStats;
-    state.preserveScroll = true;
-    renderClasses();
-  }));
+  view.querySelectorAll("[data-show-class-stats]").forEach((node) => node.addEventListener("click", () => showClassStatsPanel(node.dataset.showClassStats)));
   view.querySelector("[data-class-sort-project]")?.addEventListener("change", (event) => updateProjectClassSort(event.currentTarget.dataset.classSortProject, event.currentTarget.value));
   view.querySelectorAll("[data-move-class]").forEach((node) => node.addEventListener("click", () => moveClass(node.dataset.moveClass)));
   view.querySelectorAll("[data-set-class-color]").forEach((node) => node.addEventListener("click", () => setClassColor(node.dataset.setClassColor)));
@@ -2796,6 +2850,14 @@ function bindViewActions() {
     if (!student || !catalogId) return;
     updateStudentServices(studentId, [...selectedCatalogIdsForStudent(student), catalogId]);
   });
+  view.querySelectorAll("[data-toggle-student-service]").forEach((node) => node.addEventListener("click", () => {
+    const [studentId, catalogId] = node.dataset.toggleStudentService.split(":");
+    const student = studentById(studentId);
+    if (!student || !catalogId) return;
+    const selected = selectedCatalogIdsForStudent(student);
+    const next = selected.includes(catalogId) ? selected.filter((id) => id !== catalogId) : [...selected, catalogId];
+    updateStudentServices(studentId, next);
+  }));
   view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
     const student = studentById(studentId);
@@ -2851,6 +2913,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportFullBackup()));
   view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", () => exportProject(node.dataset.exportProject)));
   view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
+  view.querySelectorAll("[data-print-final-class]").forEach((node) => node.addEventListener("click", () => printClassFinalWorksWithQr(node.dataset.printFinalClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
   view.querySelectorAll("[data-open-final-work]").forEach((node) => node.addEventListener("click", () => showFinalWorkViewer(node.dataset.openFinalWork)));
@@ -4647,7 +4710,7 @@ async function showFinalWorkViewer(workId) {
       <img class="final-work-viewer-image" src="${escapeAttr(url)}" alt="${escapeAttr(titleText)}" />
       <div class="toolbar">
         <button class="secondary-button" data-download-final-work="${work.id}" type="button">Скачать</button>
-        <button class="secondary-button" data-print-final-work="${work.id}" type="button">Печать</button>
+        <button class="secondary-button" data-print-final-work="${work.id}" type="button">Печать с QR</button>
         <button class="danger-button" data-delete-final-work="${work.id}" type="button">Удалить</button>
       </div>
     </section>
@@ -4693,9 +4756,15 @@ function printFinalWork(workId) {
   const blob = finalWorkImageBlob(work);
   if (!work || !blob) return notify("Изображение результата не найдено.");
   const url = URL.createObjectURL(blob);
+  const qr = createQrSvg(finalWorkCompactQrPayload(work), 4);
   const area = document.createElement("div");
   area.className = "final-work-print-area";
-  area.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(finalWorkTitle(work))}" />`;
+  area.innerHTML = `
+    <section class="final-work-print-page">
+      <img src="${escapeAttr(url)}" alt="${escapeAttr(finalWorkTitle(work))}" />
+      <div class="final-work-print-qr" style="${escapeAttr(finalWorkQrBoxStyle(finalWorkPrintSettings()))}">${qr}</div>
+    </section>
+  `;
   document.body.append(area);
   document.body.classList.add("is-printing-final-work");
   const cleanup = () => {
@@ -4707,6 +4776,84 @@ function printFinalWork(workId) {
   window.addEventListener("afterprint", cleanup);
   window.print();
   setTimeout(cleanup, 2000);
+}
+
+async function printClassFinalWorksWithQr(classId) {
+  const klass = classById(classId);
+  if (!klass) return notify("Группа не найдена.");
+  return withBusy("Готовлю результаты для печати...", async () => {
+    const works = state.data.finalWorks.filter((work) => work.groupId === classId && finalWorkImageBlob(work));
+    if (!works.length) return notify("В группе нет готовых результатов для печати.");
+    const settings = finalWorkPrintSettings();
+    const pages = [];
+    for (const work of works) {
+      const imageUrl = await fileToDataUrl(finalWorkImageBlob(work));
+      pages.push(finalWorkPrintPageHtml(work, imageUrl, settings));
+    }
+    const title = `Печать готовых результатов · ${klass.name}`;
+    const fileName = safeFileName(`final_results_${klass.name}_${new Date().toISOString().slice(0, 10)}.html`);
+    showInternalPrintPreview(title, finalWorksPrintSheetHtml(title, pages.join("")), fileName);
+    await recordOperatorEvent("export", { targetType: "final_results_print_html", targetId: classId });
+    notify("Печатный лист готов внутри приложения.");
+  });
+}
+
+function finalWorkPrintPageHtml(work, imageUrl, settings) {
+  const titleText = finalWorkTitle(work);
+  return `
+    <section class="print-page">
+      <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(titleText)}" />
+      <div class="print-qr" style="${escapeAttr(finalWorkQrBoxStyle(settings))}">${createQrSvg(finalWorkCompactQrPayload(work), 4)}</div>
+    </section>
+  `;
+}
+
+function finalWorkQrBoxStyle(settings = finalWorkPrintSettings()) {
+  const margin = Number.parseInt(settings.qrMargin, 10) || 10;
+  const size = { small: "28mm", medium: "36mm", large: "46mm" }[settings.qrSize] || "28mm";
+  const position = settings.qrPosition || "bottom-right";
+  const vertical = position.startsWith("top") ? `top:${margin}px;` : `bottom:${margin}px;`;
+  const horizontal = position.endsWith("left") ? `left:${margin}px;` : `right:${margin}px;`;
+  return `position:absolute;${vertical}${horizontal}width:${size};height:${size};padding:4px;background:#fff;border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.18);`;
+}
+
+function finalWorksPrintSheetHtml(title, pagesHtml) {
+  return `<!doctype html>
+    <html lang="ru">
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(title)}</title>
+        <style>
+          @page { size: A4; margin: 0; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; background: #fff; color: #111827; font-family: Arial, sans-serif; }
+          .print-page {
+            position: relative;
+            width: 100vw;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            break-after: page;
+            page-break-after: always;
+            overflow: hidden;
+            background: #fff;
+          }
+          .print-page:last-child { break-after: auto; page-break-after: auto; }
+          .print-page > img {
+            display: block;
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+          }
+          .print-qr svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+          }
+        </style>
+      </head>
+      <body>${pagesHtml}</body>
+    </html>`;
 }
 
 function finalWorkPrintSettings() {
@@ -7552,7 +7699,7 @@ function transferIdPrefix(dataKey) {
   }[dataKey] || "copy";
 }
 
-function showInternalPrintPreview(title, html) {
+function showInternalPrintPreview(title, html, downloadFileName = "") {
   document.querySelector(".print-preview-backdrop")?.remove();
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop print-preview-backdrop";
@@ -7565,6 +7712,7 @@ function showInternalPrintPreview(title, html) {
       <iframe class="print-preview-frame" title="${escapeAttr(title)}"></iframe>
       <div class="toolbar">
         <button class="primary-button" data-print-preview type="button">Сохранить в PDF</button>
+        ${downloadFileName ? '<button class="secondary-button" data-download-print-html type="button">Скачать HTML</button>' : ""}
         <button class="secondary-button" data-close-print-preview type="button">Закрыть</button>
       </div>
     </section>
@@ -7580,6 +7728,9 @@ function showInternalPrintPreview(title, html) {
     if (!win) return notify("Предпросмотр еще загружается.");
     win.focus();
     win.print();
+  });
+  panel.querySelector("[data-download-print-html]")?.addEventListener("click", () => {
+    downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), downloadFileName);
   });
   document.body.append(panel);
   injectIcons();

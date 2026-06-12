@@ -1,4 +1,4 @@
-const CACHE_NAME = "vakha-studio-cache-v26";
+const CACHE_NAME = "vakha-studio-cache-v27";
 const APP_SHELL = [
   "./",
   "./index.html",
