@@ -1,7 +1,7 @@
 const DB_NAME = "school-photo-flow";
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const STORE_NAMES = [
   "projects",
   "classes",
@@ -19,7 +19,8 @@ const STORE_NAMES = [
   "albumGroupMedia",
   "albumTeachers",
   "albumMedia",
-  "finalWorks"
+  "finalWorks",
+  "documents"
 ];
 const ORDER_TYPES = {
   portrait: "Портрет",
@@ -31,9 +32,16 @@ const ORDER_TYPES = {
 const ORDER_STATUSES = {
   not_started: "Не начат",
   shooting: "На съемке",
-  processing: "В обработке",
-  ready: "Готов",
+  shot: "Снято",
+  processed: "Обработано",
+  printed: "Напечатано",
   delivered: "Выдан"
+};
+const STUDENT_AUTO_STATUS_KEYS = ["not_started", "shooting", "shot", "processed"];
+const STUDENT_MANUAL_STATUS_KEYS = ["printed", "delivered"];
+const LEGACY_STUDENT_STATUS_MAP = {
+  processing: "shooting",
+  ready: "processed"
 };
 const ALBUM_TYPES = {
   budget: "Бюджет",
@@ -44,17 +52,36 @@ const ALBUM_TYPES = {
 const ALBUM_CLASS_STATUSES = {
   not_started: "Не начат",
   shooting: "Съемка",
-  editing: "Верстка",
-  ready: "Готов",
-  printing: "Печать",
-  delivered: "Выдан"
+  shot: "Снято",
+  layout: "Верстка",
+  print_ready: "Готово к печати",
+  printed: "Напечатано",
+  delivered: "Выдано"
+};
+const ALBUM_CLASS_MANUAL_STATUS_KEYS = ["layout", "print_ready", "printed", "delivered"];
+const LEGACY_ALBUM_CLASS_STATUS_MAP = {
+  editing: "layout",
+  ready: "print_ready",
+  printing: "printed"
 };
 const ALBUM_STUDENT_STATUSES = {
   not_shot: "Не снят",
   shot: "Снято",
-  editing: "В обработке",
+  processed: "Обработано",
   ready: "Готов"
 };
+const LEGACY_ALBUM_STUDENT_STATUS_MAP = {
+  editing: "processed"
+};
+const DOCUMENT_ACCEPTED_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"];
+const DOCUMENT_ACCEPTED_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+  "image/webp"
+];
 const ALBUM_GROUP_TYPES = {
   class_photo: "Общее фото группы",
   boys: "Фото мальчиков",
@@ -93,10 +120,11 @@ const TRANSFER_STORE_MAP = {
   orders: "orders",
   media: "media",
   finalWorks: "finalWorks",
+  documents: "documents",
   settings: "settings",
   checklistTemplates: "templates"
 };
-const TRANSFER_STORE_ORDER = ["operators", "operatorEvents", "projects", "classes", "services", "checklistTemplates", "settings", "students", "orders", "media", "finalWorks"];
+const TRANSFER_STORE_ORDER = ["operators", "operatorEvents", "projects", "classes", "services", "checklistTemplates", "settings", "students", "orders", "media", "finalWorks", "documents"];
 const TRANSFER_COUNT_LABELS = {
   operators: "сотрудников",
   operatorEvents: "действий",
@@ -107,17 +135,18 @@ const TRANSFER_COUNT_LABELS = {
   orders: "заказов",
   media: "медиа",
   finalWorks: "готовых работ",
+  documents: "документов",
   settings: "настроек",
   checklistTemplates: "шаблонов"
 };
 const TRANSFER_IMPORT_SCOPES = {
-  project: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "services", "settings", "checklistTemplates"],
-  class: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "services", "settings", "checklistTemplates"],
+  project: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
+  class: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
   operators: ["operators"],
   services: ["services"],
   settings: ["operators", "settings", "checklistTemplates"],
   work_config: ["operators", "services", "settings", "checklistTemplates"],
-  full_backup: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "services", "settings", "checklistTemplates"]
+  full_backup: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"]
 };
 const CLASS_SORT_MODES = {
   manual: "Ручной порядок",
@@ -165,6 +194,7 @@ const state = {
   currentPreview: null,
   currentAlbumMedia: null,
   currentFinalWork: null,
+  currentDocumentTarget: null,
   currentImportDraft: null,
   zipImportMode: "auto",
   albumProjectId: null,
@@ -221,6 +251,7 @@ const transferFolderInput = document.querySelector("#transfer-folder-input");
 const albumMediaInput = document.querySelector("#album-media-input");
 const albumZipInput = document.querySelector("#album-zip-input");
 const finalWorkInput = document.querySelector("#final-work-input");
+const documentInput = document.querySelector("#document-input");
 
 init();
 
@@ -270,7 +301,8 @@ function emptyData() {
     templates: [],
     settings: [],
     catalog: [],
-    finalWorks: []
+    finalWorks: [],
+    documents: []
   };
 }
 
@@ -605,8 +637,8 @@ async function seedIfNeeded() {
   const catalogId = (await getAll("catalog"))[0]?.id || "";
   for (const [firstName, lastName, classId, paymentStatus] of students) {
     const id = uid("student");
-    await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus, orderStatus: "not_started", catalogId, status: "not_started" });
-    await put("orders", { id: `order_${id}`, studentId: id, status: "not_started", catalogId, items: catalogId ? orderItemsFromCatalog(catalogId) : defaultOrderItems() });
+    await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus, orderStatus: "", catalogId, status: "" });
+    await put("orders", { id: `order_${id}`, studentId: id, status: "", catalogId, items: catalogId ? orderItemsFromCatalog(catalogId) : defaultOrderItems() });
   }
   await put("settings", { id: SETTING_IDS.initialized, value: true });
 }
@@ -661,6 +693,7 @@ function bindShell() {
   albumMediaInput.addEventListener("change", handleAlbumMediaInput);
   albumZipInput.addEventListener("change", handleAlbumZipInput);
   finalWorkInput?.addEventListener("change", handleFinalWorkInput);
+  documentInput?.addEventListener("change", handleDocumentInput);
 }
 
 function navigate(route, params = {}) {
@@ -798,8 +831,8 @@ function renderHome() {
         ${filterChip("all", "Все")}
         ${filterChip("unpaid", "Не оплачено")}
         ${filterChip("todo", "Не снято")}
-        ${filterChip("processing", "В работе")}
-        ${filterChip("ready", "Готово")}
+        ${filterChip("processing", "На съемке")}
+        ${filterChip("ready", "Обработано")}
       </div>
     </section>
     <section class="compact-stack">
@@ -820,13 +853,14 @@ function projectCard(project) {
   const done = students.filter((student) => completion(student.id).done).length;
   const pct = students.length ? Math.round((done / students.length) * 100) : 0;
   const finance = projectFinancialStats(project.id);
+  const docsCount = documentsForOwner("project", project.id).length;
   return `
     <article class="list-card card-button" data-open-project="${project.id}">
       <div class="list-card-main">
         <span class="list-icon metric-blue" data-icon="classes"></span>
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.name)}</h2>
-          <p class="muted">${classes.length} групп · ${students.length} учеников</p>
+          <p class="muted">${classes.length} групп · ${students.length} учеников · Документы: ${docsCount}</p>
           <div class="progress-label"><span>Прогресс ${pct}%</span></div>
           <div class="progress"><span style="width:${pct}%"></span></div>
           <div class="progress-label"><span>Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</span><strong>${finance.paymentPercent}%</strong></div>
@@ -838,6 +872,7 @@ function projectCard(project) {
             <button data-open-project-action="${project.id}" type="button">Открыть</button>
             <button data-export-status-project="${project.id}" type="button">Экспорт</button>
             <button data-export-project="${project.id}" type="button">ZIP проекта</button>
+            <button data-open-project-documents="${project.id}" type="button">Документы</button>
             <button data-assign-operator-project="${project.id}" type="button">Назначить сотрудника</button>
             <button data-rename-project="${project.id}" type="button">Переименовать</button>
             <button class="danger-text" data-delete-project="${project.id}" type="button">Удалить</button>
@@ -885,6 +920,7 @@ function renderClasses() {
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
       </div>
     </section>`}
+    ${!isClassOpen && activeProject ? documentsSection("project", activeProject) : ""}
     ${formClassId ? studentQuickForm(formClassId) : ""}
     ${isClassOpen ? "" : `
       <section class="class-order-toolbar">
@@ -920,6 +956,7 @@ function classStudentSection(classId) {
           <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
         </div>
       </div>
+      ${documentsSection("group", klass.id)}
       <div class="student-list">
         ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в группу.</p>'}
       </div>
@@ -934,6 +971,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
   const finance = classFinancialStats(klass.id);
   const color = classColorOption(klass.color, klass.name);
   const manualMoveDisabled = sortMode !== "manual";
+  const docsCount = documentsForOwner("group", klass.id).length;
   return `
     <article class="class-card group-card card-button" data-open-class="${klass.id}" tabindex="0" style="--class-accent:${escapeAttr(color.accent)};">
       <div class="class-cover" style="background:${escapeAttr(color.gradient)};">
@@ -964,7 +1002,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
             </div>
           </details>
         </div>
-        <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
+        <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")} · Документы: ${docsCount}</p>
         <div class="progress-label">
           <span>Прогресс: ${pct}%</span>
           <strong>${pct}%</strong>
@@ -1032,8 +1070,8 @@ function renderSearch() {
         ${filterChip("all", "Все")}
         ${filterChip("todo", "Не снято")}
         ${filterChip("done", "Снято")}
-        ${filterChip("processing", "В обработке")}
-        ${filterChip("ready", "Готово")}
+        ${filterChip("processing", "На съемке")}
+        ${filterChip("ready", "Обработано")}
         ${filterChip("paid", "Оплачено")}
       </div>
       <div class="grid">
@@ -1101,7 +1139,7 @@ function renderAlbums() {
 function albumProjectCard(project) {
   const classes = albumClassesByProject(project.id);
   const students = classes.flatMap((klass) => albumStudentsByClass(klass.id));
-  const ready = classes.filter((klass) => ["ready", "printing", "delivered"].includes(klass.status)).length;
+  const ready = classes.filter((klass) => ["shot", "layout", "print_ready", "printed", "delivered"].includes(calculateAlbumClassStatus(klass))).length;
   const pct = classes.length ? Math.round((ready / classes.length) * 100) : 0;
   return `
     <article class="list-card card-button" data-open-album-project="${project.id}" tabindex="0">
@@ -1155,6 +1193,7 @@ function renderAlbumProject() {
 
 function albumClassCard(klass) {
   const stats = albumClassStats(klass.id);
+  const status = calculateAlbumClassStatus(klass);
   return `
     <article class="list-card card-button" data-open-album-class="${klass.id}" tabindex="0">
       <div class="list-card-main">
@@ -1162,6 +1201,7 @@ function albumClassCard(klass) {
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(klass.name)}</h2>
           <p class="muted">${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц</p>
+          <span class="status-pill ${albumStatusClass(status)}">${albumClassStatusLabel(status)}</span>
           <div class="progress-label"><span>Готовность ${stats.readyPercent}%</span></div>
           <div class="progress"><span style="width:${stats.readyPercent}%"></span></div>
         </div>
@@ -1187,6 +1227,7 @@ function renderAlbumClass() {
   const project = albumProjectById(klass.albumProjectId);
   const tab = state.albumTab || "students";
   const stats = albumClassStats(klass.id);
+  const status = calculateAlbumClassStatus(klass);
   setShell({ heading: klass.name, context: project?.schoolName || "Альбом", summary: `${albumTypeLabel(klass.albumType)} · ${klass.pagesCount || 0} страниц` });
   view.innerHTML = `
     <section class="album-class-head">
@@ -1203,6 +1244,7 @@ function renderAlbumClass() {
       </div>
       <button class="fab-back" data-back-to-album-project="${klass.albumProjectId}" type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
       <div class="stats album-stats">
+        <div class="stat"><strong>${escapeHtml(albumClassStatusLabel(status))}</strong><span class="muted">Статус</span></div>
         <div class="stat"><strong>${stats.students}</strong><span class="muted">Ученики</span></div>
         <div class="stat"><strong>${stats.portraits}/${stats.students}</strong><span class="muted">Портреты</span></div>
         <div class="stat"><strong>${stats.videos}</strong><span class="muted">Видео</span></div>
@@ -1251,6 +1293,7 @@ function albumStudentCard(student) {
   const mediaItems = albumMediaByOwner("student", student.id);
   const portraitCount = mediaItems.filter((item) => item.fileType === "image").length;
   const videoCount = mediaItems.filter((item) => item.fileType === "video").length;
+  const status = calculateAlbumStudentStatus(student);
   return `
     <article class="student-card album-work-card">
       <div class="student-line album-card-head">
@@ -1258,7 +1301,7 @@ function albumStudentCard(student) {
           <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
           <p class="muted">Индивидуальная папка · Фото: ${portraitCount} · Видео: ${videoCount}</p>
         </div>
-        <span class="status-pill ${albumStatusClass(student.status)}">${albumStudentStatusLabel(student.status)}</span>
+        <span class="status-pill ${albumStatusClass(status)}">${albumStudentStatusLabel(status)}</span>
       </div>
       ${albumMediaGallery(mediaItems, "Фото и видео появятся внутри этой ячейки")}
       ${student.comment ? `<p class="muted">${escapeHtml(student.comment)}</p>` : ""}
@@ -1414,9 +1457,10 @@ function studentQuickForm(classId) {
           </select>
         </label>
         <label class="field-label">
-          <span>Статус заказа</span>
+          <span>Ручной статус</span>
           <select class="select" name="orderStatus">
-            ${Object.entries(ORDER_STATUSES).map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("")}
+            <option value="auto">Автоматически</option>
+            ${STUDENT_MANUAL_STATUS_KEYS.map((value) => `<option value="${value}">${escapeHtml(ORDER_STATUSES[value])}</option>`).join("")}
           </select>
         </label>
       </div>
@@ -1514,9 +1558,10 @@ function renderStudent() {
           </div>
         </div>
         <label class="field-label">
-          <span>Статус заказа</span>
+          <span>Ручной статус</span>
           <select class="select" data-order-status="${student.id}">
-            ${Object.entries(ORDER_STATUSES).map(([value, label]) => `<option value="${value}" ${value === currentOrderStatus(student) ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+            <option value="auto" ${manualStudentStatus(student) ? "" : "selected"}>Автоматически: ${escapeHtml(orderStatusLabel(student))}</option>
+            ${STUDENT_MANUAL_STATUS_KEYS.map((value) => `<option value="${value}" ${value === manualStudentStatus(student) ? "selected" : ""}>${escapeHtml(ORDER_STATUSES[value])}</option>`).join("")}
           </select>
         </label>
         <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
@@ -2152,7 +2197,7 @@ function buildOperatorStats(operatorId) {
   const exportedRecords = [...state.data.projects, ...state.data.classes, ...state.data.students].filter((item) => recordMatchesOperator(item, operatorId, ["exportedBy"]));
   const tasks = state.data.orders.flatMap((order) => (order.items || []).map((item) => ({ ...item, order })))
     .filter((item) => item.status === "done" && recordMatchesOperator(item, operatorId, ["completedBy", "updatedBy"]));
-  const readyStudents = state.data.students.filter((student) => ["ready", "delivered"].includes(currentOrderStatus(student)) && (
+  const readyStudents = state.data.students.filter((student) => ["processed", "printed", "delivered"].includes(currentOrderStatus(student)) && (
     recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]) || studentHasCompletedTaskByOperator(student.id, operatorId)
   ));
   const unpaidStudents = state.data.students.filter((student) => student.paymentStatus !== "paid" && recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]));
@@ -2593,7 +2638,7 @@ function studentCard(student) {
             <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
             <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
             <span class="price-pill">${student.paymentStatus === "paid" ? "Оплачено" : "К оплате"} ${escapeHtml(formatMoney(price))}</span>
-            ${finalStats.total ? `<span class="status-pill ready">Готовые работы: ${finalStats.total}</span><span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "processing"}">Напечатано: ${finalStats.printed}</span>` : ""}
+            ${finalStats.total ? `<span class="status-pill paid">Готовые работы: ${finalStats.total}</span><span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "in-progress"}">Напечатано: ${finalStats.printed}</span>` : ""}
           </div>
         </div>
         <details class="item-menu student-menu">
@@ -2635,6 +2680,9 @@ function bindViewActions() {
   });
   view.querySelectorAll("[data-open-project-action]").forEach((node) => {
     node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction, classId: null, studentFormClassId: null }));
+  });
+  view.querySelectorAll("[data-open-project-documents]").forEach((node) => {
+    node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectDocuments, classId: null, studentFormClassId: null }));
   });
   view.querySelectorAll("[data-add-project]").forEach((node) => node.addEventListener("click", () => addProject(node.dataset.addProject)));
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
@@ -2783,6 +2831,10 @@ function bindViewActions() {
     event.stopPropagation();
     showMediaPreview(node.dataset.viewMedia);
   }));
+  view.querySelectorAll("[data-upload-document]").forEach((node) => node.addEventListener("click", () => selectDocumentFiles(node.dataset.uploadDocument)));
+  view.querySelectorAll("[data-open-document]").forEach((node) => node.addEventListener("click", () => showDocumentPreview(node.dataset.openDocument)));
+  view.querySelectorAll("[data-download-document]").forEach((node) => node.addEventListener("click", () => downloadDocument(node.dataset.downloadDocument)));
+  view.querySelectorAll("[data-delete-document]").forEach((node) => node.addEventListener("click", () => deleteDocument(node.dataset.deleteDocument)));
   view.querySelectorAll("[data-export-status-class]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ classId: node.dataset.exportStatusClass })));
   view.querySelectorAll("[data-rename-class]").forEach((node) => node.addEventListener("click", () => renameClass(node.dataset.renameClass)));
   view.querySelectorAll("[data-export-status-project]").forEach((node) => node.addEventListener("click", () => exportStatusPdf({ projectId: node.dataset.exportStatusProject })));
@@ -3119,7 +3171,7 @@ async function handleStudentFormSubmit(event) {
   requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
 }
 
-async function addStudent({ classId, fio, catalogId = "", catalogIds = [], paymentStatus = "unpaid", orderStatus = "not_started" }) {
+async function addStudent({ classId, fio, catalogId = "", catalogIds = [], paymentStatus = "unpaid", orderStatus = "auto" }) {
   if (!classId) return null;
   if (!String(fio || "").trim()) {
     notify("Введите ФИО ученика.");
@@ -3129,9 +3181,10 @@ async function addStudent({ classId, fio, catalogId = "", catalogIds = [], payme
   const selectedCatalogIds = normalizeCatalogIds(catalogIds.length ? catalogIds : [catalogId || state.data.catalog[0]?.id || ""]);
   const selectedCatalogId = selectedCatalogIds[0] || "";
   const id = uid("student");
-  const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus, status: "not_started" });
+  const manualStatus = STUDENT_MANUAL_STATUS_KEYS.includes(orderStatus) ? orderStatus : "";
+  const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus: manualStatus, status: manualStatus });
   await put("students", student);
-  await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: orderStatus, items: orderItemsFromCatalogs(selectedCatalogIds) }));
+  await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: manualStatus, items: orderItemsFromCatalogs(selectedCatalogIds) }));
   return student;
 }
 
@@ -3154,6 +3207,7 @@ async function deleteProject(projectId) {
   const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
   if (!confirm(`Удалить проект "${project.name}" вместе с ${classes.length} группами и ${students.length} учениками?`)) return;
   for (const student of students) await deleteStudentRecords(student.id);
+  for (const doc of state.data.documents.filter((item) => item.projectId === projectId)) await del("documents", doc.id);
   for (const klass of classes) await del("classes", klass.id);
   await del("projects", projectId);
   await refreshData();
@@ -3178,6 +3232,7 @@ async function deleteClass(classId) {
   const students = state.data.students.filter((student) => student.classId === classId);
   if (!confirm(`Удалить группу "${klass.name}" вместе с ${students.length} учениками?`)) return;
   for (const student of students) await deleteStudentRecords(student.id);
+  for (const doc of state.data.documents.filter((item) => item.groupId === classId)) await del("documents", doc.id);
   await del("classes", classId);
   await refreshData();
   notify("Группа удалена.");
@@ -3271,7 +3326,7 @@ async function addAlbumClass(albumProjectId) {
     name: name.trim(),
     albumType,
     pagesCount,
-    status: "not_started",
+    status: "",
     createdAt: now()
   };
   await put("albumClasses", klass);
@@ -3286,7 +3341,8 @@ async function editAlbumClass(classId) {
   if (!name?.trim()) return;
   const albumType = normalizeAlbumType(prompt("Тип альбома", klass.albumType), klass.albumType);
   const pagesCount = Math.max(0, Number.parseInt(prompt("Количество страниц", String(klass.pagesCount || 20)) || String(klass.pagesCount || 20), 10) || 0);
-  const status = normalizeAlbumClassStatus(prompt("Статус", klass.status), klass.status);
+  const currentStatus = manualAlbumClassStatus(klass);
+  const status = normalizeAlbumClassStatus(prompt("Ручной статус: auto, layout, print_ready, printed или delivered", currentStatus || "auto"), currentStatus);
   await put("albumClasses", { ...klass, name: name.trim(), albumType, pagesCount, status });
   await refreshData();
   renderAlbumClass();
@@ -3326,7 +3382,7 @@ async function addAlbumStudent(classId) {
     portraitMediaId: "",
     videoMediaId: "",
     comment: "",
-    status: "not_shot",
+    status: "",
     createdAt: now()
   });
   await refreshData();
@@ -3339,7 +3395,7 @@ async function editAlbumStudent(studentId) {
   const fio = prompt("ФИО ученика", `${student.lastName} ${student.firstName}`.trim());
   if (!fio?.trim()) return;
   const { firstName, lastName } = splitFullName(fio);
-  const status = normalizeAlbumStudentStatus(prompt("Статус: not_shot, shot, editing или ready", student.status), student.status);
+  const status = normalizeAlbumStudentStatus(prompt("Статус: auto, not_shot, shot, processed или ready", student.status || "auto"), student.status);
   const comment = prompt("Комментарий", student.comment || "") || "";
   await put("albumStudents", { ...student, firstName, lastName, status, comment: comment.trim() });
   await refreshData();
@@ -3838,6 +3894,297 @@ function showInlineMediaPreview({ url, title = "Просмотр", isVideo = fal
   injectIcons();
 }
 
+function documentsSection(ownerType, ownerId) {
+  const docs = documentsForOwner(ownerType, ownerId);
+  const titleText = ownerType === "project" ? "Документы проекта" : "Документы группы";
+  return `
+    <section class="panel document-section">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${titleText}</h2>
+          <p class="muted">${docs.length ? `${docs.length} ${pluralizeRu(docs.length, "файл", "файла", "файлов")}` : "PDF, DOC, DOCX, JPG, PNG, WEBP"}</p>
+        </div>
+        <button class="primary-button compact" data-upload-document="${ownerType}:${ownerId}" type="button"><span data-icon="plus"></span>Файл</button>
+      </div>
+      <div class="document-list">
+        ${docs.map(documentCard).join("") || '<p class="muted">Документы появятся здесь.</p>'}
+      </div>
+    </section>
+  `;
+}
+
+function documentCard(doc) {
+  return `
+    <article class="document-card">
+      <div class="document-icon">${escapeHtml(documentExtension(doc).toUpperCase() || "FILE")}</div>
+      <div class="document-copy">
+        <strong>${escapeHtml(doc.fileName || doc.name || "Документ")}</strong>
+        <span class="muted">${escapeHtml(formatDocumentMeta(doc))}</span>
+      </div>
+      <div class="document-actions">
+        <button class="secondary-button compact" data-open-document="${doc.id}" type="button">Открыть</button>
+        <button class="secondary-button compact" data-download-document="${doc.id}" type="button">Скачать</button>
+        <button class="danger-button compact" data-delete-document="${doc.id}" type="button">Удалить</button>
+      </div>
+    </article>
+  `;
+}
+
+function documentsForOwner(ownerType, ownerId) {
+  return (state.data.documents || [])
+    .filter((doc) => documentOwnerMatches(doc, ownerType, ownerId))
+    .sort((a, b) => String(b.addedAt || b.createdAt || "").localeCompare(String(a.addedAt || a.createdAt || "")));
+}
+
+function documentOwnerMatches(doc, ownerType, ownerId) {
+  if (!doc || !ownerId) return false;
+  if (ownerType === "project") return doc.ownerType === "project" && doc.projectId === ownerId && !doc.groupId;
+  if (ownerType === "group") return ["group", "class"].includes(doc.ownerType) && doc.groupId === ownerId;
+  return doc.ownerType === ownerType && (doc.ownerId === ownerId || doc.projectId === ownerId || doc.groupId === ownerId);
+}
+
+function selectDocumentFiles(payload) {
+  const [ownerType, ownerId] = String(payload || "").split(":");
+  if (!documentInput) return notify("Загрузка документов недоступна.");
+  if (!documentTargetExists(ownerType, ownerId)) return notify("Раздел документов не найден.");
+  state.currentDocumentTarget = { ownerType, ownerId };
+  documentInput.value = "";
+  documentInput.click();
+}
+
+async function handleDocumentInput(event) {
+  const files = Array.from(event.target.files || []);
+  const target = state.currentDocumentTarget;
+  event.target.value = "";
+  state.currentDocumentTarget = null;
+  if (!files.length || !target) return;
+  let saved = 0;
+  let skipped = 0;
+  for (const file of files) {
+    if (!fileLooksDocument(file)) {
+      skipped += 1;
+      continue;
+    }
+    const record = await createDocumentRecord(file, target);
+    await put("documents", record);
+    saved += 1;
+  }
+  await refreshData();
+  state.preserveScroll = true;
+  notify(saved ? `Документы сохранены: ${saved}${skipped ? `, пропущено: ${skipped}` : ""}.` : "Поддерживаются только PDF, DOC, DOCX, JPG, PNG и WEBP.");
+  render();
+}
+
+async function createDocumentRecord(file, target) {
+  const time = now();
+  const operatorId = currentOperatorIdForAction();
+  const ids = documentOwnerIds(target.ownerType, target.ownerId);
+  const fileName = safeFileName(file.name || `document.${documentExtensionFromFile(file) || "pdf"}`);
+  const record = {
+    id: uid("document"),
+    ownerType: target.ownerType,
+    ownerId: target.ownerId,
+    projectId: ids.projectId,
+    groupId: ids.groupId,
+    fileName,
+    originalFileName: file.name || fileName,
+    mimeType: file.type || documentMimeType(fileName),
+    size: file.size || 0,
+    addedAt: time,
+    addedBy: operatorId,
+    createdAt: time,
+    createdBy: operatorId,
+    updatedAt: time,
+    updatedBy: operatorId,
+    storageMode: "indexeddb",
+    blob: file
+  };
+  return persistDocumentFile(record, file);
+}
+
+async function persistDocumentFile(record, file) {
+  const adapter = window.VakhaStudio?.documents;
+  const desktopPath = desktopDocumentPath(record);
+  if (adapter?.save) {
+    try {
+      const result = await adapter.save({ ...record, desktopPath }, file);
+      return {
+        ...record,
+        blob: result?.keepIndexedDbBlob ? file : undefined,
+        path: result?.path || desktopPath,
+        desktopPath,
+        storageMode: "filesystem"
+      };
+    } catch {
+      notify("Desktop-хранилище недоступно, документ сохранен в IndexedDB.");
+    }
+  }
+  return { ...record, desktopPath };
+}
+
+async function showDocumentPreview(documentId) {
+  const doc = documentById(documentId);
+  if (!doc) return notify("Документ не найден.");
+  const blob = await documentBlob(doc);
+  const preview = documentPreviewKind(doc);
+  const url = blob && preview ? URL.createObjectURL(blob) : "";
+  document.querySelector(".document-preview-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop document-preview-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel document-preview-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(doc.fileName || "Документ")}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(doc.fileName || "Документ")}</h2>
+          <p class="muted">${escapeHtml(formatDocumentMeta(doc))}</p>
+        </div>
+        <button class="icon-button" data-close-document-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      ${documentPreviewHtml({ doc, preview, url, hasBlob: Boolean(blob) })}
+      <div class="toolbar">
+        <button class="secondary-button" data-download-document="${doc.id}" type="button">Скачать</button>
+        <button class="danger-button" data-delete-document="${doc.id}" type="button">Удалить</button>
+      </div>
+    </section>
+  `;
+  const close = () => {
+    if (url) URL.revokeObjectURL(url);
+    panel.remove();
+  };
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-document-preview]")) close();
+  });
+  panel.querySelector("[data-download-document]")?.addEventListener("click", () => downloadDocument(doc.id));
+  panel.querySelector("[data-delete-document]")?.addEventListener("click", async () => {
+    await deleteDocument(doc.id);
+    close();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+function documentPreviewHtml({ doc, preview, url, hasBlob }) {
+  if (preview === "image" && url) return `<img class="document-preview-media" src="${escapeAttr(url)}" alt="${escapeAttr(doc.fileName)}" />`;
+  if (preview === "pdf" && url) return `<iframe class="document-preview-frame" src="${escapeAttr(url)}" title="${escapeAttr(doc.fileName)}"></iframe>`;
+  const message = hasBlob
+    ? "Для этого формата доступно скачивание, встроенный preview не поддерживается."
+    : "Файл хранится во внешнем filesystem. Preview станет доступен, когда desktop-адаптер вернет файл приложению.";
+  return `<div class="document-preview-empty"><strong>${escapeHtml(documentExtension(doc).toUpperCase() || "FILE")}</strong><span>${escapeHtml(message)}</span></div>`;
+}
+
+async function downloadDocument(documentId) {
+  const doc = documentById(documentId);
+  if (!doc) return notify("Документ не найден.");
+  const blob = await documentBlob(doc);
+  if (!blob) return notify("Файл недоступен для скачивания.");
+  downloadBlob(blob, doc.fileName || "document");
+}
+
+async function deleteDocument(documentId) {
+  const doc = documentById(documentId);
+  if (!doc) return;
+  if (!confirm(`Удалить документ "${doc.fileName || "Документ"}"?`)) return;
+  const adapter = window.VakhaStudio?.documents;
+  if (adapter?.delete && doc.storageMode === "filesystem") {
+    await adapter.delete(doc).catch(() => {});
+  }
+  await del("documents", documentId);
+  await refreshData();
+  document.querySelector(".document-preview-backdrop")?.remove();
+  state.preserveScroll = true;
+  notify("Документ удален.");
+  render();
+}
+
+function documentById(documentId) {
+  return (state.data.documents || []).find((doc) => doc.id === documentId);
+}
+
+async function documentBlob(doc) {
+  if (doc?.blob) return doc.blob;
+  const adapter = window.VakhaStudio?.documents;
+  if (adapter?.read) {
+    try {
+      const result = await adapter.read(doc);
+      if (result instanceof Blob) return result;
+      if (result instanceof ArrayBuffer || ArrayBuffer.isView(result)) return new Blob([result], { type: doc.mimeType || documentMimeType(doc.fileName) });
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function documentTargetExists(ownerType, ownerId) {
+  if (ownerType === "project") return Boolean(projectById(ownerId));
+  if (ownerType === "group") return Boolean(classById(ownerId));
+  return false;
+}
+
+function documentOwnerIds(ownerType, ownerId) {
+  if (ownerType === "project") return { projectId: ownerId, groupId: "" };
+  if (ownerType === "group") {
+    const klass = classById(ownerId);
+    return { projectId: klass?.projectId || "", groupId: ownerId };
+  }
+  return { projectId: "", groupId: "" };
+}
+
+function desktopDocumentPath(doc) {
+  const project = projectById(doc.projectId);
+  const group = classById(doc.groupId);
+  const projectName = safePath(project?.name || doc.projectId || "Project");
+  const prefix = group ? `${safePath(group.name)}_` : "";
+  return `/VakhaStudio/Projects/${projectName}/Documents/${prefix}${safeFileName(doc.fileName || "document")}`;
+}
+
+function fileLooksDocument(file) {
+  const ext = documentExtensionFromFile(file);
+  return DOCUMENT_ACCEPTED_EXTENSIONS.includes(ext) || DOCUMENT_ACCEPTED_TYPES.includes(file?.type || "");
+}
+
+function documentPreviewKind(doc) {
+  const ext = documentExtension(doc);
+  const mime = doc.mimeType || documentMimeType(doc.fileName);
+  if (["jpg", "jpeg", "png", "webp"].includes(ext) || mime.startsWith("image/")) return "image";
+  if (ext === "pdf" || mime === "application/pdf") return "pdf";
+  return "";
+}
+
+function documentMimeType(fileName) {
+  const ext = String(fileName || "").split(".").pop()?.toLowerCase() || "";
+  if (ext === "pdf") return "application/pdf";
+  if (ext === "doc") return "application/msword";
+  if (ext === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  return "application/octet-stream";
+}
+
+function documentExtension(doc) {
+  return String(doc?.fileName || doc?.originalFileName || "").split(".").pop()?.toLowerCase() || "";
+}
+
+function documentExtensionFromFile(file) {
+  return String(file?.name || "").split(".").pop()?.toLowerCase() || "";
+}
+
+function formatDocumentMeta(doc) {
+  const date = formatActivityDate(doc.addedAt || doc.createdAt);
+  const size = formatFileSize(doc.size);
+  const author = operatorDisplayName(doc.addedBy || doc.createdBy);
+  return [date, size, author].filter(Boolean).join(" · ");
+}
+
+function formatFileSize(size) {
+  const bytes = Number(size || 0);
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} КБ`;
+  return `${(bytes / 1024 / 1024).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} МБ`;
+}
+
 function studentReferenceEntries(studentId, taskType = "") {
   const student = studentById(studentId);
   const order = orderByStudent(studentId);
@@ -4080,7 +4427,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
             </div>
           </article>
           <article class="panel grid">
-            <div class="card-header"><h3 class="card-title">Референс услуги</h3>${reference?.isVideo ? '<span class="status-pill processing">Видео</span>' : ""}</div>
+            <div class="card-header"><h3 class="card-title">Референс услуги</h3>${reference?.isVideo ? '<span class="status-pill in-progress">Видео</span>' : ""}</div>
             ${referenceUrl ? (reference.isVideo ? `<video class="montage-preview" src="${referenceUrl}" controls playsinline></video>` : `<img class="montage-preview" src="${referenceUrl}" alt="${escapeAttr(reference.name || serviceName(service))}" />`) : '<div class="empty">Референс не добавлен</div>'}
             <div class="toolbar">
               ${referenceUrl ? `<button class="secondary-button compact" data-preview-url="${escapeAttr(referenceUrl)}" data-preview-title="${escapeAttr(reference.name || serviceName(service) || "Референс")}" data-preview-video="${reference.isVideo ? "true" : "false"}" type="button">Открыть</button><button class="secondary-button compact" data-download-url="${escapeAttr(referenceUrl)}" data-download-name="${escapeAttr(reference.name || "reference")}" type="button">Скачать</button>` : ""}
@@ -4424,10 +4771,13 @@ async function markFinalWorksPrintedForClass(classId) {
 
 async function markStudentOrderReadyAfterFinalWork(studentId) {
   const student = studentById(studentId);
-  if (!student || currentOrderStatus(student) === "delivered") return;
+  if (!student) return;
   const order = orderByStudent(studentId);
-  await put("orders", stampUpdated({ ...order, status: "ready" }));
-  await put("students", stampUpdated({ ...student, orderStatus: "ready" }));
+  const manualStatus = manualStudentStatus(student);
+  if (!manualStatus && (order.status || student.orderStatus || student.status)) {
+    await put("orders", stampUpdated({ ...order, status: "" }));
+    await put("students", stampUpdated({ ...student, orderStatus: "", status: "" }));
+  }
 }
 
 window.markFinalWorksPrintedFromPrintWindow = markFinalWorksPrinted;
@@ -4528,7 +4878,7 @@ async function attachAlbumMediaToOwner(target, media) {
     if (!student) return;
     const patch = isVideo
       ? { videoMediaId: media.id }
-      : { portraitMediaId: media.id, status: student.status === "not_shot" ? "shot" : student.status };
+      : { portraitMediaId: media.id };
     await put("albumStudents", { ...student, ...patch });
   }
   if (target.ownerType === "group") {
@@ -4679,9 +5029,9 @@ async function togglePayment(studentId) {
 async function resetOrder(studentId) {
   const order = orderByStudent(studentId);
   order.items = order.items.map((item) => ({ ...item, status: "pending", fileIds: [] }));
-  order.status = "not_started";
+  order.status = "";
   const student = studentById(studentId);
-  if (student) await put("students", stampUpdated({ ...student, orderStatus: "not_started" }));
+  if (student) await put("students", stampUpdated({ ...student, orderStatus: "", status: "" }));
   await put("orders", stampUpdated(order));
   await refreshData();
   state.preserveScroll = true;
@@ -4689,19 +5039,19 @@ async function resetOrder(studentId) {
 }
 
 async function saveOrderWithAutoStatus(studentId, order) {
-  const done = order.items.length > 0 && order.items.every((item) => item.status === "done");
-  const nextStatus = done ? "ready" : (order.status === "delivered" ? "delivered" : "processing");
-  await put("orders", stampUpdated({ ...order, status: nextStatus }));
   const student = studentById(studentId);
-  if (student && currentOrderStatus(student) !== "delivered") await put("students", stampUpdated({ ...student, orderStatus: nextStatus }));
+  const manualStatus = student ? manualStudentStatus(student) : "";
+  await put("orders", stampUpdated({ ...order, status: manualStatus }));
+  if (student) await put("students", stampUpdated({ ...student, orderStatus: manualStatus, status: manualStatus }));
 }
 
 async function updateOrderStatus(studentId, orderStatus) {
   const student = studentById(studentId);
-  if (!student || !ORDER_STATUSES[orderStatus]) return;
+  if (!student) return;
+  const manualStatus = STUDENT_MANUAL_STATUS_KEYS.includes(orderStatus) ? orderStatus : "";
   const order = orderByStudent(studentId);
-  await put("students", stampUpdated({ ...student, orderStatus }));
-  await put("orders", stampUpdated({ ...order, status: orderStatus }));
+  await put("students", stampUpdated({ ...student, orderStatus: manualStatus, status: manualStatus }));
+  await put("orders", stampUpdated({ ...order, status: manualStatus }));
   await refreshData();
   state.preserveScroll = true;
   renderStudent();
@@ -4840,8 +5190,8 @@ async function createStudentFromMissingQr(qrId) {
     catalogId: selectedCatalogId,
     catalogIds: selectedCatalogIds,
     paymentStatus: "unpaid",
-    orderStatus: "not_started",
-    status: "not_started"
+    orderStatus: "",
+    status: ""
   });
   await put("students", student);
   await put("orders", stampCreated({
@@ -4849,7 +5199,7 @@ async function createStudentFromMissingQr(qrId) {
     studentId: qrId,
     catalogId: selectedCatalogId,
     catalogIds: selectedCatalogIds,
-    status: "not_started",
+    status: "",
     items: orderItemsFromCatalogs(selectedCatalogIds)
   }));
   await refreshData();
@@ -6510,6 +6860,7 @@ function buildTransferData(exportType, scope = {}) {
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
       media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
       finalWorks: state.data.finalWorks.filter((work) => students.some((student) => student.id === work.studentId)),
+      documents: documentsForProjectTransfer(project.id, classIds),
       settings: state.data.settings,
       checklistTemplates: state.data.templates
     });
@@ -6529,6 +6880,7 @@ function buildTransferData(exportType, scope = {}) {
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
       media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
       finalWorks: state.data.finalWorks.filter((work) => students.some((student) => student.id === work.studentId)),
+      documents: (state.data.documents || []).filter((doc) => doc.groupId === klass.id),
       settings: state.data.settings,
       checklistTemplates: state.data.templates
     });
@@ -6560,8 +6912,16 @@ function buildTransferData(exportType, scope = {}) {
     orders: state.data.orders,
     media: state.data.media,
     finalWorks: state.data.finalWorks,
+    documents: state.data.documents,
     settings: state.data.settings,
     checklistTemplates: state.data.templates
+  });
+}
+
+function documentsForProjectTransfer(projectId, classIds = new Set()) {
+  return (state.data.documents || []).filter((doc) => {
+    if (doc.projectId !== projectId) return false;
+    return !doc.groupId || classIds.has(doc.groupId);
   });
 }
 
@@ -6576,6 +6936,7 @@ function emptyTransferData() {
     orders: [],
     media: [],
     finalWorks: [],
+    documents: [],
     tasks: [],
     settings: [],
     statuses: [],
@@ -6593,7 +6954,7 @@ function fillTransferData(target, patch) {
 }
 
 function withTransferAliases(dataKey, record) {
-  const next = dataKey === "media" ? { ...record } : clonePlainRecord(record);
+  const next = dataKey === "media" || dataKey === "documents" ? { ...record } : clonePlainRecord(record);
   if (dataKey === "operators") next.operatorId = next.operatorId || next.id;
   if (dataKey === "operatorEvents") next.eventId = next.eventId || next.id;
   if (dataKey === "projects") next.projectId = next.projectId || next.id;
@@ -6603,6 +6964,7 @@ function withTransferAliases(dataKey, record) {
   if (dataKey === "orders") next.orderId = next.orderId || next.id;
   if (dataKey === "media") next.mediaId = next.mediaId || next.id;
   if (dataKey === "finalWorks") next.finalWorkId = next.finalWorkId || next.id;
+  if (dataKey === "documents") next.documentId = next.documentId || next.id;
   return next;
 }
 
@@ -6642,6 +7004,14 @@ async function collectTransferMediaFiles(data) {
     taken.add(path);
     files.push({ path, data: new Uint8Array(await item.blob.arrayBuffer()) });
   }
+  for (const item of data.documents || []) {
+    const blob = item.blob || await documentBlob(item);
+    if (!blob) continue;
+    const path = `documents/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
+    if (taken.has(path)) continue;
+    taken.add(path);
+    files.push({ path, data: new Uint8Array(await blob.arrayBuffer()) });
+  }
   return files;
 }
 
@@ -6674,6 +7044,9 @@ function stripTransferMediaDataUrls(data) {
   (next.media || []).forEach((item) => {
     delete item.blob;
   });
+  (next.documents || []).forEach((item) => {
+    delete item.blob;
+  });
   return next;
 }
 
@@ -6698,6 +7071,14 @@ function hydrateTransferMediaData(data, entries) {
       return normalized.endsWith(`media/student_files/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName}`);
     });
     item.blob = new Blob(entry ? [entry.data] : [], { type: item.type === "video" ? "video/mp4" : "image/jpeg" });
+  });
+  (data.documents || []).forEach((item) => {
+    const entry = entries.find((entry) => {
+      const normalized = String(entry.path || "").replace(/\\/g, "/");
+      return normalized.endsWith(`documents/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName}`);
+    });
+    item.blob = new Blob(entry ? [entry.data] : [], { type: item.mimeType || documentMimeType(item.fileName) });
+    item.storageMode = "indexeddb";
   });
   return data;
 }
@@ -6782,6 +7163,7 @@ function normalizeTransferRecordId(dataKey, record) {
     orders: "orderId",
     media: "mediaId",
     finalWorks: "finalWorkId",
+    documents: "documentId",
     settings: "settingId",
     checklistTemplates: "templateId"
   }[dataKey];
@@ -6834,6 +7216,7 @@ function transferRecordLabel(dataKey, record) {
   if (dataKey === "services") return record.name || record.title || record.id;
   if (dataKey === "orders") return record.studentId || record.id;
   if (dataKey === "media") return record.fileName || record.id;
+  if (dataKey === "documents") return record.fileName || record.name || record.id;
   if (dataKey === "checklistTemplates") return record.name || record.id;
   return record.title || record.name || record.id;
 }
@@ -6859,6 +7242,7 @@ function showTransferImportPreview(draft) {
         ${transferPreviewStat("Сотрудников", draft.stats.added.operators, draft.stats.updated.operators)}
         ${transferPreviewStat("Медиа", draft.stats.added.media, draft.stats.updated.media)}
         ${transferPreviewStat("Готовых работ", draft.stats.added.finalWorks, draft.stats.updated.finalWorks)}
+        ${transferPreviewStat("Документов", draft.stats.added.documents, draft.stats.updated.documents)}
       </div>
       <div class="import-draft-list">
         <div class="import-draft-row ${draft.stats.conflicts.length ? "warning" : ""}"><strong>Конфликты</strong><span>${draft.stats.conflicts.length ? "есть" : "нет"}</span></div>
@@ -7021,7 +7405,7 @@ async function reassignOperatorReferences(oldId, newId) {
 }
 
 function replaceOperatorReference(record, oldId, newId) {
-  const fields = ["createdBy", "updatedBy", "importedBy", "capturedBy", "exportedBy", "completedBy", "operatorId"];
+  const fields = ["createdBy", "updatedBy", "addedBy", "importedBy", "capturedBy", "exportedBy", "completedBy", "operatorId"];
   let changed = false;
   const next = { ...record };
   fields.forEach((field) => {
@@ -7067,6 +7451,12 @@ function remapTransferRecord(dataKey, record, idMaps) {
     }
   }
   if (dataKey === "media" && idMaps.students?.has(next.studentId)) next.studentId = idMaps.students.get(next.studentId);
+  if (dataKey === "documents") {
+    if (idMaps.projects?.has(next.projectId)) next.projectId = idMaps.projects.get(next.projectId);
+    if (idMaps.classes?.has(next.groupId)) next.groupId = idMaps.classes.get(next.groupId);
+    if (next.ownerType === "project" && idMaps.projects?.has(next.ownerId)) next.ownerId = idMaps.projects.get(next.ownerId);
+    if (["group", "class"].includes(next.ownerType) && idMaps.classes?.has(next.ownerId)) next.ownerId = idMaps.classes.get(next.ownerId);
+  }
   if (dataKey === "finalWorks") {
     if (idMaps.projects?.has(next.projectId)) next.projectId = idMaps.projects.get(next.projectId);
     if (idMaps.classes?.has(next.groupId)) next.groupId = idMaps.classes.get(next.groupId);
@@ -7081,7 +7471,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
 }
 
 function appRecordFromTransfer(dataKey, record) {
-  const next = dataKey === "media" ? { ...record } : clonePlainRecord(record);
+  const next = dataKey === "media" || dataKey === "documents" ? { ...record } : clonePlainRecord(record);
   if (dataKey === "projects") delete next.projectId;
   if (dataKey === "operators") delete next.operatorId;
   if (dataKey === "operatorEvents") delete next.eventId;
@@ -7091,6 +7481,7 @@ function appRecordFromTransfer(dataKey, record) {
   if (dataKey === "orders") delete next.orderId;
   if (dataKey === "media") delete next.mediaId;
   if (dataKey === "finalWorks") delete next.finalWorkId;
+  if (dataKey === "documents") delete next.documentId;
   if (dataKey === "settings") delete next.settingId;
   if (dataKey === "checklistTemplates") delete next.templateId;
   return next;
@@ -7114,6 +7505,7 @@ function transferIdPrefix(dataKey) {
     orders: "order",
     media: "media",
     finalWorks: "final",
+    documents: "document",
     settings: "setting",
     checklistTemplates: "template"
   }[dataKey] || "copy";
@@ -7200,7 +7592,7 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
         <td>${escapeHtml(klass.name)}</td>
         <td>${escapeHtml(albumTypeLabel(klass.albumType))}</td>
         <td>${klass.pagesCount || 0}</td>
-        <td>${escapeHtml(albumClassStatusLabel(klass.status))}</td>
+        <td>${escapeHtml(albumClassStatusLabel(calculateAlbumClassStatus(klass)))}</td>
         <td>${stats.students}</td>
         <td>${stats.portraits}/${stats.students}</td>
         <td>${stats.videos}</td>
@@ -7216,7 +7608,7 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
       <td>${escapeHtml(`${student.lastName} ${student.firstName}`.trim())}</td>
       <td>${student.portraitMediaId ? "Да" : "Нет"}</td>
       <td>${student.videoMediaId ? "Да" : "Нет"}</td>
-      <td>${escapeHtml(albumStudentStatusLabel(student.status))}</td>
+      <td>${escapeHtml(albumStudentStatusLabel(calculateAlbumStudentStatus(student)))}</td>
       <td>${escapeHtml(student.comment || "")}</td>
     </tr>
   `).join("") : "";
@@ -7339,7 +7731,7 @@ async function buildFullExportFiles() {
   };
   STORE_NAMES.forEach((store) => {
     meta[store] = state.data[store].map((record) => {
-      if (store === "media" || store === "albumMedia") {
+      if (store === "media" || store === "albumMedia" || store === "documents") {
         const { blob, ...rest } = record;
         return rest;
       }
@@ -7354,6 +7746,11 @@ async function buildFullExportFiles() {
   for (const item of state.data.albumMedia) {
     if (!item.blob) continue;
     files.push({ path: `album_media/${item.id}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
+  }
+  for (const item of state.data.documents || []) {
+    const blob = item.blob || await documentBlob(item);
+    if (!blob) continue;
+    files.push({ path: `documents/${item.id}/${item.fileName}`, data: new Uint8Array(await blob.arrayBuffer()) });
   }
   for (const item of state.data.catalog) {
     if (!servicePreviewImageDataUrl(item)) continue;
@@ -7482,7 +7879,7 @@ async function importSettingsMeta(meta) {
 
 async function importFullMeta(meta, entries) {
   for (const store of STORE_NAMES) {
-    if (store === "media" || store === "albumMedia") continue;
+    if (store === "media" || store === "albumMedia" || store === "documents") continue;
     for (const record of meta[store] || []) await put(store, record);
   }
   for (const record of meta.media || []) {
@@ -7495,6 +7892,11 @@ async function importFullMeta(meta, entries) {
     const blob = new Blob(entry ? [entry.data] : [], { type: albumMimeType(record) });
     await put("albumMedia", { ...record, blob });
   }
+  for (const record of meta.documents || []) {
+    const entry = entries.find((item) => item.path.endsWith(`documents/${record.id}/${record.fileName}`) || item.path.endsWith(`/${record.fileName}`));
+    const blob = new Blob(entry ? [entry.data] : [], { type: record.mimeType || documentMimeType(record.fileName) });
+    await put("documents", { ...record, storageMode: "indexeddb", blob });
+  }
 }
 
 async function exportAlbumClassZip(classId) {
@@ -7504,9 +7906,27 @@ async function exportAlbumClassZip(classId) {
     const files = await buildAlbumExportFiles(klass);
     const blob = createZip(files);
     downloadBlob(blob, `${safeFileName(`${klass.name}_album_export`)}.zip`);
+    await markAlbumStudentsExportedToDesigner(classId);
     await recordOperatorEvent("export", { targetType: "album_class", targetId: classId });
+    await refreshData();
     notify("ZIP альбома экспортирован.");
+    if (state.albumClassId === classId) renderAlbumClass();
   });
+}
+
+async function markAlbumStudentsExportedToDesigner(classId) {
+  const time = now();
+  const operatorId = currentOperatorIdForAction({ warn: false });
+  for (const student of albumStudentsByClass(classId).filter(albumStudentHasPortrait)) {
+    await put("albumStudents", {
+      ...student,
+      exportedToDesigner: true,
+      exportedToDesignerAt: student.exportedToDesignerAt || time,
+      exportedBy: student.exportedBy || operatorId,
+      updatedAt: time,
+      updatedBy: operatorId
+    });
+  }
 }
 
 async function buildAlbumExportFiles(klass) {
@@ -7594,7 +8014,7 @@ async function handleAlbumZipInput(event) {
     }
     const meta = JSON.parse(new TextDecoder().decode(dataEntry.data));
     const project = meta.project || { id: uid("album_project"), schoolName: meta.classInfo?.schoolName || "Импортированный альбом", createdAt: now() };
-    const klass = meta.klass || { id: uid("album_class"), albumProjectId: project.id, name: meta.classInfo?.className || "Группа", albumType: "standard", pagesCount: 0, status: "not_started", createdAt: now() };
+    const klass = meta.klass || { id: uid("album_class"), albumProjectId: project.id, name: meta.classInfo?.className || "Группа", albumType: "standard", pagesCount: 0, status: "", createdAt: now() };
     await put("albumProjects", project);
     await put("albumClasses", { ...klass, albumProjectId: project.id });
     for (const student of meta.students || []) await put("albumStudents", student);
@@ -7985,14 +8405,64 @@ function albumTeachersByClass(classId) {
   return state.data.albumTeachers.filter((teacher) => teacher.albumClassId === classId);
 }
 
+function calculateAlbumClassStatus(klass) {
+  if (!klass) return "not_started";
+  const manual = manualAlbumClassStatus(klass);
+  if (manual) return manual;
+  const students = albumStudentsByClass(klass.id);
+  if (!students.length) return "not_started";
+  const ownerIds = new Set([
+    ...students.map((student) => student.id),
+    ...albumGroupsByClass(klass.id).map((group) => group.id),
+    ...albumTeachersByClass(klass.id).map((teacher) => teacher.id)
+  ]);
+  const hasMedia = state.data.albumMedia.some((media) => ownerIds.has(media.ownerId))
+    || students.some(albumStudentHasMedia)
+    || albumGroupsByClass(klass.id).some((group) => group.mediaId || group.videoMediaId)
+    || albumTeachersByClass(klass.id).some((teacher) => teacher.portraitMediaId || teacher.videoMediaId);
+  if (!hasMedia) return "not_started";
+  return students.every(albumStudentHasPortrait) ? "shot" : "shooting";
+}
+
+function manualAlbumClassStatus(klass) {
+  const status = normalizeAlbumClassStatus(klass?.status, "");
+  return ALBUM_CLASS_MANUAL_STATUS_KEYS.includes(status) ? status : "";
+}
+
+function calculateAlbumStudentStatus(student) {
+  if (!student) return "not_shot";
+  const manual = normalizeAlbumStudentStatus(student.status, "");
+  if (manual === "ready") return "ready";
+  if (student.addedToLayout || student.exportedToDesigner || student.exportedToDesignerAt || student.designerExportedAt) return "ready";
+  if (manual === "processed") return "processed";
+  if (albumStudentHasFinal(student)) return "processed";
+  if (manual === "shot") return "shot";
+  return albumStudentHasMedia(student) ? "shot" : "not_shot";
+}
+
+function albumStudentHasMedia(student) {
+  return Boolean(student?.portraitMediaId || student?.videoMediaId || albumMediaByOwner("student", student?.id).length);
+}
+
+function albumStudentHasPortrait(student) {
+  return Boolean(student?.portraitMediaId || albumMediaByOwner("student", student?.id).some((media) => media.fileType === "image"));
+}
+
+function albumStudentHasFinal(student) {
+  const finalIds = [student?.finalPortraitMediaId, student?.retouchMediaId, student?.finalExportMediaId, student?.finalMediaId].filter(Boolean);
+  if (finalIds.length) return true;
+  return albumMediaByOwner("student", student?.id).some((media) => media.role === "final" || media.kind === "final" || media.isFinalResult);
+}
+
 function albumClassStats(classId) {
   const students = albumStudentsByClass(classId);
   const groups = albumGroupsByClass(classId);
   const teachers = albumTeachersByClass(classId);
-  const portraits = students.filter((student) => student.portraitMediaId).length;
+  const portraits = students.filter(albumStudentHasPortrait).length;
   const videos = students.filter((student) => student.videoMediaId).length;
-  const ready = students.filter((student) => student.status === "ready").length;
-  const readyPercent = students.length ? Math.round(((portraits + ready) / (students.length * 2)) * 100) : 0;
+  const ready = students.filter((student) => calculateAlbumStudentStatus(student) === "ready").length;
+  const processed = students.filter((student) => ["processed", "ready"].includes(calculateAlbumStudentStatus(student))).length;
+  const readyPercent = students.length ? Math.round(((portraits + processed + ready) / (students.length * 3)) * 100) : 0;
   return {
     students: students.length,
     portraits,
@@ -8008,11 +8478,13 @@ function albumTypeLabel(type) {
 }
 
 function albumClassStatusLabel(status) {
-  return ALBUM_CLASS_STATUSES[status] || ALBUM_CLASS_STATUSES.not_started;
+  const key = normalizeAlbumClassStatus(status, "not_started");
+  return ALBUM_CLASS_STATUSES[key] || ALBUM_CLASS_STATUSES.not_started;
 }
 
 function albumStudentStatusLabel(status) {
-  return ALBUM_STUDENT_STATUSES[status] || ALBUM_STUDENT_STATUSES.not_shot;
+  const key = normalizeAlbumStudentStatus(status, "not_shot");
+  return ALBUM_STUDENT_STATUSES[key] || ALBUM_STUDENT_STATUSES.not_shot;
 }
 
 function albumGroupTypeLabel(type) {
@@ -8020,8 +8492,8 @@ function albumGroupTypeLabel(type) {
 }
 
 function albumStatusClass(status) {
-  if (["ready", "printing", "delivered"].includes(status)) return "paid";
-  if (["shot", "shooting", "editing"].includes(status)) return "in-progress";
+  if (["shot", "processed", "ready", "print_ready", "printed", "delivered"].includes(status)) return "paid";
+  if (["shooting", "layout"].includes(status)) return "in-progress";
   return "unpaid";
 }
 
@@ -8033,12 +8505,18 @@ function normalizeAlbumType(value, fallback = "standard") {
 
 function normalizeAlbumClassStatus(value, fallback = "not_started") {
   const text = String(value || "").trim().toLowerCase();
-  return ALBUM_CLASS_STATUSES[text] ? text : fallback;
+  if (text === "auto") return "";
+  const mapped = LEGACY_ALBUM_CLASS_STATUS_MAP[text] || text;
+  const byLabel = Object.entries(ALBUM_CLASS_STATUSES).find(([key, label]) => key === mapped || label.toLowerCase() === text);
+  return byLabel?.[0] || fallback || "";
 }
 
 function normalizeAlbumStudentStatus(value, fallback = "not_shot") {
   const text = String(value || "").trim().toLowerCase();
-  return ALBUM_STUDENT_STATUSES[text] ? text : fallback;
+  if (text === "auto") return "";
+  const mapped = LEGACY_ALBUM_STUDENT_STATUS_MAP[text] || text;
+  const byLabel = Object.entries(ALBUM_STUDENT_STATUSES).find(([key, label]) => key === mapped || label.toLowerCase() === text);
+  return byLabel?.[0] || fallback || "";
 }
 
 function normalizeAlbumGroupType(value, fallback = "custom") {
@@ -8278,10 +8756,10 @@ function matchesFilter(student) {
   if (state.filter === "all") return true;
   if (state.filter === "paid") return student.paymentStatus === "paid";
   if (state.filter === "unpaid") return student.paymentStatus !== "paid";
-  if (state.filter === "todo") return !completion(student.id).done;
-  if (state.filter === "done") return completion(student.id).done;
-  if (state.filter === "processing") return mediaByStudent(student.id).length > 0 && !completion(student.id).done;
-  if (state.filter === "ready") return completion(student.id).done;
+  if (state.filter === "todo") return ["not_started", "shooting"].includes(calculateStudentStatus(student));
+  if (state.filter === "done") return ["shot", "processed", "printed", "delivered"].includes(calculateStudentStatus(student));
+  if (state.filter === "processing") return calculateStudentStatus(student) === "shooting";
+  if (state.filter === "ready") return ["processed", "printed", "delivered"].includes(calculateStudentStatus(student));
   return true;
 }
 
@@ -8294,6 +8772,60 @@ function completion(studentId) {
 
 function statusLabel(student) {
   return orderStatusLabel(student).toLowerCase();
+}
+
+function calculateStudentStatus(student) {
+  if (!student) return "not_started";
+  const manual = manualStudentStatus(student);
+  if (manual) return manual;
+  const finalState = studentFinalState(student.id);
+  if (finalState === "delivered") return "delivered";
+  if (finalState === "printed") return "printed";
+  if (finalState === "processed") return "processed";
+  const checklist = studentChecklistState(student.id);
+  if (checklist.requiredComplete) return "shot";
+  if (checklist.hasProgress) return "shooting";
+  return "not_started";
+}
+
+function manualStudentStatus(student) {
+  if (!student) return "";
+  const order = state.data.orders.find((entry) => entry.studentId === student.id);
+  const values = [order?.status, student.orderStatus, student.status].map(normalizeStudentStatusKey);
+  return values.find((status) => STUDENT_MANUAL_STATUS_KEYS.includes(status)) || "";
+}
+
+function normalizeStudentStatusKey(value) {
+  const status = String(value || "").trim().toLowerCase();
+  return LEGACY_STUDENT_STATUS_MAP[status] || (ORDER_STATUSES[status] ? status : "");
+}
+
+function studentFinalState(studentId) {
+  const works = finalWorksForStudent(studentId);
+  const finalMedia = mediaByStudent(studentId).filter((item) => item.type === "final_work" || item.orderType === "final_work" || item.isFinalResult);
+  if (!works.length && !finalMedia.length) return "";
+  if (works.length && works.every((work) => work.status === "delivered")) return "delivered";
+  if (works.length && works.every((work) => work.status === "printed" || work.status === "delivered")) return "printed";
+  return "processed";
+}
+
+function studentChecklistState(studentId) {
+  const order = orderByStudent(studentId);
+  const items = order.items || [];
+  const media = mediaByStudent(studentId).filter((item) => item.type !== "final_work" && item.orderType !== "final_work");
+  const mediaIds = new Set(media.map((item) => item.id));
+  const doneCount = items.filter((item) => item.status === "done").length;
+  const requiredComplete = items.length > 0 && items.every((item) => item.status === "done" && orderItemHasMedia(item, media, mediaIds));
+  return {
+    requiredComplete,
+    hasProgress: media.length > 0 || doneCount > 0
+  };
+}
+
+function orderItemHasMedia(item, media, mediaIds) {
+  const fileIds = Array.isArray(item.fileIds) ? item.fileIds : [];
+  if (fileIds.some((id) => mediaIds.has(id))) return true;
+  return media.some((entry) => entry.orderType === item.type);
 }
 
 function orderByStudent(studentId) {
@@ -8717,29 +9249,23 @@ function pluralizeRu(count, one, few, many) {
 }
 
 function statusDot(status) {
-  const colorClass = status === "paid" || status === "ready" || status === "delivered" ? "dot-green" : status === "processing" || status === "shooting" ? "dot-blue" : "dot-yellow";
+  const colorClass = status === "paid" || ["shot", "processed", "printed", "delivered"].includes(status) ? "dot-green" : status === "shooting" ? "dot-blue" : "dot-yellow";
   return `<span class="status-dot ${colorClass}"></span>`;
 }
 
 function currentOrderStatus(student) {
-  const order = orderByStudent(student.id);
-  if (order.status && ORDER_STATUSES[order.status]) return order.status;
-  if (student.orderStatus && ORDER_STATUSES[student.orderStatus]) return student.orderStatus;
-  const c = completion(student.id);
-  if (c.done) return "ready";
-  if (mediaByStudent(student.id).length) return "processing";
-  return "not_started";
+  return calculateStudentStatus(student);
 }
 
 function orderStatusLabel(studentOrStatus) {
-  const status = typeof studentOrStatus === "string" ? studentOrStatus : currentOrderStatus(studentOrStatus);
+  const status = typeof studentOrStatus === "string" ? normalizeStudentStatusKey(studentOrStatus) : currentOrderStatus(studentOrStatus);
   return ORDER_STATUSES[status] || ORDER_STATUSES.not_started;
 }
 
 function orderStatusClass(studentOrStatus) {
-  const status = typeof studentOrStatus === "string" ? studentOrStatus : currentOrderStatus(studentOrStatus);
-  if (status === "ready" || status === "delivered") return "paid";
-  if (status === "processing" || status === "shooting") return "in-progress";
+  const status = typeof studentOrStatus === "string" ? normalizeStudentStatusKey(studentOrStatus) : currentOrderStatus(studentOrStatus);
+  if (["shot", "processed", "printed", "delivered"].includes(status)) return "paid";
+  if (status === "shooting") return "in-progress";
   return "unpaid";
 }
 

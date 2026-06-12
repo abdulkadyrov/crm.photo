@@ -389,6 +389,93 @@ p {
   overflow: auto;
 }
 
+.document-section {
+  margin: 0 0 14px;
+}
+
+.document-list {
+  display: grid;
+  gap: 10px;
+}
+
+.document-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-strong);
+}
+
+.document-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.document-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.document-copy strong,
+.document-copy span {
+  overflow-wrap: anywhere;
+}
+
+.document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.document-preview-panel {
+  width: min(920px, calc(100vw - 24px));
+}
+
+.document-preview-media,
+.document-preview-frame {
+  width: 100%;
+  min-height: min(62dvh, 620px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-strong);
+  object-fit: contain;
+}
+
+.document-preview-frame {
+  background: #fff;
+}
+
+.document-preview-empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 220px;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--card-strong);
+  color: var(--muted);
+  text-align: center;
+}
+
+.document-preview-empty strong {
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
 .service-reference-summary {
   display: flex;
   flex-wrap: wrap;
@@ -2556,6 +2643,31 @@ p {
   .student-progress {
     max-width: none;
     margin-left: 0;
+  }
+
+  .document-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .document-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .document-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .document-actions .secondary-button,
+  .document-actions .danger-button {
+    width: 100%;
+    min-width: 0;
+    padding-right: 8px;
+    padding-left: 8px;
   }
 
   .student-card-grid {
