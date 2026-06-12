@@ -1481,7 +1481,8 @@ function renderStudent() {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
   const order = orderByStudent(student.id);
-  const media = mediaByStudent(student.id);
+  const media = mediaByStudent(student.id).filter((item) => !isFinalResultMedia(item));
+  const finalWorks = finalWorksForStudent(student.id);
   const finalStats = finalWorkStatsForStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
@@ -1538,6 +1539,15 @@ function renderStudent() {
             ${media.map(mediaTile).join("") || '<p class="muted">Фото и видео появятся здесь.</p>'}
           </div>
         </article>
+        <article class="panel final-results-panel">
+          <div class="card-header">
+            <h2 class="card-title">Готовые результаты</h2>
+            <span class="muted">${finalWorks.length ? `${finalWorks.length} ${pluralizeRu(finalWorks.length, "результат", "результата", "результатов")}` : "Пока нет"}</span>
+          </div>
+          <div class="final-results-grid">
+            ${finalWorks.map(finalResultCard).join("") || '<p class="muted">AI-результаты появятся здесь после монтажа.</p>'}
+          </div>
+        </article>
       </div>
       <aside class="panel grid">
         <h2 class="card-title">Заказ</h2>
@@ -1569,7 +1579,6 @@ function renderStudent() {
         </button>
         <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
         <button class="secondary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
-        <button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт готовых фото</button>
         ${finalStats.total && finalStats.printed < finalStats.total ? `<button class="secondary-button" data-mark-printed-student="${student.id}" type="button">Отметить как напечатано</button>` : ""}
         <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
         <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
@@ -1620,6 +1629,28 @@ function mediaTile(item) {
     ? `<video src="${url}" controls muted title="${escapeAttr(item.fileName)}"></video>`
     : `<button class="media-tile-button" data-view-media="${item.id}" type="button" title="${escapeAttr(item.fileName)}"><img src="${url}" alt="${escapeAttr(item.fileName)}" loading="lazy" /></button>`;
   return `<figure class="media-tile">${node}</figure>`;
+}
+
+function finalResultCard(work) {
+  const blob = finalWorkImageBlob(work);
+  const url = blob ? URL.createObjectURL(blob) : "";
+  const titleText = finalWorkTitle(work);
+  return `
+    <article class="final-result-card">
+      <button class="final-result-preview" data-open-final-work="${work.id}" type="button" aria-label="Посмотреть ${escapeAttr(titleText)}">
+        ${url ? `<img src="${url}" alt="${escapeAttr(titleText)}" loading="lazy" />` : '<span>Нет preview</span>'}
+      </button>
+      <div class="final-result-copy">
+        <strong>${escapeHtml(titleText)}</strong>
+        <span class="status-pill ${finalWorkStatusClass(work.status)}">${escapeHtml(finalWorkStatusLabel(work.status))}</span>
+      </div>
+      <div class="final-result-actions">
+        <button class="secondary-button compact" data-open-final-work="${work.id}" type="button">Посмотреть</button>
+        <button class="secondary-button compact" data-download-final-work="${work.id}" type="button">Скачать</button>
+        <button class="danger-button compact" data-delete-final-work="${work.id}" type="button">Удалить</button>
+      </div>
+    </article>
+  `;
 }
 
 function renderCatalog() {
@@ -2387,8 +2418,6 @@ function showSettingsDetail(section) {
         </select></label>
         <div class="transfer-button-row">
           <button class="primary-button" data-save-final-print-settings type="button">Сохранить настройки</button>
-          <button class="secondary-button" data-export-final-works="project:${state.projectId || state.data.projects[0]?.id || ""}" type="button">Экспорт проекта</button>
-          <button class="secondary-button" data-export-final-works="class:${state.classId || state.data.classes[0]?.id || ""}" type="button">Экспорт группы</button>
         </div>
       </article>`,
     transfer: `
@@ -2824,7 +2853,9 @@ function bindViewActions() {
   view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
-  view.querySelectorAll("[data-export-final-works]").forEach((node) => node.addEventListener("click", () => exportFinalWorksFromDataset(node.dataset.exportFinalWorks)));
+  view.querySelectorAll("[data-open-final-work]").forEach((node) => node.addEventListener("click", () => showFinalWorkViewer(node.dataset.openFinalWork)));
+  view.querySelectorAll("[data-download-final-work]").forEach((node) => node.addEventListener("click", () => downloadFinalWork(node.dataset.downloadFinalWork)));
+  view.querySelectorAll("[data-delete-final-work]").forEach((node) => node.addEventListener("click", () => deleteFinalWork(node.dataset.deleteFinalWork)));
   view.querySelectorAll("[data-mark-printed-student]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForStudent(node.dataset.markPrintedStudent)));
   view.querySelectorAll("[data-mark-printed-class]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForClass(node.dataset.markPrintedClass)));
   view.querySelectorAll("[data-view-media]").forEach((node) => node.addEventListener("click", (event) => {
@@ -4443,7 +4474,6 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
             <div class="card-header"><h3 class="card-title">Результат</h3><span class="muted">${works.length ? `Готовых работ: ${works.length}` : "Пока нет"}</span></div>
             <div class="toolbar">
               <button class="primary-button" data-add-final-work type="button"><span data-icon="plus"></span>Добавить результат</button>
-              ${works.length ? `<button class="secondary-button" data-export-final-works="student:${student.id}" type="button">Экспорт для печати</button>` : ""}
             </div>
           </article>
         </div>
@@ -4488,7 +4518,6 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   panel.querySelectorAll("[data-download-url]").forEach((node) => node.addEventListener("click", () => {
     downloadUrl(node.dataset.downloadUrl, node.dataset.downloadName || "reference");
   }));
-  panel.querySelectorAll("[data-export-final-works]").forEach((node) => node.addEventListener("click", () => exportFinalWorksFromDataset(node.dataset.exportFinalWorks)));
   document.body.append(panel);
   injectIcons();
 }
@@ -4503,57 +4532,28 @@ async function handleFinalWorkInput(event) {
   const service = catalogItemById(target.serviceId);
   const klass = classById(student?.classId);
   if (!student || !service || !klass) return notify("Не удалось сохранить результат.");
-  const existing = finalWorksForStudent(student.id).filter((work) => work.serviceId === service.id);
-  let replaceWork = null;
-  if (existing.length) {
-    const answer = prompt("По этой услуге уже есть готовая работа.\n1 - заменить результат\n2 - добавить ещё один вариант\n3 - отменить", "2");
-    if (answer === "3" || answer === null) return;
-    if (answer === "1") replaceWork = existing[existing.length - 1];
-    if (answer !== "1" && answer !== "2") return notify("Действие отменено.");
-  }
-  const mediaId = uid("media");
   const ext = extensionFor(file, "photo");
   const fileName = safeFileName(`${klass.name}_${student.lastName}_${student.firstName}_${serviceName(service)}_final.${ext}`);
-  await put("media", {
-    id: mediaId,
+  const work = createFinalWorkRecord({
+    projectId: klass.projectId,
+    groupId: klass.id,
     studentId: student.id,
-    type: "final_work",
-    fileName,
-    orderType: "final_work",
     serviceId: service.id,
-    createdBy: currentOperatorIdForAction(),
-    createdAt: now(),
-    blob: file
+    title: serviceName(service) || "Готовый результат",
+    fileName,
+    image: file,
+    sourceMediaId: target.sourceMediaId,
+    referenceMediaId: target.referenceMediaId
   });
-  if (replaceWork) {
-    const updatedWork = {
-      ...replaceWork,
-      sourceMediaId: target.sourceMediaId || replaceWork.sourceMediaId,
-      referenceMediaId: target.referenceMediaId || replaceWork.referenceMediaId,
-      resultMediaId: mediaId,
-      status: "ready"
-    };
-    updatedWork.printQrPayload = finalWorkCompactQrPayload(updatedWork);
-    await put("finalWorks", stampUpdated(updatedWork));
-  } else {
-    const work = createFinalWorkRecord({
-      projectId: klass.projectId,
-      groupId: klass.id,
-      studentId: student.id,
-      serviceId: service.id,
-      sourceMediaId: target.sourceMediaId,
-      referenceMediaId: target.referenceMediaId,
-      resultMediaId: mediaId
-    });
-    await put("finalWorks", work);
-  }
+  await put("finalWorks", work);
   state.currentFinalWork = null;
   await refreshData();
   await markStudentOrderReadyAfterFinalWork(student.id);
   await refreshData();
   notify("Готовая работа сохранена.");
   document.querySelector(".montage-backdrop")?.remove();
-  showMontagePanel(student.id, service.id, target.sourceMediaId);
+  state.preserveScroll = true;
+  render();
 }
 
 function montageReferenceForService(service) {
@@ -4574,9 +4574,12 @@ function createFinalWorkRecord(input) {
     groupId: input.groupId,
     studentId: input.studentId,
     serviceId: input.serviceId,
+    title: input.title || "Готовый результат",
+    fileName: input.fileName || "",
+    image: input.image || null,
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
-    resultMediaId: input.resultMediaId,
+    resultMediaId: input.resultMediaId || "",
     printQrPayload: finalWorkCompactQrPayload({ id }),
     status: "ready"
   });
@@ -4589,6 +4592,121 @@ function finalWorksForStudent(studentId) {
 function finalWorkStatsForStudent(studentId) {
   const works = finalWorksForStudent(studentId);
   return { total: works.length, printed: works.filter((work) => work.status === "printed" || work.status === "delivered").length };
+}
+
+function finalWorkById(workId) {
+  return state.data.finalWorks.find((work) => work.id === workId);
+}
+
+function finalWorkImageBlob(work) {
+  if (work?.image instanceof Blob) return work.image;
+  if (work?.blob instanceof Blob) return work.blob;
+  return mediaById(work?.resultMediaId)?.blob || null;
+}
+
+function finalWorkTitle(work) {
+  return work?.title || serviceName(catalogItemById(work?.serviceId)) || "Готовый результат";
+}
+
+function finalWorkFileName(work) {
+  const media = mediaById(work?.resultMediaId);
+  const ext = String(work?.fileName || media?.fileName || "").split(".").pop()?.toLowerCase() || "jpg";
+  const student = studentById(work?.studentId);
+  const service = finalWorkTitle(work);
+  return safeFileName(work?.fileName || media?.fileName || `${student?.lastName || "student"}_${student?.firstName || ""}_${service}.${ext}`);
+}
+
+function finalWorkStatusClass(status) {
+  if (status === "printed" || status === "delivered" || status === "ready") return "paid";
+  return "in-progress";
+}
+
+function isFinalResultMedia(item) {
+  return item?.type === "final_work" || item?.orderType === "final_work" || item?.isFinalResult;
+}
+
+async function showFinalWorkViewer(workId) {
+  const work = finalWorkById(workId);
+  if (!work) return notify("Готовый результат не найден.");
+  const blob = finalWorkImageBlob(work);
+  if (!blob) return notify("Изображение результата не найдено.");
+  const url = URL.createObjectURL(blob);
+  const titleText = finalWorkTitle(work);
+  document.querySelector(".final-work-viewer-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop final-work-viewer-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel final-work-viewer-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(titleText)}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(titleText)}</h2>
+          <p class="muted">${escapeHtml(finalWorkStatusLabel(work.status))}</p>
+        </div>
+        <button class="icon-button" data-close-final-work-viewer type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <img class="final-work-viewer-image" src="${escapeAttr(url)}" alt="${escapeAttr(titleText)}" />
+      <div class="toolbar">
+        <button class="secondary-button" data-download-final-work="${work.id}" type="button">Скачать</button>
+        <button class="secondary-button" data-print-final-work="${work.id}" type="button">Печать</button>
+        <button class="danger-button" data-delete-final-work="${work.id}" type="button">Удалить</button>
+      </div>
+    </section>
+  `;
+  const close = () => {
+    URL.revokeObjectURL(url);
+    panel.remove();
+  };
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-final-work-viewer]")) close();
+  });
+  panel.querySelector("[data-download-final-work]")?.addEventListener("click", () => downloadFinalWork(work.id));
+  panel.querySelector("[data-print-final-work]")?.addEventListener("click", () => printFinalWork(work.id));
+  panel.querySelector("[data-delete-final-work]")?.addEventListener("click", async () => {
+    await deleteFinalWork(work.id);
+    close();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+function downloadFinalWork(workId) {
+  const work = finalWorkById(workId);
+  const blob = finalWorkImageBlob(work);
+  if (!work || !blob) return notify("Изображение результата не найдено.");
+  downloadBlob(blob, finalWorkFileName(work));
+}
+
+async function deleteFinalWork(workId) {
+  const work = finalWorkById(workId);
+  if (!work) return;
+  await del("finalWorks", workId);
+  if (work.resultMediaId && mediaById(work.resultMediaId)?.type === "final_work") await del("media", work.resultMediaId);
+  await refreshData();
+  document.querySelector(".final-work-viewer-backdrop")?.remove();
+  notify("Готовый результат удален.");
+  state.preserveScroll = true;
+  render();
+}
+
+function printFinalWork(workId) {
+  const work = finalWorkById(workId);
+  const blob = finalWorkImageBlob(work);
+  if (!work || !blob) return notify("Изображение результата не найдено.");
+  const url = URL.createObjectURL(blob);
+  const area = document.createElement("div");
+  area.className = "final-work-print-area";
+  area.innerHTML = `<img src="${escapeAttr(url)}" alt="${escapeAttr(finalWorkTitle(work))}" />`;
+  document.body.append(area);
+  document.body.classList.add("is-printing-final-work");
+  const cleanup = () => {
+    URL.revokeObjectURL(url);
+    document.body.classList.remove("is-printing-final-work");
+    area.remove();
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+  window.print();
+  setTimeout(cleanup, 2000);
 }
 
 function finalWorkPrintSettings() {
@@ -4613,77 +4731,6 @@ async function saveFinalPrintSettingsFromView() {
   await refreshData();
   notify("Настройки печати сохранены.");
   showSettingsDetail("finalPrint");
-}
-
-async function exportFinalWorksFromDataset(datasetValue) {
-  const [scope, id] = String(datasetValue || "").split(":");
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return notify("Разрешите открытие нового окна для печати.");
-  printWindow.document.write("<p>Готовлю печать...</p>");
-  const works = finalWorksForScope(scope, id);
-  if (!works.length) {
-    printWindow.document.body.textContent = "Готовые работы не найдены.";
-    return notify("Готовые работы не найдены.");
-  }
-  const filter = prompt("Фильтр печати:\n1 - все готовые\n2 - только не напечатанные\n3 - только по услуге", "2");
-  if (filter === null) return printWindow.close();
-  let selected = works;
-  if (filter === "2") selected = selected.filter((work) => work.status !== "printed" && work.status !== "delivered");
-  if (filter === "3") {
-    const serviceId = chooseFinalWorkServiceId(selected);
-    if (!serviceId) return printWindow.close();
-    selected = selected.filter((work) => work.serviceId === serviceId);
-  }
-  if (!selected.length) {
-    printWindow.document.body.textContent = "Нет готовых работ по выбранному фильтру.";
-    return notify("Нет готовых работ по выбранному фильтру.");
-  }
-  const pages = [];
-  for (const work of selected) {
-    const media = mediaById(work.resultMediaId);
-    if (!media?.blob) continue;
-    const imageUrl = await finalWorkPrintImageUrl(work, media);
-    pages.push(`<section class="print-page"><img src="${imageUrl}" alt="" /></section>`);
-  }
-  printWindow.document.open();
-  printWindow.document.write(finalWorksPrintHtml(pages.join(""), selected.map((work) => work.id)));
-  printWindow.document.close();
-}
-
-function finalWorksForScope(scope, id) {
-  if (scope === "student") return state.data.finalWorks.filter((work) => work.studentId === id);
-  if (scope === "class") return state.data.finalWorks.filter((work) => work.groupId === id);
-  if (scope === "project") return state.data.finalWorks.filter((work) => work.projectId === id);
-  return [];
-}
-
-function chooseFinalWorkServiceId(works) {
-  const ids = Array.from(new Set(works.map((work) => work.serviceId).filter(Boolean)));
-  if (!ids.length) return "";
-  const labels = ids.map((id, index) => `${index + 1}. ${serviceName(catalogItemById(id)) || id}`).join("\n");
-  const answer = Number.parseInt(prompt(`Выберите услугу номером:\n${labels}`, "1") || "", 10);
-  return ids[answer - 1] || "";
-}
-
-async function finalWorkPrintImageUrl(work, media) {
-  const settings = finalWorkPrintSettings();
-  if (!settings.qrEnabled) return URL.createObjectURL(media.blob);
-  const image = await loadImageFromBlob(media.blob);
-  const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth || image.width;
-  canvas.height = image.naturalHeight || image.height;
-  const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  URL.revokeObjectURL(image.src);
-  const qrImage = await loadImageFromSvg(createQrSvg(finalWorkCompactQrPayload(work), 4));
-  const size = finalWorkQrPixelSize(settings.qrSize, canvas.width, canvas.height);
-  const margin = Number.parseInt(settings.qrMargin, 10) || 10;
-  const x = settings.qrPosition.endsWith("right") ? canvas.width - size - margin : margin;
-  const y = settings.qrPosition.startsWith("bottom") ? canvas.height - size - margin : margin;
-  context.drawImage(qrImage, x, y, size, size);
-  URL.revokeObjectURL(qrImage.src);
-  const blob = await canvasToBlob(canvas, media.blob.type || "image/png", 0.95);
-  return URL.createObjectURL(blob);
 }
 
 const FINAL_WORK_PRINT_QR_PREFIX = "VSF1:";
@@ -4722,28 +4769,6 @@ function base64UrlDecode(value) {
   }
 }
 
-function finalWorkQrPixelSize(size, width, height) {
-  const base = Math.min(width, height);
-  const ratio = size === "large" ? 0.14 : size === "medium" ? 0.1 : 0.07;
-  return Math.max(72, Math.round(base * ratio));
-}
-
-function finalWorksPrintHtml(pagesHtml, ids) {
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Печать готовых работ</title><style>
-    @page{size:A4;margin:0}
-    body{margin:0;background:#fff}
-    .print-actions{position:fixed;z-index:10;top:12px;left:12px;display:flex;gap:8px;font-family:Arial,sans-serif}
-    .print-actions button{border:0;border-radius:8px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
-    .print-actions button.secondary{background:#111827}
-    .print-page{page-break-after:always;width:100vw;height:100vh;display:grid;place-items:center;background:#fff}
-    .print-page img{max-width:100%;max-height:100vh;object-fit:contain}
-    @media print{.print-actions{display:none}}
-  </style></head><body>
-    <div class="print-actions"><button onclick="window.print()">Печать</button><button class="secondary" onclick="window.opener&&window.opener.markFinalWorksPrintedFromPrintWindow(${escapeAttr(JSON.stringify(ids))})">Отметить как напечатано</button></div>
-    ${pagesHtml}
-  </body></html>`;
-}
-
 async function markFinalWorksPrinted(ids) {
   const set = new Set(ids || []);
   const works = state.data.finalWorks.filter((work) => set.has(work.id));
@@ -4779,8 +4804,6 @@ async function markStudentOrderReadyAfterFinalWork(studentId) {
     await put("students", stampUpdated({ ...student, orderStatus: "", status: "" }));
   }
 }
-
-window.markFinalWorksPrintedFromPrintWindow = markFinalWorksPrinted;
 
 function mediaById(id) {
   return state.data.media.find((item) => item.id === id);
@@ -5877,8 +5900,8 @@ function showFinalWorkPrintQrPanel(payload) {
   const klass = classById(work.groupId || student?.classId);
   const project = projectById(work.projectId || klass?.projectId);
   const service = catalogItemById(work.serviceId);
-  const media = mediaById(work.resultMediaId);
-  const mediaUrl = media?.blob ? URL.createObjectURL(media.blob) : "";
+  const image = finalWorkImageBlob(work);
+  const mediaUrl = image ? URL.createObjectURL(image) : "";
   const studentName = `${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Не найден";
   document.querySelector(".final-work-qr-backdrop")?.remove();
   const panel = document.createElement("div");
@@ -5961,10 +5984,9 @@ function stableFinalWorkPrintPayload(value) {
 function finalWorkStatusLabel(status) {
   return {
     ready: "Готов",
-    print_queue: "В очереди печати",
     printed: "Напечатано",
     delivered: "Выдано"
-  }[status] || status || "Готов";
+  }[status] || "Готов";
 }
 
 function parseStudentQrPayload(rawText) {
@@ -6954,7 +6976,7 @@ function fillTransferData(target, patch) {
 }
 
 function withTransferAliases(dataKey, record) {
-  const next = dataKey === "media" || dataKey === "documents" ? { ...record } : clonePlainRecord(record);
+  const next = ["media", "finalWorks", "documents"].includes(dataKey) ? { ...record } : clonePlainRecord(record);
   if (dataKey === "operators") next.operatorId = next.operatorId || next.id;
   if (dataKey === "operatorEvents") next.eventId = next.eventId || next.id;
   if (dataKey === "projects") next.projectId = next.projectId || next.id;
@@ -7004,6 +7026,14 @@ async function collectTransferMediaFiles(data) {
     taken.add(path);
     files.push({ path, data: new Uint8Array(await item.blob.arrayBuffer()) });
   }
+  for (const item of data.finalWorks || []) {
+    const blob = finalWorkImageBlob(item);
+    if (!blob) continue;
+    const path = `final_results/${item.id}/${safePath(finalWorkFileName(item))}`;
+    if (taken.has(path)) continue;
+    taken.add(path);
+    files.push({ path, data: new Uint8Array(await blob.arrayBuffer()) });
+  }
   for (const item of data.documents || []) {
     const blob = item.blob || await documentBlob(item);
     if (!blob) continue;
@@ -7044,6 +7074,10 @@ function stripTransferMediaDataUrls(data) {
   (next.media || []).forEach((item) => {
     delete item.blob;
   });
+  (next.finalWorks || []).forEach((item) => {
+    delete item.image;
+    delete item.blob;
+  });
   (next.documents || []).forEach((item) => {
     delete item.blob;
   });
@@ -7071,6 +7105,13 @@ function hydrateTransferMediaData(data, entries) {
       return normalized.endsWith(`media/student_files/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName}`);
     });
     item.blob = new Blob(entry ? [entry.data] : [], { type: item.type === "video" ? "video/mp4" : "image/jpeg" });
+  });
+  (data.finalWorks || []).forEach((item) => {
+    const entry = entries.find((entry) => {
+      const normalized = String(entry.path || "").replace(/\\/g, "/");
+      return normalized.endsWith(`final_results/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName || finalWorkFileName(item)}`);
+    });
+    if (entry) item.image = new Blob([entry.data], { type: item.mimeType || documentMimeType(item.fileName || "result.jpg") });
   });
   (data.documents || []).forEach((item) => {
     const entry = entries.find((entry) => {
@@ -7471,7 +7512,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
 }
 
 function appRecordFromTransfer(dataKey, record) {
-  const next = dataKey === "media" || dataKey === "documents" ? { ...record } : clonePlainRecord(record);
+  const next = ["media", "finalWorks", "documents"].includes(dataKey) ? { ...record } : clonePlainRecord(record);
   if (dataKey === "projects") delete next.projectId;
   if (dataKey === "operators") delete next.operatorId;
   if (dataKey === "operatorEvents") delete next.eventId;
@@ -7511,6 +7552,40 @@ function transferIdPrefix(dataKey) {
   }[dataKey] || "copy";
 }
 
+function showInternalPrintPreview(title, html) {
+  document.querySelector(".print-preview-backdrop")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop print-preview-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel print-preview-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}">
+      <div class="card-header">
+        <h2 class="card-title">${escapeHtml(title)}</h2>
+        <button class="icon-button" data-close-print-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <iframe class="print-preview-frame" title="${escapeAttr(title)}"></iframe>
+      <div class="toolbar">
+        <button class="primary-button" data-print-preview type="button">Сохранить в PDF</button>
+        <button class="secondary-button" data-close-print-preview type="button">Закрыть</button>
+      </div>
+    </section>
+  `;
+  const frame = panel.querySelector(".print-preview-frame");
+  if (frame) frame.srcdoc = html;
+  const close = () => panel.remove();
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-print-preview]")) close();
+  });
+  panel.querySelector("[data-print-preview]")?.addEventListener("click", () => {
+    const win = frame?.contentWindow;
+    if (!win) return notify("Предпросмотр еще загружается.");
+    win.focus();
+    win.print();
+  });
+  document.body.append(panel);
+  injectIcons();
+  return panel;
+}
+
 function exportStatusPdf({ classId = "", projectId = "" } = {}) {
   const exportTemplate = getStatusExportTemplate();
   const columns = statusExportColumns().filter((column) => exportTemplate.columns.includes(column.key));
@@ -7528,12 +7603,7 @@ function exportStatusPdf({ classId = "", projectId = "" } = {}) {
     const cells = columns.map((column) => `<td>${escapeHtml(column.value(student, index))}</td>`).join("");
     return `<tr>${cells}</tr>`;
   }).join("");
-  const win = window.open("", "_blank", "width=1100,height=800");
-  if (!win) {
-    notify("Браузер заблокировал окно PDF.");
-    return;
-  }
-  win.document.write(`
+  const html = `
     <!doctype html>
     <html lang="ru">
       <head>
@@ -7550,9 +7620,6 @@ function exportStatusPdf({ classId = "", projectId = "" } = {}) {
           th, td { padding: 7px 8px; border: 1px solid #d1d5db; text-align: left; vertical-align: top; }
           th { background: #eef2ff; font-weight: 700; }
           tr:nth-child(even) td { background: #f9fafb; }
-          .actions { margin-top: 14px; }
-          button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; }
-          @media print { .actions { display: none; } }
         </style>
       </head>
       <body>
@@ -7564,14 +7631,12 @@ function exportStatusPdf({ classId = "", projectId = "" } = {}) {
           <thead><tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <div class="actions"><button onclick="window.print()">Сохранить в PDF</button></div>
       </body>
     </html>
-  `);
-  win.document.close();
-  win.focus();
+  `;
+  showInternalPrintPreview(exportTemplate.title, html);
   recordOperatorEvent("export", { targetType: "status_pdf", targetId: classId || projectId || "" });
-  notify("PDF отчет открыт.");
+  notify("PDF отчет открыт внутри приложения.");
 }
 
 function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
@@ -7612,9 +7677,7 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
       <td>${escapeHtml(student.comment || "")}</td>
     </tr>
   `).join("") : "";
-  const win = window.open("", "_blank", "width=1100,height=800");
-  if (!win) return notify("Браузер заблокировал окно PDF.");
-  win.document.write(`
+  const html = `
     <!doctype html>
     <html lang="ru">
       <head>
@@ -7632,8 +7695,6 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
           th, td { padding: 7px 8px; border: 1px solid #d1d5db; text-align: left; vertical-align: top; }
           th { background: #eef2ff; font-weight: 700; }
           tr:nth-child(even) td { background: #f9fafb; }
-          button { min-height: 38px; margin-top: 14px; padding: 0 14px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; }
-          @media print { button { display: none; } }
         </style>
       </head>
       <body>
@@ -7654,14 +7715,12 @@ function exportAlbumStatusPdf({ classId = "", albumProjectId = "" } = {}) {
             <tbody>${studentRows}</tbody>
           </table>
         ` : ""}
-        <button onclick="window.print()">Сохранить в PDF</button>
       </body>
     </html>
-  `);
-  win.document.close();
-  win.focus();
+  `;
+  showInternalPrintPreview("Статистика выпускных альбомов", html);
   recordOperatorEvent("export", { targetType: "album_status_pdf", targetId: classId || albumProjectId || "" });
-  notify("PDF статистики альбомов открыт.");
+  notify("PDF статистики альбомов открыт внутри приложения.");
 }
 
 async function buildExportFiles(studentId) {
@@ -7731,6 +7790,10 @@ async function buildFullExportFiles() {
   };
   STORE_NAMES.forEach((store) => {
     meta[store] = state.data[store].map((record) => {
+      if (store === "finalWorks") {
+        const { image, blob, ...rest } = record;
+        return rest;
+      }
       if (store === "media" || store === "albumMedia" || store === "documents") {
         const { blob, ...rest } = record;
         return rest;
@@ -7746,6 +7809,11 @@ async function buildFullExportFiles() {
   for (const item of state.data.albumMedia) {
     if (!item.blob) continue;
     files.push({ path: `album_media/${item.id}/${item.fileName}`, data: new Uint8Array(await item.blob.arrayBuffer()) });
+  }
+  for (const item of state.data.finalWorks || []) {
+    const blob = finalWorkImageBlob(item);
+    if (!blob) continue;
+    files.push({ path: `final_results/${item.id}/${finalWorkFileName(item)}`, data: new Uint8Array(await blob.arrayBuffer()) });
   }
   for (const item of state.data.documents || []) {
     const blob = item.blob || await documentBlob(item);
@@ -7879,7 +7947,7 @@ async function importSettingsMeta(meta) {
 
 async function importFullMeta(meta, entries) {
   for (const store of STORE_NAMES) {
-    if (store === "media" || store === "albumMedia" || store === "documents") continue;
+    if (store === "media" || store === "albumMedia" || store === "documents" || store === "finalWorks") continue;
     for (const record of meta[store] || []) await put(store, record);
   }
   for (const record of meta.media || []) {
@@ -7891,6 +7959,12 @@ async function importFullMeta(meta, entries) {
     const entry = entries.find((item) => item.path.endsWith(`album_media/${record.id}/${record.fileName}`) || item.path.endsWith(`/${record.fileName}`));
     const blob = new Blob(entry ? [entry.data] : [], { type: albumMimeType(record) });
     await put("albumMedia", { ...record, blob });
+  }
+  for (const record of meta.finalWorks || []) {
+    const fileName = record.fileName || finalWorkFileName(record);
+    const entry = entries.find((item) => item.path.endsWith(`final_results/${record.id}/${fileName}`) || item.path.endsWith(`/${fileName}`));
+    const image = entry ? new Blob([entry.data], { type: record.mimeType || documentMimeType(fileName) }) : undefined;
+    await put("finalWorks", image ? { ...record, image } : record);
   }
   for (const record of meta.documents || []) {
     const entry = entries.find((item) => item.path.endsWith(`documents/${record.id}/${record.fileName}`) || item.path.endsWith(`/${record.fileName}`));
