@@ -800,6 +800,33 @@ button.mini-catalog-option {
   color: #fff;
 }
 
+.student-service-comment-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.student-service-comment-field span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.student-service-comment-field textarea {
+  width: 100%;
+  min-height: 52px;
+  max-height: 82px;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.32;
+}
+
 .student-service-preview-modal {
   display: grid;
   gap: 12px;
@@ -836,6 +863,31 @@ button.mini-catalog-option {
   margin: 0;
   color: var(--text);
   line-height: 1.48;
+}
+
+.student-service-client-comment,
+.montage-client-comment {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--primary) 7%, var(--card));
+}
+
+.student-service-client-comment span,
+.montage-client-comment span {
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.student-service-client-comment p,
+.montage-client-comment p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.42;
+  overflow-wrap: anywhere;
 }
 
 .catalog-modal-backdrop {

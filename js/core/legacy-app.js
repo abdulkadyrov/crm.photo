@@ -213,6 +213,8 @@ const FINAL_WORK_PRINT_QR_PREFIX = "VSF1:";
 const FINAL_WORK_PRINT_QR_V2_PREFIX = "VSF2:";
 const FINAL_WORK_QR_MIN_PX = 92;
 const FINAL_WORK_QR_MAX_PX = 132;
+const SERVICE_COMMENT_SAVE_DELAY = 450;
+const studentServiceCommentTimers = new Map();
 const REFERENCE_AI_SET = [
   {
     id: "portrait_waist",
@@ -641,8 +643,9 @@ async function seedIfNeeded() {
   const catalogId = (await getAll("catalog"))[0]?.id || "";
   for (const [firstName, lastName, classId, paymentStatus] of students) {
     const id = uid("student");
-    await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus, orderStatus: "", catalogId, status: "" });
-    await put("orders", { id: `order_${id}`, studentId: id, status: "", catalogId, items: catalogId ? orderItemsFromCatalog(catalogId) : defaultOrderItems() });
+    const catalogIds = catalogId ? [catalogId] : [];
+    await put("students", { id, classId, firstName, lastName, qrId: id, paymentStatus, orderStatus: "", catalogId, catalogIds, selectedServices: catalogIds.map((serviceId) => ({ serviceId, comment: "" })), status: "" });
+    await put("orders", { id: `order_${id}`, studentId: id, status: "", catalogId, catalogIds, items: catalogId ? orderItemsFromCatalog(catalogId) : defaultOrderItems() });
   }
   await put("settings", { id: SETTING_IDS.initialized, value: true });
 }
@@ -1849,22 +1852,31 @@ function miniCatalogCheckbox(item, selected = false) {
 }
 
 function miniCatalogToggle(item, studentId, selected = false) {
+  const comment = selected ? studentServiceComment(studentById(studentId), item.id) : "";
   return `
-    <article class="mini-catalog-option student-service-option ${selected ? "selected" : ""}" data-preview-student-service="${item.id}" tabindex="0" role="button" aria-label="Посмотреть ${escapeAttr(serviceName(item))}">
+    <article class="mini-catalog-option student-service-option ${selected ? "selected" : ""}" data-preview-student-service="${studentId}:${item.id}" tabindex="0" role="button" aria-label="Посмотреть ${escapeAttr(serviceName(item))}">
       <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
       <span class="mini-catalog-copy">
         <strong>${escapeHtml(serviceName(item))}</strong>
         <small>${escapeHtml(serviceCategory(item) || formatPrice(item.price))}</small>
       </span>
       <button class="student-service-select" data-toggle-student-service="${studentId}:${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">${selected ? "Выбрано" : "Выбрать"}</button>
+      ${selected ? `
+        <label class="student-service-comment-field">
+          <span>Комментарий к услуге</span>
+          <textarea data-student-service-comment="${studentId}:${item.id}" rows="2" placeholder="Например: без шляпы">${escapeHtml(comment)}</textarea>
+        </label>
+      ` : ""}
     </article>
   `;
 }
 
-function showStudentServicePreview(itemId) {
-  const item = catalogItemById(itemId);
+function showStudentServicePreview(payload) {
+  const { studentId, serviceId } = parseStudentServicePayload(payload);
+  const item = catalogItemById(serviceId || payload);
   if (!item) return;
   document.querySelector(".student-service-preview-backdrop")?.remove();
+  const comment = studentServiceComment(studentById(studentId), item.id);
   const imageUrl = servicePreviewImageDataUrl(item);
   const category = serviceCategory(item) || "Без категории";
   const description = serviceShortDescription(item) || serviceDescription(item) || "Описание можно добавить в услуге.";
@@ -1884,6 +1896,7 @@ function showStudentServicePreview(itemId) {
         <span class="catalog-card-badge">${escapeHtml(category)}</span>
         <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
       </div>
+      ${comment ? `<div class="student-service-client-comment"><span>Комментарий клиента</span><p>${escapeHtml(comment)}</p></div>` : ""}
       <p class="student-service-preview-description">${escapeHtml(description)}</p>
     </section>
   `;
@@ -2899,6 +2912,13 @@ function bindViewActions() {
       }
     });
   });
+  view.querySelectorAll("[data-student-service-comment]").forEach((node) => {
+    const { studentId, serviceId } = parseStudentServicePayload(node.dataset.studentServiceComment);
+    node.addEventListener("click", (event) => event.stopPropagation());
+    node.addEventListener("keydown", (event) => event.stopPropagation());
+    node.addEventListener("input", (event) => scheduleStudentServiceCommentSave(studentId, serviceId, event.currentTarget.value));
+    node.addEventListener("blur", (event) => flushStudentServiceCommentSave(studentId, serviceId, event.currentTarget.value));
+  });
   view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
     const student = studentById(studentId);
@@ -3316,7 +3336,19 @@ async function addStudent({ classId, fio, catalogId = "", catalogIds = [], payme
   const selectedCatalogId = selectedCatalogIds[0] || "";
   const id = uid("student");
   const manualStatus = STUDENT_MANUAL_STATUS_KEYS.includes(orderStatus) ? orderStatus : "";
-  const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus: manualStatus, status: manualStatus });
+  const student = stampCreated({
+    id,
+    classId,
+    firstName,
+    lastName,
+    qrId: id,
+    catalogId: selectedCatalogId,
+    catalogIds: selectedCatalogIds,
+    selectedServices: serviceEntriesFromIds(selectedCatalogIds),
+    paymentStatus,
+    orderStatus: manualStatus,
+    status: manualStatus
+  });
   await put("students", student);
   await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: manualStatus, items: orderItemsFromCatalogs(selectedCatalogIds) }));
   return student;
@@ -3417,7 +3449,8 @@ async function updateStudentServices(studentId, catalogIds) {
   if (!selectedCatalogIds.length) return notify("Выберите хотя бы одну услугу.");
   const order = orderByStudent(studentId);
   const nextItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
-  await put("students", stampUpdated({ ...student, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds }));
+  const selectedServices = serviceEntriesFromIds(selectedCatalogIds, selectedServiceCommentMap(student));
+  await put("students", stampUpdated({ ...student, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, selectedServices }));
   await put("orders", stampUpdated({ ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems }));
   await refreshData();
   notify("Услуги и чеклист ученика обновлены.");
@@ -4534,6 +4567,8 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     || photos[0];
   const reference = service ? montageReferenceForService(service) : null;
   const promptText = service ? servicePrompt(service) : "";
+  const serviceComment = service ? studentServiceComment(student, service.id) : "";
+  const copyPromptText = [promptText, serviceComment ? `Комментарий клиента: ${serviceComment}` : ""].filter(Boolean).join("\n\n");
   const works = service ? finalWorksForStudent(student.id).filter((work) => work.serviceId === service.id) : [];
   const sourceUrl = source?.blob ? URL.createObjectURL(source.blob) : "";
   const referenceUrl = reference?.url || "";
@@ -4570,8 +4605,9 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
         </div>
         <div class="montage-grid montage-secondary-grid">
           <article class="panel grid">
-            <div class="card-header"><h3 class="card-title">Prompt</h3>${promptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
+            <div class="card-header"><h3 class="card-title">Prompt</h3>${copyPromptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
             ${promptText ? `<div class="prompt-box montage-prompt-box">${escapeHtml(promptText)}</div>` : '<p class="muted">Промпт не добавлен.</p>'}
+            ${serviceComment ? `<div class="montage-client-comment"><span>Комментарий клиента</span><p>${escapeHtml(serviceComment)}</p></div>` : ""}
           </article>
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Результат</h3><span class="muted">${works.length ? `Готовых работ: ${works.length}` : "Пока нет"}</span></div>
@@ -4601,7 +4637,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     showMontagePanel(student.id, service?.id || "", event.currentTarget.value);
   });
   panel.querySelector("[data-copy-montage-prompt]")?.addEventListener("click", async () => {
-    await copyText(promptText);
+    await copyText(copyPromptText);
     notify("Промпт скопирован");
   });
   panel.querySelector("[data-add-final-work]")?.addEventListener("click", () => {
@@ -5398,7 +5434,7 @@ async function applyCatalogAsTemplate(itemId) {
     await put("orders", stampUpdated({ ...order, catalogId: itemId, catalogIds: [itemId], items: orderItemsFromCatalogs([itemId], order.items || []) }));
   }
   for (const student of state.data.students) {
-    await put("students", stampUpdated({ ...student, catalogId: itemId, catalogIds: [itemId] }));
+    await put("students", stampUpdated({ ...student, catalogId: itemId, catalogIds: [itemId], selectedServices: serviceEntriesFromIds([itemId], selectedServiceCommentMap(student)) }));
   }
   await refreshData();
   notify("Услуга назначена всем ученикам.");
@@ -5487,6 +5523,7 @@ async function createStudentFromMissingQr(qrId) {
     qrId,
     catalogId: selectedCatalogId,
     catalogIds: selectedCatalogIds,
+    selectedServices: serviceEntriesFromIds(selectedCatalogIds),
     paymentStatus: "unpaid",
     orderStatus: "",
     status: ""
@@ -7759,6 +7796,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
     if (idMaps.services?.size) {
       next.catalogId = idMaps.services.get(next.catalogId) || next.catalogId;
       next.catalogIds = (next.catalogIds || []).map((id) => idMaps.services.get(id) || id);
+      next.selectedServices = remapSelectedStudentServices(next.selectedServices, idMaps.services);
     }
   }
   if (dataKey === "orders") {
@@ -7812,6 +7850,13 @@ function remapOrderItemServices(item, serviceMap) {
   const parsed = parseServiceTaskType(next.type || "");
   if (parsed && serviceMap.has(parsed.catalogId)) next.type = serviceTaskType(serviceMap.get(parsed.catalogId), parsed.angleId);
   return next;
+}
+
+function remapSelectedStudentServices(selectedServices, serviceMap) {
+  return (selectedServices || []).map((entry) => {
+    const serviceId = entry?.serviceId || entry?.id || "";
+    return { ...entry, serviceId: serviceMap.get(serviceId) || serviceId };
+  });
 }
 
 function transferIdPrefix(dataKey) {
@@ -8034,9 +8079,9 @@ async function buildExportFiles(studentId) {
     const base = `${safePath(project?.name || "Project")}/${safePath(klass?.name || "Class")}/${safePath(`${student.lastName}_${student.firstName}`)}`;
     const order = orderByStudent(student.id);
     const previewNames = new Set();
-    const selectedServices = selectedCatalogIdsForStudent(student).map((id) => {
-      const item = catalogItemById(id);
-      return item ? { id: item.id, title: serviceName(item), previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : "" } : null;
+    const selectedServices = selectedServiceEntriesForStudent(student).map((entry) => {
+      const item = catalogItemById(entry.serviceId);
+      return item ? { id: item.id, serviceId: item.id, title: serviceName(item), comment: entry.comment || "", previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : "" } : null;
     }).filter(Boolean);
     files.push({ path: `${base}/meta.json`, data: jsonBytes({ student, order, services: selectedServices }) });
     for (const service of selectedServices) {
@@ -9556,7 +9601,72 @@ function templateItemsForSettings(template) {
 }
 
 function selectedCatalogIdsForStudent(student) {
-  return normalizeCatalogIds(student?.catalogIds?.length ? student.catalogIds : (student?.catalogId ? [student.catalogId] : []));
+  return selectedServiceEntriesForStudent(student).map((entry) => entry.serviceId);
+}
+
+function selectedServiceEntriesForStudent(student) {
+  const selectedServices = Array.isArray(student?.selectedServices) ? student.selectedServices : [];
+  const serviceIds = selectedServices.map((entry) => entry?.serviceId || entry?.id).filter(Boolean);
+  const legacyIds = student?.catalogIds?.length ? student.catalogIds : (student?.catalogId ? [student.catalogId] : []);
+  const ids = normalizeCatalogIds(legacyIds.length ? legacyIds : serviceIds);
+  return serviceEntriesFromIds(ids, selectedServiceCommentMap(student));
+}
+
+function serviceEntriesFromIds(catalogIds, commentMap = new Map()) {
+  return normalizeCatalogIds(catalogIds).map((serviceId) => ({
+    serviceId,
+    comment: String(commentMap.get(serviceId) || "").trim()
+  }));
+}
+
+function selectedServiceCommentMap(student) {
+  const map = new Map();
+  (student?.selectedServices || []).forEach((entry) => {
+    const serviceId = String(entry?.serviceId || entry?.id || "").trim();
+    if (!serviceId) return;
+    map.set(serviceId, String(entry.comment || ""));
+  });
+  return map;
+}
+
+function studentServiceComment(student, serviceId) {
+  return selectedServiceCommentMap(student).get(String(serviceId || "")) || "";
+}
+
+function scheduleStudentServiceCommentSave(studentId, serviceId, comment) {
+  setStudentServiceCommentInMemory(studentId, serviceId, comment);
+  const key = `${studentId}:${serviceId}`;
+  clearTimeout(studentServiceCommentTimers.get(key));
+  studentServiceCommentTimers.set(key, setTimeout(() => saveStudentServiceComment(studentId, serviceId, comment), SERVICE_COMMENT_SAVE_DELAY));
+}
+
+async function flushStudentServiceCommentSave(studentId, serviceId, comment) {
+  const key = `${studentId}:${serviceId}`;
+  clearTimeout(studentServiceCommentTimers.get(key));
+  studentServiceCommentTimers.delete(key);
+  setStudentServiceCommentInMemory(studentId, serviceId, comment);
+  await saveStudentServiceComment(studentId, serviceId, comment);
+}
+
+function setStudentServiceCommentInMemory(studentId, serviceId, comment) {
+  const index = state.data.students.findIndex((student) => student.id === studentId);
+  if (index < 0) return null;
+  const student = state.data.students[index];
+  const selectedServices = selectedServiceEntriesForStudent(student).map((entry) => entry.serviceId === serviceId ? { ...entry, comment: String(comment || "").trim() } : entry);
+  const next = { ...student, selectedServices };
+  state.data.students[index] = next;
+  return next;
+}
+
+async function saveStudentServiceComment(studentId, serviceId, comment) {
+  const student = setStudentServiceCommentInMemory(studentId, serviceId, comment);
+  if (!student || !selectedCatalogIdsForStudent(student).includes(serviceId)) return;
+  await put("students", stampUpdated(student, { warn: false }));
+}
+
+function parseStudentServicePayload(value) {
+  const [studentId, serviceId] = String(value || "").split(":");
+  return { studentId, serviceId };
 }
 
 function normalizeCatalogIds(catalogIds) {
