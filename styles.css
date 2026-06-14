@@ -800,6 +800,77 @@ button.mini-catalog-option {
   color: #fff;
 }
 
+.student-service-quantity {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.student-service-quantity > span,
+.student-service-total > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.student-service-stepper {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  gap: 4px;
+  align-items: center;
+}
+
+.student-service-stepper button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 900;
+}
+
+.student-service-stepper input {
+  width: 100%;
+  height: 32px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.student-service-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.student-service-total strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .student-service-comment-field {
   display: grid;
   gap: 5px;
@@ -2217,6 +2288,12 @@ button.mini-catalog-option {
   border-radius: 999px;
   background: color-mix(in srgb, var(--error) 12%, transparent);
   color: var(--error);
+  font-weight: 900;
+}
+
+.service-chip small {
+  color: var(--muted);
+  font-size: 0.72rem;
   font-weight: 900;
 }
 
