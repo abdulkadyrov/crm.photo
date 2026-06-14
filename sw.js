@@ -1,4 +1,4 @@
-const CACHE_NAME = "vakha-studio-cache-v27";
+const CACHE_NAME = "vakha-studio-cache-v28";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -76,16 +76,63 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
-  );
+  event.respondWith(handleRequest(event.request));
 });
+
+function shouldPreferNetwork(request) {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return false;
+  if (request.mode === "navigate") return true;
+  return ["script", "style", "worker", "manifest"].includes(request.destination)
+    || /\.(?:html|js|css|webmanifest)$/i.test(url.pathname);
+}
+
+async function handleRequest(request) {
+  return shouldPreferNetwork(request) ? networkFirst(request) : cacheFirst(request);
+}
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (isUsableResponse(request, response)) {
+      await cacheResponse(request, response);
+      return response;
+    }
+    return (await caches.match(request)) || response;
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    if (request.mode === "navigate") return caches.match("./index.html");
+    return Response.error();
+  }
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    if (!isUsableResponse(request, response)) return response;
+    await cacheResponse(request, response);
+    return response;
+  } catch {
+    if (request.mode === "navigate") return caches.match("./index.html");
+    return Response.error();
+  }
+}
+
+async function cacheResponse(request, response) {
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+}
+
+function isUsableResponse(request, response) {
+  if (!response || !response.ok || response.type === "opaque") return false;
+  const url = new URL(request.url);
+  const contentType = response.headers.get("content-type") || "";
+  if (/\.js$/i.test(url.pathname)) return /javascript|ecmascript/i.test(contentType);
+  if (/\.css$/i.test(url.pathname)) return /text\/css/i.test(contentType);
+  if (/\.webmanifest$/i.test(url.pathname)) return /json|manifest/i.test(contentType);
+  if (/\.html?$/i.test(url.pathname) || request.mode === "navigate") return /text\/html/i.test(contentType);
+  return true;
+}
