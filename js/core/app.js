@@ -1,4 +1,4 @@
-import { APP_VERSION } from "./constants.js";
+import { APP_NAME, APP_VERSION } from "./constants.js";
 import { state } from "./state.js";
 import { createHashRouter } from "./router.js";
 
