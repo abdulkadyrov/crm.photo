@@ -1858,6 +1858,8 @@ function miniCatalogToggle(item, studentId, selected = false) {
   const category = serviceCategory(item);
   const student = studentById(studentId);
   const comment = studentServiceComment(student, item.id);
+  const quantity = studentServiceQuantity(student, item.id);
+  const totalPrice = parseMoney(item.price) * quantity;
   return `
     <article class="mini-catalog-option student-service-card ${selected ? "selected" : ""}" role="listitem">
       <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
@@ -1868,9 +1870,18 @@ function miniCatalogToggle(item, studentId, selected = false) {
           <strong>${escapeHtml(serviceName(item))}</strong>
           <small>${escapeHtml(category || formatPrice(item.price))}</small>
         </span>
-        <span class="student-service-card-status">${selected ? "В заказе" : escapeHtml(formatPrice(item.price))}</span>
+        <span class="student-service-card-status">${selected ? escapeHtml(formatMoney(totalPrice)) : escapeHtml(formatPrice(item.price))}</span>
       </button>
       ${selected ? `
+        <label class="student-service-quantity-row">
+          <span>Количество</span>
+          <div class="student-service-stepper">
+            <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:-1" type="button" aria-label="Уменьшить количество">-</button>
+            <input class="input student-service-quantity-input" data-service-quantity="${studentId}:${item.id}" type="number" min="1" step="1" value="${escapeAttr(String(quantity))}" />
+            <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:1" type="button" aria-label="Увеличить количество">+</button>
+          </div>
+          <strong class="student-service-quantity-total">${escapeHtml(formatMoney(totalPrice))}</strong>
+        </label>
         <label class="student-service-comment-field">
           <span>Комментарий к услуге</span>
           <textarea class="textarea student-service-comment-input" data-service-comment="${studentId}:${item.id}" placeholder="Например: без шляпы, сделать темнее, добавить имя">${escapeHtml(comment)}</textarea>
@@ -1933,6 +1944,8 @@ function showCatalogServiceViewer(itemId) {
 function showStudentServiceQuickPreview(itemId, studentId = "") {
   const item = catalogItemById(itemId);
   if (!item) return;
+  const student = studentId ? studentById(studentId) : null;
+  const quantity = student ? studentServiceQuantity(student, item.id) : 1;
   document.querySelector(".student-service-preview-backdrop")?.remove();
   const imageUrl = servicePreviewImageDataUrl(item);
   const videoUrl = servicePreviewVideoDataUrl(item);
@@ -1950,7 +1963,7 @@ function showStudentServiceQuickPreview(itemId, studentId = "") {
       <div class="card-header">
         <div>
           <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
-          <p class="muted">${escapeHtml(category || formatPrice(item.price))}</p>
+          <p class="muted">${escapeHtml(category || formatPrice(item.price))}${student ? ` · ${quantity} шт. · ${escapeHtml(formatMoney(parseMoney(item.price) * quantity))}` : ""}</p>
         </div>
         <button class="icon-button" data-close-student-service-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
@@ -2954,6 +2967,22 @@ function bindViewActions() {
     node.addEventListener("change", save);
     node.addEventListener("blur", save);
   });
+  view.querySelectorAll("[data-service-quantity-step]").forEach((node) => node.addEventListener("click", async () => {
+    const [studentId, serviceId, deltaText] = (node.dataset.serviceQuantityStep || "").split(":");
+    const student = studentById(studentId);
+    const current = studentServiceQuantity(student, serviceId);
+    await saveStudentServiceQuantity(studentId, serviceId, current + Number(deltaText || 0));
+  }));
+  view.querySelectorAll("[data-service-quantity]").forEach((node) => {
+    const save = async () => {
+      const payload = node.dataset.serviceQuantity || "";
+      const divider = payload.indexOf(":");
+      if (divider < 0) return;
+      await saveStudentServiceQuantity(payload.slice(0, divider), payload.slice(divider + 1), node.value);
+    };
+    node.addEventListener("change", save);
+    node.addEventListener("blur", save);
+  });
   view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
     const student = studentById(studentId);
@@ -3493,6 +3522,22 @@ async function saveStudentServiceComment(studentId, serviceId, comment, { rerend
   const selectedServices = selectedServicesForStudent(student);
   const nextSelectedServices = buildSelectedServices(selectedCatalogIdsForStudent(student), selectedServices).map((item) => (
     item.serviceId === serviceId ? { ...item, comment: String(comment || "").trim() } : item
+  ));
+  await put("students", stampUpdated({ ...student, selectedServices: nextSelectedServices }, { warn: false }));
+  await refreshData();
+  if (rerender && state.route === "student" && state.studentId === studentId) {
+    state.preserveScroll = true;
+    renderStudent();
+  }
+}
+
+async function saveStudentServiceQuantity(studentId, serviceId, quantity, { rerender = true } = {}) {
+  const student = studentById(studentId);
+  if (!student || !serviceId) return;
+  const nextQuantity = normalizeSelectedServiceQuantity(quantity);
+  const selectedServices = selectedServicesForStudent(student);
+  const nextSelectedServices = buildSelectedServices(selectedCatalogIdsForStudent(student), selectedServices).map((item) => (
+    item.serviceId === serviceId ? { ...item, quantity: nextQuantity } : item
   ));
   await put("students", stampUpdated({ ...student, selectedServices: nextSelectedServices }, { warn: false }));
   await refreshData();
@@ -4606,6 +4651,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   const services = selectedCatalogIdsForStudent(student).map(catalogItemById).filter(Boolean);
   const service = services.find((item) => item.id === selectedServiceId) || services[0];
   const serviceComment = studentServiceComment(student, service?.id);
+  const serviceQuantity = studentServiceQuantity(student, service?.id);
   const photos = mediaByStudent(student.id).filter((item) => item.type === "photo" || item.type === "image");
   const source = photos.find((item) => item.id === selectedMediaId)
     || photos.find((item) => item.orderType === "portrait")
@@ -4629,6 +4675,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
       </div>
       <div class="grid">
         ${services.length > 1 ? `<label class="field-label"><span>Услуга</span><select class="select" data-montage-service>${services.map((item) => `<option value="${item.id}" ${item.id === service?.id ? "selected" : ""}>${escapeHtml(serviceName(item))}</option>`).join("")}</select></label>` : `<div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(service ? serviceName(service) : "Услуги не выбраны")}</strong></div>`}
+        ${service ? `<div class="detail-stat"><span>Количество</span><strong>${serviceQuantity}</strong></div>` : ""}
         <div class="montage-grid">
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Фото ребёнка</h3></div>
@@ -4929,7 +4976,10 @@ async function printClassFinalWorksWithQr(classId) {
     const pages = [];
     for (const work of works) {
       const imageUrl = await fileToDataUrl(finalWorkImageBlob(work));
-      pages.push(finalWorkPrintPageHtml(work, imageUrl));
+      const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
+      for (let copy = 0; copy < quantity; copy += 1) {
+        pages.push(finalWorkPrintPageHtml(work, imageUrl));
+      }
     }
     const title = `Печать готовых результатов · ${klass.name}`;
     const fileName = safeFileName(`final_results_${klass.name}_${new Date().toISOString().slice(0, 10)}.html`);
@@ -5233,14 +5283,16 @@ async function markFinalWorksPrinted(ids) {
 async function markFinalWorksPrintedForStudent(studentId) {
   const works = state.data.finalWorks.filter((work) => work.studentId === studentId && work.status !== "printed" && work.status !== "delivered");
   if (!works.length) return notify("Нет готовых работ для отметки печати.");
-  if (!confirm(`Отметить как напечатанные: ${works.length}?`)) return;
+  const totalCopies = works.reduce((sum, work) => sum + studentServiceQuantity(studentById(work.studentId), work.serviceId), 0);
+  if (!confirm(`Отметить как напечатанные: ${totalCopies} ${pluralizeRu(totalCopies, "экземпляр", "экземпляра", "экземпляров")}?`)) return;
   await markFinalWorksPrinted(works.map((work) => work.id));
 }
 
 async function markFinalWorksPrintedForClass(classId) {
   const works = state.data.finalWorks.filter((work) => work.groupId === classId && work.status !== "printed" && work.status !== "delivered");
   if (!works.length) return notify("В группе нет готовых работ для отметки печати.");
-  if (!confirm(`Отметить как напечатанные все готовые работы группы: ${works.length}?`)) return;
+  const totalCopies = works.reduce((sum, work) => sum + studentServiceQuantity(studentById(work.studentId), work.serviceId), 0);
+  if (!confirm(`Отметить как напечатанными все готовые работы группы: ${totalCopies} ${pluralizeRu(totalCopies, "экземпляр", "экземпляра", "экземпляров")}?`)) return;
   await markFinalWorksPrinted(works.map((work) => work.id));
 }
 
@@ -8226,6 +8278,7 @@ async function buildExportFiles(studentId) {
       return item ? {
         id: item.id,
         title: serviceName(item),
+        quantity: normalizeSelectedServiceQuantity(selected.quantity),
         comment: selected.comment || "",
         previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : ""
       } : null;
@@ -9176,7 +9229,10 @@ function financialStatsForStudents(students) {
 }
 
 function studentTotalPrice(student) {
-  return selectedCatalogIdsForStudent(student).reduce((sum, id) => sum + parseMoney(catalogItemById(id)?.price), 0);
+  return selectedServicesForStudent(student).reduce((sum, item) => {
+    const service = catalogItemById(item.serviceId);
+    return sum + (parseMoney(service?.price) * normalizeSelectedServiceQuantity(item.quantity));
+  }, 0);
 }
 
 function parseMoney(value) {
@@ -9745,6 +9801,7 @@ function normalizeSelectedServices(selectedServices) {
   return (selectedServices || [])
     .map((item) => ({
       serviceId: String(item?.serviceId || item?.id || "").trim(),
+      quantity: normalizeSelectedServiceQuantity(item?.quantity),
       comment: String(item?.comment || "").trim()
     }))
     .filter((item) => item.serviceId && catalogItemById(item.serviceId) && !seen.has(item.serviceId) && seen.add(item.serviceId));
@@ -9754,6 +9811,7 @@ function buildSelectedServices(catalogIds, existing = []) {
   const byId = new Map(normalizeSelectedServices(existing).map((item) => [item.serviceId, item]));
   return normalizeCatalogIds(catalogIds).map((serviceId) => ({
     serviceId,
+    quantity: normalizeSelectedServiceQuantity(byId.get(serviceId)?.quantity),
     comment: byId.get(serviceId)?.comment || ""
   }));
 }
@@ -9766,6 +9824,15 @@ function selectedServicesForStudent(student) {
 
 function studentServiceComment(student, serviceId) {
   return selectedServicesForStudent(student).find((item) => item.serviceId === serviceId)?.comment || "";
+}
+
+function studentServiceQuantity(student, serviceId) {
+  return normalizeSelectedServiceQuantity(selectedServicesForStudent(student).find((item) => item.serviceId === serviceId)?.quantity);
+}
+
+function normalizeSelectedServiceQuantity(value) {
+  const quantity = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 }
 
 function serviceTaskType(catalogId, angleId) {

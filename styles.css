@@ -801,6 +801,46 @@ button.mini-catalog-option {
   font-weight: 700;
 }
 
+.student-service-quantity-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.student-service-stepper {
+  display: grid;
+  grid-template-columns: 32px minmax(64px, 1fr) 32px;
+  gap: 6px;
+  align-items: center;
+}
+
+.student-service-stepper-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.student-service-quantity-input {
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.84rem;
+}
+
+.student-service-quantity-total {
+  color: var(--text);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
 .student-service-comment-input {
   min-height: 72px;
   padding: 9px 10px;
