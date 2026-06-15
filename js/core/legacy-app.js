@@ -196,6 +196,7 @@ const state = {
   currentFinalWork: null,
   pendingFinalWorkViewerId: "",
   finalWorkMergeQueue: new Set(),
+  serviceCommentTimers: new Map(),
   currentDocumentTarget: null,
   currentImportDraft: null,
   zipImportMode: "auto",
@@ -1855,6 +1856,8 @@ function miniCatalogCheckbox(item, selected = false) {
 
 function miniCatalogToggle(item, studentId, selected = false) {
   const category = serviceCategory(item);
+  const student = studentById(studentId);
+  const comment = studentServiceComment(student, item.id);
   return `
     <article class="mini-catalog-option student-service-card ${selected ? "selected" : ""}" role="listitem">
       <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
@@ -1867,6 +1870,12 @@ function miniCatalogToggle(item, studentId, selected = false) {
         </span>
         <span class="student-service-card-status">${selected ? "В заказе" : escapeHtml(formatPrice(item.price))}</span>
       </button>
+      ${selected ? `
+        <label class="student-service-comment-field">
+          <span>Комментарий к услуге</span>
+          <textarea class="textarea student-service-comment-input" data-service-comment="${studentId}:${item.id}" placeholder="Например: без шляпы, сделать темнее, добавить имя">${escapeHtml(comment)}</textarea>
+        </label>
+      ` : ""}
     </article>
   `;
 }
@@ -1921,7 +1930,7 @@ function showCatalogServiceViewer(itemId) {
   injectIcons();
 }
 
-function showStudentServiceQuickPreview(itemId) {
+function showStudentServiceQuickPreview(itemId, studentId = "") {
   const item = catalogItemById(itemId);
   if (!item) return;
   document.querySelector(".student-service-preview-backdrop")?.remove();
@@ -1946,6 +1955,7 @@ function showStudentServiceQuickPreview(itemId) {
         <button class="icon-button" data-close-student-service-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
       ${preview}
+      ${studentId ? studentServiceCommentPreview(studentId, item.id) : ""}
       <p class="student-service-preview-text">${escapeHtml(description)}</p>
     </section>
   `;
@@ -1955,6 +1965,18 @@ function showStudentServiceQuickPreview(itemId) {
   });
   document.body.append(panel);
   injectIcons();
+}
+
+function studentServiceCommentPreview(studentId, itemId) {
+  const student = studentById(studentId);
+  const comment = studentServiceComment(student, itemId);
+  if (!comment) return "";
+  return `
+    <div class="student-service-comment-preview">
+      <strong>Комментарий клиента</strong>
+      <p>${escapeHtml(comment)}</p>
+    </div>
+  `;
 }
 
 function renderServices() {
@@ -2519,9 +2541,7 @@ function showSettingsDetail(section) {
         <label class="field-label"><span>Положение QR</span><select class="select" data-final-print-qr-position>
           ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${value}</option>`).join("")}
         </select></label>
-        <label class="field-label"><span>Размер QR</span><select class="select" data-final-print-qr-size>
-          ${["small", "medium", "large"].map((value) => `<option value="${value}" ${value === finalPrint.qrSize ? "selected" : ""}>${value}</option>`).join("")}
-        </select></label>
+        <label class="field-label"><span>Размер QR в пикселях</span><input class="input" data-final-print-qr-px type="number" min="48" max="240" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
         <label class="field-label"><span>Отступ QR</span><select class="select" data-final-print-qr-margin>
           ${["5px", "10px", "20px"].map((value) => `<option value="${value}" ${value === finalPrint.qrMargin ? "selected" : ""}>${value}</option>`).join("")}
         </select></label>
@@ -2913,8 +2933,27 @@ function bindViewActions() {
     event.stopPropagation();
     const payload = node.dataset.previewStudentService || "";
     const divider = payload.indexOf(":");
-    showStudentServiceQuickPreview(divider >= 0 ? payload.slice(divider + 1) : payload);
+    showStudentServiceQuickPreview(divider >= 0 ? payload.slice(divider + 1) : payload, divider >= 0 ? payload.slice(0, divider) : "");
   }));
+  view.querySelectorAll("[data-service-comment]").forEach((node) => {
+    const save = async () => {
+      const payload = node.dataset.serviceComment || "";
+      const divider = payload.indexOf(":");
+      if (divider < 0) return;
+      await saveStudentServiceComment(payload.slice(0, divider), payload.slice(divider + 1), node.value);
+    };
+    node.addEventListener("input", () => {
+      const key = node.dataset.serviceComment || "";
+      const timer = state.serviceCommentTimers.get(key);
+      if (timer) clearTimeout(timer);
+      state.serviceCommentTimers.set(key, setTimeout(() => {
+        state.serviceCommentTimers.delete(key);
+        save();
+      }, 320));
+    });
+    node.addEventListener("change", save);
+    node.addEventListener("blur", save);
+  });
   view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
     const student = studentById(studentId);
@@ -3331,9 +3370,10 @@ async function addStudent({ classId, fio, catalogId = "", catalogIds = [], payme
   const { firstName, lastName } = splitFullName(fio);
   const selectedCatalogIds = normalizeCatalogIds(catalogIds.length ? catalogIds : [catalogId || state.data.catalog[0]?.id || ""]);
   const selectedCatalogId = selectedCatalogIds[0] || "";
+  const selectedServices = buildSelectedServices(selectedCatalogIds);
   const id = uid("student");
   const manualStatus = STUDENT_MANUAL_STATUS_KEYS.includes(orderStatus) ? orderStatus : "";
-  const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, paymentStatus, orderStatus: manualStatus, status: manualStatus });
+  const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, selectedServices, paymentStatus, orderStatus: manualStatus, status: manualStatus });
   await put("students", student);
   await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: manualStatus, items: orderItemsFromCatalogs(selectedCatalogIds) }));
   return student;
@@ -3434,12 +3474,32 @@ async function updateStudentServices(studentId, catalogIds) {
   if (!selectedCatalogIds.length) return notify("Выберите хотя бы одну услугу.");
   const order = orderByStudent(studentId);
   const nextItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
-  await put("students", stampUpdated({ ...student, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds }));
+  await put("students", stampUpdated({
+    ...student,
+    catalogId: selectedCatalogIds[0],
+    catalogIds: selectedCatalogIds,
+    selectedServices: buildSelectedServices(selectedCatalogIds, selectedServicesForStudent(student))
+  }));
   await put("orders", stampUpdated({ ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems }));
   await refreshData();
   notify("Услуги и чеклист ученика обновлены.");
   state.preserveScroll = true;
   renderStudent();
+}
+
+async function saveStudentServiceComment(studentId, serviceId, comment, { rerender = false } = {}) {
+  const student = studentById(studentId);
+  if (!student || !serviceId) return;
+  const selectedServices = selectedServicesForStudent(student);
+  const nextSelectedServices = buildSelectedServices(selectedCatalogIdsForStudent(student), selectedServices).map((item) => (
+    item.serviceId === serviceId ? { ...item, comment: String(comment || "").trim() } : item
+  ));
+  await put("students", stampUpdated({ ...student, selectedServices: nextSelectedServices }, { warn: false }));
+  await refreshData();
+  if (rerender && state.route === "student" && state.studentId === studentId) {
+    state.preserveScroll = true;
+    renderStudent();
+  }
 }
 
 async function addCatalogItem() {
@@ -4545,6 +4605,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   const project = projectById(klass?.projectId);
   const services = selectedCatalogIdsForStudent(student).map(catalogItemById).filter(Boolean);
   const service = services.find((item) => item.id === selectedServiceId) || services[0];
+  const serviceComment = studentServiceComment(student, service?.id);
   const photos = mediaByStudent(student.id).filter((item) => item.type === "photo" || item.type === "image");
   const source = photos.find((item) => item.id === selectedMediaId)
     || photos.find((item) => item.orderType === "portrait")
@@ -4586,6 +4647,10 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
           </article>
         </div>
         <div class="montage-grid montage-secondary-grid">
+          <article class="panel grid">
+            <div class="card-header"><h3 class="card-title">Комментарий клиента</h3></div>
+            ${serviceComment ? `<div class="prompt-box montage-comment-box">${escapeHtml(serviceComment)}</div>` : '<p class="muted">Комментарий к этой услуге пока не добавлен.</p>'}
+          </article>
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Prompt</h3>${promptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
             ${promptText ? `<div class="prompt-box montage-prompt-box">${escapeHtml(promptText)}</div>` : '<p class="muted">Промпт не добавлен.</p>'}
@@ -4933,24 +4998,31 @@ function finalWorksPrintSheetHtml(title, pagesHtml) {
 
 function finalWorkPrintSettings() {
   const saved = state.data.settings.find((item) => item.id === SETTING_IDS.finalWorkPrint) || {};
+  const legacySize = { small: 72, medium: 96, large: 124 }[saved.qrSize] || 72;
+  const qrPixelSize = clampNumber(saved.qrPixelSize, 48, 240, legacySize);
   return {
     id: SETTING_IDS.finalWorkPrint,
     qrEnabled: saved.qrEnabled !== false,
     qrPosition: ["bottom-right", "bottom-left", "top-right", "top-left"].includes(saved.qrPosition) ? saved.qrPosition : "bottom-right",
     qrSize: ["small", "medium", "large"].includes(saved.qrSize) ? saved.qrSize : "small",
-    qrMargin: ["5px", "10px", "20px"].includes(saved.qrMargin) ? saved.qrMargin : "10px"
+    qrMargin: ["5px", "10px", "20px"].includes(saved.qrMargin) ? saved.qrMargin : "10px",
+    qrPixelSize
   };
 }
 
 async function saveFinalPrintSettingsFromView() {
-  await put("settings", {
-    id: SETTING_IDS.finalWorkPrint,
-    qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
-    qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
-    qrSize: view.querySelector("[data-final-print-qr-size]")?.value || "small",
-    qrMargin: view.querySelector("[data-final-print-qr-margin]")?.value || "10px"
+  await withBusy("Сохраняю QR и обновляю готовые работы...", async () => {
+    await put("settings", {
+      id: SETTING_IDS.finalWorkPrint,
+      qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
+      qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
+      qrSize: view.querySelector("[data-final-print-qr-size]")?.value || "small",
+      qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 48, 240, 72),
+      qrMargin: view.querySelector("[data-final-print-qr-margin]")?.value || "10px"
+    });
+    await refreshData();
+    await rebuildStoredFinalWorkPrintImages();
   });
-  await refreshData();
   notify("Настройки печати сохранены.");
   showSettingsDetail("finalPrint");
 }
@@ -5039,6 +5111,24 @@ async function ensureFinalWorkMergedImage(workId) {
   }
 }
 
+async function rebuildStoredFinalWorkPrintImages() {
+  for (const work of state.data.finalWorks) {
+    const original = finalWorkOriginalBlob(work) || work.image;
+    if (!(original instanceof Blob)) continue;
+    const qrPayload = work.printQrPayload || finalWorkCompactQrPayload(work);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
+    await put("finalWorks", stampUpdated({
+      ...work,
+      image: mergedAsset.blob,
+      originalFinalImage: work.originalFinalImage || original,
+      mergedPrintImage: mergedAsset.blob,
+      qrData: work.qrData || finalWorkQrData(work),
+      printQrPayload: qrPayload
+    }, { warn: false }));
+  }
+  await refreshData();
+}
+
 async function buildFinalWorkMergedAsset(file, qrPayload) {
   const image = await loadImageForCanvas(file);
   const width = image.width || image.naturalWidth || 0;
@@ -5050,7 +5140,9 @@ async function buildFinalWorkMergedAsset(file, qrPayload) {
   const context = canvas.getContext("2d");
   context.drawImage(image, 0, 0, width, height);
   if (typeof image.close === "function") image.close();
-  await drawFinalWorkQrOverlay(context, width, height, qrPayload);
+  if (finalWorkPrintSettings().qrEnabled !== false) {
+    await drawFinalWorkQrOverlay(context, width, height, qrPayload);
+  }
   const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
   const blob = await canvasToImageBlob(canvas, type, 0.95);
   return {
@@ -5084,8 +5176,10 @@ async function drawFinalWorkQrOverlay(context, width, height, qrPayload) {
 }
 
 function finalWorkQrPixelSize(width, height) {
+  const settings = finalWorkPrintSettings();
+  const base = clampNumber(settings.qrPixelSize, FINAL_WORK_QR_MIN_PX, 240, FINAL_WORK_QR_MIN_PX);
   const minSide = Math.max(1, Math.min(width, height));
-  return Math.round(Math.max(FINAL_WORK_QR_MIN_PX, Math.min(FINAL_WORK_QR_MAX_PX, minSide * 0.032)));
+  return Math.round(Math.min(base, Math.max(FINAL_WORK_QR_MIN_PX, minSide * 0.12)));
 }
 
 function finalWorkQrPixelMargin(width, height, size) {
@@ -5479,7 +5573,7 @@ async function applyCatalogAsTemplate(itemId) {
     await put("orders", stampUpdated({ ...order, catalogId: itemId, catalogIds: [itemId], items: orderItemsFromCatalogs([itemId], order.items || []) }));
   }
   for (const student of state.data.students) {
-    await put("students", stampUpdated({ ...student, catalogId: itemId, catalogIds: [itemId] }));
+    await put("students", stampUpdated({ ...student, catalogId: itemId, catalogIds: [itemId], selectedServices: buildSelectedServices([itemId]) }));
   }
   await refreshData();
   notify("Услуга назначена всем ученикам.");
@@ -5574,6 +5668,7 @@ async function createStudentFromMissingQr(qrId) {
     qrId,
     catalogId: selectedCatalogId,
     catalogIds: selectedCatalogIds,
+    selectedServices: buildSelectedServices(selectedCatalogIds),
     paymentStatus: "unpaid",
     orderStatus: "",
     status: ""
@@ -7849,6 +7944,10 @@ function remapTransferRecord(dataKey, record, idMaps) {
     if (idMaps.services?.size) {
       next.catalogId = idMaps.services.get(next.catalogId) || next.catalogId;
       next.catalogIds = (next.catalogIds || []).map((id) => idMaps.services.get(id) || id);
+      next.selectedServices = (next.selectedServices || []).map((item) => ({
+        ...item,
+        serviceId: idMaps.services.get(item.serviceId) || item.serviceId
+      }));
     }
   }
   if (dataKey === "orders") {
@@ -8121,9 +8220,15 @@ async function buildExportFiles(studentId) {
     const base = `${safePath(project?.name || "Project")}/${safePath(klass?.name || "Class")}/${safePath(`${student.lastName}_${student.firstName}`)}`;
     const order = orderByStudent(student.id);
     const previewNames = new Set();
-    const selectedServices = selectedCatalogIdsForStudent(student).map((id) => {
+    const selectedServices = selectedServicesForStudent(student).map((selected) => {
+      const id = selected.serviceId;
       const item = catalogItemById(id);
-      return item ? { id: item.id, title: serviceName(item), previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : "" } : null;
+      return item ? {
+        id: item.id,
+        title: serviceName(item),
+        comment: selected.comment || "",
+        previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : ""
+      } : null;
     }).filter(Boolean);
     files.push({ path: `${base}/meta.json`, data: jsonBytes({ student, order, services: selectedServices }) });
     for (const service of selectedServices) {
@@ -9625,12 +9730,42 @@ function templateItemsForSettings(template) {
 }
 
 function selectedCatalogIdsForStudent(student) {
+  const selectedServices = normalizeSelectedServices(student?.selectedServices);
+  if (selectedServices.length) return normalizeCatalogIds(selectedServices.map((item) => item.serviceId));
   return normalizeCatalogIds(student?.catalogIds?.length ? student.catalogIds : (student?.catalogId ? [student.catalogId] : []));
 }
 
 function normalizeCatalogIds(catalogIds) {
   const ids = Array.from(new Set((catalogIds || []).map(String).map((id) => id.trim()).filter(Boolean)));
   return ids.filter((id) => catalogItemById(id));
+}
+
+function normalizeSelectedServices(selectedServices) {
+  const seen = new Set();
+  return (selectedServices || [])
+    .map((item) => ({
+      serviceId: String(item?.serviceId || item?.id || "").trim(),
+      comment: String(item?.comment || "").trim()
+    }))
+    .filter((item) => item.serviceId && catalogItemById(item.serviceId) && !seen.has(item.serviceId) && seen.add(item.serviceId));
+}
+
+function buildSelectedServices(catalogIds, existing = []) {
+  const byId = new Map(normalizeSelectedServices(existing).map((item) => [item.serviceId, item]));
+  return normalizeCatalogIds(catalogIds).map((serviceId) => ({
+    serviceId,
+    comment: byId.get(serviceId)?.comment || ""
+  }));
+}
+
+function selectedServicesForStudent(student) {
+  const normalized = normalizeSelectedServices(student?.selectedServices);
+  if (normalized.length) return buildSelectedServices(selectedCatalogIdsForStudent(student), normalized);
+  return buildSelectedServices(selectedCatalogIdsForStudent(student));
+}
+
+function studentServiceComment(student, serviceId) {
+  return selectedServicesForStudent(student).find((item) => item.serviceId === serviceId)?.comment || "";
 }
 
 function serviceTaskType(catalogId, angleId) {
@@ -10004,6 +10139,12 @@ function dataUrlToBytes(dataUrl) {
   } catch {
     return null;
   }
+}
+
+function clampNumber(value, min, max, fallback) {
+  const number = Number.parseFloat(String(value ?? "").trim());
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
 }
 
 function createQrSvg(text, scale = 6) {

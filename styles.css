@@ -791,6 +791,24 @@ button.mini-catalog-option {
   white-space: nowrap;
 }
 
+.student-service-comment-field {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.student-service-comment-input {
+  min-height: 72px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: var(--card);
+  font-size: 0.8rem;
+}
+
 .catalog-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -2154,6 +2172,24 @@ button.mini-catalog-option {
 }
 
 .student-service-preview-text {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.student-service-comment-preview {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card-strong);
+}
+
+.student-service-comment-preview strong {
+  font-size: 0.78rem;
+}
+
+.student-service-comment-preview p {
   color: var(--muted);
   line-height: 1.5;
 }
