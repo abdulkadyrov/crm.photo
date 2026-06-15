@@ -699,6 +699,35 @@ button.mini-catalog-option {
   font: inherit;
 }
 
+.student-service-card {
+  grid-template-columns: 42px minmax(0, 1fr);
+  min-width: 160px;
+  max-width: 180px;
+  padding: 8px;
+  scroll-snap-align: start;
+}
+
+.student-service-preview-button,
+.student-service-toggle-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.student-service-preview-button {
+  width: 42px;
+  height: 42px;
+}
+
+.student-service-toggle-button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  text-align: left;
+}
+
 .mini-catalog-option input {
   position: absolute;
   inset: 0;
@@ -753,6 +782,13 @@ button.mini-catalog-option {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.student-service-card-status {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .catalog-modal-backdrop {
@@ -2047,13 +2083,25 @@ button.mini-catalog-option {
 
 .service-dropdown-picker {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
-.service-chip-list {
+.student-service-selected-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.student-service-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 180px);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
 
 .service-chip {
@@ -2083,6 +2131,31 @@ button.mini-catalog-option {
   background: color-mix(in srgb, var(--error) 12%, transparent);
   color: var(--error);
   font-weight: 900;
+}
+
+.student-service-preview-panel {
+  width: min(420px, calc(100vw - 28px));
+}
+
+.student-service-preview-image {
+  display: block;
+  width: 100%;
+  max-height: min(42dvh, 320px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #050505;
+  object-fit: cover;
+}
+
+.student-service-preview-image.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.student-service-preview-text {
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .finance-mini-progress span {
@@ -2376,6 +2449,22 @@ button.mini-catalog-option {
 .final-work-viewer-panel {
   width: min(1040px, calc(100vw - 24px));
   max-height: min(900px, calc(100dvh - 24px));
+}
+
+.final-work-viewer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.final-work-viewer-meta span {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card-strong);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
 }
 
 .final-work-viewer-image {

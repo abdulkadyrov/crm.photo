@@ -194,6 +194,8 @@ const state = {
   currentPreview: null,
   currentAlbumMedia: null,
   currentFinalWork: null,
+  pendingFinalWorkViewerId: "",
+  finalWorkMergeQueue: new Set(),
   currentDocumentTarget: null,
   currentImportDraft: null,
   zipImportMode: "auto",
@@ -209,6 +211,8 @@ const state = {
 };
 
 const QR_SCAN_INTERVAL = 120;
+const FINAL_WORK_QR_MIN_PX = 72;
+const FINAL_WORK_QR_MAX_PX = 132;
 const REFERENCE_AI_SET = [
   {
     id: "portrait_waist",
@@ -1513,6 +1517,7 @@ function renderStudent() {
   const finalStats = finalWorkStatsForStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
+  const selectedCatalogItems = selectedCatalogIds.map(catalogItemById).filter(Boolean);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Услуги не выбраны";
   const orderPrice = studentTotalPrice(student);
   const c = completion(student.id);
@@ -1582,13 +1587,15 @@ function renderStudent() {
         <div class="field-label">
           <span>Услуги ученика</span>
           <div class="service-dropdown-picker">
-            <div class="service-chip-list">
-              ${selectedCatalogIds.map((id) => {
-                const item = catalogItemById(id);
-                return item ? `<span class="service-chip">${escapeHtml(serviceName(item))}<button data-remove-student-service="${student.id}:${item.id}" type="button" aria-label="Убрать услугу">×</button></span>` : "";
-              }).join("") || '<p class="muted">Услуги не выбраны.</p>'}
+            <div class="student-service-selected-strip">
+              ${selectedCatalogItems.map((item) => `
+                <span class="service-chip">
+                  ${escapeHtml(serviceName(item))}
+                  <button data-remove-student-service="${student.id}:${item.id}" type="button" aria-label="Убрать услугу">×</button>
+                </span>
+              `).join("") || '<p class="muted">Услуги не выбраны.</p>'}
             </div>
-            <div class="student-service-mini-grid">
+            <div class="student-service-rail" role="list" aria-label="Услуги ученика">
               ${state.data.catalog.map((item) => miniCatalogToggle(item, student.id, selectedCatalogIds.includes(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
             </div>
           </div>
@@ -1614,6 +1621,8 @@ function renderStudent() {
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
   bindViewActions();
+  maybeBackfillStudentFinalWorks(student.id);
+  maybeOpenPendingFinalWorkViewer(student.id);
 }
 
 function taskRow(item, studentId) {
@@ -1845,14 +1854,20 @@ function miniCatalogCheckbox(item, selected = false) {
 }
 
 function miniCatalogToggle(item, studentId, selected = false) {
+  const category = serviceCategory(item);
   return `
-    <button class="mini-catalog-option ${selected ? "selected" : ""}" data-toggle-student-service="${studentId}:${item.id}" type="button">
-      <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
-      <span class="mini-catalog-copy">
-        <strong>${escapeHtml(serviceName(item))}</strong>
-        <small>${selected ? "Выбрано" : escapeHtml(formatPrice(item.price))}</small>
-      </span>
-    </button>
+    <article class="mini-catalog-option student-service-card ${selected ? "selected" : ""}" role="listitem">
+      <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
+        <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
+      </button>
+      <button class="student-service-toggle-button" data-toggle-student-service="${studentId}:${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
+        <span class="mini-catalog-copy">
+          <strong>${escapeHtml(serviceName(item))}</strong>
+          <small>${escapeHtml(category || formatPrice(item.price))}</small>
+        </span>
+        <span class="student-service-card-status">${selected ? "В заказе" : escapeHtml(formatPrice(item.price))}</span>
+      </button>
+    </article>
   `;
 }
 
@@ -1901,6 +1916,42 @@ function showCatalogServiceViewer(itemId) {
     const video = panel.querySelector("[data-catalog-modal-video]");
     if (video?.requestFullscreen) await video.requestFullscreen().catch(() => {});
     else video?.webkitEnterFullscreen?.();
+  });
+  document.body.append(panel);
+  injectIcons();
+}
+
+function showStudentServiceQuickPreview(itemId) {
+  const item = catalogItemById(itemId);
+  if (!item) return;
+  document.querySelector(".student-service-preview-backdrop")?.remove();
+  const imageUrl = servicePreviewImageDataUrl(item);
+  const videoUrl = servicePreviewVideoDataUrl(item);
+  const category = serviceCategory(item);
+  const description = serviceShortDescription(item) || serviceDescription(item) || "Краткое описание можно добавить в услуге.";
+  const preview = imageUrl
+    ? `<img class="student-service-preview-image" src="${imageUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
+    : videoUrl
+      ? `<video class="student-service-preview-image" src="${videoUrl}" controls playsinline></video>`
+      : `<div class="student-service-preview-image empty">Нет preview</div>`;
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop student-service-preview-backdrop";
+  panel.innerHTML = `
+    <section class="qr-panel student-service-preview-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(serviceName(item))}">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
+          <p class="muted">${escapeHtml(category || formatPrice(item.price))}</p>
+        </div>
+        <button class="icon-button" data-close-student-service-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      ${preview}
+      <p class="student-service-preview-text">${escapeHtml(description)}</p>
+    </section>
+  `;
+  const close = () => panel.remove();
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel || event.target.closest("[data-close-student-service-preview]")) close();
   });
   document.body.append(panel);
   injectIcons();
@@ -2857,6 +2908,12 @@ function bindViewActions() {
     const selected = selectedCatalogIdsForStudent(student);
     const next = selected.includes(catalogId) ? selected.filter((id) => id !== catalogId) : [...selected, catalogId];
     updateStudentServices(studentId, next);
+  }));
+  view.querySelectorAll("[data-preview-student-service]").forEach((node) => node.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const payload = node.dataset.previewStudentService || "";
+    const divider = payload.indexOf(":");
+    showStudentServiceQuickPreview(divider >= 0 ? payload.slice(divider + 1) : payload);
   }));
   view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
@@ -4595,20 +4652,19 @@ async function handleFinalWorkInput(event) {
   const service = catalogItemById(target.serviceId);
   const klass = classById(student?.classId);
   if (!student || !service || !klass) return notify("Не удалось сохранить результат.");
-  const ext = extensionFor(file, "photo");
-  const fileName = safeFileName(`${klass.name}_${student.lastName}_${student.firstName}_${serviceName(service)}_final.${ext}`);
-  const work = createFinalWorkRecord({
-    projectId: klass.projectId,
-    groupId: klass.id,
-    studentId: student.id,
-    serviceId: service.id,
-    title: serviceName(service) || "Готовый результат",
-    fileName,
-    image: file,
-    sourceMediaId: target.sourceMediaId,
-    referenceMediaId: target.referenceMediaId
+  await withBusy("Готовлю результат с QR...", async () => {
+    const work = await createFinalWorkRecord({
+      projectId: klass.projectId,
+      groupId: klass.id,
+      studentId: student.id,
+      serviceId: service.id,
+      title: serviceName(service) || "Готовый результат",
+      originalFile: file,
+      sourceMediaId: target.sourceMediaId,
+      referenceMediaId: target.referenceMediaId
+    });
+    await put("finalWorks", work);
   });
-  await put("finalWorks", work);
   state.currentFinalWork = null;
   await refreshData();
   await markStudentOrderReadyAfterFinalWork(student.id);
@@ -4629,8 +4685,10 @@ function montageReferenceForService(service) {
   return null;
 }
 
-function createFinalWorkRecord(input) {
+async function createFinalWorkRecord(input) {
   const id = uid("final");
+  const qrData = finalWorkQrData({ id, ...input });
+  const mergedAsset = await buildFinalWorkMergedAsset(input.originalFile, qrData.payload);
   return stampCreated({
     id,
     projectId: input.projectId,
@@ -4638,12 +4696,15 @@ function createFinalWorkRecord(input) {
     studentId: input.studentId,
     serviceId: input.serviceId,
     title: input.title || "Готовый результат",
-    fileName: input.fileName || "",
-    image: input.image || null,
+    fileName: finalWorkStorageFileName(input, mergedAsset.fileExtension),
+    image: mergedAsset.blob,
+    originalFinalImage: input.originalFile || null,
+    mergedPrintImage: mergedAsset.blob,
+    qrData,
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
-    printQrPayload: finalWorkCompactQrPayload({ id }),
+    printQrPayload: qrData.payload,
     status: "ready"
   });
 }
@@ -4662,7 +4723,15 @@ function finalWorkById(workId) {
 }
 
 function finalWorkImageBlob(work) {
+  if (work?.mergedPrintImage instanceof Blob) return work.mergedPrintImage;
   if (work?.image instanceof Blob) return work.image;
+  if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
+  if (work?.blob instanceof Blob) return work.blob;
+  return mediaById(work?.resultMediaId)?.blob || null;
+}
+
+function finalWorkOriginalBlob(work) {
+  if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
   if (work?.blob instanceof Blob) return work.blob;
   return mediaById(work?.resultMediaId)?.blob || null;
 }
@@ -4693,6 +4762,10 @@ async function showFinalWorkViewer(workId) {
   if (!work) return notify("Готовый результат не найден.");
   const blob = finalWorkImageBlob(work);
   if (!blob) return notify("Изображение результата не найдено.");
+  const student = studentById(work.studentId);
+  const klass = classById(work.groupId || student?.classId);
+  const project = projectById(work.projectId || klass?.projectId);
+  const service = catalogItemById(work.serviceId);
   const url = URL.createObjectURL(blob);
   const titleText = finalWorkTitle(work);
   document.querySelector(".final-work-viewer-backdrop")?.remove();
@@ -4703,14 +4776,20 @@ async function showFinalWorkViewer(workId) {
       <div class="card-header">
         <div>
           <h2 class="card-title">${escapeHtml(titleText)}</h2>
-          <p class="muted">${escapeHtml(finalWorkStatusLabel(work.status))}</p>
+          <p class="muted">Итоговая версия с QR · ${escapeHtml(finalWorkStatusLabel(work.status))}</p>
         </div>
         <button class="icon-button" data-close-final-work-viewer type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="final-work-viewer-meta">
+        <span>${escapeHtml(project?.name || "Проект")}</span>
+        <span>${escapeHtml(klass?.name || "Группа")}</span>
+        <span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Ученик")}</span>
+        <span>${escapeHtml(serviceName(service) || titleText)}</span>
       </div>
       <img class="final-work-viewer-image" src="${escapeAttr(url)}" alt="${escapeAttr(titleText)}" />
       <div class="toolbar">
         <button class="secondary-button" data-download-final-work="${work.id}" type="button">Скачать</button>
-        <button class="secondary-button" data-print-final-work="${work.id}" type="button">Печать с QR</button>
+        <button class="secondary-button" data-print-final-work="${work.id}" type="button">Печать</button>
         <button class="danger-button" data-delete-final-work="${work.id}" type="button">Удалить</button>
       </div>
     </section>
@@ -4756,13 +4835,11 @@ function printFinalWork(workId) {
   const blob = finalWorkImageBlob(work);
   if (!work || !blob) return notify("Изображение результата не найдено.");
   const url = URL.createObjectURL(blob);
-  const qr = createQrSvg(finalWorkCompactQrPayload(work), 4);
   const area = document.createElement("div");
   area.className = "final-work-print-area";
   area.innerHTML = `
     <section class="final-work-print-page">
       <img src="${escapeAttr(url)}" alt="${escapeAttr(finalWorkTitle(work))}" />
-      <div class="final-work-print-qr" style="${escapeAttr(finalWorkQrBoxStyle(finalWorkPrintSettings()))}">${qr}</div>
     </section>
   `;
   document.body.append(area);
@@ -4784,11 +4861,10 @@ async function printClassFinalWorksWithQr(classId) {
   return withBusy("Готовлю результаты для печати...", async () => {
     const works = state.data.finalWorks.filter((work) => work.groupId === classId && finalWorkImageBlob(work));
     if (!works.length) return notify("В группе нет готовых результатов для печати.");
-    const settings = finalWorkPrintSettings();
     const pages = [];
     for (const work of works) {
       const imageUrl = await fileToDataUrl(finalWorkImageBlob(work));
-      pages.push(finalWorkPrintPageHtml(work, imageUrl, settings));
+      pages.push(finalWorkPrintPageHtml(work, imageUrl));
     }
     const title = `Печать готовых результатов · ${klass.name}`;
     const fileName = safeFileName(`final_results_${klass.name}_${new Date().toISOString().slice(0, 10)}.html`);
@@ -4798,12 +4874,11 @@ async function printClassFinalWorksWithQr(classId) {
   });
 }
 
-function finalWorkPrintPageHtml(work, imageUrl, settings) {
+function finalWorkPrintPageHtml(work, imageUrl) {
   const titleText = finalWorkTitle(work);
   return `
     <section class="print-page">
       <img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(titleText)}" />
-      <div class="print-qr" style="${escapeAttr(finalWorkQrBoxStyle(settings))}">${createQrSvg(finalWorkCompactQrPayload(work), 4)}</div>
     </section>
   `;
 }
@@ -4886,6 +4961,26 @@ function finalWorkCompactQrPayload(work) {
   return `${FINAL_WORK_PRINT_QR_PREFIX}${base64UrlEncode(work.id || "")}`;
 }
 
+function finalWorkQrData(work) {
+  return {
+    type: "final_work_print",
+    payload: finalWorkCompactQrPayload(work),
+    projectId: work.projectId || "",
+    groupId: work.groupId || "",
+    studentId: work.studentId || "",
+    serviceId: work.serviceId || "",
+    finalWorkId: work.id || ""
+  };
+}
+
+function finalWorkStorageFileName(input, fileExtension) {
+  const student = studentById(input.studentId);
+  const klass = classById(student?.classId);
+  const service = catalogItemById(input.serviceId);
+  const extension = fileExtension || extensionFor(input.originalFile, "photo");
+  return safeFileName(`${klass?.name || "class"}_${student?.lastName || "student"}_${student?.firstName || ""}_${serviceName(service) || input.title || "final"}_final.${extension}`);
+}
+
 function finalWorkIdFromCompactPrintQr(value) {
   const raw = String(value || "").trim();
   if (!raw.startsWith(FINAL_WORK_PRINT_QR_PREFIX)) return "";
@@ -4893,6 +4988,120 @@ function finalWorkIdFromCompactPrintQr(value) {
   const decoded = base64UrlDecode(token);
   if (String(decoded || "").startsWith("final_")) return decoded;
   return token.startsWith("final_") ? token : "";
+}
+
+function maybeOpenPendingFinalWorkViewer(studentId) {
+  const workId = state.pendingFinalWorkViewerId;
+  if (!workId) return;
+  const work = finalWorkById(workId);
+  if (!work || work.studentId !== studentId) return;
+  state.pendingFinalWorkViewerId = "";
+  requestAnimationFrame(() => showFinalWorkViewer(workId));
+}
+
+function maybeBackfillStudentFinalWorks(studentId) {
+  const stale = finalWorksForStudent(studentId).filter((work) => finalWorkNeedsMergedImage(work));
+  if (!stale.length) return;
+  stale.forEach((work) => ensureFinalWorkMergedImage(work.id));
+}
+
+function finalWorkNeedsMergedImage(work) {
+  return Boolean(work) && !(work?.mergedPrintImage instanceof Blob) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
+}
+
+async function ensureFinalWorkMergedImage(workId) {
+  if (!workId || state.finalWorkMergeQueue.has(workId)) return;
+  const work = finalWorkById(workId);
+  if (!finalWorkNeedsMergedImage(work)) return;
+  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
+  if (!original) return;
+  state.finalWorkMergeQueue.add(workId);
+  try {
+    const qrPayload = work.printQrPayload || finalWorkCompactQrPayload(work);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
+    await put("finalWorks", stampUpdated({
+      ...work,
+      image: mergedAsset.blob,
+      originalFinalImage: work.originalFinalImage || original,
+      mergedPrintImage: mergedAsset.blob,
+      qrData: work.qrData || finalWorkQrData(work),
+      printQrPayload: qrPayload
+    }));
+    await refreshData();
+    if (state.route === "student" && state.studentId === work.studentId) {
+      state.preserveScroll = true;
+      renderStudent();
+    }
+  } catch {
+    // keep legacy result if the merge fails
+  } finally {
+    state.finalWorkMergeQueue.delete(workId);
+  }
+}
+
+async function buildFinalWorkMergedAsset(file, qrPayload) {
+  const image = await loadImageForCanvas(file);
+  const width = image.width || image.naturalWidth || 0;
+  const height = image.height || image.naturalHeight || 0;
+  if (!width || !height) throw new Error("Unable to build final work image");
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, width, height);
+  if (typeof image.close === "function") image.close();
+  await drawFinalWorkQrOverlay(context, width, height, qrPayload);
+  const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
+  const blob = await canvasToImageBlob(canvas, type, 0.95);
+  return {
+    blob: blob || file,
+    fileExtension: type === "image/png" ? "png" : "jpg"
+  };
+}
+
+async function drawFinalWorkQrOverlay(context, width, height, qrPayload) {
+  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
+  const qrImage = await loadImageFromUrl(qrDataUrl);
+  const size = finalWorkQrPixelSize(width, height);
+  const padding = Math.max(4, Math.round(size * 0.08));
+  const radius = Math.max(6, Math.round(size * 0.12));
+  const margin = finalWorkQrPixelMargin(width, height, size);
+  const boxSize = size + padding * 2;
+  const x = width - margin - boxSize;
+  const y = height - margin - boxSize;
+  context.save();
+  context.shadowColor = "rgba(15,23,42,0.18)";
+  context.shadowBlur = Math.max(8, Math.round(size * 0.14));
+  context.shadowOffsetY = Math.max(2, Math.round(size * 0.03));
+  context.fillStyle = "rgba(255,255,255,0.96)";
+  drawRoundedRect(context, x, y, boxSize, boxSize, radius);
+  context.fill();
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetY = 0;
+  context.drawImage(qrImage, x + padding, y + padding, size, size);
+  context.restore();
+}
+
+function finalWorkQrPixelSize(width, height) {
+  const minSide = Math.max(1, Math.min(width, height));
+  return Math.round(Math.max(FINAL_WORK_QR_MIN_PX, Math.min(FINAL_WORK_QR_MAX_PX, minSide * 0.032)));
+}
+
+function finalWorkQrPixelMargin(width, height, size) {
+  const minSide = Math.max(1, Math.min(width, height));
+  return Math.round(Math.max(10, Math.min(28, minSide * 0.014, size * 0.24)));
+}
+
+function drawRoundedRect(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + width, y, x + width, y + height, r);
+  context.arcTo(x + width, y + height, x, y + height, r);
+  context.arcTo(x, y + height, x, y, r);
+  context.arcTo(x, y, x + width, y, r);
+  context.closePath();
 }
 
 function base64UrlEncode(value) {
@@ -5325,7 +5534,13 @@ function handleManualQr(event) {
 async function openQrValue(value) {
   const printPayload = parseFinalWorkPrintQr(value);
   if (printPayload) {
-    showFinalWorkPrintQrPanel(printPayload);
+    const work = findFinalWorkFromPrintPayload(printPayload);
+    if (!work) {
+      showFinalWorkPrintQrPanel(printPayload);
+      return;
+    }
+    state.pendingFinalWorkViewerId = work.id;
+    navigate("student", { studentId: work.studentId });
     return;
   }
   const parsed = parseQrPayload(value);
@@ -6070,6 +6285,7 @@ function showFinalWorkPrintQrPanel(payload) {
         <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(serviceName(service) || "Не найдена")}</strong></div>
         <div class="detail-stat"><span>Статус</span><strong>${escapeHtml(finalWorkStatusLabel(work.status))}</strong></div>
       </div>
+      <button class="primary-button" data-open-final-work-from-qr="${work.id}" type="button">Открыть результат</button>
     </section>
   `;
   const close = () => {
@@ -6078,6 +6294,11 @@ function showFinalWorkPrintQrPanel(payload) {
   };
   panel.addEventListener("click", (event) => {
     if (event.target === panel || event.target.closest("[data-close-final-work-qr]")) close();
+  });
+  panel.querySelector("[data-open-final-work-from-qr]")?.addEventListener("click", () => {
+    close();
+    state.pendingFinalWorkViewerId = work.id;
+    navigate("student", { studentId: work.studentId });
   });
   document.body.append(panel);
   injectIcons();
@@ -7654,6 +7875,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
     if (idMaps.media?.has(next.referenceMediaId)) next.referenceMediaId = idMaps.media.get(next.referenceMediaId);
     if (idMaps.media?.has(next.resultMediaId)) next.resultMediaId = idMaps.media.get(next.resultMediaId);
     next.printQrPayload = finalWorkCompactQrPayload(next);
+    next.qrData = finalWorkQrData(next);
   }
   return next;
 }
@@ -9681,6 +9903,12 @@ function fileToDataUrl(file) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
+  });
+}
+
+function canvasToImageBlob(canvas, type = "image/jpeg", quality = 0.95) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality);
   });
 }
 
