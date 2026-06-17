@@ -2226,7 +2226,7 @@ function renderProfile() {
           ${operator ? '<button class="secondary-button compact" data-logout-operator type="button">Сменить профиль</button>' : '<button class="primary-button compact" data-open-operator-login type="button">Выбрать профиль</button>'}
         </div>
       </article>
-      ${operatorStatsPanel(profileStats)}
+      ${operatorStatsPanel(profileStats, operator || selectedOperator)}
       ${isOwner ? `
         <article class="panel grid">
           <div class="card-header">
@@ -2270,9 +2270,14 @@ function profileUnknownPanel() {
   `;
 }
 
-function operatorStatsPanel(stats) {
+function operatorStatsPanel(stats, operator = null) {
   return `
     <article class="panel grid">
+      <div>
+        <h2 class="card-title">Статистика ${escapeHtml(operator?.name || "сотрудника")}</h2>
+        <p class="muted">По проектам, классам, детям и снятым материалам.</p>
+      </div>
+      ${operatorWorkOverview(stats)}
       <div class="stats finance-stats profile-stat-grid">
         <div class="stat"><strong>${stats.projects}</strong><span class="muted">Проектов создано</span></div>
         <div class="stat"><strong>${stats.classes}</strong><span class="muted">Классов создано</span></div>
@@ -2286,6 +2291,98 @@ function operatorStatsPanel(stats) {
         <div class="stat"><strong>${escapeHtml(formatActivityDate(stats.lastActivity))}</strong><span class="muted">Последняя активность</span></div>
       </div>
     </article>
+  `;
+}
+
+function operatorWorkOverview(stats) {
+  const overview = stats.workOverview;
+  if (!overview) return "";
+  const classRows = overview.classRows.slice(0, 8);
+  const projectRows = overview.projectRows.slice(0, 6);
+  const studentsPercent = overview.students ? Math.round((overview.photographedStudents / overview.students) * 100) : 0;
+  const tasksPercent = overview.totalTasks ? Math.round((overview.doneTasks / overview.totalTasks) * 100) : 0;
+  return `
+    <div class="profile-work-overview">
+      <div class="profile-work-head">
+        <div class="profile-donut" style="--done:${studentsPercent};" aria-label="Сфотографировано ${studentsPercent}%">
+          <span>${studentsPercent}%</span>
+        </div>
+        <div class="detail-stats profile-work-stats">
+          <div class="detail-stat"><span>Проекты в работе</span><strong>${overview.projects}</strong></div>
+          <div class="detail-stat"><span>Классы затронуты</span><strong>${overview.classes}</strong></div>
+          <div class="detail-stat"><span>Классы закрыты</span><strong>${overview.completedClasses}</strong></div>
+          <div class="detail-stat"><span>Детей в этих классах</span><strong>${overview.students}</strong></div>
+          <div class="detail-stat"><span>Сфотографировано детей</span><strong>${overview.photographedStudents}</strong></div>
+          <div class="detail-stat"><span>Осталось снять</span><strong>${overview.remainingStudents}</strong></div>
+          <div class="detail-stat"><span>Фото/видео сохранено</span><strong>${overview.media}</strong></div>
+          <div class="detail-stat"><span>Задачи чеклиста</span><strong>${overview.doneTasks}/${overview.totalTasks}</strong></div>
+        </div>
+      </div>
+      <div class="profile-chart-grid">
+        <div class="profile-chart-card">
+          <h3 class="mini-heading">Диаграмма по детям</h3>
+          <div class="profile-chart-row">
+            <span>Снято</span>
+            <div class="profile-chart-track"><span style="width:${studentsPercent}%"></span></div>
+            <strong>${overview.photographedStudents}</strong>
+          </div>
+          <div class="profile-chart-row">
+            <span>Осталось</span>
+            <div class="profile-chart-track muted-track"><span style="width:${100 - studentsPercent}%"></span></div>
+            <strong>${overview.remainingStudents}</strong>
+          </div>
+          <div class="profile-chart-row">
+            <span>Чеклист</span>
+            <div class="profile-chart-track task-track"><span style="width:${tasksPercent}%"></span></div>
+            <strong>${tasksPercent}%</strong>
+          </div>
+        </div>
+        <div class="profile-chart-card">
+          <h3 class="mini-heading">По проектам</h3>
+          <div class="profile-project-list">
+            ${projectRows.map((row) => profileProjectRow(row)).join("") || '<p class="muted">Пока нет проектов с действиями этого сотрудника.</p>'}
+          </div>
+        </div>
+      </div>
+      <div class="profile-chart-card">
+        <h3 class="mini-heading">По классам</h3>
+        <div class="profile-class-list">
+          ${classRows.map((row) => profileClassRow(row)).join("") || '<p class="muted">Пока нет классов с действиями этого сотрудника.</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function profileProjectRow(row) {
+  const percent = row.students ? Math.round((row.photographedStudents / row.students) * 100) : 0;
+  return `
+    <div class="profile-breakdown-row">
+      <div>
+        <strong>${escapeHtml(row.projectName)}</strong>
+        <span>${row.classes} классов · ${row.students} детей · ${row.media} фото/видео</span>
+      </div>
+      <div class="profile-breakdown-progress">
+        <span>${percent}%</span>
+        <div class="profile-chart-track"><span style="width:${percent}%"></span></div>
+      </div>
+    </div>
+  `;
+}
+
+function profileClassRow(row) {
+  const percent = row.students ? Math.round((row.photographedStudents / row.students) * 100) : 0;
+  return `
+    <div class="profile-breakdown-row">
+      <div>
+        <strong>${escapeHtml(row.projectName)} · ${escapeHtml(row.className)}</strong>
+        <span>${row.photographedStudents}/${row.students} детей снято · осталось ${row.remainingStudents} · сохранено ${row.media}</span>
+      </div>
+      <div class="profile-breakdown-progress">
+        <span>${percent}%</span>
+        <div class="profile-chart-track"><span style="width:${percent}%"></span></div>
+      </div>
+    </div>
   `;
 }
 
@@ -2334,6 +2431,7 @@ function operatorDetailPanel(operator, stats) {
         <h2 class="card-title">${escapeHtml(operator.name)}</h2>
         <p class="muted">Подробная статистика по проектам, классам, датам, импортам и экспортам.</p>
       </div>
+      ${operatorWorkOverview(stats)}
       <div class="profile-detail-grid">
         ${operatorDetailGroup("По проектам", stats.projectDetails)}
         ${operatorDetailGroup("По классам", stats.classDetails)}
@@ -2389,10 +2487,98 @@ function buildOperatorStats(operatorId) {
     unpaidStudents: unpaidStudents.length,
     lastActivity,
     totalActivity: projects.length + classes.length + students.length + media.length + importEvents.length + exportEvents.length + tasks.length,
+    workOverview: buildOperatorWorkOverview(operatorId),
     projectDetails: operatorProjectDetails(operatorId),
     classDetails: operatorClassDetails(operatorId),
     dateDetails: operatorDateDetails(operatorId),
     transferDetails: operatorTransferDetails(operatorId)
+  };
+}
+
+function buildOperatorWorkOverview(operatorId) {
+  const projectMap = new Map();
+  const classRows = [];
+  let totalStudents = 0;
+  let totalPhotographedStudents = 0;
+  let totalRemainingStudents = 0;
+  let totalMedia = 0;
+  let totalDoneTasks = 0;
+  let totalTasks = 0;
+  let completedClasses = 0;
+
+  state.data.classes.forEach((klass) => {
+    const project = projectById(klass.projectId);
+    const students = state.data.students.filter((student) => student.classId === klass.id);
+    const studentIds = new Set(students.map((student) => student.id));
+    const operatorMedia = state.data.media.filter((item) => studentIds.has(item.studentId) && recordMatchesOperator(item, operatorId, ["createdBy", "importedBy", "capturedBy"]));
+    const photographedIds = new Set(operatorMedia.map((item) => item.studentId).filter(Boolean));
+    const ownStudents = students.filter((student) => recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]));
+    const classTasks = state.data.orders
+      .filter((order) => studentIds.has(order.studentId))
+      .flatMap((order) => (order.items || []).map((item) => ({ ...item, order })));
+    const doneTasks = classTasks.filter((item) => item.status === "done" && recordMatchesOperator(item, operatorId, ["completedBy", "updatedBy"])).length;
+    const hasClassRecord = recordMatchesOperator(klass, operatorId, ["createdBy", "updatedBy", "exportedBy"]);
+    const hasProjectRecord = project && recordMatchesOperator(project, operatorId, ["createdBy", "updatedBy", "exportedBy"]);
+    const hasActivity = operatorMedia.length || ownStudents.length || doneTasks || hasClassRecord || hasProjectRecord;
+    if (!hasActivity) return;
+
+    const photographedStudents = photographedIds.size;
+    const remainingStudents = Math.max(0, students.length - photographedStudents);
+    const row = {
+      projectId: klass.projectId,
+      projectName: project?.name || "Проект",
+      className: klass.name,
+      students: students.length,
+      photographedStudents,
+      remainingStudents,
+      media: operatorMedia.length,
+      doneTasks,
+      totalTasks: classTasks.length
+    };
+    classRows.push(row);
+    totalStudents += row.students;
+    totalPhotographedStudents += row.photographedStudents;
+    totalRemainingStudents += row.remainingStudents;
+    totalMedia += row.media;
+    totalDoneTasks += row.doneTasks;
+    totalTasks += row.totalTasks;
+    if (row.students > 0 && row.remainingStudents === 0) completedClasses += 1;
+
+    const projectRow = projectMap.get(row.projectId) || {
+      projectId: row.projectId,
+      projectName: row.projectName,
+      classes: 0,
+      students: 0,
+      photographedStudents: 0,
+      remainingStudents: 0,
+      media: 0,
+      doneTasks: 0,
+      totalTasks: 0
+    };
+    projectRow.classes += 1;
+    projectRow.students += row.students;
+    projectRow.photographedStudents += row.photographedStudents;
+    projectRow.remainingStudents += row.remainingStudents;
+    projectRow.media += row.media;
+    projectRow.doneTasks += row.doneTasks;
+    projectRow.totalTasks += row.totalTasks;
+    projectMap.set(row.projectId, projectRow);
+  });
+
+  const projectRows = Array.from(projectMap.values()).sort((a, b) => b.media - a.media || b.photographedStudents - a.photographedStudents);
+  classRows.sort((a, b) => b.media - a.media || b.photographedStudents - a.photographedStudents);
+  return {
+    projects: projectRows.length,
+    classes: classRows.length,
+    completedClasses,
+    students: totalStudents,
+    photographedStudents: totalPhotographedStudents,
+    remainingStudents: totalRemainingStudents,
+    media: totalMedia,
+    doneTasks: totalDoneTasks,
+    totalTasks,
+    projectRows,
+    classRows
   };
 }
 
