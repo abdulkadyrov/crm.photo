@@ -1597,7 +1597,7 @@ function renderStudent() {
           </div>
         </article>
       </div>
-      <aside class="panel grid">
+      <aside class="panel grid student-order-panel">
         <h2 class="card-title">Заказ</h2>
         <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
         <div class="field-label">
@@ -5449,11 +5449,11 @@ function finalWorkIdFromCompactPrintQr(value) {
 function finalWorkTextQrPayload(work) {
   return [
     "Vakha Studio",
-    `Школа: ${finalWorkQrSchoolName(work)}`,
-    `Класс: ${finalWorkQrClassName(work)}`,
-    `ФИО: ${finalWorkQrStudentName(work)}`,
-    `Заказ: ${finalWorkQrOrderName(work)}`,
-    `Дата: ${finalWorkQrDateValue(work)}`
+    `School: ${finalWorkQrCompactField(finalWorkQrSchoolName(work), 18)}`,
+    `Class: ${finalWorkQrCompactField(finalWorkQrClassName(work), 8)}`,
+    `Name: ${finalWorkQrCompactField(finalWorkQrStudentName(work), 18)}`,
+    `Order: ${finalWorkQrCompactField(finalWorkQrOrderName(work), 16)}`,
+    `Date: ${finalWorkQrDateValue(work)}`
   ].join("\n");
 }
 
@@ -5486,6 +5486,13 @@ function finalWorkQrDateValue(work) {
   return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function finalWorkQrCompactField(value, maxLength = 18) {
+  return transliterateQrText(String(value || "").trim())
+    .replace(/\s+/g, " ")
+    .slice(0, maxLength)
+    .trim() || "-";
+}
+
 function parseFinalWorkTextQrPayload(value) {
   const lines = String(value || "")
     .split(/\r?\n/)
@@ -5499,11 +5506,11 @@ function parseFinalWorkTextQrPayload(value) {
     if (!match) return;
     const key = normalizeFinalWorkTextValue(match[1]);
     const text = match[2].trim();
-    if (key === normalizeFinalWorkTextValue("Школа")) payload.schoolName = text;
-    if (key === normalizeFinalWorkTextValue("Класс")) payload.className = text;
-    if (key === normalizeFinalWorkTextValue("ФИО")) payload.studentName = text;
-    if (key === normalizeFinalWorkTextValue("Заказ")) payload.orderName = text;
-    if (key === normalizeFinalWorkTextValue("Дата")) payload.date = text;
+    if (["школа", "school"].includes(key)) payload.schoolName = text;
+    if (["класс", "class"].includes(key)) payload.className = text;
+    if (["фио", "name"].includes(key)) payload.studentName = text;
+    if (["заказ", "order"].includes(key)) payload.orderName = text;
+    if (["дата", "date"].includes(key)) payload.date = text;
   });
   if (!payload.schoolName && !payload.className && !payload.studentName && !payload.orderName && !payload.date) return null;
   return payload;
@@ -5512,10 +5519,10 @@ function parseFinalWorkTextQrPayload(value) {
 function finalWorkMatchesTextPayload(work, payload) {
   if (!work || !payload) return false;
   const expected = {
-    schoolName: finalWorkQrSchoolName(work),
-    className: finalWorkQrClassName(work),
-    studentName: finalWorkQrStudentName(work),
-    orderName: finalWorkQrOrderName(work),
+    schoolName: finalWorkQrCompactField(finalWorkQrSchoolName(work), 18),
+    className: finalWorkQrCompactField(finalWorkQrClassName(work), 8),
+    studentName: finalWorkQrCompactField(finalWorkQrStudentName(work), 18),
+    orderName: finalWorkQrCompactField(finalWorkQrOrderName(work), 16),
     date: finalWorkQrDateValue(work)
   };
   return ["schoolName", "className", "studentName", "orderName", "date"].every((key) => {
@@ -10683,18 +10690,19 @@ function showQrPanel({ value, title: panelTitle, subtitle = "", codeLabel = valu
 }
 
 function studentQrPayload(student) {
-  const id = student.qrId || student.id;
-  const base = location.origin === "null"
-    ? location.href.split("#")[0].split("?")[0]
-    : `${location.origin}${location.pathname}`;
-  try {
-    const url = new URL(base);
-    url.searchParams.set("studentId", id);
-    const payload = url.toString();
-    return new TextEncoder().encode(payload).length <= 100 ? payload : `studentId=${id}`;
-  } catch {
-    return `studentId=${id}`;
-  }
+  return student?.qrId || student?.id || "";
+}
+
+function transliterateQrText(value) {
+  const map = {
+    А: "A", Б: "B", В: "V", Г: "G", Д: "D", Е: "E", Ё: "E", Ж: "Zh", З: "Z", И: "I", Й: "Y",
+    К: "K", Л: "L", М: "M", Н: "N", О: "O", П: "P", Р: "R", С: "S", Т: "T", У: "U", Ф: "F",
+    Х: "Kh", Ц: "Ts", Ч: "Ch", Ш: "Sh", Щ: "Sch", Ъ: "", Ы: "Y", Ь: "", Э: "E", Ю: "Yu", Я: "Ya",
+    а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "y",
+    к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f",
+    х: "kh", ц: "ts", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya"
+  };
+  return Array.from(String(value || "")).map((char) => map[char] ?? char).join("");
 }
 
 function notify(message) {
