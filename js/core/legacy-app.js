@@ -1525,6 +1525,7 @@ function renderStudent() {
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
   const selectedCatalogItems = selectedCatalogIds.map(catalogItemById).filter(Boolean);
+  const orderedCatalogItems = orderedStudentCatalogItems(student);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Услуги не выбраны";
   const orderPrice = studentTotalPrice(student);
   const c = completion(student.id);
@@ -1612,7 +1613,7 @@ function renderStudent() {
               `).join("") || '<p class="muted">Услуги не выбраны.</p>'}
             </div>
             <div class="student-service-rail" role="list" aria-label="Услуги ученика">
-              ${state.data.catalog.map((item) => miniCatalogToggle(item, student.id, selectedCatalogIds.includes(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
+              ${orderedCatalogItems.map((item) => miniCatalogToggle(item, student.id, selectedCatalogIds.includes(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
             </div>
           </div>
         </div>
@@ -2727,7 +2728,7 @@ function renderSettings() {
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button>
-      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>QR, положение и экспорт HTML</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>A4, QR, положение и экспорт HTML</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
@@ -2774,8 +2775,8 @@ function showSettingsDetail(section) {
       </article>`,
     finalPrint: `
       <article class="panel grid">
-        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">Служебный QR добавляется только в копию для печати и распознается внутри приложения.</p></div>
-        <label class="checkbox-row"><input type="checkbox" data-final-print-qr-enabled ${finalPrint.qrEnabled ? "checked" : ""} /><span>Включить QR для печати</span></label>
+        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">QR добавляется только в макет печати A4. На готовой работе QR больше не отображается.</p></div>
+        <label class="checkbox-row"><input type="checkbox" data-final-print-qr-enabled ${finalPrint.qrEnabled ? "checked" : ""} /><span>Включить QR для A4-печати</span></label>
         <label class="field-label"><span>Положение QR</span><select class="select" data-final-print-qr-position>
           ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${value}</option>`).join("")}
         </select></label>
@@ -5052,6 +5053,7 @@ async function createFinalWorkRecord(input) {
     originalFinalImage: input.originalFile || null,
     mergedPrintImage: mergedAsset.blob,
     qrData,
+    finalImageVersion: 2,
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
@@ -5559,7 +5561,8 @@ function maybeBackfillStudentFinalWorks(studentId) {
 function finalWorkNeedsMergedImage(work) {
   return Boolean(work) && (
     !(work?.mergedPrintImage instanceof Blob) ||
-    finalWorkPrintPayloadNeedsRefresh(work)
+    finalWorkPrintPayloadNeedsRefresh(work) ||
+    work?.finalImageVersion !== 2
   ) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
 }
 
@@ -5622,6 +5625,7 @@ async function ensureFinalWorkMergedImage(workId) {
       originalFinalImage: work.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
+      finalImageVersion: 2,
       printQrPayload: qrPayload
     }));
     await refreshData();
@@ -5648,6 +5652,7 @@ async function rebuildStoredFinalWorkPrintImages() {
       originalFinalImage: work.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
+      finalImageVersion: 2,
       printQrPayload: qrPayload
     }, { warn: false }));
   }
@@ -5753,17 +5758,18 @@ function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight
 }
 
 async function drawFinalWorkA4QrOverlay(context, width, height, studentId) {
+  const settings = finalWorkPrintSettings();
+  if (settings.qrEnabled === false) return;
   const student = studentById(studentId);
   const qrPayload = studentQrPayload(student || { id: studentId, qrId: studentId });
   const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
   const qrImage = await loadImageFromUrl(qrDataUrl);
-  const size = Math.round(Math.min(width, height) * 0.12);
+  const size = finalWorkQrPixelSize(width, height, settings);
   const padding = Math.max(18, Math.round(size * 0.12));
   const radius = Math.max(12, Math.round(size * 0.12));
-  const margin = Math.max(26, Math.round(Math.min(width, height) * 0.025));
+  const margin = finalWorkQrPixelMargin(width, height, size, settings);
   const boxSize = size + padding * 2;
-  const x = width - margin - boxSize;
-  const y = height - margin - boxSize;
+  const { x, y } = finalWorkQrCoordinates(width, height, boxSize, margin, settings.qrPosition || "bottom-right");
   context.save();
   context.shadowColor = "rgba(15,23,42,0.18)";
   context.shadowBlur = Math.max(12, Math.round(size * 0.14));
@@ -5841,9 +5847,6 @@ async function buildFinalWorkMergedAsset(file, qrPayload) {
   const context = canvas.getContext("2d");
   context.drawImage(image, 0, 0, width, height);
   if (typeof image.close === "function") image.close();
-  if (finalWorkPrintSettings().qrEnabled !== false) {
-    await drawFinalWorkQrOverlay(context, width, height, qrPayload);
-  }
   const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
   const blob = await canvasToImageBlob(canvas, type, 0.95);
   return {
@@ -5853,15 +5856,16 @@ async function buildFinalWorkMergedAsset(file, qrPayload) {
 }
 
 async function drawFinalWorkQrOverlay(context, width, height, qrPayload) {
+  const settings = finalWorkPrintSettings();
+  if (settings.qrEnabled === false) return;
   const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
   const qrImage = await loadImageFromUrl(qrDataUrl);
-  const size = finalWorkQrPixelSize(width, height);
+  const size = finalWorkQrPixelSize(width, height, settings);
   const padding = Math.max(4, Math.round(size * 0.08));
   const radius = Math.max(6, Math.round(size * 0.12));
-  const margin = finalWorkQrPixelMargin(width, height, size);
+  const margin = finalWorkQrPixelMargin(width, height, size, settings);
   const boxSize = size + padding * 2;
-  const x = width - margin - boxSize;
-  const y = height - margin - boxSize;
+  const { x, y } = finalWorkQrCoordinates(width, height, boxSize, margin, settings.qrPosition || "bottom-right");
   context.save();
   context.shadowColor = "rgba(15,23,42,0.18)";
   context.shadowBlur = Math.max(8, Math.round(size * 0.14));
@@ -5876,16 +5880,23 @@ async function drawFinalWorkQrOverlay(context, width, height, qrPayload) {
   context.restore();
 }
 
-function finalWorkQrPixelSize(width, height) {
-  const settings = finalWorkPrintSettings();
+function finalWorkQrPixelSize(width, height, settings = finalWorkPrintSettings()) {
   const base = clampNumber(settings.qrPixelSize, FINAL_WORK_QR_MIN_PX, 240, FINAL_WORK_QR_MIN_PX);
   const minSide = Math.max(1, Math.min(width, height));
   return Math.round(Math.min(base, Math.max(FINAL_WORK_QR_MIN_PX, minSide * 0.12)));
 }
 
-function finalWorkQrPixelMargin(width, height, size) {
+function finalWorkQrPixelMargin(width, height, size, settings = finalWorkPrintSettings()) {
   const minSide = Math.max(1, Math.min(width, height));
+  const configured = Number.parseInt(settings.qrMargin, 10);
+  if (Number.isFinite(configured) && configured > 0) return configured;
   return Math.round(Math.max(10, Math.min(28, minSide * 0.014, size * 0.24)));
+}
+
+function finalWorkQrCoordinates(width, height, boxSize, margin, position = "bottom-right") {
+  const x = position.endsWith("left") ? margin : width - margin - boxSize;
+  const y = position.startsWith("top") ? margin : height - margin - boxSize;
+  return { x, y };
 }
 
 function drawRoundedRect(context, x, y, width, height, radius) {
@@ -10446,6 +10457,17 @@ function selectedCatalogIdsForStudent(student) {
   const selectedServices = normalizeSelectedServices(student?.selectedServices);
   if (selectedServices.length) return normalizeCatalogIds(selectedServices.map((item) => item.serviceId));
   return normalizeCatalogIds(student?.catalogIds?.length ? student.catalogIds : (student?.catalogId ? [student.catalogId] : []));
+}
+
+function orderedStudentCatalogItems(student) {
+  const selected = new Set(selectedCatalogIdsForStudent(student));
+  const selectedItems = [];
+  const unselectedItems = [];
+  manualOrderedServices(state.data.catalog).forEach((item) => {
+    if (selected.has(item.id)) selectedItems.push(item);
+    else unselectedItems.push(item);
+  });
+  return selectedItems.concat(unselectedItems);
 }
 
 function normalizeCatalogIds(catalogIds) {
