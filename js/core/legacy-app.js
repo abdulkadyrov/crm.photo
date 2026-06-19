@@ -3425,6 +3425,10 @@ function bindViewActions() {
 function bindDetailsMenus() {
   const menus = Array.from(view.querySelectorAll(".item-menu"));
   menus.forEach((menu) => {
+    menu.addEventListener("click", (event) => {
+      const action = event.target.closest(".menu-panel button");
+      if (action && !action.disabled) menu.open = false;
+    });
     menu.addEventListener("toggle", () => {
       if (!menu.open) {
         menu.classList.remove("menu-up", "menu-fixed");
@@ -5130,27 +5134,30 @@ async function deleteFinalWork(workId) {
 
 function printFinalWork(workId) {
   const work = finalWorkById(workId);
-  const blob = finalWorkImageBlob(work);
-  if (!work || !blob) return notify("Изображение результата не найдено.");
-  const url = URL.createObjectURL(blob);
-  const area = document.createElement("div");
-  area.className = "final-work-print-area";
-  area.innerHTML = `
-    <section class="final-work-print-page">
-      <img src="${escapeAttr(url)}" alt="${escapeAttr(finalWorkTitle(work))}" />
-    </section>
-  `;
-  document.body.append(area);
-  document.body.classList.add("is-printing-final-work");
-  const cleanup = () => {
-    URL.revokeObjectURL(url);
-    document.body.classList.remove("is-printing-final-work");
-    area.remove();
-    window.removeEventListener("afterprint", cleanup);
-  };
-  window.addEventListener("afterprint", cleanup);
-  window.print();
-  setTimeout(cleanup, 2000);
+  if (!work) return notify("Изображение результата не найдено.");
+  withBusy("Готовлю печать...", async () => {
+    const blob = await finalWorkPrintableBlob(work);
+    if (!blob) return notify("Изображение результата не найдено.");
+    const url = URL.createObjectURL(blob);
+    const area = document.createElement("div");
+    area.className = "final-work-print-area";
+    area.innerHTML = `
+      <section class="final-work-print-page">
+        <img src="${escapeAttr(url)}" alt="${escapeAttr(finalWorkTitle(work))}" />
+      </section>
+    `;
+    document.body.append(area);
+    document.body.classList.add("is-printing-final-work");
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      document.body.classList.remove("is-printing-final-work");
+      area.remove();
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+    setTimeout(cleanup, 2000);
+  });
 }
 
 async function printClassFinalWorksWithQr(classId) {
@@ -5161,7 +5168,9 @@ async function printClassFinalWorksWithQr(classId) {
     if (!works.length) return notify("В группе нет готовых результатов для печати.");
     const pages = [];
     for (const work of works) {
-      const imageUrl = await fileToDataUrl(finalWorkImageBlob(work));
+      const imageBlob = await finalWorkPrintableBlob(work);
+      if (!imageBlob) continue;
+      const imageUrl = await fileToDataUrl(imageBlob);
       const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
       for (let copy = 0; copy < quantity; copy += 1) {
         pages.push(finalWorkPrintPageHtml(work, imageUrl));
@@ -5272,7 +5281,7 @@ function finalWorkCompactQrPayload(work) {
 function finalWorkQrData(work) {
   return {
     type: "final_work_print",
-    payload: finalWorkCompactQrPayload(work),
+    payload: finalWorkTextQrPayload(work),
     projectId: work.projectId || "",
     groupId: work.groupId || "",
     studentId: work.studentId || "",
@@ -5298,6 +5307,91 @@ function finalWorkIdFromCompactPrintQr(value) {
   return token.startsWith("final_") ? token : "";
 }
 
+function finalWorkTextQrPayload(work) {
+  return [
+    "Vakha Studio",
+    `Школа: ${finalWorkQrSchoolName(work)}`,
+    `Класс: ${finalWorkQrClassName(work)}`,
+    `ФИО: ${finalWorkQrStudentName(work)}`,
+    `Заказ: ${finalWorkQrOrderName(work)}`,
+    `Дата: ${finalWorkQrDateValue(work)}`
+  ].join("\n");
+}
+
+function finalWorkQrSchoolName(work) {
+  const student = studentById(work?.studentId);
+  const klass = classById(work?.groupId || student?.classId);
+  const project = projectById(work?.projectId || klass?.projectId);
+  return String(project?.name || "Не указано").trim();
+}
+
+function finalWorkQrClassName(work) {
+  const student = studentById(work?.studentId);
+  const klass = classById(work?.groupId || student?.classId);
+  return String(klass?.name || "Не указано").trim();
+}
+
+function finalWorkQrStudentName(work) {
+  const student = studentById(work?.studentId);
+  return [student?.firstName, student?.lastName].filter(Boolean).join(" ").trim() || "Не указано";
+}
+
+function finalWorkQrOrderName(work) {
+  const service = catalogItemById(work?.serviceId);
+  return String(serviceName(service) || finalWorkTitle(work) || "Не указано").trim();
+}
+
+function finalWorkQrDateValue(work) {
+  const date = new Date(work?.createdAt || now());
+  if (Number.isNaN(date.getTime())) return new Date().toLocaleDateString("ru-RU");
+  return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function parseFinalWorkTextQrPayload(value) {
+  const lines = String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) return null;
+  if (normalizeFinalWorkTextValue(lines[0]) !== normalizeFinalWorkTextValue("Vakha Studio")) return null;
+  const payload = { type: "final_work_print_text", format: "text" };
+  lines.slice(1).forEach((line) => {
+    const match = line.match(/^([^:]+):\s*(.+)$/);
+    if (!match) return;
+    const key = normalizeFinalWorkTextValue(match[1]);
+    const text = match[2].trim();
+    if (key === normalizeFinalWorkTextValue("Школа")) payload.schoolName = text;
+    if (key === normalizeFinalWorkTextValue("Класс")) payload.className = text;
+    if (key === normalizeFinalWorkTextValue("ФИО")) payload.studentName = text;
+    if (key === normalizeFinalWorkTextValue("Заказ")) payload.orderName = text;
+    if (key === normalizeFinalWorkTextValue("Дата")) payload.date = text;
+  });
+  if (!payload.schoolName && !payload.className && !payload.studentName && !payload.orderName && !payload.date) return null;
+  return payload;
+}
+
+function finalWorkMatchesTextPayload(work, payload) {
+  if (!work || !payload) return false;
+  const expected = {
+    schoolName: finalWorkQrSchoolName(work),
+    className: finalWorkQrClassName(work),
+    studentName: finalWorkQrStudentName(work),
+    orderName: finalWorkQrOrderName(work),
+    date: finalWorkQrDateValue(work)
+  };
+  return ["schoolName", "className", "studentName", "orderName", "date"].every((key) => {
+    if (!payload[key]) return true;
+    return normalizeFinalWorkTextValue(payload[key]) === normalizeFinalWorkTextValue(expected[key]);
+  });
+}
+
+function normalizeFinalWorkTextValue(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function maybeOpenPendingFinalWorkViewer(studentId) {
   const workId = state.pendingFinalWorkViewerId;
   if (!workId) return;
@@ -5314,7 +5408,23 @@ function maybeBackfillStudentFinalWorks(studentId) {
 }
 
 function finalWorkNeedsMergedImage(work) {
-  return Boolean(work) && !(work?.mergedPrintImage instanceof Blob) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
+  return Boolean(work) && (
+    !(work?.mergedPrintImage instanceof Blob) ||
+    finalWorkPrintPayloadNeedsRefresh(work)
+  ) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
+}
+
+function finalWorkPrintPayloadNeedsRefresh(work) {
+  return String(work?.printQrPayload || "").trim() !== finalWorkTextQrPayload(work);
+}
+
+async function finalWorkPrintableBlob(work) {
+  if (!work) return null;
+  if (!finalWorkPrintPayloadNeedsRefresh(work)) return finalWorkImageBlob(work);
+  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
+  if (!(original instanceof Blob)) return finalWorkImageBlob(work);
+  const mergedAsset = await buildFinalWorkMergedAsset(original, finalWorkTextQrPayload(work));
+  return mergedAsset.blob || finalWorkImageBlob(work);
 }
 
 async function ensureFinalWorkMergedImage(workId) {
@@ -5325,7 +5435,7 @@ async function ensureFinalWorkMergedImage(workId) {
   if (!original) return;
   state.finalWorkMergeQueue.add(workId);
   try {
-    const qrPayload = work.printQrPayload || finalWorkCompactQrPayload(work);
+    const qrPayload = finalWorkTextQrPayload(work);
     const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
     await put("finalWorks", stampUpdated({
       ...work,
@@ -5351,7 +5461,7 @@ async function rebuildStoredFinalWorkPrintImages() {
   for (const work of state.data.finalWorks) {
     const original = finalWorkOriginalBlob(work) || work.image;
     if (!(original instanceof Blob)) continue;
-    const qrPayload = work.printQrPayload || finalWorkCompactQrPayload(work);
+    const qrPayload = finalWorkTextQrPayload(work);
     const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
     await put("finalWorks", stampUpdated({
       ...work,
@@ -6581,6 +6691,8 @@ function parseQrPayload(value) {
 function parseFinalWorkPrintQr(value) {
   const finalWorkId = finalWorkIdFromCompactPrintQr(value);
   if (finalWorkId) return { type: "final_work_print", finalWorkId, format: "compact" };
+  const textPayload = parseFinalWorkTextQrPayload(value);
+  if (textPayload) return textPayload;
   try {
     const payload = JSON.parse(String(value || "").trim());
     if (payload?.type === "final_work_print" && payload.finalWorkId) return payload;
@@ -6606,7 +6718,7 @@ function showFinalWorkPrintQrPanel(payload) {
       <div class="card-header">
         <div>
           <h2 class="card-title">Печатный QR распознан</h2>
-          <p class="muted">Служебный QR готовой фотографии</p>
+          <p class="muted">Текстовый QR готовой фотографии</p>
         </div>
         <button class="icon-button" data-close-final-work-qr type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
@@ -6639,6 +6751,10 @@ function showFinalWorkPrintQrPanel(payload) {
 
 function findFinalWorkFromPrintPayload(payload) {
   if (!payload) return null;
+  if (payload.format === "text") {
+    const matches = state.data.finalWorks.filter((item) => finalWorkMatchesTextPayload(item, payload));
+    return matches.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] || null;
+  }
   const finalWorkId = typeof payload === "string" ? payload : payload.finalWorkId;
   const byId = state.data.finalWorks.find((item) => item.id === finalWorkId);
   if (byId) return byId;
