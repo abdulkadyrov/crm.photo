@@ -2653,6 +2653,12 @@ button.mini-catalog-option {
   max-height: min(900px, calc(100dvh - 24px));
 }
 
+.final-work-viewer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .final-work-viewer-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2677,6 +2683,18 @@ button.mini-catalog-option {
   border-radius: var(--radius);
   background: #050505;
   object-fit: contain;
+}
+
+.final-work-viewer-a4 {
+  max-height: min(64dvh, 680px);
+}
+
+.final-work-a4-toolbar {
+  align-items: end;
+}
+
+.compact-field {
+  min-width: 200px;
 }
 
 .final-work-print-area {
@@ -3419,6 +3437,10 @@ button.mini-catalog-option {
   .final-result-preview {
     width: 66px;
     height: 66px;
+  }
+
+  .final-work-viewer-grid {
+    grid-template-columns: 1fr;
   }
 
   .print-preview-panel {

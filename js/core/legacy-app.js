@@ -196,6 +196,7 @@ const state = {
   currentFinalWork: null,
   pendingFinalWorkViewerId: "",
   finalWorkMergeQueue: new Set(),
+  finalWorkA4Queue: new Set(),
   serviceCommentTimers: new Map(),
   currentDocumentTarget: null,
   currentImportDraft: null,
@@ -214,6 +215,10 @@ const state = {
 const QR_SCAN_INTERVAL = 120;
 const FINAL_WORK_QR_MIN_PX = 72;
 const FINAL_WORK_QR_MAX_PX = 132;
+const A4_VERTICAL_PX = { width: 2480, height: 3508 };
+const A4_HORIZONTAL_PX = { width: 3508, height: 2480 };
+const A4_PDF_VERTICAL_PT = { width: 595.28, height: 841.89 };
+const A4_PDF_HORIZONTAL_PT = { width: 841.89, height: 595.28 };
 const REFERENCE_AI_SET = [
   {
     id: "portrait_waist",
@@ -1515,6 +1520,7 @@ function renderStudent() {
   const order = orderByStudent(student.id);
   const media = mediaByStudent(student.id).filter((item) => !isFinalResultMedia(item));
   const finalWorks = finalWorksForStudent(student.id);
+  const a4Works = finalWorks.filter((work) => finalWorkA4ImageBlob(work));
   const finalStats = finalWorkStatsForStudent(student.id);
   const activeTask = order.items.find((item) => item.status !== "done") || order.items[0];
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
@@ -1565,7 +1571,7 @@ function renderStudent() {
         </article>
         <article class="panel">
           <div class="card-header">
-            <h2 class="card-title">Медиа</h2>
+            <h2 class="card-title">Оригиналы</h2>
             <button class="secondary-button" data-export-student="${student.id}" type="button">Экспорт</button>
           </div>
           <div class="media-grid">
@@ -1574,11 +1580,20 @@ function renderStudent() {
         </article>
         <article class="panel final-results-panel">
           <div class="card-header">
-            <h2 class="card-title">Готовые результаты</h2>
+            <h2 class="card-title">Готовые работы</h2>
             <span class="muted">${finalWorks.length ? `${finalWorks.length} ${pluralizeRu(finalWorks.length, "результат", "результата", "результатов")}` : "Пока нет"}</span>
           </div>
           <div class="final-results-grid">
             ${finalWorks.map(finalResultCard).join("") || '<p class="muted">AI-результаты появятся здесь после монтажа.</p>'}
+          </div>
+        </article>
+        <article class="panel final-results-panel">
+          <div class="card-header">
+            <h2 class="card-title">Печать A4</h2>
+            <span class="muted">${a4Works.length ? `${a4Works.length} ${pluralizeRu(a4Works.length, "макет", "макета", "макетов")}` : "Подготавливается автоматически"}</span>
+          </div>
+          <div class="final-results-grid">
+            ${finalWorks.map(finalPrintA4Card).join("") || '<p class="muted">Печатные макеты A4 появятся после загрузки готовой работы.</p>'}
           </div>
         </article>
       </div>
@@ -1684,6 +1699,30 @@ function finalResultCard(work) {
         <button class="secondary-button compact" data-open-final-work="${work.id}" type="button">Посмотреть</button>
         <button class="secondary-button compact" data-download-final-work="${work.id}" type="button">Скачать</button>
         <button class="danger-button compact" data-delete-final-work="${work.id}" type="button">Удалить</button>
+      </div>
+    </article>
+  `;
+}
+
+function finalPrintA4Card(work) {
+  const blob = finalWorkA4ImageBlob(work);
+  const url = blob ? URL.createObjectURL(blob) : "";
+  const orientation = finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(work));
+  const created = formatActivityDate(work?.a4PreparedAt || work?.updatedAt || work?.createdAt);
+  return `
+    <article class="final-result-card">
+      <button class="final-result-preview" data-open-final-work="${work.id}" type="button" aria-label="Посмотреть печать A4 ${escapeAttr(finalWorkTitle(work))}">
+        ${url ? `<img src="${url}" alt="${escapeAttr(finalWorkTitle(work))}" loading="lazy" />` : '<span>A4</span>'}
+      </button>
+      <div class="final-result-copy">
+        <strong>${escapeHtml(finalWorkTitle(work))}</strong>
+        <span class="status-pill in-progress">${escapeHtml(orientation)}</span>
+        <span class="muted">Создано: ${escapeHtml(created)}</span>
+      </div>
+      <div class="final-result-actions">
+        <button class="secondary-button compact" data-open-final-work="${work.id}" type="button">Превью</button>
+        <button class="secondary-button compact" data-download-final-a4-jpg="${work.id}" type="button">JPG</button>
+        <button class="secondary-button compact" data-download-final-a4-pdf="${work.id}" type="button">PDF</button>
       </div>
     </article>
   `;
@@ -3229,6 +3268,8 @@ function bindViewActions() {
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
   view.querySelectorAll("[data-open-final-work]").forEach((node) => node.addEventListener("click", () => showFinalWorkViewer(node.dataset.openFinalWork)));
   view.querySelectorAll("[data-download-final-work]").forEach((node) => node.addEventListener("click", () => downloadFinalWork(node.dataset.downloadFinalWork)));
+  view.querySelectorAll("[data-download-final-a4-jpg]").forEach((node) => node.addEventListener("click", () => downloadFinalWorkA4Jpg(node.dataset.downloadFinalA4Jpg)));
+  view.querySelectorAll("[data-download-final-a4-pdf]").forEach((node) => node.addEventListener("click", () => downloadFinalWorkA4Pdf(node.dataset.downloadFinalA4Pdf)));
   view.querySelectorAll("[data-delete-final-work]").forEach((node) => node.addEventListener("click", () => deleteFinalWork(node.dataset.deleteFinalWork)));
   view.querySelectorAll("[data-mark-printed-student]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForStudent(node.dataset.markPrintedStudent)));
   view.querySelectorAll("[data-mark-printed-class]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForClass(node.dataset.markPrintedClass)));
@@ -4954,7 +4995,8 @@ async function handleFinalWorkInput(event) {
   const service = catalogItemById(target.serviceId);
   const klass = classById(student?.classId);
   if (!student || !service || !klass) return notify("Не удалось сохранить результат.");
-  await withBusy("Готовлю результат с QR...", async () => {
+  let workId = "";
+  await withBusy("Готовлю результат и печать A4...", async () => {
     const work = await createFinalWorkRecord({
       projectId: klass.projectId,
       groupId: klass.id,
@@ -4966,6 +5008,7 @@ async function handleFinalWorkInput(event) {
       referenceMediaId: target.referenceMediaId
     });
     await put("finalWorks", work);
+    workId = work.id;
   });
   state.currentFinalWork = null;
   await refreshData();
@@ -4975,6 +5018,7 @@ async function handleFinalWorkInput(event) {
   document.querySelector(".montage-backdrop")?.remove();
   state.preserveScroll = true;
   render();
+  if (workId) showFinalWorkViewer(workId);
 }
 
 function montageReferenceForService(service) {
@@ -4991,6 +5035,11 @@ async function createFinalWorkRecord(input) {
   const id = uid("final");
   const qrData = finalWorkQrData({ id, ...input });
   const mergedAsset = await buildFinalWorkMergedAsset(input.originalFile, qrData.payload);
+  const a4Assets = await buildFinalWorkA4Assets({
+    file: input.originalFile,
+    studentId: input.studentId,
+    orientationMode: "auto"
+  });
   return stampCreated({
     id,
     projectId: input.projectId,
@@ -5007,6 +5056,11 @@ async function createFinalWorkRecord(input) {
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
     printQrPayload: qrData.payload,
+    a4OrientationMode: a4Assets.orientationMode,
+    a4OrientationResolved: a4Assets.orientation,
+    a4PrintImage: a4Assets.jpgBlob,
+    a4PrintPdf: a4Assets.pdfBlob,
+    a4PreparedAt: now(),
     status: "ready"
   });
 }
@@ -5032,6 +5086,16 @@ function finalWorkImageBlob(work) {
   return mediaById(work?.resultMediaId)?.blob || null;
 }
 
+function finalWorkA4ImageBlob(work) {
+  if (work?.a4PrintImage instanceof Blob) return work.a4PrintImage;
+  return null;
+}
+
+function finalWorkA4PdfBlob(work) {
+  if (work?.a4PrintPdf instanceof Blob) return work.a4PrintPdf;
+  return null;
+}
+
 function finalWorkOriginalBlob(work) {
   if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
   if (work?.blob instanceof Blob) return work.blob;
@@ -5050,6 +5114,18 @@ function finalWorkFileName(work) {
   return safeFileName(work?.fileName || media?.fileName || `${student?.lastName || "student"}_${student?.firstName || ""}_${service}.${ext}`);
 }
 
+function finalWorkA4JpgFileName(work) {
+  const student = studentById(work?.studentId);
+  const service = finalWorkTitle(work);
+  return safeFileName(`${student?.lastName || "student"}_${student?.firstName || ""}_${service}_A4.jpg`);
+}
+
+function finalWorkA4PdfFileName(work) {
+  const student = studentById(work?.studentId);
+  const service = finalWorkTitle(work);
+  return safeFileName(`${student?.lastName || "student"}_${student?.firstName || ""}_${service}_A4.pdf`);
+}
+
 function finalWorkStatusClass(status) {
   if (status === "printed" || status === "delivered" || status === "ready") return "paid";
   return "in-progress";
@@ -5062,13 +5138,19 @@ function isFinalResultMedia(item) {
 async function showFinalWorkViewer(workId) {
   const work = finalWorkById(workId);
   if (!work) return notify("Готовый результат не найден.");
-  const blob = finalWorkImageBlob(work);
-  if (!blob) return notify("Изображение результата не найдено.");
+  const originalBlob = finalWorkOriginalBlob(work);
+  const resultBlob = finalWorkImageBlob(work);
+  if (!resultBlob && !originalBlob) return notify("Изображение результата не найдено.");
+  const preparedWork = await ensureFinalWorkA4Assets(work.id);
+  const actualWork = preparedWork || finalWorkById(work.id) || work;
   const student = studentById(work.studentId);
   const klass = classById(work.groupId || student?.classId);
   const project = projectById(work.projectId || klass?.projectId);
   const service = catalogItemById(work.serviceId);
-  const url = URL.createObjectURL(blob);
+  const originalUrl = originalBlob ? URL.createObjectURL(originalBlob) : "";
+  const resultUrl = resultBlob ? URL.createObjectURL(resultBlob) : "";
+  const a4Blob = finalWorkA4ImageBlob(actualWork);
+  const a4Url = a4Blob ? URL.createObjectURL(a4Blob) : "";
   const titleText = finalWorkTitle(work);
   document.querySelector(".final-work-viewer-backdrop")?.remove();
   const panel = document.createElement("div");
@@ -5088,25 +5170,68 @@ async function showFinalWorkViewer(workId) {
         <span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Ученик")}</span>
         <span>${escapeHtml(serviceName(service) || titleText)}</span>
       </div>
-      <img class="final-work-viewer-image" src="${escapeAttr(url)}" alt="${escapeAttr(titleText)}" />
+      <div class="final-work-viewer-grid">
+        <article class="panel grid">
+          <div class="card-header">
+            <h3 class="card-title">Исходное изображение</h3>
+          </div>
+          ${originalUrl ? `<img class="final-work-viewer-image" src="${escapeAttr(originalUrl)}" alt="${escapeAttr(`${titleText} original`)}" />` : '<div class="empty">Оригинал не найден</div>'}
+        </article>
+        <article class="panel grid">
+          <div class="card-header">
+            <h3 class="card-title">Готовая работа</h3>
+          </div>
+          ${resultUrl ? `<img class="final-work-viewer-image" src="${escapeAttr(resultUrl)}" alt="${escapeAttr(titleText)}" />` : '<div class="empty">Preview не найден</div>'}
+        </article>
+      </div>
+      <article class="panel grid">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Печать A4</h3>
+            <p class="muted">${escapeHtml(finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(actualWork)))} · ${escapeHtml(formatActivityDate(actualWork?.a4PreparedAt || actualWork?.updatedAt || actualWork?.createdAt))}</p>
+          </div>
+        </div>
+        ${a4Url ? `<img class="final-work-viewer-image final-work-viewer-a4" src="${escapeAttr(a4Url)}" alt="${escapeAttr(`${titleText} A4`)}" />` : '<div class="empty">A4-макет ещё не создан</div>'}
+        <div class="toolbar final-work-a4-toolbar">
+          <label class="field-label compact-field">
+            <span>Ориентация</span>
+            <select class="select" data-final-work-a4-mode>
+              ${finalWorkA4ModeOptions(actualWork?.a4OrientationMode || "auto")}
+            </select>
+          </label>
+          <button class="secondary-button" data-regenerate-final-a4="${actualWork.id}" type="button">Пересоздать макет</button>
+          <button class="secondary-button" data-download-final-a4-jpg="${actualWork.id}" type="button">Скачать JPG</button>
+          <button class="secondary-button" data-download-final-a4-pdf="${actualWork.id}" type="button">Скачать PDF</button>
+          <button class="secondary-button" data-print-final-work="${actualWork.id}" type="button">Печать</button>
+        </div>
+      </article>
       <div class="toolbar">
-        <button class="secondary-button" data-download-final-work="${work.id}" type="button">Скачать</button>
-        <button class="secondary-button" data-print-final-work="${work.id}" type="button">Печать</button>
-        <button class="danger-button" data-delete-final-work="${work.id}" type="button">Удалить</button>
+        <button class="secondary-button" data-download-final-work="${actualWork.id}" type="button">Скачать готовую работу</button>
+        <button class="danger-button" data-delete-final-work="${actualWork.id}" type="button">Удалить</button>
       </div>
     </section>
   `;
   const close = () => {
-    URL.revokeObjectURL(url);
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
+    if (resultUrl) URL.revokeObjectURL(resultUrl);
+    if (a4Url) URL.revokeObjectURL(a4Url);
     panel.remove();
   };
   panel.addEventListener("click", (event) => {
     if (event.target === panel || event.target.closest("[data-close-final-work-viewer]")) close();
   });
-  panel.querySelector("[data-download-final-work]")?.addEventListener("click", () => downloadFinalWork(work.id));
-  panel.querySelector("[data-print-final-work]")?.addEventListener("click", () => printFinalWork(work.id));
+  panel.querySelector("[data-download-final-work]")?.addEventListener("click", () => downloadFinalWork(actualWork.id));
+  panel.querySelector("[data-download-final-a4-jpg]")?.addEventListener("click", () => downloadFinalWorkA4Jpg(actualWork.id));
+  panel.querySelector("[data-download-final-a4-pdf]")?.addEventListener("click", () => downloadFinalWorkA4Pdf(actualWork.id));
+  panel.querySelector("[data-print-final-work]")?.addEventListener("click", () => printFinalWork(actualWork.id));
+  panel.querySelector("[data-regenerate-final-a4]")?.addEventListener("click", async () => {
+    const mode = panel.querySelector("[data-final-work-a4-mode]")?.value || "auto";
+    close();
+    await regenerateFinalWorkA4(actualWork.id, mode);
+    showFinalWorkViewer(actualWork.id);
+  });
   panel.querySelector("[data-delete-final-work]")?.addEventListener("click", async () => {
-    await deleteFinalWork(work.id);
+    await deleteFinalWork(actualWork.id);
     close();
   });
   document.body.append(panel);
@@ -5118,6 +5243,20 @@ function downloadFinalWork(workId) {
   const blob = finalWorkImageBlob(work);
   if (!work || !blob) return notify("Изображение результата не найдено.");
   downloadBlob(blob, finalWorkFileName(work));
+}
+
+async function downloadFinalWorkA4Jpg(workId) {
+  const work = await ensureFinalWorkA4Assets(workId);
+  const blob = finalWorkA4ImageBlob(work);
+  if (!work || !blob) return notify("A4 JPG ещё не готов.");
+  downloadBlob(blob, finalWorkA4JpgFileName(work));
+}
+
+async function downloadFinalWorkA4Pdf(workId) {
+  const work = await ensureFinalWorkA4Assets(workId);
+  const blob = finalWorkA4PdfBlob(work);
+  if (!work || !blob) return notify("A4 PDF ещё не готов.");
+  downloadBlob(blob, finalWorkA4PdfFileName(work));
 }
 
 async function deleteFinalWork(workId) {
@@ -5402,9 +5541,12 @@ function maybeOpenPendingFinalWorkViewer(studentId) {
 }
 
 function maybeBackfillStudentFinalWorks(studentId) {
-  const stale = finalWorksForStudent(studentId).filter((work) => finalWorkNeedsMergedImage(work));
+  const stale = finalWorksForStudent(studentId).filter((work) => finalWorkNeedsMergedImage(work) || finalWorkA4OrientationNeedsRefresh(work));
   if (!stale.length) return;
-  stale.forEach((work) => ensureFinalWorkMergedImage(work.id));
+  stale.forEach((work) => {
+    if (finalWorkNeedsMergedImage(work)) ensureFinalWorkMergedImage(work.id);
+    ensureFinalWorkA4Assets(work.id);
+  });
 }
 
 function finalWorkNeedsMergedImage(work) {
@@ -5418,13 +5560,43 @@ function finalWorkPrintPayloadNeedsRefresh(work) {
   return String(work?.printQrPayload || "").trim() !== finalWorkTextQrPayload(work);
 }
 
+function finalWorkA4Mode(work) {
+  return ["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode) ? work.a4OrientationMode : "auto";
+}
+
+function finalWorkA4ResolvedOrientation(work) {
+  if (["vertical", "horizontal"].includes(work?.a4OrientationResolved)) return work.a4OrientationResolved;
+  if (work?.a4OrientationMode === "horizontal") return "horizontal";
+  if (work?.a4OrientationMode === "vertical") return "vertical";
+  const source = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
+  if (!(source instanceof Blob)) return "vertical";
+  return "vertical";
+}
+
+function finalWorkA4OrientationNeedsRefresh(work) {
+  return !finalWorkA4ImageBlob(work)
+    || !finalWorkA4PdfBlob(work)
+    || !["vertical", "horizontal"].includes(work?.a4OrientationResolved)
+    || !["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode);
+}
+
+function finalWorkA4OrientationLabel(value) {
+  if (value === "horizontal") return "Горизонтальный A4";
+  return "Вертикальный A4";
+}
+
+function finalWorkA4ModeOptions(selected) {
+  return [
+    { value: "auto", label: "Авто" },
+    { value: "vertical", label: "Вертикальный A4" },
+    { value: "horizontal", label: "Горизонтальный A4" }
+  ].map((item) => `<option value="${item.value}" ${item.value === selected ? "selected" : ""}>${item.label}</option>`).join("");
+}
+
 async function finalWorkPrintableBlob(work) {
   if (!work) return null;
-  if (!finalWorkPrintPayloadNeedsRefresh(work)) return finalWorkImageBlob(work);
-  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
-  if (!(original instanceof Blob)) return finalWorkImageBlob(work);
-  const mergedAsset = await buildFinalWorkMergedAsset(original, finalWorkTextQrPayload(work));
-  return mergedAsset.blob || finalWorkImageBlob(work);
+  const prepared = await ensureFinalWorkA4Assets(work.id);
+  return finalWorkA4ImageBlob(prepared) || finalWorkImageBlob(prepared) || finalWorkImageBlob(work);
 }
 
 async function ensureFinalWorkMergedImage(workId) {
@@ -5473,6 +5645,182 @@ async function rebuildStoredFinalWorkPrintImages() {
     }, { warn: false }));
   }
   await refreshData();
+}
+
+async function ensureFinalWorkA4Assets(workId) {
+  if (!workId || state.finalWorkA4Queue.has(workId)) return finalWorkById(workId) || null;
+  const work = finalWorkById(workId);
+  if (!work) return null;
+  if (!finalWorkA4OrientationNeedsRefresh(work)) return work;
+  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
+  if (!(original instanceof Blob)) return work;
+  state.finalWorkA4Queue.add(workId);
+  try {
+    const assets = await buildFinalWorkA4Assets({
+      file: original,
+      studentId: work.studentId,
+      orientationMode: finalWorkA4Mode(work)
+    });
+    const next = stampUpdated({
+      ...work,
+      a4OrientationMode: assets.orientationMode,
+      a4OrientationResolved: assets.orientation,
+      a4PrintImage: assets.jpgBlob,
+      a4PrintPdf: assets.pdfBlob,
+      a4PreparedAt: now()
+    });
+    await put("finalWorks", next);
+    await refreshData();
+    if (state.route === "student" && state.studentId === work.studentId) {
+      state.preserveScroll = true;
+      renderStudent();
+    }
+    return finalWorkById(workId) || next;
+  } finally {
+    state.finalWorkA4Queue.delete(workId);
+  }
+}
+
+async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
+  const work = finalWorkById(workId);
+  if (!work) return;
+  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
+  if (!(original instanceof Blob)) return notify("Оригинал для A4 не найден.");
+  await withBusy("Пересоздаю макет A4...", async () => {
+    const assets = await buildFinalWorkA4Assets({
+      file: original,
+      studentId: work.studentId,
+      orientationMode
+    });
+    await put("finalWorks", stampUpdated({
+      ...work,
+      a4OrientationMode: assets.orientationMode,
+      a4OrientationResolved: assets.orientation,
+      a4PrintImage: assets.jpgBlob,
+      a4PrintPdf: assets.pdfBlob,
+      a4PreparedAt: now()
+    }));
+  });
+  await refreshData();
+  state.preserveScroll = true;
+  render();
+  notify("Макет A4 обновлён.");
+}
+
+async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto" }) {
+  const image = await loadImageForCanvas(file);
+  const sourceWidth = image.width || image.naturalWidth || 0;
+  const sourceHeight = image.height || image.naturalHeight || 0;
+  if (!sourceWidth || !sourceHeight) throw new Error("Unable to build A4 asset");
+  const orientation = resolveA4Orientation(sourceWidth, sourceHeight, orientationMode);
+  const page = orientation === "horizontal" ? A4_HORIZONTAL_PX : A4_VERTICAL_PX;
+  const canvas = document.createElement("canvas");
+  canvas.width = page.width;
+  canvas.height = page.height;
+  const context = canvas.getContext("2d");
+  drawCoverImage(context, image, page.width, page.height, sourceWidth, sourceHeight);
+  if (typeof image.close === "function") image.close();
+  await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId);
+  const jpgBlob = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
+  const pdfBlob = jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
+  return {
+    orientationMode: ["auto", "vertical", "horizontal"].includes(orientationMode) ? orientationMode : "auto",
+    orientation,
+    jpgBlob: jpgBlob || file,
+    pdfBlob
+  };
+}
+
+function resolveA4Orientation(width, height, mode = "auto") {
+  if (mode === "vertical" || mode === "horizontal") return mode;
+  return width > height ? "horizontal" : "vertical";
+}
+
+function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight) {
+  const scale = Math.max(width / sourceWidth, height / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const offsetX = Math.round((width - drawWidth) / 2);
+  const offsetY = Math.round((height - drawHeight) / 2);
+  context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+async function drawFinalWorkA4QrOverlay(context, width, height, studentId) {
+  const student = studentById(studentId);
+  const qrPayload = studentQrPayload(student || { id: studentId, qrId: studentId });
+  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
+  const qrImage = await loadImageFromUrl(qrDataUrl);
+  const size = Math.round(Math.min(width, height) * 0.12);
+  const padding = Math.max(18, Math.round(size * 0.12));
+  const radius = Math.max(12, Math.round(size * 0.12));
+  const margin = Math.max(26, Math.round(Math.min(width, height) * 0.025));
+  const boxSize = size + padding * 2;
+  const x = width - margin - boxSize;
+  const y = height - margin - boxSize;
+  context.save();
+  context.shadowColor = "rgba(15,23,42,0.18)";
+  context.shadowBlur = Math.max(12, Math.round(size * 0.14));
+  context.shadowOffsetY = Math.max(3, Math.round(size * 0.04));
+  context.fillStyle = "rgba(255,255,255,0.96)";
+  drawRoundedRect(context, x, y, boxSize, boxSize, radius);
+  context.fill();
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetY = 0;
+  context.drawImage(qrImage, x + padding, y + padding, size, size);
+  context.restore();
+}
+
+async function createPdfBlobFromJpeg(jpegBlob, orientation) {
+  const bytes = new Uint8Array(await jpegBlob.arrayBuffer());
+  const page = orientation === "horizontal" ? A4_PDF_HORIZONTAL_PT : A4_PDF_VERTICAL_PT;
+  const imageObject = [
+    "<< /Type /XObject /Subtype /Image",
+    `/Width ${orientation === "horizontal" ? A4_HORIZONTAL_PX.width : A4_VERTICAL_PX.width}`,
+    `/Height ${orientation === "horizontal" ? A4_HORIZONTAL_PX.height : A4_VERTICAL_PX.height}`,
+    "/ColorSpace /DeviceRGB",
+    "/BitsPerComponent 8",
+    "/Filter /DCTDecode",
+    `/Length ${bytes.length} >>`
+  ].join("\n");
+  const contents = `q\n${page.width} 0 0 ${page.height} 0 0 cm\n/Im0 Do\nQ`;
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Count 1 /Kids [3 0 R] >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`,
+    { header: imageObject, bytes },
+    `<< /Length ${contents.length} >>\nstream\n${contents}\nendstream`
+  ];
+  const encoder = new TextEncoder();
+  const chunks = [encoder.encode("%PDF-1.4\n")];
+  const offsets = [0];
+  let totalLength = chunks[0].length;
+  for (let index = 0; index < objects.length; index += 1) {
+    offsets.push(totalLength);
+    const id = index + 1;
+    const object = objects[index];
+    if (typeof object === "string") {
+      const chunk = encoder.encode(`${id} 0 obj\n${object}\nendobj\n`);
+      chunks.push(chunk);
+      totalLength += chunk.length;
+      continue;
+    }
+    const head = encoder.encode(`${id} 0 obj\n${object.header}\nstream\n`);
+    const tail = encoder.encode("\nendstream\nendobj\n");
+    chunks.push(head, object.bytes, tail);
+    totalLength += head.length + object.bytes.length + tail.length;
+  }
+  const xrefOffset = totalLength;
+  chunks.push(encoder.encode(`xref\n0 ${objects.length + 1}\n`));
+  chunks.push(encoder.encode("0000000000 65535 f \n"));
+  totalLength += chunks[chunks.length - 2].length + chunks[chunks.length - 1].length;
+  for (let index = 1; index < offsets.length; index += 1) {
+    const chunk = encoder.encode(`${String(offsets[index]).padStart(10, "0")} 00000 n \n`);
+    chunks.push(chunk);
+    totalLength += chunk.length;
+  }
+  chunks.push(encoder.encode(`trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`));
+  return new Blob(chunks, { type: "application/pdf" });
 }
 
 async function buildFinalWorkMergedAsset(file, qrPayload) {
