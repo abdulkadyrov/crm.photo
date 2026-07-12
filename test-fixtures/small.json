@@ -1,0 +1,31 @@
+{
+  "name": "small",
+  "description": "1 проект, 1 класс, 5 учеников, 3 услуги, документы, медиа и одна готовая работа.",
+  "generatedAt": "2026-07-12T00:00:00Z",
+  "data": {
+    "projects": [{ "id": "fixture-project-1", "name": "Гимназия №12", "createdAt": "2026-07-12T00:00:00Z" }],
+    "classes": [{ "id": "fixture-class-4a", "projectId": "fixture-project-1", "name": "4А" }],
+    "students": [
+      { "id": "fixture-student-001", "classId": "fixture-class-4a", "firstName": "Иван", "lastName": "Иванов", "qrId": "fixture-student-001" },
+      { "id": "fixture-student-002", "classId": "fixture-class-4a", "firstName": "Мария", "lastName": "Петрова", "qrId": "fixture-student-002" },
+      { "id": "fixture-student-003", "classId": "fixture-class-4a", "firstName": "Адам", "lastName": "Саидов", "qrId": "fixture-student-003" },
+      { "id": "fixture-student-004", "classId": "fixture-class-4a", "firstName": "София", "lastName": "Орлова", "qrId": "fixture-student-004" },
+      { "id": "fixture-student-005", "classId": "fixture-class-4a", "firstName": "Тимур", "lastName": "Мусаев", "qrId": "fixture-student-005" }
+    ],
+    "catalog": [
+      { "id": "fixture-service-pirate", "name": "Пират", "price": 1000 },
+      { "id": "fixture-service-special", "name": "Спецназ", "price": 1200 },
+      { "id": "fixture-service-classic", "name": "Классика", "price": 900 }
+    ],
+    "media": [
+      { "id": "fixture-media-001", "studentId": "fixture-student-001", "fileName": "fixture-photo-001.jpg", "type": "photo", "size": 120000 }
+    ],
+    "documents": [
+      { "id": "fixture-document-001", "projectId": "fixture-project-1", "fileName": "agreement.pdf", "size": 64000 }
+    ],
+    "finalWorks": [
+      { "id": "fixture-final-001", "studentId": "fixture-student-001", "status": "ready", "size": 240000 }
+    ]
+  }
+}
+

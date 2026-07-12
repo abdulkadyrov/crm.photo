@@ -1,16 +1,37 @@
-const CACHE_NAME = "vakha-studio-cache-v27";
+const CACHE_PREFIX = "vakha-studio-cache-";
+const CACHE_VERSION = "v28";
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./js/core/app.js",
+  "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
   "./js/core/router.js",
   "./js/core/state.js",
+  "./js/core/events.js",
   "./js/core/db.js",
   "./js/core/storage.js",
   "./js/core/constants.js",
+  "./js/data/db.js",
+  "./js/data/migrations.js",
+  "./js/data/repositories/base-repository.js",
+  "./js/data/repositories/projects-repository.js",
+  "./js/data/repositories/classes-repository.js",
+  "./js/data/repositories/students-repository.js",
+  "./js/data/repositories/orders-repository.js",
+  "./js/data/repositories/media-repository.js",
+  "./js/data/repositories/operators-repository.js",
+  "./js/data/repositories/albums-repository.js",
+  "./js/data/repositories/catalog-repository.js",
+  "./js/data/repositories/documents-repository.js",
+  "./js/data/repositories/final-works-repository.js",
+  "./js/data/repositories/settings-repository.js",
+  "./js/data/repositories/operator-events-repository.js",
+  "./js/data/repositories/templates-repository.js",
+  "./js/features/transfer/index.js",
   "./js/modules/dashboard.js",
   "./js/modules/projects.js",
   "./js/modules/groups.js",
@@ -37,6 +58,15 @@ const APP_SHELL = [
   "./js/services/export-service.js",
   "./js/services/album-service.js",
   "./js/services/finalwork-service.js",
+  "./js/services/archive-service.js",
+  "./js/services/backup-service.js",
+  "./js/services/conflict-service.js",
+  "./js/services/export-filter-service.js",
+  "./js/services/file-system-service.js",
+  "./js/services/integrity-service.js",
+  "./js/services/import-preflight-service.js",
+  "./js/services/list-performance-service.js",
+  "./js/services/object-url-service.js",
   "./js/ui/modal.js",
   "./js/ui/toast.js",
   "./js/ui/bottom-nav.js",
@@ -62,30 +92,35 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+      Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+  if (url.origin !== location.origin) return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const cached = await cache.match(event.request);
+      if (cached && APP_SHELL.some((path) => new URL(path, location.href).href === event.request.url)) return cached;
       return fetch(event.request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          if (response.ok) cache.put(event.request, response.clone());
           return response;
         })
-        .catch(() => caches.match("./index.html"));
+        .catch(() => cached || cache.match("./index.html"));
     })
   );
 });

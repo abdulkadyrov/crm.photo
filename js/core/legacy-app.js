@@ -1,3 +1,14 @@
+import {
+  DIRECTORY_ACCESS_STATUS,
+  getStorageEstimate,
+  queryDirectoryPermission,
+  requestPersistentStorage,
+  supportsDirectoryPicker,
+  testDirectoryWrite
+} from "../features/transfer/index.js";
+import { openVakhaDb } from "../data/db.js";
+import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+
 const DB_NAME = "school-photo-flow";
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
@@ -97,7 +108,8 @@ const SETTING_IDS = {
   initialized: "spf-initialized",
   catalogWatermark: "spf-catalog-watermark",
   serviceCategories: "spf-service-categories",
-  finalWorkPrint: "spf-final-work-print"
+  finalWorkPrint: "spf-final-work-print",
+  storageLocation: "spf-storage-location"
 };
 const OPERATOR_STORAGE_KEY = "spf-current-operator-id";
 const OPERATOR_SKIP_SESSION_KEY = "spf-skip-operator-gate";
@@ -317,17 +329,7 @@ function emptyData() {
 }
 
 function openDb() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      STORE_NAMES.forEach((name) => {
-        if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath: "id" });
-      });
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+  return openVakhaDb({ name: DB_NAME, version: DB_VERSION, stores: STORE_NAMES });
 }
 
 function tx(storeName, mode = "readonly") {
@@ -2729,12 +2731,248 @@ function renderSettings() {
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>A4, QR, положение и экспорт HTML</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="storage" type="button"><span>💾</span><div><strong>Хранилище и резервные копии</strong><small>Квота, выбранная папка и проверка доступа</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
     </section>
   `;
   bindViewActions();
+}
+
+function storageSettingsTemplate() {
+  const location = storageLocationSettings();
+  const selectedName = location.directoryName || "Не выбрана";
+  const supported = supportsDirectoryPicker();
+  return `
+      <article class="panel grid">
+        <div><h2 class="card-title">Хранилище и резервные копии</h2><p class="muted">Данные остаются локально. Прямая запись в папку доступна только после выбора пользователем.</p></div>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Состояние браузерного хранилища</h3>
+          <div class="stats-grid">
+            <div class="stat"><strong data-storage-usage>...</strong><span class="muted">Используется</span></div>
+            <div class="stat"><strong data-storage-quota>...</strong><span class="muted">Квота</span></div>
+            <div class="stat"><strong data-storage-persisted>...</strong><span class="muted">Постоянное хранение</span></div>
+          </div>
+          <div class="transfer-button-row">
+            <button class="secondary-button" data-request-persistent-storage type="button">Запросить постоянное хранение</button>
+            <button class="secondary-button" data-refresh-storage-status type="button">Обновить статус</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Локальные данные</h3>
+          <div class="stats-grid">
+            <div class="stat"><strong>${formatStorageBytes(storageDataSize("media"))}</strong><span class="muted">Медиа</span></div>
+            <div class="stat"><strong>${formatStorageBytes(storageDataSize("documents"))}</strong><span class="muted">Документы</span></div>
+            <div class="stat"><strong>${formatStorageBytes(storageDataSize("finalWorks"))}</strong><span class="muted">Готовые работы</span></div>
+          </div>
+          <p class="muted">Последний полный экспорт: ${escapeHtml(location.lastFullBackupAt ? formatActivityDate(location.lastFullBackupAt) : "не зафиксирован")}</p>
+          <div class="import-draft-list" data-storage-warnings>
+            ${storageWarningsHtml(storageWarningCodes({ location }))}
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Место хранения на этом ПК</h3>
+          <p class="muted">Текущая папка: <strong data-storage-directory-name>${escapeHtml(selectedName)}</strong></p>
+          <p class="muted" data-storage-directory-status>${supported ? "Проверка доступа ещё не выполнялась." : "Ваш браузер не поддерживает сохранение прямо в выбранную папку. Архив будет скачан обычным способом."}</p>
+          <label class="checkbox-row"><input type="checkbox" data-remember-storage-directory ${location.rememberDirectory !== false ? "checked" : ""} /><span>Запомнить выбранную папку для следующих экспортов</span></label>
+          <div class="transfer-button-row">
+            <button class="primary-button" data-choose-storage-directory type="button" ${supported ? "" : "disabled"}>Выбрать папку</button>
+            <button class="secondary-button" data-check-storage-directory type="button" ${location.directoryHandle ? "" : "disabled"}>Проверить доступ</button>
+            <button class="secondary-button" data-forget-storage-directory type="button" ${location.directoryHandle ? "" : "disabled"}>Забыть папку</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Режимы сохранения</h3>
+          <div class="import-draft-list">
+            <div class="import-draft-row"><strong>Только внутри приложения</strong><span>IndexedDB / внутреннее хранилище</span></div>
+            <div class="import-draft-row"><strong>Скачивание архива</strong><span>ZIP-fallback для всех браузеров</span></div>
+            <div class="import-draft-row"><strong>Выбранная папка на ПК</strong><span>Chrome и Edge на компьютере</span></div>
+            <div class="import-draft-row"><strong>Перенос на домашний ПК</strong><span>Телефон -> ZIP -> ПК -> проверенный импорт</span></div>
+          </div>
+        </section>
+      </article>`;
+}
+
+function storageLocationSettings() {
+  return state.data.settings.find((item) => item.id === SETTING_IDS.storageLocation) || {
+    id: SETTING_IDS.storageLocation,
+    rememberDirectory: true,
+    directoryName: "",
+    directoryHandle: null,
+    lastFullBackupAt: ""
+  };
+}
+
+function storageDataSize(key) {
+  return (state.data[key] || []).reduce((sum, item) => sum + Number(item?.size || item?.blob?.size || item?.file?.size || item?.image?.size || item?.mergedPrintImage?.size || 0), 0);
+}
+
+function formatStorageBytes(bytes) {
+  return formatFileSize(bytes) || "0 Б";
+}
+
+async function hydrateStorageSettingsPanel() {
+  const usageNode = view.querySelector("[data-storage-usage]");
+  const quotaNode = view.querySelector("[data-storage-quota]");
+  const persistedNode = view.querySelector("[data-storage-persisted]");
+  if (!usageNode || !quotaNode || !persistedNode) return;
+  const estimate = await getStorageEstimate();
+  usageNode.textContent = formatStorageBytes(estimate.usage);
+  quotaNode.textContent = estimate.quota ? formatStorageBytes(estimate.quota) : "неизвестно";
+  persistedNode.textContent = estimate.persisted ? "предоставлено" : "не предоставлено";
+  const warningNode = view.querySelector("[data-storage-warnings]");
+  if (warningNode) warningNode.innerHTML = storageWarningsHtml(storageWarningCodes({ location: storageLocationSettings(), estimate }));
+  await refreshDirectoryStatusLabel();
+}
+
+function storageWarningCodes({ location = storageLocationSettings(), estimate = {} } = {}) {
+  const totalFiles = currentBackupFileCount();
+  return backupWarnings({
+    lastBackupAt: location.lastFullBackupAt,
+    filesSinceBackup: Math.max(0, totalFiles - Number(location.filesAtLastBackup || 0)),
+    usage: estimate.usage || 0,
+    quota: estimate.quota || 0,
+    hasUnexportedProjects: hasUnexportedProjects(location.lastFullBackupAt),
+    updatePending: Boolean(state.updatePending)
+  });
+}
+
+function storageWarningsHtml(warnings = []) {
+  if (!warnings.length) return '<div class="import-draft-row"><strong>Резервные копии</strong><span>критичных предупреждений нет</span></div>';
+  return warnings.map((code) => `<div class="import-draft-row warning"><strong>${escapeHtml(storageWarningTitle(code))}</strong><span>${escapeHtml(storageWarningText(code))}</span></div>`).join("");
+}
+
+function storageWarningTitle(code) {
+  return {
+    "backup-stale": "Давно не было резервной копии",
+    "many-new-files": "Много новых файлов",
+    "quota-high": "Заканчивается место",
+    "unexported-projects": "Есть неэкспортированные проекты",
+    "update-pending": "Ожидает обновление"
+  }[code] || "Предупреждение";
+}
+
+function storageWarningText(code) {
+  return {
+    "backup-stale": "Сделайте полный ZIP-экспорт: последняя копия старше 3 дней или ещё не создавалась.",
+    "many-new-files": "После последнего полного экспорта добавлено больше 500 файлов.",
+    "quota-high": "Использовано больше 80% доступной браузерной квоты.",
+    "unexported-projects": "После последнего полного экспорта появились или изменились проекты.",
+    "update-pending": "Перед обновлением приложения сохраните резервную копию."
+  }[code] || "Проверьте состояние хранилища.";
+}
+
+function currentBackupFileCount() {
+  const counts = calculateDataCounts(state.data);
+  return counts.media + counts.documents + counts.finalWorks + (state.data.albumMedia?.length || 0);
+}
+
+function hasUnexportedProjects(lastBackupAt) {
+  if (!lastBackupAt) return state.data.projects.length > 0;
+  const last = new Date(lastBackupAt).getTime();
+  return state.data.projects.some((project) => {
+    const changed = new Date(project.updatedAt || project.createdAt || 0).getTime();
+    return Number.isFinite(changed) && changed > last;
+  });
+}
+
+async function refreshDirectoryStatusLabel() {
+  const statusNode = view.querySelector("[data-storage-directory-status]");
+  const location = storageLocationSettings();
+  const directoryHandle = location.directoryHandle || state.storageDirectoryHandle;
+  if (!statusNode) return;
+  if (!supportsDirectoryPicker()) {
+    statusNode.textContent = "Ваш браузер не поддерживает сохранение прямо в выбранную папку. Архив будет скачан обычным способом.";
+    return;
+  }
+  if (!directoryHandle) {
+    statusNode.textContent = "Папка не выбрана. Для экспорта доступно обычное скачивание ZIP.";
+    return;
+  }
+  const status = await queryDirectoryPermission(directoryHandle, "readwrite").catch(() => DIRECTORY_ACCESS_STATUS.unavailable);
+  statusNode.textContent = directoryStatusText(status);
+}
+
+function directoryStatusText(status) {
+  return {
+    [DIRECTORY_ACCESS_STATUS.granted]: "Доступ разрешён.",
+    [DIRECTORY_ACCESS_STATUS.prompt]: "Требуется подтверждение доступа.",
+    [DIRECTORY_ACCESS_STATUS.denied]: "Доступ запрещён.",
+    [DIRECTORY_ACCESS_STATUS.unavailable]: "Папка больше недоступна.",
+    [DIRECTORY_ACCESS_STATUS.unsupported]: "Браузер не поддерживает прямую запись."
+  }[status] || "Статус доступа неизвестен.";
+}
+
+async function updateStorageLocationSetting(patch) {
+  const previous = storageLocationSettings();
+  const next = { ...previous, ...patch, id: SETTING_IDS.storageLocation, updatedAt: now() };
+  await put("settings", next);
+  const index = state.data.settings.findIndex((item) => item.id === SETTING_IDS.storageLocation);
+  if (index >= 0) state.data.settings[index] = next;
+  else state.data.settings.push(next);
+  return next;
+}
+
+async function chooseStorageDirectory() {
+  if (!supportsDirectoryPicker()) return notify("Этот браузер сохранит данные через ZIP.");
+  try {
+    const directoryHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+    const rememberDirectory = view.querySelector("[data-remember-storage-directory]")?.checked !== false;
+    const tested = await testDirectoryWrite(directoryHandle);
+    state.storageDirectoryHandle = directoryHandle;
+    await updateStorageLocationSetting({
+      directoryHandle: rememberDirectory ? directoryHandle : null,
+      directoryName: directoryHandle.name || "Выбранная папка",
+      rememberDirectory,
+      lastDirectoryStatus: tested.status,
+      lastDirectoryCheckAt: now()
+    });
+    view.querySelector("[data-storage-directory-name]").textContent = directoryHandle.name || "Выбранная папка";
+    view.querySelector("[data-check-storage-directory]")?.removeAttribute("disabled");
+    view.querySelector("[data-forget-storage-directory]")?.removeAttribute("disabled");
+    await refreshDirectoryStatusLabel();
+    notify(tested.ok ? "Папка выбрана и запись проверена." : "Папка выбрана, но тест записи не прошёл.");
+  } catch (error) {
+    if (error?.name !== "AbortError") notify("Не удалось выбрать папку.");
+  }
+}
+
+async function checkStorageDirectoryAccess() {
+  const location = storageLocationSettings();
+  const directoryHandle = location.directoryHandle || state.storageDirectoryHandle;
+  if (!directoryHandle) return notify("Сначала выберите папку.");
+  try {
+    const tested = await testDirectoryWrite(directoryHandle);
+    await updateStorageLocationSetting({ lastDirectoryStatus: tested.status, lastDirectoryCheckAt: now() });
+    await refreshDirectoryStatusLabel();
+    notify(tested.ok ? "Доступ к папке подтверждён." : directoryStatusText(tested.status));
+  } catch {
+    await updateStorageLocationSetting({ lastDirectoryStatus: DIRECTORY_ACCESS_STATUS.unavailable, lastDirectoryCheckAt: now() });
+    await refreshDirectoryStatusLabel();
+    notify("Папка больше недоступна.");
+  }
+}
+
+async function forgetStorageDirectory() {
+  state.storageDirectoryHandle = null;
+  await updateStorageLocationSetting({
+    directoryHandle: null,
+    directoryName: "",
+    lastDirectoryStatus: "",
+    lastDirectoryCheckAt: now()
+  });
+  view.querySelector("[data-storage-directory-name]").textContent = "Не выбрана";
+  view.querySelector("[data-check-storage-directory]")?.setAttribute("disabled", "");
+  view.querySelector("[data-forget-storage-directory]")?.setAttribute("disabled", "");
+  await refreshDirectoryStatusLabel();
+  notify("Выбранная папка забыта.");
+}
+
+async function requestPersistentStorageFromSettings() {
+  const granted = await requestPersistentStorage();
+  await hydrateStorageSettingsPanel();
+  notify(granted ? "Браузер предоставил постоянное хранение." : "Браузер не предоставил постоянное хранение.");
 }
 
 function showSettingsDetail(section) {
@@ -2788,6 +3026,7 @@ function showSettingsDetail(section) {
           <button class="primary-button" data-save-final-print-settings type="button">Сохранить настройки</button>
         </div>
       </article>`,
+    storage: storageSettingsTemplate(),
     transfer: `
       <article class="panel grid">
         <h2 class="card-title">Импорт / экспорт</h2>
@@ -2839,6 +3078,7 @@ function showSettingsDetail(section) {
   if (!content) return;
   view.innerHTML = `<section class="grid">${content}</section><button class="fab-back" data-back-settings type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>`;
   bindViewActions();
+  if (section === "storage") hydrateStorageSettingsPanel();
 }
 
 function showOperatorEditor(operatorId = "") {
@@ -3289,6 +3529,17 @@ function bindViewActions() {
   view.querySelector("[data-save-status-export-template]")?.addEventListener("click", saveStatusExportTemplate);
   view.querySelector("[data-save-watermark-settings]")?.addEventListener("click", saveWatermarkSettingsFromView);
   view.querySelector("[data-save-final-print-settings]")?.addEventListener("click", saveFinalPrintSettingsFromView);
+  view.querySelector("[data-request-persistent-storage]")?.addEventListener("click", requestPersistentStorageFromSettings);
+  view.querySelector("[data-refresh-storage-status]")?.addEventListener("click", hydrateStorageSettingsPanel);
+  view.querySelector("[data-choose-storage-directory]")?.addEventListener("click", chooseStorageDirectory);
+  view.querySelector("[data-check-storage-directory]")?.addEventListener("click", checkStorageDirectoryAccess);
+  view.querySelector("[data-forget-storage-directory]")?.addEventListener("click", forgetStorageDirectory);
+  view.querySelector("[data-remember-storage-directory]")?.addEventListener("change", (event) => {
+    updateStorageLocationSetting({
+      rememberDirectory: event.target.checked,
+      directoryHandle: event.target.checked ? state.storageDirectoryHandle || storageLocationSettings().directoryHandle : null
+    });
+  });
   view.querySelector("[data-upload-watermark-logo]")?.addEventListener("click", uploadWatermarkLogo);
   view.querySelector("[data-remove-watermark-logo]")?.addEventListener("click", removeWatermarkLogo);
   view.querySelector("[data-add-template-item]")?.addEventListener("click", addTemplateEditorItem);
@@ -7319,6 +7570,7 @@ async function exportFullBackup() {
   return withBusy("Экспорт всех данных...", async () => {
     const blob = createZip(await buildTransferExportFiles("full_backup"));
     downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+    await updateStorageLocationSetting({ lastFullBackupAt: now(), filesAtLastBackup: currentBackupFileCount() });
     await recordOperatorEvent("export", { targetType: "full_backup" });
     notify("Полный ZIP экспортирован.");
   });
