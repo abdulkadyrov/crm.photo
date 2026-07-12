@@ -195,7 +195,7 @@ p {
 
 .split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
   gap: 16px;
 }
 
@@ -700,12 +700,24 @@ button.mini-catalog-option {
 }
 
 .student-service-card {
-  grid-template-columns: 52px minmax(0, 1fr);
-  min-width: 220px;
-  max-width: 240px;
-  padding: 10px;
-  border-radius: 16px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  min-width: 300px;
+  max-width: 340px;
+  min-height: 0;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
   scroll-snap-align: start;
+  cursor: default;
+}
+
+.student-service-card-main {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
 }
 
 .student-service-preview-button,
@@ -718,15 +730,19 @@ button.mini-catalog-option {
 }
 
 .student-service-preview-button {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
 }
 
 .student-service-toggle-button {
   display: grid;
-  gap: 4px;
+  gap: 5px;
+  width: 100%;
+  min-height: 56px;
   min-width: 0;
   text-align: left;
+  cursor: pointer;
 }
 
 .mini-catalog-option input {
@@ -746,10 +762,10 @@ button.mini-catalog-option {
 .mini-catalog-thumb {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #050505;
   color: #fff;
   font-weight: 900;
@@ -776,18 +792,18 @@ button.mini-catalog-option {
 }
 
 .mini-catalog-copy strong {
-  font-size: 0.82rem;
+  font-size: 0.92rem;
 }
 
 .mini-catalog-copy small {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 800;
 }
 
 .student-service-card-status {
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -795,59 +811,69 @@ button.mini-catalog-option {
 .student-service-comment-field {
   grid-column: 1 / -1;
   display: grid;
-  gap: 6px;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 0;
   color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .student-service-quantity-row {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: 8px 12px;
   align-items: center;
   color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.student-service-quantity-row > span {
+  grid-column: 1 / -1;
 }
 
 .student-service-stepper {
   display: grid;
-  grid-template-columns: 32px minmax(64px, 1fr) 32px;
-  gap: 6px;
+  grid-template-columns: 42px minmax(56px, 72px) 42px;
+  gap: 8px;
   align-items: center;
+  width: max-content;
+  max-width: 100%;
 }
 
 .student-service-stepper-button {
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
   padding: 0;
-  border-radius: 12px;
+  border-radius: 14px;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .student-service-quantity-input {
-  min-height: 36px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  min-height: 42px;
+  padding: 8px;
+  border-radius: 14px;
   text-align: center;
-  font-size: 0.84rem;
+  font-size: 0.92rem;
+  font-weight: 800;
 }
 
 .student-service-quantity-total {
   color: var(--text);
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   white-space: nowrap;
 }
 
 .student-service-comment-input {
-  min-height: 78px;
-  padding: 9px 10px;
-  border-radius: 14px;
+  min-height: 104px;
+  padding: 12px 14px;
+  border-radius: 18px;
   background: var(--card);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
 .catalog-modal-backdrop {
@@ -2281,10 +2307,10 @@ button.mini-catalog-option {
 }
 
 .student-order-panel .service-dropdown-picker {
-  gap: 12px;
-  padding: 12px;
+  gap: 14px;
+  padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--card-strong);
 }
 
@@ -2299,10 +2325,10 @@ button.mini-catalog-option {
 .student-service-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(220px, 240px);
-  gap: 12px;
+  grid-auto-columns: minmax(300px, 340px);
+  gap: 14px;
   overflow-x: auto;
-  padding: 2px 2px 6px;
+  padding: 2px 2px 8px;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;

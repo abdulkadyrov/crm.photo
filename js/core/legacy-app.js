@@ -1904,16 +1904,18 @@ function miniCatalogToggle(item, studentId, selected = false) {
   const totalPrice = parseMoney(item.price) * quantity;
   return `
     <article class="mini-catalog-option student-service-card ${selected ? "selected" : ""}" role="listitem">
-      <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
-        <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
-      </button>
-      <button class="student-service-toggle-button" data-toggle-student-service="${studentId}:${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
-        <span class="mini-catalog-copy">
-          <strong>${escapeHtml(serviceName(item))}</strong>
-          <small>${escapeHtml(category || formatPrice(item.price))}</small>
-        </span>
-        <span class="student-service-card-status">${selected ? escapeHtml(formatMoney(totalPrice)) : escapeHtml(formatPrice(item.price))}</span>
-      </button>
+      <div class="student-service-card-main">
+        <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
+          <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
+        </button>
+        <button class="student-service-toggle-button" data-toggle-student-service="${studentId}:${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
+          <span class="mini-catalog-copy">
+            <strong>${escapeHtml(serviceName(item))}</strong>
+            <small>${escapeHtml(category || formatPrice(item.price))}</small>
+          </span>
+          <span class="student-service-card-status">${selected ? escapeHtml(formatMoney(totalPrice)) : escapeHtml(formatPrice(item.price))}</span>
+        </button>
+      </div>
       ${selected ? `
         <label class="student-service-quantity-row">
           <span>Количество</span>
@@ -3421,6 +3423,8 @@ function bindViewActions() {
       if (divider < 0) return;
       await saveStudentServiceComment(payload.slice(0, divider), payload.slice(divider + 1), node.value);
     };
+    node.addEventListener("click", (event) => event.stopPropagation());
+    node.addEventListener("pointerdown", (event) => event.stopPropagation());
     node.addEventListener("input", () => {
       const key = node.dataset.serviceComment || "";
       const timer = state.serviceCommentTimers.get(key);
@@ -3433,7 +3437,8 @@ function bindViewActions() {
     node.addEventListener("change", save);
     node.addEventListener("blur", save);
   });
-  view.querySelectorAll("[data-service-quantity-step]").forEach((node) => node.addEventListener("click", async () => {
+  view.querySelectorAll("[data-service-quantity-step]").forEach((node) => node.addEventListener("click", async (event) => {
+    event.stopPropagation();
     const [studentId, serviceId, deltaText] = (node.dataset.serviceQuantityStep || "").split(":");
     const student = studentById(studentId);
     const current = studentServiceQuantity(student, serviceId);
@@ -3446,6 +3451,8 @@ function bindViewActions() {
       if (divider < 0) return;
       await saveStudentServiceQuantity(payload.slice(0, divider), payload.slice(divider + 1), node.value);
     };
+    node.addEventListener("click", (event) => event.stopPropagation());
+    node.addEventListener("pointerdown", (event) => event.stopPropagation());
     node.addEventListener("change", save);
     node.addEventListener("blur", save);
   });
