@@ -2081,20 +2081,28 @@ function serviceBulkPanel(selectedCount) {
         <p class="muted">Можно сразу назначить цену, категорию, аудиторию или скопировать ракурсы.</p>
       </div>
       <div class="service-bulk-grid">
-        <label class="field-label compact-field"><span>Цена</span><input class="input" data-bulk-price inputmode="decimal" placeholder="500" /></label>
-        <button class="secondary-button compact" data-bulk-apply-price type="button">Применить цену</button>
-        <label class="field-label compact-field"><span>Категория</span><input class="input" data-bulk-category list="service-category-options" placeholder="Мультики" /></label>
-        <button class="secondary-button compact" data-bulk-apply-category type="button">Применить категорию</button>
-        <label class="field-label compact-field"><span>Для кого</span><select class="select" data-bulk-gender>
-          <option value="unisex">Для всех</option>
-          <option value="boys">Для мальчиков</option>
-          <option value="girls">Для девочек</option>
-        </select></label>
-        <button class="secondary-button compact" data-bulk-apply-gender type="button">Применить</button>
-        <label class="field-label compact-field"><span>Ракурсы как у</span><select class="select" data-bulk-angle-source>
-          ${manualOrderedServices().map((item) => `<option value="${item.id}">${escapeHtml(serviceName(item))}</option>`).join("")}
-        </select></label>
-        <button class="secondary-button compact" data-bulk-copy-angles type="button">Скопировать ракурсы</button>
+        <div class="service-bulk-action">
+          <label class="field-label compact-field"><span>Цена</span><input class="input" data-bulk-price inputmode="decimal" placeholder="500" /></label>
+          <button class="secondary-button compact" data-bulk-apply-price type="button">Применить цену</button>
+        </div>
+        <div class="service-bulk-action">
+          <label class="field-label compact-field"><span>Категория</span><input class="input" data-bulk-category list="service-category-options" placeholder="Мультики" /></label>
+          <button class="secondary-button compact" data-bulk-apply-category type="button">Применить категорию</button>
+        </div>
+        <div class="service-bulk-action">
+          <label class="field-label compact-field"><span>Для кого</span><select class="select" data-bulk-gender>
+            <option value="unisex">Для всех</option>
+            <option value="boys">Для мальчиков</option>
+            <option value="girls">Для девочек</option>
+          </select></label>
+          <button class="secondary-button compact" data-bulk-apply-gender type="button">Применить</button>
+        </div>
+        <div class="service-bulk-action service-bulk-action-wide">
+          <label class="field-label compact-field"><span>Ракурсы как у</span><select class="select" data-bulk-angle-source>
+            ${manualOrderedServices().map((item) => `<option value="${item.id}">${escapeHtml(serviceName(item))}</option>`).join("")}
+          </select></label>
+          <button class="secondary-button compact" data-bulk-copy-angles type="button">Скопировать ракурсы</button>
+        </div>
       </div>
       <div class="toolbar">
         <button class="secondary-button compact" data-clear-service-selection type="button">Снять выбор</button>
