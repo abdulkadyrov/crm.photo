@@ -1921,7 +1921,7 @@ function miniCatalogToggle(item, studentId, selected = false) {
           <span>Количество</span>
           <div class="student-service-stepper">
             <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:-1" type="button" aria-label="Уменьшить количество">-</button>
-            <input class="input student-service-quantity-input" data-service-quantity="${studentId}:${item.id}" type="number" min="1" step="1" value="${escapeAttr(String(quantity))}" />
+            <span class="student-service-quantity-value" data-service-quantity-value="${studentId}:${item.id}" aria-live="polite">${escapeHtml(String(quantity))}</span>
             <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:1" type="button" aria-label="Увеличить количество">+</button>
           </div>
           <strong class="student-service-quantity-total">${escapeHtml(formatMoney(totalPrice))}</strong>
@@ -3436,13 +3436,17 @@ function bindViewActions() {
     });
     node.addEventListener("change", save);
     node.addEventListener("blur", save);
+    node.addEventListener("compositionend", save);
   });
   view.querySelectorAll("[data-service-quantity-step]").forEach((node) => node.addEventListener("click", async (event) => {
     event.stopPropagation();
     const [studentId, serviceId, deltaText] = (node.dataset.serviceQuantityStep || "").split(":");
     const student = studentById(studentId);
     const current = studentServiceQuantity(student, serviceId);
-    await saveStudentServiceQuantity(studentId, serviceId, current + Number(deltaText || 0));
+    const nextQuantity = normalizeSelectedServiceQuantity(current + Number(deltaText || 0));
+    const valueNode = Array.from(view.querySelectorAll("[data-service-quantity-value]")).find((item) => item.dataset.serviceQuantityValue === `${studentId}:${serviceId}`);
+    if (valueNode) valueNode.textContent = String(nextQuantity);
+    await saveStudentServiceQuantity(studentId, serviceId, nextQuantity);
   }));
   view.querySelectorAll("[data-service-quantity]").forEach((node) => {
     const save = async () => {

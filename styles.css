@@ -835,7 +835,7 @@ button.mini-catalog-option {
 
 .student-service-stepper {
   display: grid;
-  grid-template-columns: 42px minmax(56px, 72px) 42px;
+  grid-template-columns: 42px 46px 42px;
   gap: 8px;
   align-items: center;
   width: max-content;
@@ -852,13 +852,20 @@ button.mini-catalog-option {
   line-height: 1;
 }
 
-.student-service-quantity-input {
+.student-service-quantity-value {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
   min-height: 42px;
-  padding: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  text-align: center;
+  background: var(--card);
+  color: var(--text);
   font-size: 0.92rem;
   font-weight: 800;
+  line-height: 1;
+  user-select: none;
 }
 
 .student-service-quantity-total {
