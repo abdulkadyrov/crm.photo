@@ -1147,11 +1147,6 @@ function renderScan() {
         </div>
         <p class="muted scan-note">Импорт съемки распределяет фото по QR-разделителям: QR ученика, затем его снимки, потом QR следующего ученика.</p>
       </div>
-      <form class="panel grid" data-manual-qr>
-        <h2 class="card-title">Ручной ввод</h2>
-        <input class="input" name="qr" placeholder="ID ученика или служебный QR" required />
-        <button class="primary-button" type="submit">Распознать</button>
-      </form>
     </section>
   `;
   bindViewActions();
@@ -1166,7 +1161,7 @@ function renderAlbums() {
         <h2 class="card-title">Выпускные альбомы</h2>
         <p class="muted">Проект → группа → ученики, общие фото, учителя и экспорт дизайнеру.</p>
       </div>
-      <button class="primary-button" data-add-album-project type="button">Проект</button>
+      <button class="primary-button album-create-project-button" data-add-album-project type="button"><span data-icon="plus"></span>Проект</button>
     </section>
     <section class="grid project-grid">
       ${projects.map(albumProjectCard).join("") || empty("Создайте первый проект для альбомов")}
@@ -1942,11 +1937,11 @@ function showCatalogServiceViewer(itemId) {
   const videoUrl = servicePreviewVideoDataUrl(item);
   const imageUrl = servicePreviewImageDataUrl(item);
   const description = serviceDescription(item) || serviceShortDescription(item) || "Описание скоро появится.";
-  const media = videoUrl
-    ? `<div class="catalog-modal-media"><video data-catalog-modal-video src="${videoUrl}" controls playsinline></video><button class="secondary-button compact" data-catalog-video-fullscreen type="button">На весь экран</button></div>`
-    : imageUrl
-      ? `<img class="catalog-modal-image" src="${imageUrl}" alt="${escapeAttr(serviceName(item))}" />`
-      : `<div class="catalog-modal-image empty">Нет превью</div>`;
+  const mediaItems = [
+    imageUrl ? `<figure class="catalog-modal-media-item"><img class="catalog-modal-image" src="${imageUrl}" alt="${escapeAttr(serviceName(item))}" /></figure>` : "",
+    videoUrl ? `<figure class="catalog-modal-media-item"><video data-catalog-modal-video src="${videoUrl}" controls playsinline preload="metadata"></video><button class="secondary-button compact" data-catalog-video-fullscreen type="button">На весь экран</button></figure>` : ""
+  ].filter(Boolean).join("");
+  const media = `<div class="catalog-modal-media">${mediaItems || `<div class="catalog-modal-image empty">Нет превью</div>`}</div>`;
   const panel = document.createElement("div");
   panel.className = "catalog-modal-backdrop";
   panel.innerHTML = `
@@ -3263,7 +3258,7 @@ function studentCard(student) {
   const fullName = `${student.lastName} ${student.firstName}`.trim();
   const preview = previewUrl
     ? `<img class="student-thumb" src="${previewUrl}" alt="${escapeAttr(fullName)}" loading="lazy" />`
-    : '<div class="student-thumb empty"><span>👤</span><small>Нет фото</small></div>';
+    : '<div class="student-thumb empty" aria-label="Фото не добавлено"><span></span><small>Нет фото</small></div>';
   const finalStats = finalWorkStatsForStudent(student.id);
   return `
     <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
@@ -5371,6 +5366,8 @@ function finalWorkA4PdfBlob(work) {
 function finalWorkOriginalBlob(work) {
   if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
   if (work?.blob instanceof Blob) return work.blob;
+  const sourceMedia = mediaById(work?.sourceMediaId);
+  if (sourceMedia?.blob instanceof Blob) return sourceMedia.blob;
   return mediaById(work?.resultMediaId)?.blob || null;
 }
 
@@ -7929,7 +7926,7 @@ function buildPublicCatalogHtml(catalogData) {
       }
       .cards {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 14px;
       }
       .card {
@@ -7950,13 +7947,19 @@ function buildPublicCatalogHtml(catalogData) {
         aspect-ratio: 4 / 3;
         background: linear-gradient(135deg, #efd6b5, #f9efe3);
       }
-      .preview img,
-      .modal-media img,
-      .modal-media video {
+      .preview img {
         display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
+      }
+      .modal-media img,
+      .modal-media video {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: min(62vh, 620px);
+        object-fit: contain;
       }
       .empty-preview {
         display: grid;
@@ -8062,9 +8065,15 @@ function buildPublicCatalogHtml(catalogData) {
       }
       .modal-media {
         position: relative;
-        overflow: hidden;
+        display: grid;
+        gap: 12px;
         margin: 16px 18px 0;
-        aspect-ratio: 16 / 10;
+      }
+      .modal-media-item {
+        position: relative;
+        overflow: hidden;
+        min-height: 220px;
+        max-height: min(62vh, 620px);
         border-radius: 22px;
         background: #111;
       }
@@ -8102,8 +8111,10 @@ function buildPublicCatalogHtml(catalogData) {
       @media (max-width: 620px) {
         .page { padding-inline: 12px; }
         .hero { padding: 22px; border-radius: 26px; }
-        .cards { grid-template-columns: 1fr; }
-        .modal-media { aspect-ratio: 4 / 3; }
+        .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .body { padding: 12px; }
+        .title-row h3 { font-size: 1.12rem; }
+        .modal-media-item { min-height: 180px; }
       }
     </style>
   </head>
@@ -8248,9 +8259,10 @@ function buildPublicCatalogHtml(catalogData) {
         var service = (catalog.services || []).find(function(item) { return item.id === id; });
         if (!service) return;
         var modal = document.getElementById("modal");
-        var media = service.previewVideo
-          ? '<div class="modal-media"><video id="modal-video" src="' + escapeHtml(service.previewVideo) + '" controls playsinline></video><button class="fullscreen" data-fullscreen type="button">На весь экран</button></div>'
-          : '<div class="modal-media">' + (service.previewImage ? '<img src="' + escapeHtml(service.previewImage) + '" alt="' + escapeHtml(service.name) + '" />' : '<div class="empty-preview">Нет превью</div>') + '</div>';
+        var mediaItems = "";
+        if (service.previewImage) mediaItems += '<div class="modal-media-item"><img src="' + escapeHtml(service.previewImage) + '" alt="' + escapeHtml(service.name) + '" /></div>';
+        if (service.previewVideo) mediaItems += '<div class="modal-media-item"><video id="modal-video" src="' + escapeHtml(service.previewVideo) + '" controls playsinline preload="metadata"></video><button class="fullscreen" data-fullscreen type="button">На весь экран</button></div>';
+        var media = '<div class="modal-media">' + (mediaItems || '<div class="modal-media-item"><div class="empty-preview">Нет превью</div></div>') + '</div>';
         modal.innerHTML = '<section class="modal" role="dialog" aria-modal="true">' +
           '<div class="modal-head"><div><h2>' + escapeHtml(service.name || "Услуга") + '</h2><span class="price">' + escapeHtml(priceText(service.price)) + '</span></div><button class="close" data-close type="button">x</button></div>' +
           media +
@@ -11409,7 +11421,7 @@ function injectIcons() {
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',
     download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
-    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18 9 12l6-6"/><path d="M9 12h12"/><path d="M3 12h6"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M15 6 9 12l6 6"/></svg>',
     camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h4l2-3h4l2 3h4v11H4z"/><circle cx="12" cy="13" r="3"/></svg>',
     video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3z"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m20 6-11 11-5-5"/></svg>'
