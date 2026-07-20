@@ -808,6 +808,7 @@ function renderHome() {
   const students = state.data.students;
   const done = students.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const total = students.reduce((sum, student) => sum + completion(student.id).total, 0);
+  const dashboard = homeDashboardStats(projects, classes, students, done, total);
   setShell({
     heading: "Главная",
     context: projects[0]?.name || APP_NAME,
@@ -835,6 +836,7 @@ function renderHome() {
           <div><strong>${students.length} учеников</strong><span>${done} из ${total} задач</span></div>
         </article>
       </div>
+      ${homeDashboard(dashboard)}
       <label class="search-box">
         <span data-icon="search"></span>
         <input data-query placeholder="Поиск проекта, группы или ученика" value="${escapeAttr(state.query)}" />
@@ -857,6 +859,65 @@ function renderHome() {
     state.query = event.target.value;
     renderHome();
   });
+}
+
+function homeDashboardStats(projects, classes, students, doneTasks, totalTasks) {
+  const paid = students.filter((student) => student.paymentStatus === "paid").length;
+  const unpaid = Math.max(0, students.length - paid);
+  const ready = students.filter((student) => ["processed", "printed", "delivered"].includes(calculateStudentStatus(student))).length;
+  const shooting = students.filter((student) => calculateStudentStatus(student) === "shooting").length;
+  const todo = students.filter((student) => ["not_started", "shooting"].includes(calculateStudentStatus(student))).length;
+  const finalWorks = state.data.finalWorks.length;
+  const printed = state.data.finalWorks.filter((work) => work.status === "printed" || work.status === "delivered").length;
+  const media = state.data.media.length;
+  const taskPercent = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const paidPercent = students.length ? Math.round((paid / students.length) * 100) : 0;
+  const readyPercent = students.length ? Math.round((ready / students.length) * 100) : 0;
+  return { projects: projects.length, classes: classes.length, students: students.length, paid, unpaid, ready, shooting, todo, finalWorks, printed, media, doneTasks, totalTasks, taskPercent, paidPercent, readyPercent };
+}
+
+function homeDashboard(stats) {
+  const remainingTasks = Math.max(0, stats.totalTasks - stats.doneTasks);
+  return `
+    <section class="dashboard-panel" aria-label="Дашборд съемки">
+      <div class="dashboard-head">
+        <div>
+          <h2 class="card-title">Дашборд</h2>
+          <p class="muted">Что готово, что осталось и где нужен фокус.</p>
+        </div>
+        <span class="status-pill ${stats.taskPercent >= 80 ? "paid" : stats.taskPercent ? "in-progress" : "unpaid"}">${stats.taskPercent}% задач</span>
+      </div>
+      <div class="dashboard-grid">
+        <article class="dashboard-donut-card">
+          <div class="dashboard-donut" style="--value:${stats.taskPercent}"><strong>${stats.taskPercent}%</strong><span>готово</span></div>
+          <div class="dashboard-legend">
+            <span><i class="legend-dot done"></i>${stats.doneTasks} сделано</span>
+            <span><i class="legend-dot todo"></i>${remainingTasks} осталось</span>
+          </div>
+        </article>
+        <article class="dashboard-bars">
+          ${dashboardBar("Оплачено", stats.paid, stats.students, stats.paidPercent)}
+          ${dashboardBar("Обработано", stats.ready, stats.students, stats.readyPercent)}
+          ${dashboardBar("Напечатано", stats.printed, stats.finalWorks, stats.finalWorks ? Math.round((stats.printed / stats.finalWorks) * 100) : 0)}
+        </article>
+        <article class="dashboard-kpis">
+          <div><strong>${stats.todo}</strong><span>надо снять</span></div>
+          <div><strong>${stats.shooting}</strong><span>на съемке</span></div>
+          <div><strong>${stats.finalWorks}</strong><span>готовых работ</span></div>
+          <div><strong>${stats.media}</strong><span>медиа</span></div>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
+function dashboardBar(label, value, total, percent) {
+  return `
+    <div class="dashboard-bar-row">
+      <div><strong>${escapeHtml(label)}</strong><span>${value}/${total || 0}</span></div>
+      <div class="dashboard-bar"><span style="width:${Math.max(0, Math.min(100, percent))}%"></span></div>
+    </div>
+  `;
 }
 
 function projectCard(project) {
@@ -1479,8 +1540,12 @@ function studentQuickForm(classId) {
         </label>
         <div class="field-label student-service-picker-field">
           <span>Услуги</span>
-          <div class="student-service-mini-grid">
-            ${state.data.catalog.map((item) => miniCatalogCheckbox(item, item.id === selectedCatalogId)).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
+          <div class="service-picker-summary" data-service-picker-form-summary>
+            ${servicePickerHiddenInputs([selectedCatalogId])}
+            <div class="student-service-selected-strip" data-service-picker-selected>
+              ${servicePickerSelectedChips([selectedCatalogId])}
+            </div>
+            <button class="secondary-button" data-open-service-picker-form type="button"><span data-icon="catalog"></span>Выбрать из каталога</button>
           </div>
         </div>
         <label class="field-label">
@@ -1609,8 +1674,9 @@ function renderStudent() {
                 </span>
               `).join("") || '<p class="muted">Услуги не выбраны.</p>'}
             </div>
-            <div class="student-service-rail" role="list" aria-label="Услуги ученика">
-              ${orderedCatalogItems.map((item) => miniCatalogToggle(item, student.id, selectedCatalogIds.includes(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>'}
+            <button class="secondary-button" data-open-service-picker-student="${student.id}" type="button"><span data-icon="catalog"></span>Выбрать из каталога</button>
+            <div class="selected-service-settings">
+              ${selectedCatalogItems.map((item) => selectedServiceSettingsCard(item, student.id)).join("")}
             </div>
           </div>
         </div>
@@ -1621,15 +1687,26 @@ function renderStudent() {
             ${STUDENT_MANUAL_STATUS_KEYS.map((value) => `<option value="${value}" ${value === manualStudentStatus(student) ? "selected" : ""}>${escapeHtml(ORDER_STATUSES[value])}</option>`).join("")}
           </select>
         </label>
-        <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
-          ${student.paymentStatus === "paid" ? "Отметить как не оплачено" : "Оплачено"}
-        </button>
-        <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
-        <button class="secondary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
-        ${finalStats.total && finalStats.printed < finalStats.total ? `<button class="secondary-button" data-mark-printed-student="${student.id}" type="button">Отметить как напечатано</button>` : ""}
-        <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
-        <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
-        <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
+        <div class="student-action-group">
+          <span>Статусы</span>
+          <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
+            ${student.paymentStatus === "paid" ? "Отметить как не оплачено" : "Оплачено"}
+          </button>
+          ${finalStats.total && finalStats.printed < finalStats.total ? `<button class="secondary-button" data-mark-printed-student="${student.id}" type="button">Отметить как напечатано</button>` : ""}
+        </div>
+        <div class="student-action-group">
+          <span>Работа</span>
+          <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
+          <button class="secondary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
+        </div>
+        <div class="student-action-group">
+          <span>Материалы</span>
+          <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
+          <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
+        </div>
+        <div class="student-action-group danger-zone">
+          <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
+        </div>
       </aside>
     </section>
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
@@ -1677,7 +1754,12 @@ function mediaTile(item) {
   const node = item.type === "video"
     ? `<video src="${url}" controls muted title="${escapeAttr(item.fileName)}"></video>`
     : `<button class="media-tile-button" data-view-media="${item.id}" type="button" title="${escapeAttr(item.fileName)}"><img src="${url}" alt="${escapeAttr(item.fileName)}" loading="lazy" /></button>`;
-  return `<figure class="media-tile">${node}</figure>`;
+  return `
+    <figure class="media-tile">
+      ${node}
+      <button class="media-delete-button" data-delete-media="${item.id}" type="button" aria-label="Удалить ${escapeAttr(item.fileName || "медиа")}"><span data-icon="trash"></span></button>
+    </figure>
+  `;
 }
 
 function finalResultCard(work) {
@@ -1889,6 +1971,133 @@ function miniCatalogCheckbox(item, selected = false) {
       </span>
     </label>
   `;
+}
+
+function servicePickerHiddenInputs(catalogIds) {
+  return normalizeCatalogIds(catalogIds).map((id) => `<input type="hidden" name="catalogIds" value="${escapeAttr(id)}" />`).join("");
+}
+
+function servicePickerSelectedChips(catalogIds) {
+  const ids = normalizeCatalogIds(catalogIds);
+  return ids.map((id) => {
+    const item = catalogItemById(id);
+    return item ? `<span class="service-chip">${escapeHtml(serviceName(item))}</span>` : "";
+  }).join("") || '<p class="muted">Услуги не выбраны.</p>';
+}
+
+function selectedServiceSettingsCard(item, studentId) {
+  const student = studentById(studentId);
+  const comment = studentServiceComment(student, item.id);
+  const quantity = studentServiceQuantity(student, item.id);
+  const totalPrice = parseMoney(item.price) * quantity;
+  return `
+    <article class="selected-service-card">
+      <div class="student-service-card-main">
+        <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
+          <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
+        </button>
+        <div class="mini-catalog-copy">
+          <strong>${escapeHtml(serviceName(item))}</strong>
+          <small>${escapeHtml(formatMoney(totalPrice))}</small>
+        </div>
+      </div>
+      <label class="student-service-quantity-row">
+        <span>Количество</span>
+        <div class="student-service-stepper">
+          <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:-1" type="button" aria-label="Уменьшить количество">-</button>
+          <span class="student-service-quantity-value" data-service-quantity-value="${studentId}:${item.id}" aria-live="polite">${escapeHtml(String(quantity))}</span>
+          <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:1" type="button" aria-label="Увеличить количество">+</button>
+        </div>
+        <strong class="student-service-quantity-total">${escapeHtml(formatMoney(totalPrice))}</strong>
+      </label>
+      <label class="student-service-comment-field">
+        <span>Комментарий к услуге</span>
+        <textarea class="textarea student-service-comment-input" data-service-comment="${studentId}:${item.id}" placeholder="Например: без шляпы, сделать темнее, добавить имя">${escapeHtml(comment)}</textarea>
+      </label>
+    </article>
+  `;
+}
+
+function servicePickerCatalogCard(item, selected = false) {
+  const previewUrl = servicePreviewImageDataUrl(item);
+  const preview = previewUrl
+    ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
+    : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
+  const category = serviceCategory(item);
+  return `
+    <button class="service-picker-card ${selected ? "selected" : ""}" data-service-picker-option="${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
+      <div class="catalog-card-preview">${preview}</div>
+      <div class="catalog-card-body">
+        <div class="catalog-card-title-row">
+          <h3>${escapeHtml(serviceName(item))}</h3>
+          <strong>${escapeHtml(formatPrice(item.price))}</strong>
+        </div>
+        <p>${escapeHtml(serviceShortDescription(item) || "Описание скоро появится.")}</p>
+        <div class="catalog-card-badges">
+          <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
+          ${category ? `<span class="catalog-card-badge">${escapeHtml(category)}</span>` : ""}
+          ${servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : ""}
+        </div>
+      </div>
+    </button>
+  `;
+}
+
+function showServicePickerPanel({ selectedIds = [], onApply }) {
+  document.querySelector(".service-picker-backdrop")?.remove();
+  const selected = new Set(normalizeCatalogIds(selectedIds));
+  const panel = document.createElement("div");
+  panel.className = "catalog-modal-backdrop service-picker-backdrop";
+  const renderCards = () => {
+    panel.querySelector("[data-service-picker-grid]").innerHTML = state.data.catalog.map((item) => servicePickerCatalogCard(item, selected.has(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>';
+    panel.querySelector("[data-service-picker-count]").textContent = `${selected.size} выбрано`;
+    panel.querySelectorAll("[data-service-picker-option]").forEach((node) => node.addEventListener("click", () => {
+      const id = node.dataset.servicePickerOption;
+      if (selected.has(id)) selected.delete(id);
+      else selected.add(id);
+      renderCards();
+      injectIcons();
+    }));
+  };
+  panel.innerHTML = `
+    <section class="catalog-modal service-picker-panel" role="dialog" aria-modal="true" aria-label="Выбор услуг">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Выбрать из каталога</h2>
+          <p class="muted" data-service-picker-count>${selected.size} выбрано</p>
+        </div>
+        <button class="icon-button" data-close-service-picker type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+      </div>
+      <div class="service-picker-grid" data-service-picker-grid></div>
+      <div class="toolbar">
+        <button class="secondary-button" data-close-service-picker type="button">Отмена</button>
+        <button class="primary-button" data-apply-service-picker type="button">Готово</button>
+      </div>
+    </section>
+  `;
+  const close = () => panel.remove();
+  panel.querySelectorAll("[data-close-service-picker]").forEach((node) => node.addEventListener("click", close));
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel) close();
+  });
+  panel.querySelector("[data-apply-service-picker]")?.addEventListener("click", async () => {
+    const ids = Array.from(selected);
+    if (!ids.length) return notify("Выберите хотя бы одну услугу.");
+    await onApply(ids);
+    close();
+  });
+  document.body.append(panel);
+  renderCards();
+  injectIcons();
+}
+
+function updateFormServicePicker(form, catalogIds) {
+  const summary = form.querySelector("[data-service-picker-form-summary]");
+  const selectedNode = form.querySelector("[data-service-picker-selected]");
+  if (!summary || !selectedNode) return;
+  summary.querySelectorAll("input[name='catalogIds']").forEach((node) => node.remove());
+  summary.insertAdjacentHTML("afterbegin", servicePickerHiddenInputs(catalogIds));
+  selectedNode.innerHTML = servicePickerSelectedChips(catalogIds);
 }
 
 function miniCatalogToggle(item, studentId, selected = false) {
@@ -3405,6 +3614,24 @@ function bindViewActions() {
     if (!student || !catalogId) return;
     updateStudentServices(studentId, [...selectedCatalogIdsForStudent(student), catalogId]);
   });
+  view.querySelectorAll("[data-open-service-picker-form]").forEach((node) => node.addEventListener("click", () => {
+    const form = node.closest("form");
+    if (!form) return;
+    const selectedIds = new FormData(form).getAll("catalogIds");
+    showServicePickerPanel({
+      selectedIds,
+      onApply: (ids) => updateFormServicePicker(form, ids)
+    });
+  }));
+  view.querySelectorAll("[data-open-service-picker-student]").forEach((node) => node.addEventListener("click", () => {
+    const studentId = node.dataset.openServicePickerStudent;
+    const student = studentById(studentId);
+    if (!student) return;
+    showServicePickerPanel({
+      selectedIds: selectedCatalogIdsForStudent(student),
+      onApply: (ids) => updateStudentServices(studentId, ids)
+    });
+  }));
   view.querySelectorAll("[data-toggle-student-service]").forEach((node) => node.addEventListener("click", () => {
     const [studentId, catalogId] = node.dataset.toggleStudentService.split(":");
     const student = studentById(studentId);
@@ -3531,6 +3758,10 @@ function bindViewActions() {
   view.querySelectorAll("[data-view-media]").forEach((node) => node.addEventListener("click", (event) => {
     event.stopPropagation();
     showMediaPreview(node.dataset.viewMedia);
+  }));
+  view.querySelectorAll("[data-delete-media]").forEach((node) => node.addEventListener("click", (event) => {
+    event.stopPropagation();
+    deleteMedia(node.dataset.deleteMedia);
   }));
   view.querySelectorAll("[data-upload-document]").forEach((node) => node.addEventListener("click", () => selectDocumentFiles(node.dataset.uploadDocument)));
   view.querySelectorAll("[data-open-document]").forEach((node) => node.addEventListener("click", () => showDocumentPreview(node.dataset.openDocument)));
@@ -4617,6 +4848,26 @@ function showMediaPreview(mediaId) {
     isVideo: media.type === "video",
     revokeOnClose: true
   });
+}
+
+async function deleteMedia(mediaId) {
+  const media = mediaById(mediaId);
+  if (!media) return;
+  if (!confirm(`Удалить файл "${media.fileName || "медиа"}"?`)) return;
+  for (const order of state.data.orders) {
+    const nextItems = (order.items || []).map((item) => ({
+      ...item,
+      fileIds: (item.fileIds || []).filter((id) => id !== mediaId)
+    }));
+    if (JSON.stringify(nextItems) !== JSON.stringify(order.items || [])) {
+      await put("orders", stampUpdated({ ...order, items: nextItems }));
+    }
+  }
+  await del("media", mediaId);
+  await refreshData();
+  notify("Файл удален.");
+  state.preserveScroll = true;
+  render();
 }
 
 function showInlineMediaPreview({ url, title = "Просмотр", isVideo = false, revokeOnClose = false }) {

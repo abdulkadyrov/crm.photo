@@ -690,6 +690,18 @@ p {
   grid-column: 1 / -1;
 }
 
+.service-picker-summary {
+  display: grid;
+  gap: 10px;
+  align-items: start;
+}
+
+.service-picker-summary .secondary-button,
+.service-dropdown-picker > .secondary-button {
+  width: fit-content;
+  min-width: min(260px, 100%);
+}
+
 .student-service-mini-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
@@ -1131,6 +1143,134 @@ button.mini-catalog-option {
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 700;
+}
+
+.dashboard-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.dashboard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.2fr) minmax(220px, 1fr);
+  gap: 14px;
+}
+
+.dashboard-donut-card,
+.dashboard-bars,
+.dashboard-kpis {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card-strong);
+}
+
+.dashboard-donut-card {
+  place-items: center;
+}
+
+.dashboard-donut {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 138px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, var(--card) 0 54%, transparent 55%),
+    conic-gradient(var(--primary) calc(var(--value) * 1%), color-mix(in srgb, var(--line) 70%, transparent) 0);
+}
+
+.dashboard-donut strong {
+  font-size: 1.45rem;
+}
+
+.dashboard-donut span,
+.dashboard-legend,
+.dashboard-bar-row span,
+.dashboard-kpis span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.dashboard-legend {
+  display: grid;
+  gap: 6px;
+  justify-self: stretch;
+}
+
+.dashboard-legend span,
+.dashboard-bar-row > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.legend-dot.done {
+  background: var(--primary);
+}
+
+.legend-dot.todo {
+  background: var(--line);
+}
+
+.dashboard-bar-row {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-bar {
+  overflow: hidden;
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.dashboard-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+}
+
+.dashboard-kpis {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-kpis div {
+  display: grid;
+  gap: 4px;
+  min-height: 76px;
+  align-content: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.dashboard-kpis strong {
+  font-size: 1.32rem;
 }
 
 .quick-filters {
@@ -2380,6 +2520,7 @@ button.mini-catalog-option {
 }
 
 .student-order-panel .service-dropdown-picker {
+  display: grid;
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--line);
@@ -2405,6 +2546,20 @@ button.mini-catalog-option {
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+}
+
+.selected-service-settings {
+  display: grid;
+  gap: 10px;
+}
+
+.selected-service-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
 }
 
 .service-chip {
@@ -2477,6 +2632,52 @@ button.mini-catalog-option {
 .student-service-comment-preview p {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.service-picker-panel {
+  width: min(1120px, calc(100vw - 36px));
+}
+
+.service-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 12px 0 16px;
+}
+
+.service-picker-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.service-picker-card.selected {
+  border-color: color-mix(in srgb, var(--primary) 72%, var(--line));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.student-action-group {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.student-action-group > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.student-action-group.danger-zone {
+  padding-top: 4px;
+  border-top: 0;
 }
 
 .finance-mini-progress span {
@@ -2658,6 +2859,7 @@ button.mini-catalog-option {
 }
 
 .media-tile {
+  position: relative;
   overflow: hidden;
   background: var(--card-strong);
   border: 1px solid var(--line);
@@ -2688,6 +2890,28 @@ button.mini-catalog-option {
   overflow-wrap: anywhere;
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.media-delete-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--error) 42%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--error) 14%, var(--card));
+  color: var(--error);
+  box-shadow: var(--shadow);
+}
+
+.media-delete-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .final-results-panel {
@@ -3242,6 +3466,27 @@ button.mini-catalog-option {
 }
 
 @media (max-width: 760px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .service-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .service-picker-card .catalog-card-body {
+    padding: 12px;
+  }
+
+  .service-picker-card .catalog-card-title-row h3 {
+    font-size: 1rem;
+  }
+
   .profile-work-head,
   .profile-chart-grid {
     grid-template-columns: 1fr;
