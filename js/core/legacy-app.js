@@ -836,6 +836,13 @@ function renderHome() {
           <div><strong>${students.length} учеников</strong><span>${done} из ${total} задач</span></div>
         </article>
       </div>
+      ${plainWorkDashboard({
+        title: "Что происходит сейчас",
+        students,
+        doneTasks: done,
+        totalTasks: total,
+        finance: financialStatsForStudents(students)
+      })}
       ${homeDashboard(dashboard)}
       <label class="search-box">
         <span data-icon="search"></span>
@@ -911,6 +918,44 @@ function homeDashboard(stats) {
   `;
 }
 
+function plainWorkDashboard({ title, students, doneTasks, totalTasks, finance }) {
+  const photographed = students.filter((student) => mediaByStudent(student.id).length || completion(student.id).doneCount > 0).length;
+  const remainingStudents = Math.max(0, students.length - photographed);
+  const remainingTasks = Math.max(0, totalTasks - doneTasks);
+  const workPercent = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const nextStep = remainingStudents
+    ? `Снять ${remainingStudents} ${pluralizeRu(remainingStudents, "ученика", "учеников", "учеников")}`
+    : remainingTasks
+      ? `Закрыть ${remainingTasks} ${pluralizeRu(remainingTasks, "задачу", "задачи", "задач")}`
+      : "Проверить готовые работы и печать";
+  return `
+    <section class="plain-dashboard" aria-label="${escapeAttr(title)}">
+      <div class="plain-dashboard-head">
+        <div>
+          <h2 class="card-title">${escapeHtml(title)}</h2>
+          <p class="muted">Простой итог по съемке, оплате и следующему шагу.</p>
+        </div>
+        <span class="status-pill ${workPercent >= 80 ? "paid" : workPercent ? "in-progress" : "unpaid"}">${workPercent}% готово</span>
+      </div>
+      <div class="plain-dashboard-grid">
+        ${plainDashboardItem("Сделано", `${doneTasks}/${totalTasks}`, `${photographed} ${pluralizeRu(photographed, "ученик", "ученика", "учеников")} снято`)}
+        ${plainDashboardItem("Нужно сделать", String(remainingTasks), nextStep)}
+        ${plainDashboardItem("Оплата", formatMoney(finance.paidAmount), `Осталось ${formatMoney(finance.remainingAmount)}`)}
+      </div>
+    </section>
+  `;
+}
+
+function plainDashboardItem(label, value, hint) {
+  return `
+    <article class="plain-dashboard-item">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(hint)}</small>
+    </article>
+  `;
+}
+
 function dashboardBar(label, value, total, percent) {
   return `
     <div class="dashboard-bar-row">
@@ -974,6 +1019,7 @@ function renderClasses() {
   const allProjectStudents = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
   const doneTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).doneCount, 0);
   const totalTasks = allProjectStudents.reduce((sum, student) => sum + completion(student.id).total, 0);
+  const projectFinance = financialStatsForStudents(allProjectStudents);
   if (state.classId && !classes.some((klass) => klass.id === state.classId)) state.classId = null;
   if (state.studentFormClassId && !classes.some((klass) => klass.id === state.studentFormClassId)) state.studentFormClassId = null;
   const isClassOpen = Boolean(state.classId);
@@ -993,6 +1039,13 @@ function renderClasses() {
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
       </div>
     </section>`}
+    ${!isClassOpen && activeProject ? plainWorkDashboard({
+      title: `Дашборд проекта`,
+      students: allProjectStudents,
+      doneTasks,
+      totalTasks,
+      finance: projectFinance
+    }) : ""}
     ${!isClassOpen && activeProject ? documentsSection("project", activeProject) : ""}
     ${formClassId ? studentQuickForm(formClassId) : ""}
     ${isClassOpen ? "" : `
@@ -5601,7 +5654,7 @@ function finalWorkImageBlob(work) {
   if (work?.image instanceof Blob) return work.image;
   if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
   if (work?.blob instanceof Blob) return work.blob;
-  return mediaById(work?.resultMediaId)?.blob || null;
+  return mediaById(work?.resultMediaId)?.blob || mediaById(work?.sourceMediaId)?.blob || null;
 }
 
 function finalWorkA4ImageBlob(work) {
@@ -5658,11 +5711,11 @@ function isFinalResultMedia(item) {
 async function showFinalWorkViewer(workId) {
   const work = finalWorkById(workId);
   if (!work) return notify("Готовый результат не найден.");
-  const originalBlob = finalWorkOriginalBlob(work);
-  const resultBlob = finalWorkImageBlob(work);
-  if (!resultBlob && !originalBlob) return notify("Изображение результата не найдено.");
   const preparedWork = await ensureFinalWorkA4Assets(work.id);
   const actualWork = preparedWork || finalWorkById(work.id) || work;
+  const originalBlob = finalWorkOriginalBlob(actualWork);
+  const resultBlob = finalWorkImageBlob(actualWork);
+  if (!resultBlob && !originalBlob) return notify("Изображение результата не найдено.");
   const student = studentById(work.studentId);
   const klass = classById(work.groupId || student?.classId);
   const project = projectById(work.projectId || klass?.projectId);
@@ -6191,8 +6244,9 @@ async function ensureFinalWorkA4Assets(workId) {
       studentId: work.studentId,
       orientationMode: finalWorkA4Mode(work)
     });
+    const latestWork = finalWorkById(workId) || work;
     const next = stampUpdated({
-      ...work,
+      ...latestWork,
       a4OrientationMode: assets.orientationMode,
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
@@ -6222,8 +6276,17 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       studentId: work.studentId,
       orientationMode
     });
+    const latestWork = finalWorkById(workId) || work;
+    const qrPayload = finalWorkTextQrPayload(latestWork);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
     await put("finalWorks", stampUpdated({
-      ...work,
+      ...latestWork,
+      image: mergedAsset.blob,
+      originalFinalImage: latestWork.originalFinalImage || original,
+      mergedPrintImage: mergedAsset.blob,
+      qrData: latestWork.qrData || finalWorkQrData(latestWork),
+      finalImageVersion: 2,
+      printQrPayload: qrPayload,
       a4OrientationMode: assets.orientationMode,
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
