@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-fairytale-princess",
+  "title": "Сказочная принцесса",
+  "grade": 1,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "fairytale-princess",
+  "tags": [
+    "принцесса",
+    "дворец",
+    "сказка"
+  ],
+  "description": "Классический оригинальный образ принцессы в дворцовом саду.",
+  "masterSrc": "./assets/templates/children/child-girl-fairytale-princess/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-fairytale-princess/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-fairytale-princess/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.225,
+    "height": 0.195,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

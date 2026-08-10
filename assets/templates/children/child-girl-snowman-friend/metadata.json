@@ -1,0 +1,28 @@
+{
+  "id": "child-girl-snowman-friend",
+  "title": "Друг-снеговик",
+  "grade": 0,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "snowman-friend",
+  "tags": [
+    "садик",
+    "снеговик",
+    "зима",
+    "новый год"
+  ],
+  "description": "Ребёнок даёт пять доброму снеговику в сказочной зимней деревне.",
+  "masterSrc": "./assets/templates/children/child-girl-snowman-friend/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-snowman-friend/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-snowman-friend/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.39,
+    "centerY": 0.365,
+    "width": 0.24,
+    "height": 0.215,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

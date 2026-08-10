@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-armored-tech-hero",
+  "title": "Бронированный техногерой",
+  "grade": 2,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "armored-tech-hero",
+  "tags": [
+    "техногерой",
+    "броня",
+    "будущее"
+  ],
+  "description": "Оригинальный герой в графитово-синей технологичной броне с открытым лицом.",
+  "masterSrc": "./assets/templates/children/child-boy-armored-tech-hero/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-armored-tech-hero/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-armored-tech-hero/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.245,
+    "width": 0.225,
+    "height": 0.195,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

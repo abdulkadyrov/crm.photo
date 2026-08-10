@@ -1,0 +1,28 @@
+{
+  "id": "child-boy-santa-workshop",
+  "title": "В гостях у Деда Мороза",
+  "grade": 0,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "santa-workshop",
+  "tags": [
+    "садик",
+    "дед мороз",
+    "новый год",
+    "игрушки"
+  ],
+  "description": "Ребёнок идёт за руку с добрым Дедом Морозом по волшебной мастерской игрушек.",
+  "masterSrc": "./assets/templates/children/child-boy-santa-workshop/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-santa-workshop/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-santa-workshop/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.455,
+    "centerY": 0.265,
+    "width": 0.22,
+    "height": 0.2,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

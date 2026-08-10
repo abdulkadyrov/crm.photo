@@ -1,0 +1,28 @@
+{
+  "id": "child-boy-dragon-friend",
+  "title": "Друг дракона",
+  "grade": 2,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "dragon-friend",
+  "tags": [
+    "дракон",
+    "замок",
+    "дружба",
+    "приключение"
+  ],
+  "description": "Ребёнок гладит доброго молодого дракона в солнечной замковой долине.",
+  "masterSrc": "./assets/templates/children/child-boy-dragon-friend/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-dragon-friend/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-dragon-friend/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.39,
+    "centerY": 0.255,
+    "width": 0.24,
+    "height": 0.21,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

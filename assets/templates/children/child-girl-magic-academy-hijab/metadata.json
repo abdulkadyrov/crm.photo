@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-magic-academy-hijab",
+  "title": "Академия магии",
+  "grade": 2,
+  "gender": "girl",
+  "headwear": "hijab",
+  "theme": "magic-academy",
+  "tags": [
+    "магия",
+    "академия",
+    "хиджаб"
+  ],
+  "description": "Ученица доброй академии магии в аккуратном светлом хиджабе.",
+  "masterSrc": "./assets/templates/children/child-girl-magic-academy-hijab/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-magic-academy-hijab/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-magic-academy-hijab/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.285,
+    "width": 0.205,
+    "height": 0.18,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

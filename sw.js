@@ -1,6 +1,19 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v33";
+const CACHE_VERSION = "v42";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+const CHILD_TEMPLATE_PREVIEWS = [
+  "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
+  "child-boy-football-champion", "child-boy-chechen-dzhigit", "child-girl-fairytale-princess",
+  "child-girl-long-haired-tower-princess", "child-girl-ice-queen",
+  "child-girl-brave-highland-princess", "child-girl-eastern-princess-headscarf",
+  "child-girl-magic-academy-hijab", "child-girl-horse-rider-headscarf",
+  "child-girl-forest-fairy", "child-girl-ballerina-princess",
+  "child-boy-santa-workshop", "child-girl-snowman-friend",
+  "child-boy-rescue-puppy-team", "child-girl-fairy-tea-party",
+  "child-boy-block-world-friend", "child-girl-electric-creature-friend",
+  "child-boy-speed-fox-team", "child-girl-robot-friend",
+  "child-boy-dragon-friend", "child-girl-superhero-team-up"
+].map((id) => `./assets/templates/children/${id}/preview.webp`);
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -16,6 +29,7 @@ const APP_SHELL = [
   "./js/core/storage.js",
   "./js/core/constants.js",
   "./js/data/db.js",
+  "./js/data/child-portrait-templates.js",
   "./js/data/migrations.js",
   "./js/data/repositories/base-repository.js",
   "./js/data/repositories/projects-repository.js",
@@ -87,7 +101,8 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./icons/vakha-studio-logo.png",
   "./icons/icon-192.svg",
-  "./icons/icon-512.svg"
+  "./icons/icon-512.svg",
+  ...CHILD_TEMPLATE_PREVIEWS
 ];
 
 self.addEventListener("install", (event) => {

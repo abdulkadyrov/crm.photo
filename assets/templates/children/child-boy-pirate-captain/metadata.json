@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-pirate-captain",
+  "title": "Капитан пиратов",
+  "grade": 2,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "pirate-captain",
+  "tags": [
+    "пират",
+    "корабль",
+    "приключение"
+  ],
+  "description": "Добрый капитан на палубе парусника без оружия и пиратской символики.",
+  "masterSrc": "./assets/templates/children/child-boy-pirate-captain/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-pirate-captain/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-pirate-captain/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.235,
+    "height": 0.205,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

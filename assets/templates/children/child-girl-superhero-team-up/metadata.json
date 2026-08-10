@@ -1,0 +1,28 @@
+{
+  "id": "child-girl-superhero-team-up",
+  "title": "Команда супергероев",
+  "grade": 2,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "superhero-team-up",
+  "tags": [
+    "супергерой",
+    "команда",
+    "город",
+    "приключение"
+  ],
+  "description": "Ребёнок приветствует оригинальную супергероиню на крыше города будущего.",
+  "masterSrc": "./assets/templates/children/child-girl-superhero-team-up/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-superhero-team-up/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-superhero-team-up/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.36,
+    "centerY": 0.34,
+    "width": 0.24,
+    "height": 0.21,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

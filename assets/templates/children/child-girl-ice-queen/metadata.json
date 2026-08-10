@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-ice-queen",
+  "title": "Ледяная королева",
+  "grade": 4,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "ice-queen",
+  "tags": [
+    "лед",
+    "зима",
+    "королева"
+  ],
+  "description": "Самостоятельный образ ледяной королевы в северном дворце под сиянием.",
+  "masterSrc": "./assets/templates/children/child-girl-ice-queen/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-ice-queen/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-ice-queen/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.25,
+    "width": 0.22,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

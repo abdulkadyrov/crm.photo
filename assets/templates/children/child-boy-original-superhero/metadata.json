@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-original-superhero",
+  "title": "Супергерой будущего",
+  "grade": 1,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "original-superhero",
+  "tags": [
+    "супергерой",
+    "плащ",
+    "город"
+  ],
+  "description": "Самостоятельный образ юного супергероя без чужих костюмов, эмблем и логотипов.",
+  "masterSrc": "./assets/templates/children/child-boy-original-superhero/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-original-superhero/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-original-superhero/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.25,
+    "width": 0.23,
+    "height": 0.2,
+    "feather": 0.018
+  },
+  "enabled": false,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

@@ -1,0 +1,28 @@
+{
+  "id": "child-girl-robot-friend",
+  "title": "Робот-друг",
+  "grade": 2,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "robot-friend",
+  "tags": [
+    "робот",
+    "будущее",
+    "дружба",
+    "город"
+  ],
+  "description": "Ребёнок идёт за руку с добрым роботом-помощником по саду города будущего.",
+  "masterSrc": "./assets/templates/children/child-girl-robot-friend/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-robot-friend/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-robot-friend/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.35,
+    "centerY": 0.28,
+    "width": 0.23,
+    "height": 0.2,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

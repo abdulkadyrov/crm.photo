@@ -1,0 +1,28 @@
+{
+  "id": "child-boy-speed-fox-team",
+  "title": "Скоростной лис",
+  "grade": 2,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "speed-fox-team",
+  "tags": [
+    "игра",
+    "скорость",
+    "лис",
+    "гонка"
+  ],
+  "description": "Ребёнок празднует победу вместе с оригинальным героем скоростной трассы.",
+  "masterSrc": "./assets/templates/children/child-boy-speed-fox-team/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-speed-fox-team/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-speed-fox-team/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.34,
+    "centerY": 0.18,
+    "width": 0.23,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

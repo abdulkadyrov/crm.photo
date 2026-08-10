@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-forest-fairy",
+  "title": "Лесная фея",
+  "grade": 1,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "forest-fairy",
+  "tags": [
+    "фея",
+    "лес",
+    "крылья"
+  ],
+  "description": "Добрая лесная фея с крыльями за плечами и открытым лицом.",
+  "masterSrc": "./assets/templates/children/child-girl-forest-fairy/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-forest-fairy/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-forest-fairy/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.22,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

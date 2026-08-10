@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-horse-rider-headscarf",
+  "title": "Юная наездница",
+  "grade": 4,
+  "gender": "girl",
+  "headwear": "headscarf",
+  "theme": "horse-rider",
+  "tags": [
+    "лошадь",
+    "наездница",
+    "платок"
+  ],
+  "description": "Мирный конный портрет в светлом платке и парадной экипировке.",
+  "masterSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.21,
+    "height": 0.185,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

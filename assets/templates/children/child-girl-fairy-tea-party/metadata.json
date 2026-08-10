@@ -1,0 +1,28 @@
+{
+  "id": "child-girl-fairy-tea-party",
+  "title": "Чаепитие с феями",
+  "grade": 0,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "fairy-tea-party",
+  "tags": [
+    "садик",
+    "феи",
+    "чаепитие",
+    "волшебный сад"
+  ],
+  "description": "Ребёнок устраивает чаепитие с маленькими оригинальными цветочными феями.",
+  "masterSrc": "./assets/templates/children/child-girl-fairy-tea-party/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-fairy-tea-party/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-fairy-tea-party/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.48,
+    "centerY": 0.255,
+    "width": 0.25,
+    "height": 0.21,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

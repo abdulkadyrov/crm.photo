@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-military-cadet",
+  "title": "Парадный кадет",
+  "grade": 4,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "ceremonial-cadet",
+  "tags": [
+    "кадет",
+    "парадный",
+    "форма"
+  ],
+  "description": "Вымышленная парадная форма без символов реальных армий, флагов и оружия.",
+  "masterSrc": "./assets/templates/children/child-boy-military-cadet/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-military-cadet/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-military-cadet/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.235,
+    "width": 0.215,
+    "height": 0.185,
+    "feather": 0.018
+  },
+  "enabled": false,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

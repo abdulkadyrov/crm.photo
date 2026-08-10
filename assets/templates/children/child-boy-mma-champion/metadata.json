@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-mma-champion",
+  "title": "Чемпион ММА",
+  "grade": 3,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "mma-champion",
+  "tags": [
+    "мма",
+    "спорт",
+    "чемпион"
+  ],
+  "description": "Спокойный спортивный портрет юного чемпиона в безопасной тренировочной сцене.",
+  "masterSrc": "./assets/templates/children/child-boy-mma-champion/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-mma-champion/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-mma-champion/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.225,
+    "height": 0.195,
+    "feather": 0.018
+  },
+  "enabled": false,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

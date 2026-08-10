@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-brave-highland-princess",
+  "title": "Смелая принцесса гор",
+  "grade": 3,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "brave-highland-princess",
+  "tags": [
+    "смелая",
+    "горы",
+    "принцесса"
+  ],
+  "description": "Оригинальная отважная исследовательница высокогорья без оружия.",
+  "masterSrc": "./assets/templates/children/child-girl-brave-highland-princess/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-brave-highland-princess/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-brave-highland-princess/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.27,
+    "width": 0.215,
+    "height": 0.185,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

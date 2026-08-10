@@ -1,0 +1,877 @@
+[
+  {
+    "id": "child-boy-pirate-captain",
+    "title": "Капитан пиратов",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "pirate-captain",
+    "tags": [
+      "пират",
+      "корабль",
+      "приключение"
+    ],
+    "description": "Добрый капитан на палубе парусника без оружия и пиратской символики.",
+    "masterSrc": "./assets/templates/children/child-boy-pirate-captain/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-pirate-captain/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-pirate-captain/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-pirate-captain/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.235,
+      "height": 0.205,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-armored-tech-hero",
+    "title": "Бронированный техногерой",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "armored-tech-hero",
+    "tags": [
+      "техногерой",
+      "броня",
+      "будущее"
+    ],
+    "description": "Оригинальный герой в графитово-синей технологичной броне с открытым лицом.",
+    "masterSrc": "./assets/templates/children/child-boy-armored-tech-hero/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-armored-tech-hero/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-armored-tech-hero/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-armored-tech-hero/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.245,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-original-superhero",
+    "title": "Супергерой будущего",
+    "grade": 1,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "original-superhero",
+    "tags": [
+      "супергерой",
+      "плащ",
+      "город"
+    ],
+    "description": "Самостоятельный образ юного супергероя без чужих костюмов, эмблем и логотипов.",
+    "masterSrc": "./assets/templates/children/child-boy-original-superhero/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-original-superhero/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-original-superhero/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-original-superhero/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.25,
+      "width": 0.23,
+      "height": 0.2,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-boy-mma-champion",
+    "title": "Чемпион ММА",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "mma-champion",
+    "tags": [
+      "мма",
+      "спорт",
+      "чемпион"
+    ],
+    "description": "Спокойный спортивный портрет юного чемпиона в безопасной тренировочной сцене.",
+    "masterSrc": "./assets/templates/children/child-boy-mma-champion/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-mma-champion/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-mma-champion/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-mma-champion/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-boy-racing-champion",
+    "title": "Гоночный чемпион",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "racing-champion",
+    "tags": [
+      "гонщик",
+      "автоспорт",
+      "чемпион"
+    ],
+    "description": "Юный пилот в универсальном гоночном костюме без командных брендов.",
+    "masterSrc": "./assets/templates/children/child-boy-racing-champion/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-racing-champion/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-racing-champion/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-racing-champion/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-boy-medieval-knight",
+    "title": "Рыцарь королевства",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "medieval-knight",
+    "tags": [
+      "рыцарь",
+      "замок",
+      "сказка"
+    ],
+    "description": "Парадный рыцарь в синем и серебряном доспехе, без оружия.",
+    "masterSrc": "./assets/templates/children/child-boy-medieval-knight/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-medieval-knight/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-medieval-knight/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-medieval-knight/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.25,
+      "width": 0.22,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-football-champion",
+    "title": "Футбольный чемпион",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "football-champion",
+    "tags": [
+      "футбол",
+      "стадион",
+      "медаль"
+    ],
+    "description": "Чемпион на стадионе в оригинальной форме без клубных эмблем.",
+    "masterSrc": "./assets/templates/children/child-boy-football-champion/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-football-champion/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-football-champion/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-football-champion/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-military-cadet",
+    "title": "Парадный кадет",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "ceremonial-cadet",
+    "tags": [
+      "кадет",
+      "парадный",
+      "форма"
+    ],
+    "description": "Вымышленная парадная форма без символов реальных армий, флагов и оружия.",
+    "masterSrc": "./assets/templates/children/child-boy-military-cadet/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-military-cadet/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-military-cadet/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-military-cadet/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.235,
+      "width": 0.215,
+      "height": 0.185,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-boy-rescue-special-unit",
+    "title": "Спасатель спецотряда",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "rescue-special-unit",
+    "tags": [
+      "спасатель",
+      "спецотряд",
+      "герой"
+    ],
+    "description": "Специалист вымышленного спасательного подразделения без оружия и военных знаков.",
+    "masterSrc": "./assets/templates/children/child-boy-rescue-special-unit/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-rescue-special-unit/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-rescue-special-unit/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-rescue-special-unit/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.225,
+      "width": 0.22,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-boy-chechen-dzhigit",
+    "title": "Чеченский джигит",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-dzhigit",
+    "tags": [
+      "чеченец",
+      "джигит",
+      "черкеска",
+      "горы"
+    ],
+    "description": "Уважительный национальный образ в черкеске и папахе на фоне Кавказских гор.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-dzhigit/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-dzhigit/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-dzhigit/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-dzhigit/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.285,
+      "width": 0.215,
+      "height": 0.18,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-space-explorer",
+    "title": "Исследователь космоса",
+    "grade": 1,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "space-explorer",
+    "tags": [
+      "космонавт",
+      "космос",
+      "станция"
+    ],
+    "description": "Юный исследователь в оригинальном светлом скафандре без логотипов.",
+    "masterSrc": "./assets/templates/children/child-boy-space-explorer/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-space-explorer/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-space-explorer/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-space-explorer/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.245,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-boy-santa-workshop",
+    "title": "В гостях у Деда Мороза",
+    "grade": 0,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "santa-workshop",
+    "tags": [
+      "садик",
+      "дед мороз",
+      "новый год",
+      "игрушки"
+    ],
+    "description": "Ребёнок идёт за руку с добрым Дедом Морозом по волшебной мастерской игрушек.",
+    "masterSrc": "./assets/templates/children/child-boy-santa-workshop/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-santa-workshop/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-santa-workshop/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-santa-workshop/metadata.json",
+    "faceGuide": {
+      "centerX": 0.455,
+      "centerY": 0.265,
+      "width": 0.22,
+      "height": 0.2,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-rescue-puppy-team",
+    "title": "Щенки-спасатели",
+    "grade": 0,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "rescue-puppy-team",
+    "tags": [
+      "садик",
+      "щенки",
+      "спасатели",
+      "команда"
+    ],
+    "description": "Ребёнок обнимает дружную команду оригинальных щенков-спасателей.",
+    "masterSrc": "./assets/templates/children/child-boy-rescue-puppy-team/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-rescue-puppy-team/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-rescue-puppy-team/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-rescue-puppy-team/metadata.json",
+    "faceGuide": {
+      "centerX": 0.51,
+      "centerY": 0.235,
+      "width": 0.21,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-block-world-friend",
+    "title": "Друг из блочного мира",
+    "grade": 1,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "block-world-friend",
+    "tags": [
+      "игра",
+      "блочный мир",
+      "голем",
+      "приключение"
+    ],
+    "description": "Юный исследователь даёт пять доброму каменному голему в оригинальном блочном мире.",
+    "masterSrc": "./assets/templates/children/child-boy-block-world-friend/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-block-world-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-block-world-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-block-world-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.43,
+      "centerY": 0.3,
+      "width": 0.22,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-speed-fox-team",
+    "title": "Скоростной лис",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "speed-fox-team",
+    "tags": [
+      "игра",
+      "скорость",
+      "лис",
+      "гонка"
+    ],
+    "description": "Ребёнок празднует победу вместе с оригинальным героем скоростной трассы.",
+    "masterSrc": "./assets/templates/children/child-boy-speed-fox-team/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-speed-fox-team/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-speed-fox-team/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-speed-fox-team/metadata.json",
+    "faceGuide": {
+      "centerX": 0.34,
+      "centerY": 0.18,
+      "width": 0.23,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-boy-dragon-friend",
+    "title": "Друг дракона",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "dragon-friend",
+    "tags": [
+      "дракон",
+      "замок",
+      "дружба",
+      "приключение"
+    ],
+    "description": "Ребёнок гладит доброго молодого дракона в солнечной замковой долине.",
+    "masterSrc": "./assets/templates/children/child-boy-dragon-friend/master.png",
+    "previewSrc": "./assets/templates/children/child-boy-dragon-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-dragon-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-dragon-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.39,
+      "centerY": 0.255,
+      "width": 0.24,
+      "height": 0.21,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-fairytale-princess",
+    "title": "Сказочная принцесса",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "fairytale-princess",
+    "tags": [
+      "принцесса",
+      "дворец",
+      "сказка"
+    ],
+    "description": "Классический оригинальный образ принцессы в дворцовом саду.",
+    "masterSrc": "./assets/templates/children/child-girl-fairytale-princess/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-fairytale-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-fairytale-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-fairytale-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-unicorn-world",
+    "title": "Волшебный мир единорогов",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "unicorn-world",
+    "tags": [
+      "единорог",
+      "магия",
+      "кристаллы"
+    ],
+    "description": "Лавандовый волшебный мир с единорогом на дальнем плане.",
+    "masterSrc": "./assets/templates/children/child-girl-unicorn-world/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-unicorn-world/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-unicorn-world/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-unicorn-world/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.265,
+      "width": 0.225,
+      "height": 0.195,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-girl-long-haired-tower-princess",
+    "title": "Принцесса солнечной башни",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "tower-princess",
+    "tags": [
+      "длинные волосы",
+      "башня",
+      "принцесса"
+    ],
+    "description": "Оригинальная длинноволосая принцесса в библиотеке солнечной башни.",
+    "masterSrc": "./assets/templates/children/child-girl-long-haired-tower-princess/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-long-haired-tower-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-long-haired-tower-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-long-haired-tower-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.215,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-ice-queen",
+    "title": "Ледяная королева",
+    "grade": 4,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "ice-queen",
+    "tags": [
+      "лед",
+      "зима",
+      "королева"
+    ],
+    "description": "Самостоятельный образ ледяной королевы в северном дворце под сиянием.",
+    "masterSrc": "./assets/templates/children/child-girl-ice-queen/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-ice-queen/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-ice-queen/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-ice-queen/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.25,
+      "width": 0.22,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-brave-highland-princess",
+    "title": "Смелая принцесса гор",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "brave-highland-princess",
+    "tags": [
+      "смелая",
+      "горы",
+      "принцесса"
+    ],
+    "description": "Оригинальная отважная исследовательница высокогорья без оружия.",
+    "masterSrc": "./assets/templates/children/child-girl-brave-highland-princess/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-brave-highland-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-brave-highland-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-brave-highland-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.27,
+      "width": 0.215,
+      "height": 0.185,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-eastern-princess-headscarf",
+    "title": "Восточная принцесса",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "headscarf",
+    "theme": "eastern-princess",
+    "tags": [
+      "восточная принцесса",
+      "платок",
+      "дворец"
+    ],
+    "description": "Сказочный восточный образ в лёгком платке, полностью открывающем лицо.",
+    "masterSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.265,
+      "width": 0.21,
+      "height": 0.185,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-magic-academy-hijab",
+    "title": "Академия магии",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "hijab",
+    "theme": "magic-academy",
+    "tags": [
+      "магия",
+      "академия",
+      "хиджаб"
+    ],
+    "description": "Ученица доброй академии магии в аккуратном светлом хиджабе.",
+    "masterSrc": "./assets/templates/children/child-girl-magic-academy-hijab/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-magic-academy-hijab/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-magic-academy-hijab/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-magic-academy-hijab/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.285,
+      "width": 0.205,
+      "height": 0.18,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-horse-rider-headscarf",
+    "title": "Юная наездница",
+    "grade": 4,
+    "gender": "girl",
+    "headwear": "headscarf",
+    "theme": "horse-rider",
+    "tags": [
+      "лошадь",
+      "наездница",
+      "платок"
+    ],
+    "description": "Мирный конный портрет в светлом платке и парадной экипировке.",
+    "masterSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-horse-rider-headscarf/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.21,
+      "height": 0.185,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-sea-princess",
+    "title": "Морская принцесса",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "sea-princess",
+    "tags": [
+      "море",
+      "русалка",
+      "подводный дворец"
+    ],
+    "description": "Оригинальная морская принцесса в кораллово-бирюзовом подводном дворце.",
+    "masterSrc": "./assets/templates/children/child-girl-sea-princess/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-sea-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-sea-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-sea-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.22,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": false,
+    "version": 2
+  },
+  {
+    "id": "child-girl-forest-fairy",
+    "title": "Лесная фея",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "forest-fairy",
+    "tags": [
+      "фея",
+      "лес",
+      "крылья"
+    ],
+    "description": "Добрая лесная фея с крыльями за плечами и открытым лицом.",
+    "masterSrc": "./assets/templates/children/child-girl-forest-fairy/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-forest-fairy/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-forest-fairy/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-forest-fairy/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.255,
+      "width": 0.22,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-ballerina-princess",
+    "title": "Балерина-принцесса",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "ballerina-princess",
+    "tags": [
+      "балерина",
+      "театр",
+      "принцесса"
+    ],
+    "description": "Парадный балетный портрет на сцене классического театра.",
+    "masterSrc": "./assets/templates/children/child-girl-ballerina-princess/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-ballerina-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-ballerina-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-ballerina-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.235,
+      "width": 0.215,
+      "height": 0.185,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-snowman-friend",
+    "title": "Друг-снеговик",
+    "grade": 0,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "snowman-friend",
+    "tags": [
+      "садик",
+      "снеговик",
+      "зима",
+      "новый год"
+    ],
+    "description": "Ребёнок даёт пять доброму снеговику в сказочной зимней деревне.",
+    "masterSrc": "./assets/templates/children/child-girl-snowman-friend/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-snowman-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-snowman-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-snowman-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.39,
+      "centerY": 0.365,
+      "width": 0.24,
+      "height": 0.215,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-fairy-tea-party",
+    "title": "Чаепитие с феями",
+    "grade": 0,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "fairy-tea-party",
+    "tags": [
+      "садик",
+      "феи",
+      "чаепитие",
+      "волшебный сад"
+    ],
+    "description": "Ребёнок устраивает чаепитие с маленькими оригинальными цветочными феями.",
+    "masterSrc": "./assets/templates/children/child-girl-fairy-tea-party/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-fairy-tea-party/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-fairy-tea-party/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-fairy-tea-party/metadata.json",
+    "faceGuide": {
+      "centerX": 0.48,
+      "centerY": 0.255,
+      "width": 0.25,
+      "height": 0.21,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-electric-creature-friend",
+    "title": "Искристый зверёк",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "electric-creature-friend",
+    "tags": [
+      "игра",
+      "волшебный зверёк",
+      "лес",
+      "приключение"
+    ],
+    "description": "Ребёнок держит за лапку оригинального искристого лесного зверька.",
+    "masterSrc": "./assets/templates/children/child-girl-electric-creature-friend/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-electric-creature-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-electric-creature-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-electric-creature-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.165,
+      "width": 0.23,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-robot-friend",
+    "title": "Робот-друг",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "robot-friend",
+    "tags": [
+      "робот",
+      "будущее",
+      "дружба",
+      "город"
+    ],
+    "description": "Ребёнок идёт за руку с добрым роботом-помощником по саду города будущего.",
+    "masterSrc": "./assets/templates/children/child-girl-robot-friend/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-robot-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-robot-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-robot-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.35,
+      "centerY": 0.28,
+      "width": 0.23,
+      "height": 0.2,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  },
+  {
+    "id": "child-girl-superhero-team-up",
+    "title": "Команда супергероев",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "superhero-team-up",
+    "tags": [
+      "супергерой",
+      "команда",
+      "город",
+      "приключение"
+    ],
+    "description": "Ребёнок приветствует оригинальную супергероиню на крыше города будущего.",
+    "masterSrc": "./assets/templates/children/child-girl-superhero-team-up/master.png",
+    "previewSrc": "./assets/templates/children/child-girl-superhero-team-up/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-superhero-team-up/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-superhero-team-up/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.34,
+      "width": 0.24,
+      "height": 0.21,
+      "feather": 0.018
+    },
+    "enabled": true,
+    "version": 2
+  }
+]

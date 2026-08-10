@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-sea-princess",
+  "title": "Морская принцесса",
+  "grade": 2,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "sea-princess",
+  "tags": [
+    "море",
+    "русалка",
+    "подводный дворец"
+  ],
+  "description": "Оригинальная морская принцесса в кораллово-бирюзовом подводном дворце.",
+  "masterSrc": "./assets/templates/children/child-girl-sea-princess/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-sea-princess/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-sea-princess/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.22,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": false,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

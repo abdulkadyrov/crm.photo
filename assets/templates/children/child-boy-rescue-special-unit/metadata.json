@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-rescue-special-unit",
+  "title": "Спасатель спецотряда",
+  "grade": 4,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "rescue-special-unit",
+  "tags": [
+    "спасатель",
+    "спецотряд",
+    "герой"
+  ],
+  "description": "Специалист вымышленного спасательного подразделения без оружия и военных знаков.",
+  "masterSrc": "./assets/templates/children/child-boy-rescue-special-unit/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-rescue-special-unit/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-rescue-special-unit/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.225,
+    "width": 0.22,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": false,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

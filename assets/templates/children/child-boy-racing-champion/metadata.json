@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-racing-champion",
+  "title": "Гоночный чемпион",
+  "grade": 2,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "racing-champion",
+  "tags": [
+    "гонщик",
+    "автоспорт",
+    "чемпион"
+  ],
+  "description": "Юный пилот в универсальном гоночном костюме без командных брендов.",
+  "masterSrc": "./assets/templates/children/child-boy-racing-champion/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-racing-champion/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-racing-champion/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.225,
+    "height": 0.195,
+    "feather": 0.018
+  },
+  "enabled": false,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

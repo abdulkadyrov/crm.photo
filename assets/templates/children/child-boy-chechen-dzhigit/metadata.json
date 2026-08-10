@@ -1,0 +1,28 @@
+{
+  "id": "child-boy-chechen-dzhigit",
+  "title": "Чеченский джигит",
+  "grade": 4,
+  "gender": "boy",
+  "headwear": "traditional-hat",
+  "theme": "chechen-dzhigit",
+  "tags": [
+    "чеченец",
+    "джигит",
+    "черкеска",
+    "горы"
+  ],
+  "description": "Уважительный национальный образ в черкеске и папахе на фоне Кавказских гор.",
+  "masterSrc": "./assets/templates/children/child-boy-chechen-dzhigit/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-chechen-dzhigit/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-chechen-dzhigit/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.285,
+    "width": 0.215,
+    "height": 0.18,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

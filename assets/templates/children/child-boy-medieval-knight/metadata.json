@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-medieval-knight",
+  "title": "Рыцарь королевства",
+  "grade": 2,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "medieval-knight",
+  "tags": [
+    "рыцарь",
+    "замок",
+    "сказка"
+  ],
+  "description": "Парадный рыцарь в синем и серебряном доспехе, без оружия.",
+  "masterSrc": "./assets/templates/children/child-boy-medieval-knight/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-medieval-knight/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-medieval-knight/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.25,
+    "width": 0.22,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

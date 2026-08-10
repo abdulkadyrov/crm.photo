@@ -1,0 +1,28 @@
+{
+  "id": "child-boy-rescue-puppy-team",
+  "title": "Щенки-спасатели",
+  "grade": 0,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "rescue-puppy-team",
+  "tags": [
+    "садик",
+    "щенки",
+    "спасатели",
+    "команда"
+  ],
+  "description": "Ребёнок обнимает дружную команду оригинальных щенков-спасателей.",
+  "masterSrc": "./assets/templates/children/child-boy-rescue-puppy-team/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-rescue-puppy-team/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-rescue-puppy-team/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.51,
+    "centerY": 0.235,
+    "width": 0.21,
+    "height": 0.195,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

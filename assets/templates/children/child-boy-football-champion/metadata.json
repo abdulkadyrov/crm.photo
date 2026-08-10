@@ -1,0 +1,27 @@
+{
+  "id": "child-boy-football-champion",
+  "title": "Футбольный чемпион",
+  "grade": 3,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "football-champion",
+  "tags": [
+    "футбол",
+    "стадион",
+    "медаль"
+  ],
+  "description": "Чемпион на стадионе в оригинальной форме без клубных эмблем.",
+  "masterSrc": "./assets/templates/children/child-boy-football-champion/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-football-champion/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-football-champion/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.255,
+    "width": 0.225,
+    "height": 0.195,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

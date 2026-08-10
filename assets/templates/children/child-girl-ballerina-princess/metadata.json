@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-ballerina-princess",
+  "title": "Балерина-принцесса",
+  "grade": 3,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "ballerina-princess",
+  "tags": [
+    "балерина",
+    "театр",
+    "принцесса"
+  ],
+  "description": "Парадный балетный портрет на сцене классического театра.",
+  "masterSrc": "./assets/templates/children/child-girl-ballerina-princess/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-ballerina-princess/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-ballerina-princess/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.235,
+    "width": 0.215,
+    "height": 0.185,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

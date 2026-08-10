@@ -1,0 +1,28 @@
+{
+  "id": "child-boy-block-world-friend",
+  "title": "Друг из блочного мира",
+  "grade": 1,
+  "gender": "boy",
+  "headwear": "none",
+  "theme": "block-world-friend",
+  "tags": [
+    "игра",
+    "блочный мир",
+    "голем",
+    "приключение"
+  ],
+  "description": "Юный исследователь даёт пять доброму каменному голему в оригинальном блочном мире.",
+  "masterSrc": "./assets/templates/children/child-boy-block-world-friend/master.png",
+  "previewSrc": "./assets/templates/children/child-boy-block-world-friend/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-block-world-friend/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.43,
+    "centerY": 0.3,
+    "width": 0.22,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

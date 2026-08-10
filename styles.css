@@ -297,6 +297,10 @@ p {
   align-items: center;
 }
 
+.card-header .status-row {
+  justify-content: flex-end;
+}
+
 .card-header {
   margin-bottom: 14px;
 }
@@ -555,6 +559,29 @@ p {
   padding-bottom: 2px;
 }
 
+.child-template-filters {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.child-template-filter-row {
+  display: grid;
+  grid-template-columns: 142px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.child-template-filter-row > strong {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.child-template-filter-row .chip-row {
+  overflow: visible;
+  flex-wrap: wrap;
+}
+
 .catalog-feed {
   display: grid;
   gap: 22px;
@@ -597,6 +624,7 @@ p {
 }
 
 .catalog-service-card {
+  position: relative;
   overflow: hidden;
   padding: 0;
   border-radius: 20px;
@@ -620,6 +648,14 @@ p {
   object-fit: cover;
 }
 
+.catalog-card-preview.portrait {
+  aspect-ratio: 4 / 5;
+}
+
+.catalog-card-preview.portrait img {
+  object-position: center top;
+}
+
 .catalog-card-empty {
   display: grid;
   place-items: center;
@@ -634,6 +670,44 @@ p {
   display: grid;
   gap: 10px;
   padding: 14px;
+}
+
+.catalog-service-card.portrait-overlay-card {
+  background: #111827;
+}
+
+.catalog-service-card.portrait-overlay-card .catalog-card-body {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: clamp(14px, 4vw, 22px);
+  background: linear-gradient(180deg, transparent 0%, rgb(5 12 25 / 58%) 28%, rgb(5 12 25 / 94%) 100%);
+  color: #fff;
+  pointer-events: none;
+}
+
+.catalog-service-card.portrait-overlay-card .catalog-card-title-row {
+  gap: 6px;
+}
+
+.catalog-service-card.portrait-overlay-card .catalog-card-title-row h3 {
+  color: #fff;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 60%);
+}
+
+.catalog-service-card.portrait-overlay-card .catalog-card-title-row strong {
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 999px;
+  background: rgb(5 12 25 / 56%);
+  color: #fff;
+  font-size: 0.88rem;
+  line-height: 1.1;
+  backdrop-filter: blur(8px);
 }
 
 .catalog-card-title-row {
@@ -684,6 +758,35 @@ p {
   border-color: #f59e0b;
   background: #fffbeb;
   color: #b45309;
+}
+
+.catalog-card-badge.template {
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--line));
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  color: var(--primary);
+}
+
+.child-template-ready-note {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--success) 38%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--success) 8%, var(--card));
+}
+
+.child-template-ready-note strong {
+  color: var(--success);
+}
+
+.child-template-ready-note span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.montage-template-note {
+  margin-top: 4px;
 }
 
 .student-service-picker-field {
@@ -994,6 +1097,20 @@ button.mini-catalog-option {
 
   .catalog-card-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalog-service-card.portrait-overlay-card .catalog-card-body {
+    padding: 12px;
+  }
+
+  .catalog-service-card.portrait-overlay-card .catalog-card-title-row h3 {
+    font-size: 1rem;
+    line-height: 1.08;
+  }
+
+  .catalog-service-card.portrait-overlay-card .catalog-card-title-row strong {
+    padding: 4px 7px;
+    font-size: 0.74rem;
   }
 
   .catalog-modal {
@@ -2600,6 +2717,20 @@ button.mini-catalog-option {
   margin-top: -6px;
 }
 
+.student-order-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.student-order-quick-actions > * {
+  min-width: 0;
+  width: 100%;
+  padding-right: 10px;
+  padding-left: 10px;
+  white-space: normal;
+}
+
 .student-order-panel .service-dropdown-picker {
   display: grid;
   gap: 14px;
@@ -2740,6 +2871,17 @@ button.mini-catalog-option {
 .service-picker-card.selected {
   border-color: color-mix(in srgb, var(--primary) 72%, var(--line));
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.service-picker-select-state {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .student-action-group {
@@ -3580,6 +3722,11 @@ button.mini-catalog-option {
     font-size: 1rem;
   }
 
+  .child-template-filter-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
   .profile-work-head,
   .profile-chart-grid {
     grid-template-columns: 1fr;
@@ -3726,6 +3873,28 @@ button.mini-catalog-option {
     min-height: 28px;
     padding: 0 10px;
     font-size: 0.78rem;
+  }
+
+  .card-header {
+    gap: 8px;
+  }
+
+  .card-header .status-row {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: 52%;
+    min-width: 0;
+  }
+
+  .card-header .status-row .status-pill {
+    flex: 0 1 auto;
+    max-width: 100%;
+    height: 26px;
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: clamp(0.62rem, 2.65vw, 0.75rem);
+    line-height: 1;
   }
 
   .menu-panel {
@@ -3975,5 +4144,193 @@ button.mini-catalog-option {
 
   .montage-preview {
     max-height: min(220px, 32dvh);
+  }
+}
+
+.student-detail-tabs {
+  display: none;
+}
+
+.student-detail-main,
+.student-detail-results,
+.student-detail-section {
+  min-width: 0;
+}
+
+.student-detail-results {
+  align-content: start;
+}
+
+@media (max-width: 899px) {
+  .student-detail-tabs {
+    position: fixed;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: calc(var(--nav-h) + 8px + env(safe-area-inset-bottom));
+    left: max(8px, env(safe-area-inset-left));
+    z-index: 24;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--card) 96%, transparent);
+    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.2);
+    backdrop-filter: blur(18px);
+  }
+
+  .student-detail-tab {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 5px;
+    border: 0;
+    border-radius: 13px;
+    background: transparent;
+    color: var(--muted);
+    font-size: clamp(0.62rem, 2.2vw, 0.75rem);
+    font-weight: 850;
+    line-height: 1;
+    text-align: center;
+    touch-action: manipulation;
+  }
+
+  .student-detail-tab > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-detail-tab small {
+    display: inline-grid;
+    min-width: 17px;
+    min-height: 17px;
+    place-items: center;
+    padding: 2px 4px;
+    border-radius: 999px;
+    background: var(--card-strong);
+    color: var(--muted);
+    font-size: 0.62rem;
+    line-height: 1;
+  }
+
+  .student-detail-tab.is-active {
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+
+  .student-detail-tab.is-active small {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .student-detail-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: 70px;
+  }
+
+  .student-detail-section {
+    scroll-margin-top: 12px;
+  }
+
+  .student-detail-shell ~ .fab-back {
+    bottom: calc(var(--nav-h) + 78px + env(safe-area-inset-bottom));
+  }
+
+  .student-overview-card .detail-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .student-overview-card .detail-stat {
+    padding: 10px;
+  }
+
+  .student-overview-card .detail-stat strong {
+    overflow: visible;
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .student-overview-card .action-button {
+    min-height: 64px;
+  }
+
+  .student-detail-shell .media-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-detail-shell .final-results-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-detail-shell .student-order-panel .service-dropdown-picker {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .student-detail-tabs {
+    right: max(6px, env(safe-area-inset-right));
+    left: max(6px, env(safe-area-inset-left));
+  }
+
+  .student-detail-tab {
+    grid-template-columns: 1fr;
+  }
+
+  .student-detail-tab small {
+    display: none;
+  }
+
+  .student-detail-results .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .student-detail-shell .final-result-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .student-detail-shell .final-result-preview {
+    width: 64px;
+    height: 64px;
+  }
+
+  .montage-backdrop {
+    padding: 0;
+  }
+
+  .montage-panel {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    border-radius: 0;
+  }
+
+  .montage-grid:not(.montage-secondary-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .montage-grid:not(.montage-secondary-grid) .panel {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .montage-grid:not(.montage-secondary-grid) .card-header {
+    align-items: flex-start;
+  }
+
+  .montage-grid:not(.montage-secondary-grid) .montage-preview {
+    max-height: min(180px, 24dvh);
   }
 }

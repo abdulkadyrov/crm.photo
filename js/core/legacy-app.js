@@ -7,6 +7,11 @@ import {
   testDirectoryWrite
 } from "../features/transfer/index.js";
 import { openVakhaDb } from "../data/db.js";
+import {
+  CHILD_PORTRAIT_CATEGORY,
+  CHILD_PORTRAIT_TEMPLATES,
+  childPortraitCatalogRecord
+} from "../data/child-portrait-templates.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
 
 const DB_NAME = "school-photo-flow";
@@ -187,12 +192,17 @@ const state = {
   classId: null,
   studentFormClassId: null,
   studentId: null,
+  studentDetailTab: "overview",
+  studentDetailScrollHandler: null,
+  studentDetailScrollFrame: 0,
   catalogId: null,
   filter: "all",
   query: "",
   catalogAudience: "all",
   catalogQuery: "",
   catalogCategory: "all",
+  childTemplateGrade: "all",
+  childTemplateHeadwear: "all",
   serviceSort: "manual",
   serviceCategoryFilter: "all",
   selectedServiceIds: new Set(),
@@ -656,30 +666,55 @@ async function seedIfNeeded() {
 }
 
 async function seedCatalogIfNeeded() {
-  const catalog = await getAll("catalog");
-  if (catalog.length) return;
-  await put("catalog", {
-    id: uid("catalog"),
-    title: "Стандартный проектный пакет",
-    name: "Стандартный проектный пакет",
-    mediaKind: "both",
-    price: "0",
-    shortDescription: "Портреты, полный рост, профиль, короткое видео и интервью.",
-    description: "Базовый пакет для школьной фотосъемки с набором ракурсов и короткими видео-сценами.",
-    gender: "unisex",
-    category: "",
-    popular: false,
-    orderIndex: 0,
-    orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
-    requirements: "Ровный свет, чистый фон, готовый список учеников и место для съемки.",
-    angles: [
-      { id: "portrait", name: "Портрет", details: "Лицо и плечи, взгляд в камеру.", refDataUrl: "", refName: "" },
-      { id: "full", name: "Полный рост", details: "Ученик полностью в кадре.", refDataUrl: "", refName: "" },
-      { id: "side", name: "Профиль", details: "Ракурс сбоку.", refDataUrl: "", refName: "" },
-      { id: "video", name: "Видео", details: "Короткий проход или приветствие.", refDataUrl: "", refName: "" },
-      { id: "interview", name: "Интервью", details: "Ответ на вопрос в камеру.", refDataUrl: "", refName: "" }
-    ]
-  });
+  let catalog = await getAll("catalog");
+  if (!catalog.length) {
+    await put("catalog", {
+      id: uid("catalog"),
+      title: "Стандартный проектный пакет",
+      name: "Стандартный проектный пакет",
+      mediaKind: "both",
+      price: "0",
+      shortDescription: "Портреты, полный рост, профиль, короткое видео и интервью.",
+      description: "Базовый пакет для школьной фотосъемки с набором ракурсов и короткими видео-сценами.",
+      gender: "unisex",
+      category: "",
+      popular: false,
+      orderIndex: 0,
+      orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
+      requirements: "Ровный свет, чистый фон, готовый список учеников и место для съемки.",
+      angles: [
+        { id: "portrait", name: "Портрет", details: "Лицо и плечи, взгляд в камеру.", refDataUrl: "", refName: "" },
+        { id: "full", name: "Полный рост", details: "Ученик полностью в кадре.", refDataUrl: "", refName: "" },
+        { id: "side", name: "Профиль", details: "Ракурс сбоку.", refDataUrl: "", refName: "" },
+        { id: "video", name: "Видео", details: "Короткий проход или приветствие.", refDataUrl: "", refName: "" },
+        { id: "interview", name: "Интервью", details: "Ответ на вопрос в камеру.", refDataUrl: "", refName: "" }
+      ]
+    });
+    catalog = await getAll("catalog");
+  }
+  const existingById = new Map(catalog.map((item) => [item.id, item]));
+  for (const [index, item] of CHILD_PORTRAIT_TEMPLATES.entries()) {
+    const seeded = childPortraitCatalogRecord(item, index);
+    const existing = existingById.get(item.id);
+    if (!existing) {
+      await put("catalog", seeded);
+      continue;
+    }
+    const needsSystemTemplateRepair = existing.systemTemplateVersion !== seeded.systemTemplateVersion
+      || !existing.childTemplate
+      || !existing.previewSrc
+      || !existing.masterSrc
+      || !existing.faceMaskSrc
+      || !existing.faceGuide;
+    if (!existing.systemTemplate || !needsSystemTemplateRepair) continue;
+    await put("catalog", {
+      ...existing,
+      ...seeded,
+      price: existing.price ?? seeded.price,
+      popular: existing.popular ?? seeded.popular,
+      orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : seeded.orderIndex
+    });
+  }
 }
 
 function bindShell() {
@@ -714,6 +749,9 @@ function navigate(route, params = {}) {
   const prevScrollY = window.scrollY;
   if (route === "student" && state.route !== "student") {
     state.returnTarget = routeSnapshot();
+  }
+  if (route === "student" && (state.route !== "student" || (params.studentId && params.studentId !== state.studentId))) {
+    state.studentDetailTab = "overview";
   }
   Object.assign(state, params, { route });
   document.querySelectorAll(".nav-item").forEach((item) => {
@@ -1645,11 +1683,20 @@ function renderStudent() {
   const orderPrice = studentTotalPrice(student);
   const c = completion(student.id);
   const price = studentTotalPrice(student);
+  const studentDetailTabs = ["overview", "checklist", "media", "order"];
+  const activeStudentDetailTab = studentDetailTabs.includes(state.studentDetailTab) ? state.studentDetailTab : "overview";
+  state.studentDetailTab = activeStudentDetailTab;
   setShell({ heading: `${student.firstName} ${student.lastName}`, context: project?.name || "Ученик", summary: klass?.name || "" });
   view.innerHTML = `
-    <section class="split">
-      <div class="grid">
-        <article class="panel">
+    <nav class="student-detail-tabs" aria-label="Разделы карточки ученика">
+      ${studentDetailTabButton("overview", "Карточка", "", activeStudentDetailTab)}
+      ${studentDetailTabButton("checklist", "Чеклист", order.items.length, activeStudentDetailTab)}
+      ${studentDetailTabButton("media", "Медиа", media.length + finalWorks.length, activeStudentDetailTab)}
+      ${studentDetailTabButton("order", "Заказ", selectedCatalogItems.length, activeStudentDetailTab)}
+    </nav>
+    <section class="split student-detail-shell">
+      <div class="grid student-detail-main">
+        <article class="panel student-detail-section student-overview-card ${activeStudentDetailTab === "overview" ? "is-active" : ""}" data-student-detail-section="overview">
           <div class="card-header">
             <div>
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
@@ -1676,7 +1723,7 @@ function renderStudent() {
             <button class="action-button secondary" data-done-task="${activeTask?.type || ""}" type="button"><span data-icon="check"></span>Готово</button>
           </div>
         </article>
-        <article class="panel">
+        <article class="panel student-detail-section ${activeStudentDetailTab === "checklist" ? "is-active" : ""}" data-student-detail-section="checklist">
           <div class="card-header">
             <h2 class="card-title">Чеклист</h2>
             <button class="secondary-button compact" data-reset-order="${student.id}" type="button">Сброс</button>
@@ -1685,7 +1732,7 @@ function renderStudent() {
             ${order.items.map((item) => taskRow(item, student.id)).join("")}
           </div>
         </article>
-        <article class="panel">
+        <article class="panel student-detail-section ${activeStudentDetailTab === "media" ? "is-active" : ""}" data-student-detail-section="media">
           <div class="card-header">
             <h2 class="card-title">Оригиналы</h2>
             <button class="secondary-button" data-export-student="${student.id}" type="button">Экспорт</button>
@@ -1694,28 +1741,34 @@ function renderStudent() {
             ${media.map(mediaTile).join("") || '<p class="muted">Фото и видео появятся здесь.</p>'}
           </div>
         </article>
-        <article class="panel final-results-panel">
-          <div class="card-header">
-            <h2 class="card-title">Готовые работы</h2>
-            <span class="muted">${finalWorks.length ? `${finalWorks.length} ${pluralizeRu(finalWorks.length, "результат", "результата", "результатов")}` : "Пока нет"}</span>
-          </div>
-          <div class="final-results-grid">
-            ${finalWorks.map(finalResultCard).join("") || '<p class="muted">AI-результаты появятся здесь после монтажа.</p>'}
-          </div>
-        </article>
-        <article class="panel final-results-panel">
-          <div class="card-header">
-            <h2 class="card-title">Печать A4</h2>
-            <span class="muted">${a4Works.length ? `${a4Works.length} ${pluralizeRu(a4Works.length, "макет", "макета", "макетов")}` : "Подготавливается автоматически"}</span>
-          </div>
-          <div class="final-results-grid">
-            ${finalWorks.map(finalPrintA4Card).join("") || '<p class="muted">Печатные макеты A4 появятся после загрузки готовой работы.</p>'}
-          </div>
-        </article>
+        <div class="grid student-detail-results student-detail-section ${activeStudentDetailTab === "media" ? "is-active" : ""}" data-student-detail-section="media">
+          <article class="panel final-results-panel">
+            <div class="card-header">
+              <h2 class="card-title">Готовые работы</h2>
+              <span class="muted">${finalWorks.length ? `${finalWorks.length} ${pluralizeRu(finalWorks.length, "результат", "результата", "результатов")}` : "Пока нет"}</span>
+            </div>
+            <div class="final-results-grid">
+              ${finalWorks.map(finalResultCard).join("") || '<p class="muted">AI-результаты появятся здесь после монтажа.</p>'}
+            </div>
+          </article>
+          <article class="panel final-results-panel">
+            <div class="card-header">
+              <h2 class="card-title">Печать A4</h2>
+              <span class="muted">${a4Works.length ? `${a4Works.length} ${pluralizeRu(a4Works.length, "макет", "макета", "макетов")}` : "Подготавливается автоматически"}</span>
+            </div>
+            <div class="final-results-grid">
+              ${finalWorks.map(finalPrintA4Card).join("") || '<p class="muted">Печатные макеты A4 появятся после загрузки готовой работы.</p>'}
+            </div>
+          </article>
+        </div>
       </div>
-      <aside class="panel grid student-order-panel">
+      <aside class="panel grid student-order-panel student-detail-section ${activeStudentDetailTab === "order" ? "is-active" : ""}" data-student-detail-section="order">
         <h2 class="card-title">Заказ</h2>
         <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
+        <div class="student-order-quick-actions">
+          <button class="primary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
+          <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать</button>
+        </div>
         <div class="field-label">
           <span>Услуги ученика</span>
           <div class="service-dropdown-picker">
@@ -1748,11 +1801,6 @@ function renderStudent() {
           ${finalStats.total && finalStats.printed < finalStats.total ? `<button class="secondary-button" data-mark-printed-student="${student.id}" type="button">Отметить как напечатано</button>` : ""}
         </div>
         <div class="student-action-group">
-          <span>Работа</span>
-          <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать ученика</button>
-          <button class="secondary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
-        </div>
-        <div class="student-action-group">
           <span>Материалы</span>
           <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
           <button class="secondary-button" data-show-student-references="${student.id}" type="button">Показать референсы</button>
@@ -1767,6 +1815,83 @@ function renderStudent() {
   bindViewActions();
   maybeBackfillStudentFinalWorks(student.id);
   maybeOpenPendingFinalWorkViewer(student.id);
+}
+
+function studentDetailTabButton(tab, label, count, activeTab) {
+  const isActive = tab === activeTab;
+  return `
+    <button class="student-detail-tab ${isActive ? "is-active" : ""}" data-student-detail-tab="${tab}" type="button" aria-pressed="${isActive}">
+      <span>${escapeHtml(label)}</span>
+      ${count === "" ? "" : `<small>${escapeHtml(String(count))}</small>`}
+    </button>
+  `;
+}
+
+function selectStudentDetailTab(tab) {
+  const tabs = ["overview", "checklist", "media", "order"];
+  if (!tabs.includes(tab)) return;
+  updateStudentDetailTabState(tab);
+  if (!window.matchMedia("(max-width: 899px)").matches) return;
+  const target = view.querySelector(`[data-student-detail-section="${tab}"]`);
+  if (!target) return;
+  const topbarHeight = document.querySelector(".topbar")?.offsetHeight || 0;
+  const targetTop = Math.max(0, window.scrollY + target.getBoundingClientRect().top - topbarHeight - 10);
+  window.scrollTo({ top: targetTop, behavior: "smooth" });
+}
+
+function updateStudentDetailTabState(tab) {
+  state.studentDetailTab = tab;
+  view.querySelectorAll("[data-student-detail-tab]").forEach((node) => {
+    const isActive = node.dataset.studentDetailTab === tab;
+    node.classList.toggle("is-active", isActive);
+    node.setAttribute("aria-pressed", String(isActive));
+  });
+  view.querySelectorAll("[data-student-detail-section]").forEach((node) => {
+    node.classList.toggle("is-active", node.dataset.studentDetailSection === tab);
+  });
+}
+
+function clearStudentDetailScrollSpy() {
+  if (state.studentDetailScrollHandler) {
+    window.removeEventListener("scroll", state.studentDetailScrollHandler);
+    window.removeEventListener("resize", state.studentDetailScrollHandler);
+  }
+  if (state.studentDetailScrollFrame) cancelAnimationFrame(state.studentDetailScrollFrame);
+  state.studentDetailScrollHandler = null;
+  state.studentDetailScrollFrame = 0;
+}
+
+function bindStudentDetailScrollSpy() {
+  clearStudentDetailScrollSpy();
+  const sections = Array.from(view.querySelectorAll("[data-student-detail-section]"));
+  if (!sections.length) return;
+  const update = () => {
+    state.studentDetailScrollFrame = 0;
+    if (!window.matchMedia("(max-width: 899px)").matches) return;
+    const topbarHeight = document.querySelector(".topbar")?.offsetHeight || 0;
+    const bottomControlsHeight = 150;
+    const visibleHeight = Math.max(80, window.innerHeight - topbarHeight - bottomControlsHeight);
+    const focusY = topbarHeight + visibleHeight * 0.42;
+    let activeSection = sections[0];
+    let closestDistance = Number.POSITIVE_INFINITY;
+    for (const section of sections) {
+      const rect = section.getBoundingClientRect();
+      const containsFocus = rect.top <= focusY && rect.bottom > focusY;
+      const distance = containsFocus ? 0 : Math.min(Math.abs(rect.top - focusY), Math.abs(rect.bottom - focusY));
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        activeSection = section;
+      }
+    }
+    updateStudentDetailTabState(activeSection.dataset.studentDetailSection);
+  };
+  state.studentDetailScrollHandler = () => {
+    if (state.studentDetailScrollFrame) return;
+    state.studentDetailScrollFrame = requestAnimationFrame(update);
+  };
+  window.addEventListener("scroll", state.studentDetailScrollHandler, { passive: true });
+  window.addEventListener("resize", state.studentDetailScrollHandler, { passive: true });
+  update();
 }
 
 function taskRow(item, studentId) {
@@ -1891,12 +2016,41 @@ function renderCatalog() {
           ${hasUncategorized ? catalogCategoryChip(SERVICE_UNCATEGORIZED, "Без категории") : ""}
         </div>
       ` : ""}
+      ${state.catalogCategory === CHILD_PORTRAIT_CATEGORY ? childPortraitCatalogFilters() : ""}
       <section class="catalog-feed">
         ${sections.map(catalogSection).join("") || empty("В каталоге пока нет услуг")}
       </section>
     </section>
   `;
   bindViewActions();
+}
+
+function childPortraitCatalogFilters() {
+  const grades = [0, 1, 2, 3, 4];
+  const headwear = [
+    ["all", "Все варианты"],
+    ["none", "Без головного убора"],
+    ["headscarf", "В платке"],
+    ["hijab", "В хиджабе"],
+    ["traditional-hat", "Национальный убор"]
+  ];
+  return `
+    <section class="child-template-filters panel" aria-label="Фильтры детских образов">
+      <div class="child-template-filter-row">
+        <strong>Класс</strong>
+        <div class="chip-row">
+          <button class="chip ${state.childTemplateGrade === "all" ? "active" : ""}" data-child-template-grade="all" type="button">Все</button>
+          ${grades.map((grade) => `<button class="chip ${String(state.childTemplateGrade) === String(grade) ? "active" : ""}" data-child-template-grade="${grade}" type="button">${escapeHtml(childTemplateGradeLabel(grade))}</button>`).join("")}
+        </div>
+      </div>
+      <div class="child-template-filter-row">
+        <strong>Головной убор</strong>
+        <div class="chip-row">
+          ${headwear.map(([value, label]) => `<button class="chip ${state.childTemplateHeadwear === value ? "active" : ""}" data-child-template-headwear="${value}" type="button">${label}</button>`).join("")}
+        </div>
+      </div>
+    </section>
+  `;
 }
 
 function catalogAudienceChip(value, label) {
@@ -1911,7 +2065,8 @@ function catalogDisplaySections() {
   const visible = publicOrderedServices(state.data.catalog)
     .filter(serviceMatchesCatalogQuery)
     .filter(serviceMatchesCatalogCategory)
-    .filter(serviceMatchesCatalogAudience);
+    .filter(serviceMatchesCatalogAudience)
+    .filter(serviceMatchesChildTemplateFilters);
   const popular = visible.filter(isServicePopular);
   const popularIds = new Set(popular.map((item) => item.id));
   const sections = popular.length ? [{ title: "Популярные", services: popular, featured: true }] : [];
@@ -1960,8 +2115,37 @@ function serviceMatchesCatalogQuery(item) {
     serviceShortDescription(item),
     serviceDescription(item),
     serviceCategory(item),
+    (item.tags || []).join(" "),
+    item.grade !== undefined && item.grade !== null ? childTemplateGradeLabel(item.grade) : "",
     item.price
   ].join(" ").toLowerCase().includes(query);
+}
+
+function serviceMatchesChildTemplateFilters(item) {
+  if (state.catalogCategory !== CHILD_PORTRAIT_CATEGORY) return true;
+  if (!item?.childTemplate) return false;
+  if (state.childTemplateGrade !== "all" && String(item.grade) !== String(state.childTemplateGrade)) return false;
+  if (state.childTemplateHeadwear !== "all" && String(item.headwear || "none") !== state.childTemplateHeadwear) return false;
+  return true;
+}
+
+function childTemplateHeadwearLabel(value) {
+  if (value === "headscarf") return "Платок";
+  if (value === "hijab") return "Хиджаб";
+  if (value === "traditional-hat") return "Национальный убор";
+  return "Без головного убора";
+}
+
+function childTemplateGradeLabel(value) {
+  return String(value) === "0" ? "Садик" : `${value} класс`;
+}
+
+function childTemplateBadges(item) {
+  if (!item?.childTemplate) return "";
+  return `
+    <span class="catalog-card-badge template">${escapeHtml(childTemplateGradeLabel(item.grade))}</span>
+    <span class="catalog-card-badge template">${escapeHtml(childTemplateHeadwearLabel(item.headwear))}</span>
+  `;
 }
 
 function catalogSection(section) {
@@ -1986,21 +2170,25 @@ function catalogServiceCard(item) {
   const videoBadge = servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : "";
   const shortDescription = serviceShortDescription(item);
   const category = serviceCategory(item);
+  const isPortraitCard = Boolean(item.childTemplate && previewUrl);
   return `
-    <article class="catalog-service-card card-button" data-open-catalog-service="${item.id}" tabindex="0">
-      <div class="catalog-card-preview">${preview}</div>
+    <article class="catalog-service-card card-button ${isPortraitCard ? "portrait-overlay-card" : ""}" data-open-catalog-service="${item.id}" tabindex="0">
+      <div class="catalog-card-preview ${item.childTemplate ? "portrait" : ""}">${preview}</div>
       <div class="catalog-card-body">
         <div class="catalog-card-title-row">
           <h3>${escapeHtml(serviceName(item))}</h3>
           <strong>${escapeHtml(formatPrice(item.price))}</strong>
         </div>
-        ${shortDescription ? `<p>${escapeHtml(shortDescription)}</p>` : '<p class="muted">Описание можно добавить в услуге.</p>'}
-        <div class="catalog-card-badges">
-          ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
-          <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
-          ${category ? `<span class="catalog-card-badge">${escapeHtml(category)}</span>` : ""}
-          ${videoBadge}
-        </div>
+        ${isPortraitCard ? "" : `
+          ${shortDescription ? `<p>${escapeHtml(shortDescription)}</p>` : '<p class="muted">Описание можно добавить в услуге.</p>'}
+          <div class="catalog-card-badges">
+            ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
+            <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
+            ${category ? `<span class="catalog-card-badge">${escapeHtml(category)}</span>` : ""}
+            ${childTemplateBadges(item)}
+            ${videoBadge}
+          </div>
+        `}
       </div>
     </article>
   `;
@@ -2079,7 +2267,7 @@ function servicePickerCatalogCard(item, selected = false) {
   const category = serviceCategory(item);
   return `
     <button class="service-picker-card ${selected ? "selected" : ""}" data-service-picker-option="${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
-      <div class="catalog-card-preview">${preview}</div>
+      <div class="catalog-card-preview ${item.childTemplate ? "portrait" : ""}">${preview}</div>
       <div class="catalog-card-body">
         <div class="catalog-card-title-row">
           <h3>${escapeHtml(serviceName(item))}</h3>
@@ -2089,8 +2277,10 @@ function servicePickerCatalogCard(item, selected = false) {
         <div class="catalog-card-badges">
           <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
           ${category ? `<span class="catalog-card-badge">${escapeHtml(category)}</span>` : ""}
+          ${childTemplateBadges(item)}
           ${servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : ""}
         </div>
+        ${item.childTemplate ? `<span class="service-picker-select-state">${selected ? "Выбрано" : "Выбрать"}</span>` : ""}
       </div>
     </button>
   `;
@@ -2102,7 +2292,8 @@ function showServicePickerPanel({ selectedIds = [], onApply }) {
   const panel = document.createElement("div");
   panel.className = "catalog-modal-backdrop service-picker-backdrop";
   const renderCards = () => {
-    panel.querySelector("[data-service-picker-grid]").innerHTML = state.data.catalog.map((item) => servicePickerCatalogCard(item, selected.has(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>';
+    const available = manualOrderedServices(state.data.catalog.filter((item) => serviceIsCatalogVisible(item) || selected.has(item.id)));
+    panel.querySelector("[data-service-picker-grid]").innerHTML = available.map((item) => servicePickerCatalogCard(item, selected.has(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>';
     panel.querySelector("[data-service-picker-count]").textContent = `${selected.size} выбрано`;
     panel.querySelectorAll("[data-service-picker-option]").forEach((node) => node.addEventListener("click", () => {
       const id = node.dataset.servicePickerOption;
@@ -2221,9 +2412,16 @@ function showCatalogServiceViewer(itemId) {
           ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
           <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
           ${serviceCategory(item) ? `<span class="catalog-card-badge">${escapeHtml(serviceCategory(item))}</span>` : ""}
+          ${childTemplateBadges(item)}
           ${videoUrl ? '<span class="catalog-card-badge video">Видео</span>' : ""}
         </div>
         <p>${escapeHtml(description)}</p>
+        ${item.childTemplate ? `
+          <div class="child-template-ready-note">
+            <strong>Готово к монтажу</strong>
+            <span>Мастер 3072×3840 · мягкая маска лица · направляющие сохранены</span>
+          </div>
+        ` : ""}
       </div>
       <button class="secondary-button" data-close-catalog-modal type="button">Назад</button>
     </section>
@@ -3572,9 +3770,24 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  clearStudentDetailScrollSpy();
   injectIcons();
   bindDetailsMenus();
   fitStatusPills();
+  view.querySelectorAll("[data-student-detail-tab]").forEach((node) => {
+    node.addEventListener("click", () => selectStudentDetailTab(node.dataset.studentDetailTab));
+    node.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      const tabs = Array.from(view.querySelectorAll("[data-student-detail-tab]"));
+      const index = tabs.indexOf(node);
+      const step = event.key === "ArrowRight" ? 1 : -1;
+      const next = tabs[(index + step + tabs.length) % tabs.length];
+      event.preventDefault();
+      next?.focus();
+      if (next) selectStudentDetailTab(next.dataset.studentDetailTab);
+    });
+  });
+  bindStudentDetailScrollSpy();
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
@@ -3888,6 +4101,14 @@ function bindViewActions() {
   }));
   view.querySelectorAll("[data-catalog-category]").forEach((node) => node.addEventListener("click", () => {
     state.catalogCategory = node.dataset.catalogCategory || "all";
+    renderCatalog();
+  }));
+  view.querySelectorAll("[data-child-template-grade]").forEach((node) => node.addEventListener("click", () => {
+    state.childTemplateGrade = node.dataset.childTemplateGrade || "all";
+    renderCatalog();
+  }));
+  view.querySelectorAll("[data-child-template-headwear]").forEach((node) => node.addEventListener("click", () => {
+    state.childTemplateHeadwear = node.dataset.childTemplateHeadwear || "all";
     renderCatalog();
   }));
   view.querySelector("[data-catalog-query]")?.addEventListener("input", (event) => {
@@ -5487,11 +5708,18 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
             </div>
           </article>
           <article class="panel grid">
-            <div class="card-header"><h3 class="card-title">Референс услуги</h3>${reference?.isVideo ? '<span class="status-pill in-progress">Видео</span>' : ""}</div>
+            <div class="card-header"><h3 class="card-title">${service?.childTemplate ? "Шаблон образа" : "Референс услуги"}</h3>${reference?.isVideo ? '<span class="status-pill in-progress">Видео</span>' : ""}</div>
             ${referenceUrl ? (reference.isVideo ? `<video class="montage-preview" src="${referenceUrl}" controls playsinline></video>` : `<img class="montage-preview" src="${referenceUrl}" alt="${escapeAttr(reference.name || serviceName(service))}" />`) : '<div class="empty">Референс не добавлен</div>'}
             <div class="toolbar">
               ${referenceUrl ? `<button class="secondary-button compact" data-preview-url="${escapeAttr(referenceUrl)}" data-preview-title="${escapeAttr(reference.name || serviceName(service) || "Референс")}" data-preview-video="${reference.isVideo ? "true" : "false"}" type="button">Открыть</button><button class="secondary-button compact" data-download-url="${escapeAttr(referenceUrl)}" data-download-name="${escapeAttr(reference.name || "reference")}" type="button">Скачать</button>` : ""}
             </div>
+            ${service?.childTemplate ? `
+              <div class="child-template-ready-note montage-template-note">
+                <strong>Мастер и маска подготовлены</strong>
+                <span>${escapeHtml(`${childTemplateGradeLabel(service.grade)} · ${childTemplateHeadwearLabel(service.headwear)}`)}</span>
+                <span>AI-адаптер: face-swap-v1. Готовый результат добавляется кнопкой ниже.</span>
+              </div>
+            ` : ""}
           </article>
         </div>
         <div class="montage-grid montage-secondary-grid">
@@ -5592,6 +5820,15 @@ async function handleFinalWorkInput(event) {
 }
 
 function montageReferenceForService(service) {
+  const templateMaster = String(service?.childTemplate ? service?.masterSrc : "").trim();
+  if (templateMaster) return {
+    id: `${service.id}_master`,
+    url: templateMaster,
+    name: `${service.id}-master.png`,
+    isVideo: false,
+    faceMaskSrc: service.faceMaskSrc || "",
+    faceGuide: service.faceGuide || null
+  };
   const imageUrl = String(service?.previewImage || servicePreviewImageDataUrl(service) || "").trim();
   if (imageUrl) return { id: servicePreviewImageId(service), url: imageUrl, name: `${serviceName(service)}_preview`, isVideo: false };
   const angle = (service?.angles || []).find((item) => item.refDataUrl) || (service?.angles || [])[0];
@@ -10780,7 +11017,11 @@ function categoryOrderedServices(items = state.data.catalog) {
 }
 
 function publicOrderedServices(items = state.data.catalog) {
-  return manualOrderedServices(items);
+  return manualOrderedServices(items.filter(serviceIsCatalogVisible));
+}
+
+function serviceIsCatalogVisible(item) {
+  return !(item?.systemTemplate && item?.childTemplate && item?.enabled === false);
 }
 
 function servicesForAdminView() {
@@ -10950,7 +11191,7 @@ function serviceDescription(item) {
 }
 
 function servicePreviewImageDataUrl(item) {
-  return String(item?.previewDataUrl || item?.previewImageDataUrl || "").trim();
+  return String(item?.previewDataUrl || item?.previewImageDataUrl || item?.previewSrc || "").trim();
 }
 
 function servicePreviewVideoDataUrl(item) {
@@ -11138,7 +11379,8 @@ function studentServicePreviewUrl(student) {
   const ids = selectedCatalogIdsForStudent(student);
   for (const id of ids) {
     const item = catalogItemById(id);
-    if (item?.previewDataUrl) return item.previewDataUrl;
+    const previewUrl = servicePreviewImageDataUrl(item);
+    if (previewUrl) return previewUrl;
   }
   return "";
 }

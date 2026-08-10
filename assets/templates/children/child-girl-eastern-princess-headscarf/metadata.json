@@ -1,0 +1,27 @@
+{
+  "id": "child-girl-eastern-princess-headscarf",
+  "title": "Восточная принцесса",
+  "grade": 3,
+  "gender": "girl",
+  "headwear": "headscarf",
+  "theme": "eastern-princess",
+  "tags": [
+    "восточная принцесса",
+    "платок",
+    "дворец"
+  ],
+  "description": "Сказочный восточный образ в лёгком платке, полностью открывающем лицо.",
+  "masterSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-eastern-princess-headscarf/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.265,
+    "width": 0.21,
+    "height": 0.185,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}

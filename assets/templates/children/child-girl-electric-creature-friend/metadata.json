@@ -1,0 +1,28 @@
+{
+  "id": "child-girl-electric-creature-friend",
+  "title": "Искристый зверёк",
+  "grade": 1,
+  "gender": "girl",
+  "headwear": "none",
+  "theme": "electric-creature-friend",
+  "tags": [
+    "игра",
+    "волшебный зверёк",
+    "лес",
+    "приключение"
+  ],
+  "description": "Ребёнок держит за лапку оригинального искристого лесного зверька.",
+  "masterSrc": "./assets/templates/children/child-girl-electric-creature-friend/master.png",
+  "previewSrc": "./assets/templates/children/child-girl-electric-creature-friend/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-electric-creature-friend/face-mask.png",
+  "faceGuide": {
+    "centerX": 0.36,
+    "centerY": 0.165,
+    "width": 0.23,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "enabled": true,
+  "version": 2,
+  "aiAdapter": "face-swap-v1"
+}
