@@ -15,7 +15,10 @@
 - `tests/unit/migrations.test.mjs`
 - `tests/unit/object-url-service.test.mjs`
 - `tests/unit/service-worker-cache.test.mjs`
+- `tests/unit/transfer-merge-service.test.mjs`
+- `tests/unit/photographer-analytics-service.test.mjs`
 - `tests/integration/repositories.test.mjs`
+- `tests/integration/reshoot-roundtrip.test.mjs`
 - `tests/e2e/manual-smoke.md`
 
 Команды:
@@ -24,6 +27,8 @@
 npm test
 npm run check
 ```
+
+Ручная приёмка повторной съёмки фотографа описана в `docs/photographer-reshoot-acceptance.md`.
 
 Дальнейший минимум:
 

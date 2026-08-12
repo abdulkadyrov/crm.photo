@@ -13,6 +13,15 @@ import {
   childPortraitCatalogRecord
 } from "../data/child-portrait-templates.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js";
+import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+import {
+  defaultBulkTransferResolution,
+  defaultTransferResolution,
+  detectTransferProjectIdentity,
+  isSafeRepeatImportMode,
+  mergeTransferRecord
+} from "../services/transfer-merge-service.js";
 
 const DB_NAME = "school-photo-flow";
 const APP_NAME = "Vakha Studio";
@@ -157,8 +166,8 @@ const TRANSFER_COUNT_LABELS = {
   checklistTemplates: "шаблонов"
 };
 const TRANSFER_IMPORT_SCOPES = {
-  project: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
-  class: ["operators", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
+  project: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
+  class: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
   operators: ["operators"],
   services: ["services"],
   settings: ["operators", "settings", "checklistTemplates"],
@@ -3003,90 +3012,7 @@ function buildOperatorStats(operatorId) {
 }
 
 function buildOperatorWorkOverview(operatorId) {
-  const projectMap = new Map();
-  const classRows = [];
-  let totalStudents = 0;
-  let totalPhotographedStudents = 0;
-  let totalRemainingStudents = 0;
-  let totalMedia = 0;
-  let totalDoneTasks = 0;
-  let totalTasks = 0;
-  let completedClasses = 0;
-
-  state.data.classes.forEach((klass) => {
-    const project = projectById(klass.projectId);
-    const students = state.data.students.filter((student) => student.classId === klass.id);
-    const studentIds = new Set(students.map((student) => student.id));
-    const operatorMedia = state.data.media.filter((item) => studentIds.has(item.studentId) && recordMatchesOperator(item, operatorId, ["createdBy", "importedBy", "capturedBy"]));
-    const photographedIds = new Set(operatorMedia.map((item) => item.studentId).filter(Boolean));
-    const ownStudents = students.filter((student) => recordMatchesOperator(student, operatorId, ["createdBy", "updatedBy"]));
-    const classTasks = state.data.orders
-      .filter((order) => studentIds.has(order.studentId))
-      .flatMap((order) => (order.items || []).map((item) => ({ ...item, order })));
-    const doneTasks = classTasks.filter((item) => item.status === "done" && recordMatchesOperator(item, operatorId, ["completedBy", "updatedBy"])).length;
-    const hasClassRecord = recordMatchesOperator(klass, operatorId, ["createdBy", "updatedBy", "exportedBy"]);
-    const hasProjectRecord = project && recordMatchesOperator(project, operatorId, ["createdBy", "updatedBy", "exportedBy"]);
-    const hasActivity = operatorMedia.length || ownStudents.length || doneTasks || hasClassRecord || hasProjectRecord;
-    if (!hasActivity) return;
-
-    const photographedStudents = photographedIds.size;
-    const remainingStudents = Math.max(0, students.length - photographedStudents);
-    const row = {
-      projectId: klass.projectId,
-      projectName: project?.name || "Проект",
-      className: klass.name,
-      students: students.length,
-      photographedStudents,
-      remainingStudents,
-      media: operatorMedia.length,
-      doneTasks,
-      totalTasks: classTasks.length
-    };
-    classRows.push(row);
-    totalStudents += row.students;
-    totalPhotographedStudents += row.photographedStudents;
-    totalRemainingStudents += row.remainingStudents;
-    totalMedia += row.media;
-    totalDoneTasks += row.doneTasks;
-    totalTasks += row.totalTasks;
-    if (row.students > 0 && row.remainingStudents === 0) completedClasses += 1;
-
-    const projectRow = projectMap.get(row.projectId) || {
-      projectId: row.projectId,
-      projectName: row.projectName,
-      classes: 0,
-      students: 0,
-      photographedStudents: 0,
-      remainingStudents: 0,
-      media: 0,
-      doneTasks: 0,
-      totalTasks: 0
-    };
-    projectRow.classes += 1;
-    projectRow.students += row.students;
-    projectRow.photographedStudents += row.photographedStudents;
-    projectRow.remainingStudents += row.remainingStudents;
-    projectRow.media += row.media;
-    projectRow.doneTasks += row.doneTasks;
-    projectRow.totalTasks += row.totalTasks;
-    projectMap.set(row.projectId, projectRow);
-  });
-
-  const projectRows = Array.from(projectMap.values()).sort((a, b) => b.media - a.media || b.photographedStudents - a.photographedStudents);
-  classRows.sort((a, b) => b.media - a.media || b.photographedStudents - a.photographedStudents);
-  return {
-    projects: projectRows.length,
-    classes: classRows.length,
-    completedClasses,
-    students: totalStudents,
-    photographedStudents: totalPhotographedStudents,
-    remainingStudents: totalRemainingStudents,
-    media: totalMedia,
-    doneTasks: totalDoneTasks,
-    totalTasks,
-    projectRows,
-    classRows
-  };
+  return calculatePhotographerWorkOverview(state.data, operatorId, recordMatchesOperator);
 }
 
 function recordMatchesOperator(record, operatorId, fields) {
@@ -3506,6 +3432,7 @@ function showSettingsDetail(section) {
         </section>
         <section class="transfer-group">
           <h3 class="mini-heading">Проект</h3>
+          <p class="muted">При досъёмке открывайте тот же проект. Повторный импорт безопасно добавит новые фото и не заменит готовый монтаж на основном компьютере.</p>
           <label class="field-label"><span>Проект</span><select class="select" data-transfer-project>${state.data.projects.map((project) => `<option value="${project.id}" ${project.id === state.projectId ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}</select></label>
           <div class="transfer-button-row">
             <button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button>
@@ -4427,7 +4354,7 @@ async function deleteProject(projectId) {
   if (!project) return;
   const classes = classesByProject(projectId);
   const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
-  if (!confirm(`Удалить проект "${project.name}" вместе с ${classes.length} группами и ${students.length} учениками?`)) return;
+  if (!confirm(`Удалить проект "${project.name}" вместе с ${classes.length} группами и ${students.length} учениками?\n\nДля будущей досъёмки понадобится импортировать прежний ZIP проекта. Не создавайте ту же школу заново — у нового проекта будет другой ID.`)) return;
   for (const student of students) await deleteStudentRecords(student.id);
   for (const doc of state.data.documents.filter((item) => item.projectId === projectId)) await del("documents", doc.id);
   for (const klass of classes) await del("classes", klass.id);
@@ -5907,9 +5834,7 @@ function finalWorkA4PdfBlob(work) {
 function finalWorkOriginalBlob(work) {
   if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
   if (work?.blob instanceof Blob) return work.blob;
-  const sourceMedia = mediaById(work?.sourceMediaId);
-  if (sourceMedia?.blob instanceof Blob) return sourceMedia.blob;
-  return mediaById(work?.resultMediaId)?.blob || null;
+  return mediaById(work?.resultMediaId)?.blob || mediaById(work?.sourceMediaId)?.blob || null;
 }
 
 function finalWorkTitle(work) {
@@ -5950,7 +5875,8 @@ async function showFinalWorkViewer(workId) {
   if (!work) return notify("Готовый результат не найден.");
   const preparedWork = await ensureFinalWorkA4Assets(work.id);
   const actualWork = preparedWork || finalWorkById(work.id) || work;
-  const originalBlob = finalWorkOriginalBlob(actualWork);
+  const sourceMediaBlob = mediaById(actualWork?.sourceMediaId)?.blob;
+  const originalBlob = sourceMediaBlob instanceof Blob ? sourceMediaBlob : finalWorkOriginalBlob(actualWork);
   const resultBlob = finalWorkImageBlob(actualWork);
   if (!resultBlob && !originalBlob) return notify("Изображение результата не найдено.");
   const student = studentById(work.studentId);
@@ -8069,10 +7995,10 @@ async function exportProject(projectId) {
     const project = projectById(projectId);
     if (!project) return notify("Выберите проект для экспорта.");
     await put("projects", stampExported(project));
+    await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
     await refreshData();
     const blob = createZip(await buildTransferExportFiles("project", { projectId }));
     downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
-    await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
     notify("Проект экспортирован.");
   });
 }
@@ -8086,10 +8012,10 @@ async function exportClass(classId) {
     const klass = classById(classId);
     if (!klass) return notify("Выберите класс/группу для экспорта.");
     await put("classes", stampExported(klass));
+    await recordOperatorEvent("export", { targetType: "class", targetId: classId });
     await refreshData();
     const blob = createZip(await buildTransferExportFiles("class", { classId }));
     downloadBlob(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
-    await recordOperatorEvent("export", { targetType: "class", targetId: classId });
     notify("Класс/группа экспортирован.");
   });
 }
@@ -8892,6 +8818,7 @@ function buildTransferData(exportType, scope = {}) {
     const serviceIds = serviceIdsForStudents(students);
     return fillTransferData(base, {
       operators: state.data.operators,
+      operatorEvents: state.data.operatorEvents,
       projects: [project],
       classes,
       students,
@@ -8912,6 +8839,7 @@ function buildTransferData(exportType, scope = {}) {
     const serviceIds = serviceIdsForStudents(students);
     return fillTransferData(base, {
       operators: state.data.operators,
+      operatorEvents: state.data.operatorEvents,
       projects: [project],
       classes: [klass],
       students,
@@ -9008,6 +8936,7 @@ function withTransferAliases(dataKey, record) {
 }
 
 function clonePlainRecord(record) {
+  if (typeof structuredClone === "function") return structuredClone(record ?? {});
   return JSON.parse(JSON.stringify(record ?? {}));
 }
 
@@ -9128,7 +9057,10 @@ function hydrateTransferMediaData(data, entries) {
       const normalized = String(entry.path || "").replace(/\\/g, "/");
       return normalized.endsWith(`final_results/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName || finalWorkFileName(item)}`);
     });
-    if (entry) item.image = new Blob([entry.data], { type: item.mimeType || documentMimeType(item.fileName || "result.jpg") });
+    if (entry) {
+      const imageBlob = new Blob([entry.data], { type: item.mimeType || documentMimeType(item.fileName || "result.jpg") });
+      Object.assign(item, hydrateImportedFinalWorkImage(item, imageBlob));
+    }
   });
   (data.documents || []).forEach((item) => {
     const entry = entries.find((entry) => {
@@ -9182,8 +9114,10 @@ async function createTransferImportDraft(entries, importMode = "auto") {
   const mode = TRANSFER_IMPORT_SCOPES[importMode] ? importMode : exportType;
   const allowed = new Set(TRANSFER_IMPORT_SCOPES[mode] || TRANSFER_IMPORT_SCOPES.full_backup);
   const data = hydrateTransferMediaData(normalizeTransferData(rawData, allowed), entries);
-  const stats = transferImportStats(data);
-  return { id: uid("transfer_import"), manifest, mode, data, stats, resolution: "update" };
+  const stats = transferImportStats(data, mode);
+  const resolution = defaultBulkTransferResolution(mode);
+  const projectIdentity = detectTransferProjectIdentity(data.projects, state.data.projects);
+  return { id: uid("transfer_import"), manifest, mode, data, stats, resolution, projectIdentity };
 }
 
 function normalizeTransferData(rawData, allowed) {
@@ -9229,7 +9163,7 @@ function normalizeTransferRecordId(dataKey, record) {
   return next;
 }
 
-function transferImportStats(data) {
+function transferImportStats(data, mode = "auto") {
   const stats = { added: {}, updated: {}, conflicts: [] };
   Object.entries(TRANSFER_STORE_MAP).forEach(([dataKey, store]) => {
     const existingIds = new Set((state.data[store] || []).map((item) => item.id));
@@ -9240,7 +9174,13 @@ function transferImportStats(data) {
     records.forEach((record) => {
       const existing = existingById.get(record.id);
       if (existing && !sameTransferRecord(existing, appRecordFromTransfer(dataKey, record))) {
-        stats.conflicts.push({ dataKey, store, id: record.id, label: transferRecordLabel(dataKey, record), resolution: "update" });
+        stats.conflicts.push({
+          dataKey,
+          store,
+          id: record.id,
+          label: transferRecordLabel(dataKey, record),
+          resolution: defaultTransferResolution({ mode, existing })
+        });
       }
     });
   });
@@ -9292,6 +9232,7 @@ function showTransferImportPreview(draft) {
         </div>
         <button class="icon-button" data-cancel-transfer-import type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
+      ${transferImportGuidance(draft)}
       <div class="stats finance-stats">
         ${transferPreviewStat("Проектов", draft.stats.added.projects, draft.stats.updated.projects)}
         ${transferPreviewStat("Классов", draft.stats.added.classes, draft.stats.updated.classes)}
@@ -9308,14 +9249,20 @@ function showTransferImportPreview(draft) {
       </div>
       <div class="toolbar">
         <button class="secondary-button" data-cancel-transfer-import type="button">Отмена</button>
-        <button class="primary-button" data-confirm-transfer-import type="button">Импортировать</button>
+        <button class="primary-button" data-confirm-transfer-import type="button" ${transferImportNeedsSeparateProjectApproval(draft) ? "disabled" : ""}>Импортировать</button>
       </div>
     </section>
   `;
   panel.querySelectorAll("[data-cancel-transfer-import]").forEach((node) => node.addEventListener("click", closeTransferImportPreview));
   panel.querySelector("[data-transfer-apply-all]")?.addEventListener("click", () => {
-    const resolution = panel.querySelector("[data-transfer-resolution-all]")?.value || "update";
+    const resolution = panel.querySelector("[data-transfer-resolution-all]")?.value || draft.resolution;
+    draft.resolution = resolution;
+    draft.stats.conflicts.forEach((conflict) => { conflict.resolution = resolution; });
     panel.querySelectorAll("[data-transfer-conflict-resolution]").forEach((select) => { select.value = resolution; });
+  });
+  panel.querySelector("[data-confirm-separate-project]")?.addEventListener("change", (event) => {
+    const confirmButton = panel.querySelector("[data-confirm-transfer-import]");
+    if (confirmButton) confirmButton.disabled = !event.target.checked;
   });
   panel.querySelector("[data-confirm-transfer-import]")?.addEventListener("click", () => confirmTransferImport(draft, panel));
   document.body.append(panel);
@@ -9326,10 +9273,41 @@ function transferPreviewStat(label, added = 0, updated = 0) {
   return `<div class="stat"><strong>+${added} / ${updated}</strong><span class="muted">${escapeHtml(label)}</span></div>`;
 }
 
+function transferImportGuidance(draft) {
+  if (!isSafeRepeatImportMode(draft.mode)) return "";
+  if (draft.projectIdentity?.kind === "existing") {
+    return `
+      <div class="transfer-merge-note" role="status">
+        <strong>Безопасное объединение досъёмки</strong>
+        <span>Проект распознан по постоянному ID. Новые ученики, фото и действия добавятся; существующие данные, статусы и готовый монтаж на этом компьютере останутся без перезаписи.</span>
+      </div>
+    `;
+  }
+  if (draft.projectIdentity?.kind === "same-name-different-id") {
+    return `
+      <div class="transfer-merge-note warning" role="alert">
+        <strong>Похожая школа уже есть, но ID проекта другой</strong>
+        <span>Так бывает, если после удаления фотограф создал проект заново. Для досъёмки отмените импорт и восстановите на телефоне прежний ZIP проекта — иначе появится второй проект.</span>
+        <label class="checkbox-row"><input type="checkbox" data-confirm-separate-project /><span>Это действительно отдельный проект, создать его вторым</span></label>
+      </div>
+    `;
+  }
+  return `
+    <div class="transfer-merge-note" role="status">
+      <strong>Новый проект</strong>
+      <span>Архив имеет новый ID и будет добавлен как отдельный проект.</span>
+    </div>
+  `;
+}
+
+function transferImportNeedsSeparateProjectApproval(draft) {
+  return isSafeRepeatImportMode(draft.mode) && draft.projectIdentity?.kind === "same-name-different-id";
+}
+
 function transferConflictControls(draft) {
   return `
     <div class="import-draft-assign">
-      <select class="select" data-transfer-resolution-all aria-label="Решение для всех конфликтов">${transferResolutionOptions("update")}</select>
+      <select class="select" data-transfer-resolution-all aria-label="Решение для всех конфликтов">${transferResolutionOptions(draft.resolution)}</select>
       <button class="secondary-button compact" data-transfer-apply-all type="button">Применить ко всем</button>
     </div>
     ${draft.stats.conflicts.slice(0, 30).map((conflict, index) => `
@@ -9344,6 +9322,7 @@ function transferConflictControls(draft) {
 
 function transferResolutionOptions(selected) {
   return [
+    ["merge", "Безопасно объединить (рекомендуется)"],
     ["update", "Обновить существующее"],
     ["keep", "Оставить старое"],
     ["copy", "Создать копию"]
@@ -9356,8 +9335,13 @@ function closeTransferImportPreview() {
 
 async function confirmTransferImport(draft, panel) {
   return withBusy("Импорт данных...", async () => {
+    if (transferImportNeedsSeparateProjectApproval(draft) && !panel.querySelector("[data-confirm-separate-project]")?.checked) {
+      notify("Подтвердите, что это отдельный проект, или отмените импорт и восстановите прежний ZIP.");
+      return;
+    }
     draft.stats.conflicts.forEach((conflict, index) => {
-      conflict.resolution = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`)?.value || "update";
+      const select = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`);
+      if (select?.value) conflict.resolution = select.value;
     });
     const result = await applyTransferImport(draft);
     await recordOperatorEvent("import", { targetType: draft.mode || draft.manifest.exportType || "transfer", targetId: draft.id });
@@ -9382,13 +9366,15 @@ async function applyTransferImport(draft) {
     idMaps[dataKey] = new Map();
     for (const originalRecord of draft.data[dataKey] || []) {
       const conflict = conflictByRecord.get(`${dataKey}:${originalRecord.id}`);
-      if (conflict?.resolution === "keep") {
+      const existingRecord = (state.data[store] || []).find((item) => item.id === originalRecord.id) || null;
+      const exists = Boolean(existingRecord);
+      let resolution = conflict?.resolution || defaultTransferResolution({ mode: draft.mode, existing: existingRecord });
+      if (resolution === "keep") {
         result.skipped += 1;
         continue;
       }
-      if (dataKey === "operators" && conflict?.resolution === "copy") conflict.resolution = "update";
-      const exists = Boolean((state.data[store] || []).some((item) => item.id === originalRecord.id));
-      const record = remapTransferRecord(dataKey, originalRecord, idMaps);
+      if (dataKey === "operators" && resolution === "copy") resolution = "update";
+      let record = remapTransferRecord(dataKey, originalRecord, idMaps);
       if (dataKey === "operators" && !exists) {
         const nameDecision = await resolveOperatorNameImport(record);
         if (nameDecision === "skip") {
@@ -9400,15 +9386,22 @@ async function applyTransferImport(draft) {
           continue;
         }
       }
-      if (conflict?.resolution === "copy") {
+      if (resolution === "copy") {
         const copyId = uid(transferIdPrefix(dataKey));
         idMaps[dataKey].set(originalRecord.id, copyId);
         record.id = copyId;
         if (dataKey === "students") record.qrId = copyId;
         if (dataKey === "orders") record.id = `order_${record.studentId || copyId}`;
       }
+      if (exists && resolution === "merge") {
+        record = mergeTransferRecord(dataKey, existingRecord, record);
+        if (sameTransferRecord(existingRecord, record)) {
+          result.skipped += 1;
+          continue;
+        }
+      }
       await put(store, record);
-      if (exists && conflict?.resolution !== "copy") result.updated += 1;
+      if (exists && resolution !== "copy") result.updated += 1;
       else result.added += 1;
     }
   }
@@ -9534,7 +9527,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
 }
 
 function appRecordFromTransfer(dataKey, record) {
-  const next = ["media", "finalWorks", "documents"].includes(dataKey) ? { ...record } : clonePlainRecord(record);
+  const next = prepareTransferRecordForStorage(dataKey, record);
   if (dataKey === "projects") delete next.projectId;
   if (dataKey === "operators") delete next.operatorId;
   if (dataKey === "operatorEvents") delete next.eventId;

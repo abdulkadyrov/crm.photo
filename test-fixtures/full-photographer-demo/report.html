@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Полный прогон фотографа · Vakha Studio</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#eef2f7; color:#132238; }
+    * { box-sizing:border-box; } body { margin:0; } a { color:inherit; }
+    .page { width:min(1500px, calc(100% - 28px)); margin:24px auto 80px; }
+    .hero { background:linear-gradient(135deg,#0f172a,#1d4ed8); color:white; border-radius:28px; padding:30px; box-shadow:0 20px 55px #0f172a26; }
+    .hero-top { display:flex; gap:18px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; }
+    h1,h2,h3,p { margin:0; } h1 { max-width:800px; font-size:clamp(28px,5vw,52px); line-height:1.02; }
+    .hero p { margin-top:14px; max-width:820px; color:#dbeafe; line-height:1.55; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; } .button { padding:11px 15px; border-radius:12px; text-decoration:none; background:white; color:#1d4ed8; font-weight:800; } .button.secondary { background:#ffffff1a; color:white; border:1px solid #ffffff47; }
+    .stats { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin-top:24px; } .stat { padding:14px; border:1px solid #ffffff35; border-radius:16px; background:#ffffff12; } .stat strong { display:block; font-size:26px; } .stat span { color:#dbeafe; font-size:13px; }
+    .notice { margin:18px 0; padding:15px 18px; border-radius:16px; background:#fffbeb; border:1px solid #fde68a; color:#854d0e; }
+    .method { margin:18px 0; padding:15px 18px; border-radius:16px; background:#ecfdf5; border:1px solid #86efac; color:#166534; }
+    .overview { display:block; width:100%; border-radius:22px; margin:18px 0 28px; box-shadow:0 12px 32px #0f172a20; }
+    .project-section { margin-top:28px; } .project-title,.section-title { display:flex; align-items:end; justify-content:space-between; gap:14px; margin-bottom:14px; } .project-title span,.section-title span { color:#64748b; } .project-title h2 { font-size:30px; }
+    .class-section { background:white; border:1px solid #dbe3ee; border-radius:24px; padding:20px; margin-bottom:22px; box-shadow:0 10px 30px #0f172a0c; }
+    .students { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .student-card { border:1px solid #e2e8f0; border-radius:18px; padding:14px; min-width:0; } .student-heading,.meta { display:flex; align-items:center; justify-content:space-between; gap:10px; } .student-heading div { min-width:0; } .student-heading strong,.student-heading span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .student-heading span { color:#64748b; font-size:13px; margin-top:3px; }
+    .status { flex:0 0 auto; padding:6px 9px; border-radius:999px; color:#166534!important; background:#dcfce7; font-weight:800; }
+    .before-after { display:grid; grid-template-columns:1fr 30px 1fr; align-items:center; gap:7px; margin-top:12px; } figure { margin:0; } figure img { display:block; width:100%; aspect-ratio:4/5; object-fit:cover; object-position:50% 35%; border-radius:13px; background:#e2e8f0; } figcaption { margin-top:5px; color:#64748b; font-size:12px; text-align:center; } .arrow { text-align:center; color:#2563eb; font-size:24px; font-weight:900; }
+    .meta { margin-top:10px; color:#475569; font-size:12px; } code { max-width:62%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; }
+    @media (max-width:900px) { .stats { grid-template-columns:repeat(3,1fr); } .students { grid-template-columns:1fr; } }
+    @media (max-width:520px) { .page { width:min(100% - 16px,1500px); margin-top:8px; } .hero,.class-section { border-radius:18px; padding:16px; } .stats { grid-template-columns:repeat(2,1fr); } .project-title,.section-title { align-items:flex-start; flex-direction:column; } .before-after { grid-template-columns:1fr 18px 1fr; } }
+  </style>
+</head>
+<body><main class="page">
+  <section class="hero">
+    <div class="hero-top"><div><h1>Полный прогон работы фотографа</h1><p>Два школьных проекта, четыре класса и сорок завершённых заказов: от синтетического исходного портрета до реалистичного GPT-нейромонтажа по выбранному образу.</p></div></div>
+    <div class="actions"><a class="button" href="../../index.html">Открыть CRM</a><a class="button secondary" href="vakha-studio-bachiyurt-mayrtup-full-demo.zip">Скачать архив для импорта</a><a class="button secondary" href="report.json">JSON-отчёт</a></div>
+    <div class="stats">
+      <div class="stat"><strong>2</strong><span>проекта</span></div><div class="stat"><strong>4</strong><span>класса</span></div><div class="stat"><strong>40</strong><span>детей</span></div><div class="stat"><strong>40</strong><span>исходников</span></div><div class="stat"><strong>40</strong><span>готовых работ</span></div><div class="stat"><strong>100%</strong><span>чеклистов закрыто</span></div>
+    </div>
+  </section>
+  <div class="method"><strong>Способ обработки:</strong> для каждой пары GPT отдельно получил исходный портрет ребёнка и нейрофото персонажа, перенёс идентичность ребёнка и согласовал линию волос, кожу, свет и тени. Локальная вклейка через face-mask не используется.</div>
+  <div class="notice"><strong>Важно:</strong> все лица и ФИО в этом отчёте синтетические и созданы только для локального тестирования. Реальные данные детей не использовались.</div>
+  <a href="before-after-overview.jpg"><img class="overview" src="before-after-overview.jpg" alt="Все 40 пар до и после"></a>
+  
+          <section class="project-section">
+            <div class="project-title"><div><span>Проект</span><h2>Бачийурт — школа №1</h2></div><strong>20 детей</strong></div>
+            
+              <section class="class-section">
+                <div class="section-title"><h3>Класс 1А</h3><span>10 детей · 10 исходников · 10 готовых</span></div>
+                <div class="students">
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Мусаев Алихан</strong><span>Капитан пиратов</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_01_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_01_source.jpg" alt="Исходник Мусаев Алихан"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_01_child-boy-pirate-captain_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_01_child-boy-pirate-captain_final.jpg" alt="Результат Капитан пиратов"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-pirate-captain</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Исаева Амина</strong><span>Сказочная принцесса</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_02_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_02_source.jpg" alt="Исходник Исаева Амина"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_02_child-girl-fairytale-princess_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_02_child-girl-fairytale-princess_final.jpg" alt="Результат Сказочная принцесса"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-fairytale-princess</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Эльмурзаев Мухаммад</strong><span>Бронированный техногерой</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_03_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_03_source.jpg" alt="Исходник Эльмурзаев Мухаммад"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_03_child-boy-armored-tech-hero_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_03_child-boy-armored-tech-hero_final.jpg" alt="Результат Бронированный техногерой"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-armored-tech-hero</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Сулейманова Хадижат</strong><span>Принцесса солнечной башни</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_04_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_04_source.jpg" alt="Исходник Сулейманова Хадижат"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_04_child-girl-long-haired-tower-princess_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_04_child-girl-long-haired-tower-princess_final.jpg" alt="Результат Принцесса солнечной башни"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-girl-long-haired-tower-princess</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Даудов Абубакар</strong><span>Рыцарь королевства</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_05_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_05_source.jpg" alt="Исходник Даудов Абубакар"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_05_child-boy-medieval-knight_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_05_child-boy-medieval-knight_final.jpg" alt="Результат Рыцарь королевства"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-medieval-knight</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Ахмадова Малика</strong><span>Ледяная королева</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_06_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_06_source.jpg" alt="Исходник Ахмадова Малика"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_06_child-girl-ice-queen_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_06_child-girl-ice-queen_final.jpg" alt="Результат Ледяная королева"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-ice-queen</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Батаев Рамзан</strong><span>Футбольный чемпион</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_07_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_07_source.jpg" alt="Исходник Батаев Рамзан"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_07_child-boy-football-champion_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_07_child-boy-football-champion_final.jpg" alt="Результат Футбольный чемпион"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-football-champion</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Магомадова Сафия</strong><span>Смелая принцесса гор</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_08_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_08_source.jpg" alt="Исходник Магомадова Сафия"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_08_child-girl-brave-highland-princess_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_08_child-girl-brave-highland-princess_final.jpg" alt="Результат Смелая принцесса гор"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-girl-brave-highland-princess</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Ташуев Ибрагим</strong><span>Чеченский джигит</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_09_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_09_source.jpg" alt="Исходник Ташуев Ибрагим"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_09_child-boy-chechen-dzhigit_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_09_child-boy-chechen-dzhigit_final.jpg" alt="Результат Чеченский джигит"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-chechen-dzhigit</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Юсупова Айшат</strong><span>Восточная принцесса</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_10_source.jpg"><img src="portraits/bachiyurt-1a/demo_student_bachiyurt_1a_10_source.jpg" alt="Исходник Юсупова Айшат"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-1a/demo_student_bachiyurt_1a_10_child-girl-eastern-princess-headscarf_final.jpg"><img src="results/bachiyurt-1a/demo_student_bachiyurt_1a_10_child-girl-eastern-princess-headscarf_final.jpg" alt="Результат Восточная принцесса"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-eastern-princess-headscarf</code></div>
+                </article>
+                </div>
+              </section>
+            
+              <section class="class-section">
+                <div class="section-title"><h3>Класс 2А</h3><span>10 детей · 10 исходников · 10 готовых</span></div>
+                <div class="students">
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Хасуев Ислам</strong><span>В гостях у Деда Мороза</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_01_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_01_source.jpg" alt="Исходник Хасуев Ислам"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_01_child-boy-santa-workshop_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_01_child-boy-santa-workshop_final.jpg" alt="Результат В гостях у Деда Мороза"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-santa-workshop</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Аслаханова Мадина</strong><span>Академия магии</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_02_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_02_source.jpg" alt="Исходник Аслаханова Мадина"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_02_child-girl-magic-academy-hijab_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_02_child-girl-magic-academy-hijab_final.jpg" alt="Результат Академия магии"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-magic-academy-hijab</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Идрисов Шамиль</strong><span>Щенки-спасатели</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_03_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_03_source.jpg" alt="Исходник Идрисов Шамиль"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_03_child-boy-rescue-puppy-team_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_03_child-boy-rescue-puppy-team_final.jpg" alt="Результат Щенки-спасатели"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-boy-rescue-puppy-team</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Джабраилова Самира</strong><span>Юная наездница</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_04_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_04_source.jpg" alt="Исходник Джабраилова Самира"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_04_child-girl-horse-rider-headscarf_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_04_child-girl-horse-rider-headscarf_final.jpg" alt="Результат Юная наездница"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-horse-rider-headscarf</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Юсупов Хамзат</strong><span>Друг из блочного мира</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_05_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_05_source.jpg" alt="Исходник Юсупов Хамзат"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_05_child-boy-block-world-friend_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_05_child-boy-block-world-friend_final.jpg" alt="Результат Друг из блочного мира"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-block-world-friend</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Алиева Ясмина</strong><span>Лесная фея</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_06_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_06_source.jpg" alt="Исходник Алиева Ясмина"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_06_child-girl-forest-fairy_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_06_child-girl-forest-fairy_final.jpg" alt="Результат Лесная фея"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-forest-fairy</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Сайханов Ахмад</strong><span>Скоростной лис</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_07_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_07_source.jpg" alt="Исходник Сайханов Ахмад"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_07_child-boy-speed-fox-team_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_07_child-boy-speed-fox-team_final.jpg" alt="Результат Скоростной лис"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-boy-speed-fox-team</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Осмаева Хава</strong><span>Балерина-принцесса</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_08_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_08_source.jpg" alt="Исходник Осмаева Хава"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_08_child-girl-ballerina-princess_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_08_child-girl-ballerina-princess_final.jpg" alt="Результат Балерина-принцесса"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-ballerina-princess</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Зубайраев Мансур</strong><span>Друг дракона</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_09_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_09_source.jpg" alt="Исходник Зубайраев Мансур"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_09_child-boy-dragon-friend_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_09_child-boy-dragon-friend_final.jpg" alt="Результат Друг дракона"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-dragon-friend</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Висаитова Лейла</strong><span>Друг-снеговик</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_10_source.jpg"><img src="portraits/bachiyurt-2a/demo_student_bachiyurt_2a_10_source.jpg" alt="Исходник Висаитова Лейла"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/bachiyurt-2a/demo_student_bachiyurt_2a_10_child-girl-snowman-friend_final.jpg"><img src="results/bachiyurt-2a/demo_student_bachiyurt_2a_10_child-girl-snowman-friend_final.jpg" alt="Результат Друг-снеговик"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-snowman-friend</code></div>
+                </article>
+                </div>
+              </section>
+            
+          </section>
+        
+          <section class="project-section">
+            <div class="project-title"><div><span>Проект</span><h2>Майртуп — школа №1</h2></div><strong>20 детей</strong></div>
+            
+              <section class="class-section">
+                <div class="section-title"><h3>Класс 1Б</h3><span>10 детей · 10 исходников · 10 готовых</span></div>
+                <div class="students">
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Шамсудинов Эли</strong><span>Капитан пиратов</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_01_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_01_source.jpg" alt="Исходник Шамсудинов Эли"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_01_child-boy-pirate-captain_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_01_child-boy-pirate-captain_final.jpg" alt="Результат Капитан пиратов"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-pirate-captain</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Насуханова Алия</strong><span>Чаепитие с феями</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_02_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_02_source.jpg" alt="Исходник Насуханова Алия"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_02_child-girl-fairy-tea-party_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_02_child-girl-fairy-tea-party_final.jpg" alt="Результат Чаепитие с феями"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-girl-fairy-tea-party</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Дахаев Саид-Магомед</strong><span>Бронированный техногерой</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_03_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_03_source.jpg" alt="Исходник Дахаев Саид-Магомед"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_03_child-boy-armored-tech-hero_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_03_child-boy-armored-tech-hero_final.jpg" alt="Результат Бронированный техногерой"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-armored-tech-hero</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Муртазалиева Раяна</strong><span>Искристый зверёк</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_04_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_04_source.jpg" alt="Исходник Муртазалиева Раяна"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_04_child-girl-electric-creature-friend_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_04_child-girl-electric-creature-friend_final.jpg" alt="Результат Искристый зверёк"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-electric-creature-friend</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Арсанукаев Билал</strong><span>Рыцарь королевства</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_05_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_05_source.jpg" alt="Исходник Арсанукаев Билал"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_05_child-boy-medieval-knight_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_05_child-boy-medieval-knight_final.jpg" alt="Результат Рыцарь королевства"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-medieval-knight</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Эдилова Сумайя</strong><span>Робот-друг</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_06_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_06_source.jpg" alt="Исходник Эдилова Сумайя"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_06_child-girl-robot-friend_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_06_child-girl-robot-friend_final.jpg" alt="Результат Робот-друг"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-girl-robot-friend</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Межидов Хусейн</strong><span>Футбольный чемпион</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_07_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_07_source.jpg" alt="Исходник Межидов Хусейн"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_07_child-boy-football-champion_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_07_child-boy-football-champion_final.jpg" alt="Результат Футбольный чемпион"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-football-champion</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Бекмурзаева Латифа</strong><span>Команда супергероев</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_08_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_08_source.jpg" alt="Исходник Бекмурзаева Латифа"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_08_child-girl-superhero-team-up_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_08_child-girl-superhero-team-up_final.jpg" alt="Результат Команда супергероев"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-superhero-team-up</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Кадиров Умар</strong><span>Чеченский джигит</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_09_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_09_source.jpg" alt="Исходник Кадиров Умар"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_09_child-boy-chechen-dzhigit_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_09_child-boy-chechen-dzhigit_final.jpg" alt="Результат Чеченский джигит"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-chechen-dzhigit</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Якубова Марьям</strong><span>Сказочная принцесса</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-1b/demo_student_mayrtup_1b_10_source.jpg"><img src="portraits/mayrtup-1b/demo_student_mayrtup_1b_10_source.jpg" alt="Исходник Якубова Марьям"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-1b/demo_student_mayrtup_1b_10_child-girl-fairytale-princess_final.jpg"><img src="results/mayrtup-1b/demo_student_mayrtup_1b_10_child-girl-fairytale-princess_final.jpg" alt="Результат Сказочная принцесса"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-girl-fairytale-princess</code></div>
+                </article>
+                </div>
+              </section>
+            
+              <section class="class-section">
+                <div class="section-title"><h3>Класс 2Б</h3><span>10 детей · 10 исходников · 10 готовых</span></div>
+                <div class="students">
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Джамалханов Иса</strong><span>В гостях у Деда Мороза</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_01_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_01_source.jpg" alt="Исходник Джамалханов Иса"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_01_child-boy-santa-workshop_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_01_child-boy-santa-workshop_final.jpg" alt="Результат В гостях у Деда Мороза"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-boy-santa-workshop</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Абдурахманова Фатима</strong><span>Принцесса солнечной башни</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_02_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_02_source.jpg" alt="Исходник Абдурахманова Фатима"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_02_child-girl-long-haired-tower-princess_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_02_child-girl-long-haired-tower-princess_final.jpg" alt="Результат Принцесса солнечной башни"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-long-haired-tower-princess</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Салгириев Муса</strong><span>Щенки-спасатели</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_03_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_03_source.jpg" alt="Исходник Салгириев Муса"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_03_child-boy-rescue-puppy-team_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_03_child-boy-rescue-puppy-team_final.jpg" alt="Результат Щенки-спасатели"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-rescue-puppy-team</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Турлуева Зайнаб</strong><span>Ледяная королева</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_04_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_04_source.jpg" alt="Исходник Турлуева Зайнаб"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_04_child-girl-ice-queen_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_04_child-girl-ice-queen_final.jpg" alt="Результат Ледяная королева"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-ice-queen</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Арсланов Якуб</strong><span>Друг из блочного мира</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_05_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_05_source.jpg" alt="Исходник Арсланов Якуб"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_05_child-boy-block-world-friend_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_05_child-boy-block-world-friend_final.jpg" alt="Результат Друг из блочного мира"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-boy-block-world-friend</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Эльдарова Седа</strong><span>Смелая принцесса гор</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_06_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_06_source.jpg" alt="Исходник Эльдарова Седа"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_06_child-girl-brave-highland-princess_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_06_child-girl-brave-highland-princess_final.jpg" alt="Результат Смелая принцесса гор"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-brave-highland-princess</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Накаев Юсуф</strong><span>Скоростной лис</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_07_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_07_source.jpg" alt="Исходник Накаев Юсуф"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_07_child-boy-speed-fox-team_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_07_child-boy-speed-fox-team_final.jpg" alt="Результат Скоростной лис"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-boy-speed-fox-team</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Вахаева Рукият</strong><span>Восточная принцесса</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_08_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_08_source.jpg" alt="Исходник Вахаева Рукият"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_08_child-girl-eastern-princess-headscarf_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_08_child-girl-eastern-princess-headscarf_final.jpg" alt="Результат Восточная принцесса"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-eastern-princess-headscarf</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Тумсоев Салман</strong><span>Друг дракона</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_09_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_09_source.jpg" alt="Исходник Тумсоев Салман"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_09_child-boy-dragon-friend_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_09_child-boy-dragon-friend_final.jpg" alt="Результат Друг дракона"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Не оплачено</span><code>child-boy-dragon-friend</code></div>
+                </article>
+                
+                <article class="student-card">
+                  <div class="student-heading">
+                    <div><strong>Муслимова Аиша</strong><span>Академия магии</span></div>
+                    <span class="status">Готово</span>
+                  </div>
+                  <div class="before-after">
+                    <figure><a href="portraits/mayrtup-2b/demo_student_mayrtup_2b_10_source.jpg"><img src="portraits/mayrtup-2b/demo_student_mayrtup_2b_10_source.jpg" alt="Исходник Муслимова Аиша"></a><figcaption>Исходное фото</figcaption></figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure><a href="results/mayrtup-2b/demo_student_mayrtup_2b_10_child-girl-magic-academy-hijab_final.jpg"><img src="results/mayrtup-2b/demo_student_mayrtup_2b_10_child-girl-magic-academy-hijab_final.jpg" alt="Результат Академия магии"></a><figcaption>Готовая работа</figcaption></figure>
+                  </div>
+                  <div class="meta"><span>Оплачено</span><code>child-girl-magic-academy-hijab</code></div>
+                </article>
+                </div>
+              </section>
+            
+          </section>
+        
+</main></body></html>

@@ -3579,6 +3579,37 @@ button.mini-catalog-option {
   width: min(680px, calc(100vw - 24px));
 }
 
+.transfer-merge-note {
+  display: grid;
+  gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--primary) 38%, var(--line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+  line-height: 1.45;
+}
+
+.transfer-merge-note span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.transfer-merge-note.warning {
+  border-color: color-mix(in srgb, var(--warning) 55%, var(--line));
+  background: color-mix(in srgb, var(--warning) 12%, var(--card));
+}
+
+.transfer-merge-note .checkbox-row {
+  margin-top: 3px;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: not-allowed;
+  filter: none;
+  opacity: 0.48;
+}
+
 .import-draft-list {
   display: grid;
   gap: 8px;
