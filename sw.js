@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v49";
+const CACHE_VERSION = "v54";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -12,7 +12,27 @@ const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-rescue-puppy-team", "child-girl-fairy-tea-party",
   "child-boy-block-world-friend", "child-girl-electric-creature-friend",
   "child-boy-speed-fox-team", "child-girl-robot-friend",
-  "child-boy-dragon-friend", "child-girl-superhero-team-up"
+  "child-boy-dragon-friend", "child-girl-superhero-team-up",
+  "child-boy-chechen-mosque-dawn", "child-boy-chechen-stone-tower",
+  "child-boy-chechen-wolf-guardian", "child-boy-chechen-horse-valley",
+  "child-boy-chechen-fortress-sunset", "child-boy-chechen-waterfall",
+  "child-boy-winter-cadet", "child-boy-rescue-unit", "child-boy-field-observer",
+  "child-boy-rescue-helicopter-pilot", "child-boy-solar-cape-guardian",
+  "child-boy-emerald-giant-friend", "child-boy-iron-tech-guardian",
+  "child-boy-thunder-guardian", "child-boy-speed-hedgehog-friend",
+  "child-boy-night-wing-guardian", "child-boy-ninja-turtle-friend",
+  "child-boy-robot-lion-pilot", "child-boy-cosmic-ranger-friend",
+  "child-boy-city-hero-shield", "child-girl-chechen-mosque-garden",
+  "child-girl-chechen-stone-tower", "child-girl-chechen-wolf-companion",
+  "child-girl-chechen-waterfall", "child-girl-sun-tower-princess",
+  "child-girl-forest-apple-princess", "child-girl-highland-archer-princess",
+  "child-girl-rose-princess-beast", "child-girl-glass-slipper-princess",
+  "child-girl-coral-sea-princess", "child-girl-ocean-wayfinder",
+  "child-girl-northern-crystal-queen", "child-girl-moon-warrior-princess",
+  "child-girl-desert-palace-princess", "child-girl-star-cape-heroine",
+  "child-girl-sun-shield-heroine", "child-girl-ladybird-heroine",
+  "child-girl-bear-forest-friend", "child-girl-fashion-dream-friend",
+  "child-girl-butterfly-fairy-mentor"
 ].map((id) => `./assets/templates/children/${id}/preview.webp`);
 const APP_SHELL = [
   "./",
@@ -30,6 +50,7 @@ const APP_SHELL = [
   "./js/core/constants.js",
   "./js/data/db.js",
   "./js/data/child-portrait-templates.js",
+  "./js/data/child-portrait-a4-scenes.js",
   "./js/data/migrations.js",
   "./js/data/repositories/base-repository.js",
   "./js/data/repositories/projects-repository.js",
@@ -108,7 +129,7 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
@@ -131,7 +152,6 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(event.request);
-      if (cached && APP_SHELL.some((path) => new URL(path, location.href).href === event.request.url)) return cached;
       return fetch(event.request)
         .then((response) => {
           if (response.ok) cache.put(event.request, response.clone());

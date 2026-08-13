@@ -1,0 +1,35 @@
+{
+  "id": "child-boy-chechen-wolf-guardian",
+  "title": "Страж гор и волк",
+  "gender": "boy",
+  "masterSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/master.jpg",
+  "previewSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/face-mask.png",
+  "metadataSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/metadata.json",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.275,
+    "width": 0.175,
+    "height": 0.155,
+    "feather": 0.018
+  },
+  "canvas": {
+    "format": "A4",
+    "orientation": "portrait",
+    "width": 2480,
+    "height": 3508,
+    "previewWidth": 600,
+    "previewHeight": 849,
+    "dpi": 300,
+    "masterFile": "master.jpg"
+  },
+  "printFormat": "A4",
+  "enabled": true,
+  "version": 3,
+  "aiAdapter": "face-swap-v1",
+  "sourceGenerationSize": {
+    "width": 1055,
+    "height": 1491
+  },
+  "masterPreparation": "lanczos-upscale-and-a4-crop"
+}

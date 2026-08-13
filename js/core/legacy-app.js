@@ -2152,6 +2152,7 @@ function childTemplateGradeLabel(value) {
 function childTemplateBadges(item) {
   if (!item?.childTemplate) return "";
   return `
+    ${item.canvas?.format === "A4" ? '<span class="catalog-card-badge template">A4 · 300 dpi</span>' : ""}
     <span class="catalog-card-badge template">${escapeHtml(childTemplateGradeLabel(item.grade))}</span>
     <span class="catalog-card-badge template">${escapeHtml(childTemplateHeadwearLabel(item.headwear))}</span>
   `;
@@ -2428,7 +2429,7 @@ function showCatalogServiceViewer(itemId) {
         ${item.childTemplate ? `
           <div class="child-template-ready-note">
             <strong>Готово к монтажу</strong>
-            <span>Мастер 3072×3840 · мягкая маска лица · направляющие сохранены</span>
+            <span>${item.canvas?.format === "A4" ? `A4 · ${item.canvas.width}×${item.canvas.height} · ${item.canvas.dpi || 300} dpi` : `Мастер ${item.canvas?.width || 3072}×${item.canvas?.height || 3840}`} · мягкая маска лица · направляющие сохранены</span>
           </div>
         ` : ""}
       </div>
@@ -2589,6 +2590,7 @@ function catalogCard(item, index = 0, total = 0, canMove = false) {
   const selected = state.selectedServiceIds.has(item.id);
   const popular = isServicePopular(item);
   const category = serviceCategory(item);
+  const priceLabel = formatPrice(item.price);
   return `
     <article class="list-card card-button service-card ${selected ? "selected" : ""}" data-open-catalog="${item.id}" tabindex="0">
       <div class="list-card-main">
@@ -2597,11 +2599,11 @@ function catalogCard(item, index = 0, total = 0, canMove = false) {
         <div class="list-copy">
           <div class="service-title-row">
             <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
-            <button class="service-star ${popular ? "active" : ""}" data-toggle-service-popular="${item.id}" type="button" aria-label="${popular ? "Убрать из популярных" : "Добавить в популярные"}" title="Популярное"><span data-icon="star"></span></button>
+            <button class="service-star service-star-desktop ${popular ? "active" : ""}" data-toggle-service-popular="${item.id}" type="button" aria-label="${popular ? "Убрать из популярных" : "Добавить в популярные"}" title="Популярное"><span data-icon="star"></span></button>
           </div>
+          <strong class="service-card-price">${escapeHtml(priceLabel)}</strong>
           ${description ? `<p class="muted">${escapeHtml(description)}</p>` : ""}
           <div class="service-card-meta">
-            <span>${escapeHtml(formatPrice(item.price))}</span>
             <span>${escapeHtml(serviceGenderLabel(item))}</span>
             <span>${escapeHtml(category || "Без категории")}</span>
             ${popular ? "<span>Популярное</span>" : ""}
@@ -2610,6 +2612,7 @@ function catalogCard(item, index = 0, total = 0, canMove = false) {
             ${promptBadge}
           </div>
         </div>
+        <button class="service-star service-star-mobile ${popular ? "active" : ""}" data-toggle-service-popular="${item.id}" type="button" aria-label="${popular ? "Убрать из популярных" : "Добавить в популярные"}" title="Популярное"><span data-icon="star"></span></button>
         <div class="service-move-buttons">
           <button class="icon-button compact" data-move-service="${item.id}:up" type="button" ${!canMove || index === 0 ? "disabled" : ""} aria-label="Выше" title="Выше">↑</button>
           <button class="icon-button compact" data-move-service="${item.id}:down" type="button" ${!canMove || index >= total - 1 ? "disabled" : ""} aria-label="Ниже" title="Ниже">↓</button>
@@ -2618,6 +2621,9 @@ function catalogCard(item, index = 0, total = 0, canMove = false) {
           <summary aria-label="Меню услуги">...</summary>
           <div class="menu-panel">
             <button data-open-catalog-action="${item.id}" type="button">Открыть</button>
+            <button data-toggle-service-selection="${item.id}" type="button">${selected ? "Снять выбор" : "Выбрать"}</button>
+            <button data-move-service="${item.id}:up" type="button" ${!canMove || index === 0 ? "disabled" : ""}>Поднять выше</button>
+            <button data-move-service="${item.id}:down" type="button" ${!canMove || index >= total - 1 ? "disabled" : ""}>Опустить ниже</button>
             <button data-edit-catalog="${item.id}" type="button">Редактировать</button>
             <button data-duplicate-catalog="${item.id}" type="button">Дублировать</button>
             <button data-upload-catalog-preview="${item.id}" type="button">Превью</button>
@@ -2638,7 +2644,10 @@ function renderServiceDetail() {
   const previewUrl = servicePreviewImageDataUrl(item);
   const videoUrl = servicePreviewVideoDataUrl(item);
   const preview = previewUrl
-    ? `<img class="service-detail-preview" src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" />`
+    ? `<button class="service-detail-preview-button" data-preview-service-detail="${item.id}" type="button" aria-label="Открыть ${escapeAttr(serviceName(item))} полностью">
+        <img class="service-detail-preview" src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" />
+        <span class="service-detail-preview-hint">Открыть полностью</span>
+      </button>`
     : '<div class="service-detail-preview empty">Нет превью</div>';
   const prompt = servicePrompt(item);
   setShell({ heading: serviceName(item), context: "Услуга", summary: formatPrice(item.price) });
@@ -4065,6 +4074,10 @@ function bindViewActions() {
     renderServices();
   });
   view.querySelectorAll("[data-select-service]").forEach((node) => node.addEventListener("change", () => toggleServiceSelection(node.dataset.selectService, node.checked)));
+  view.querySelectorAll("[data-toggle-service-selection]").forEach((node) => node.addEventListener("click", () => {
+    const itemId = node.dataset.toggleServiceSelection;
+    toggleServiceSelection(itemId, !state.selectedServiceIds.has(itemId));
+  }));
   view.querySelector("[data-clear-service-selection]")?.addEventListener("click", () => {
     state.selectedServiceIds.clear();
     renderServices();
@@ -4111,6 +4124,11 @@ function bindViewActions() {
     uploadReference(itemId, angleId);
   }));
   view.querySelectorAll("[data-upload-catalog-preview]").forEach((node) => node.addEventListener("click", () => uploadCatalogPreview(node.dataset.uploadCatalogPreview)));
+  view.querySelectorAll("[data-preview-service-detail]").forEach((node) => node.addEventListener("click", () => {
+    const item = catalogItemById(node.dataset.previewServiceDetail);
+    const url = servicePreviewImageDataUrl(item);
+    if (url) showInlineMediaPreview({ url, title: serviceName(item) });
+  }));
   view.querySelectorAll("[data-generate-references]").forEach((node) => node.addEventListener("click", () => generateReferenceSet(node.dataset.generateReferences)));
   view.querySelectorAll("[data-apply-template]").forEach((node) => node.addEventListener("click", () => applyCatalogAsTemplate(node.dataset.applyTemplate)));
   view.querySelector("[data-add-album-project]")?.addEventListener("click", addAlbumProject);
@@ -5751,7 +5769,7 @@ function montageReferenceForService(service) {
   if (templateMaster) return {
     id: `${service.id}_master`,
     url: templateMaster,
-    name: `${service.id}-master.png`,
+    name: `${service.id}-${templateMaster.toLowerCase().endsWith(".jpg") ? "master.jpg" : "master.png"}`,
     isVideo: false,
     faceMaskSrc: service.faceMaskSrc || "",
     faceGuide: service.faceGuide || null

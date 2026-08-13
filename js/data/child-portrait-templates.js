@@ -1,3 +1,8 @@
+import {
+  A4_CHILD_PORTRAIT_SCENES,
+  A4_CHILD_PORTRAIT_TEMPLATE_IDS
+} from "./child-portrait-a4-scenes.js";
+
 export const CHILD_PORTRAIT_CATEGORY = "Детские образы";
 
 export const SELECTED_CHILD_PORTRAIT_TEMPLATE_IDS = Object.freeze([
@@ -24,14 +29,39 @@ export const SELECTED_CHILD_PORTRAIT_TEMPLATE_IDS = Object.freeze([
   "child-boy-speed-fox-team",
   "child-girl-robot-friend",
   "child-boy-dragon-friend",
-  "child-girl-superhero-team-up"
+  "child-girl-superhero-team-up",
+  ...A4_CHILD_PORTRAIT_TEMPLATE_IDS
 ]);
 
 const selectedTemplateIds = new Set(SELECTED_CHILD_PORTRAIT_TEMPLATE_IDS);
 
 const assetPath = (id, file) => `./assets/templates/children/${id}/${file}`;
 
-const template = ({ id, title, grade, gender, headwear = "none", theme, tags, description, faceGuide }) => ({
+const LEGACY_CANVAS = Object.freeze({
+  format: "4:5",
+  orientation: "portrait",
+  width: 3072,
+  height: 3840,
+  previewWidth: 600,
+  previewHeight: 750,
+  dpi: 300,
+  masterFile: "master.png"
+});
+
+const template = ({
+  id,
+  title,
+  grade,
+  gender,
+  headwear = "none",
+  theme,
+  tags,
+  description,
+  faceGuide,
+  canvas = LEGACY_CANVAS,
+  enabled,
+  version = 2
+}) => ({
   id,
   title,
   grade,
@@ -40,13 +70,15 @@ const template = ({ id, title, grade, gender, headwear = "none", theme, tags, de
   theme,
   tags,
   description,
-  masterSrc: assetPath(id, "master.png"),
+  masterSrc: assetPath(id, canvas.masterFile),
   previewSrc: assetPath(id, "preview.webp"),
   faceMaskSrc: assetPath(id, "face-mask.png"),
   metadataSrc: assetPath(id, "metadata.json"),
   faceGuide: { ...faceGuide, feather: 0.018 },
-  enabled: selectedTemplateIds.has(id),
-  version: 2
+  canvas: { ...canvas },
+  printFormat: canvas.format,
+  enabled: enabled ?? selectedTemplateIds.has(id),
+  version
 });
 
 export const CHILD_PORTRAIT_TEMPLATES = [
@@ -209,7 +241,8 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     id: "child-girl-superhero-team-up", title: "Команда супергероев", grade: 2, gender: "girl", theme: "superhero-team-up",
     tags: ["супергерой", "команда", "город", "приключение"], description: "Ребёнок приветствует оригинальную супергероиню на крыше города будущего.",
     faceGuide: { centerX: 0.36, centerY: 0.34, width: 0.24, height: 0.21 }
-  })
+  }),
+  ...A4_CHILD_PORTRAIT_SCENES.map(template)
 ];
 
 export function childPortraitCatalogRecord(item, index = 0) {
@@ -221,7 +254,7 @@ export function childPortraitCatalogRecord(item, index = 0) {
     mediaKind: "photo",
     price: "0",
     shortDescription: item.description,
-    description: `${item.description} Подготовлены мастер 3072×3840, превью и мягкая маска лица.`,
+    description: `${item.description} Подготовлены мастер ${item.canvas.width}×${item.canvas.height}${item.canvas.format === "A4" ? " (A4, 300 dpi)" : ""}, превью и мягкая маска лица.`,
     gender: item.gender === "boy" ? "boys" : "girls",
     category: CHILD_PORTRAIT_CATEGORY,
     popular: false,
@@ -242,6 +275,8 @@ export function childPortraitCatalogRecord(item, index = 0) {
     faceMaskSrc: item.faceMaskSrc,
     metadataSrc: item.metadataSrc,
     faceGuide: { ...item.faceGuide },
+    canvas: { ...item.canvas },
+    printFormat: item.printFormat,
     enabled: item.enabled
   };
 }

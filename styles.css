@@ -364,13 +364,49 @@ p {
 .service-detail-preview,
 .service-form-preview {
   width: 100%;
-  aspect-ratio: 4 / 3;
   display: block;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--card-strong);
-  object-fit: cover;
   overflow: hidden;
+}
+
+.service-detail-preview-button {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-width: 360px;
+  padding: 0;
+  justify-self: center;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.service-detail-preview {
+  aspect-ratio: 4 / 5;
+  object-fit: contain;
+}
+
+.service-detail-preview-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 850;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.service-form-preview {
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
 }
 
 .service-form-preview {
@@ -1660,6 +1696,14 @@ button.mini-catalog-option {
   overflow-wrap: anywhere;
 }
 
+.service-card-price {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
 .service-star {
   display: inline-grid;
   flex: 0 0 auto;
@@ -1681,6 +1725,91 @@ button.mini-catalog-option {
   color: #d97706;
   border-color: #f59e0b;
   background: #fffbeb;
+}
+
+.service-star-mobile {
+  display: none;
+}
+
+/* The settings panel can be visually scaled while retaining a desktop CSS
+   viewport, so these service rows intentionally stay compact at every width. */
+.service-card {
+  min-height: 0;
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.service-card .list-card-main {
+  grid-template-columns: 48px minmax(0, 1fr) 36px 36px;
+  align-items: center;
+  gap: 9px;
+}
+
+.service-card .service-select,
+.service-card .service-move-buttons,
+.service-card .list-copy > .muted,
+.service-card .service-card-meta,
+.service-card .service-star-desktop {
+  display: none;
+}
+
+.service-card .service-preview-frame,
+.service-card .service-preview {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  border-radius: 13px;
+}
+
+.service-card .list-copy {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+}
+
+.service-card .service-title-row {
+  display: block;
+}
+
+.service-card .service-title-row .card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.98rem;
+  line-height: 1.15;
+  overflow-wrap: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.service-card .service-card-price {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-card .service-star,
+.service-card .item-menu summary {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 11px;
+}
+
+.service-card .service-star-mobile {
+  display: inline-grid;
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.service-card .item-menu {
+  grid-column: 4;
+  grid-row: 1;
 }
 
 .service-move-buttons {
@@ -4124,20 +4253,90 @@ button.mini-catalog-option {
     min-height: 44px;
   }
 
-  .service-card .list-card-main {
-    grid-template-columns: 28px 56px minmax(0, 1fr) 40px;
+  .compact-stack {
+    gap: 8px;
   }
 
-  .service-move-buttons {
-    grid-column: 2 / -1;
-    grid-row: 2;
-    grid-auto-flow: column;
-    grid-template-columns: repeat(2, 32px);
-    justify-content: start;
+  .service-card {
+    min-height: 0;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .service-card .list-card-main {
+    grid-template-columns: 48px minmax(0, 1fr) 36px 36px;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .service-card .service-select,
+  .service-card .service-move-buttons,
+  .service-card .list-copy > .muted,
+  .service-card .service-card-meta {
+    display: none;
+  }
+
+  .service-card .service-preview-frame,
+  .service-card .service-preview {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    border-radius: 13px;
+  }
+
+  .service-card .list-copy {
+    display: grid;
+    align-content: center;
+    gap: 2px;
+  }
+
+  .service-card .service-title-row {
+    display: block;
+  }
+
+  .service-card .service-title-row .card-title {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.98rem;
+    line-height: 1.15;
+    overflow-wrap: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .service-card .service-card-price {
+    margin-top: 2px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .service-card .service-star,
+  .service-card .item-menu summary {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    border-radius: 11px;
+  }
+
+  .service-card .service-star-desktop {
+    display: none;
+  }
+
+  .service-card .service-star-mobile {
+    display: inline-grid;
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .service-card .item-menu {
     grid-column: 4;
+    grid-row: 1;
   }
 
   .final-results-grid {

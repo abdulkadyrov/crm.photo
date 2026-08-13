@@ -23,6 +23,17 @@
       "height": 0.205,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -50,6 +61,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -77,6 +99,17 @@
       "height": 0.2,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -104,6 +137,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -131,6 +175,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -158,6 +213,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -185,6 +251,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -212,6 +289,17 @@
       "height": 0.185,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -239,6 +327,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -267,6 +366,17 @@
       "height": 0.18,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -294,6 +404,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -322,6 +443,17 @@
       "height": 0.2,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -350,6 +482,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -378,6 +521,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -406,6 +560,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -434,6 +599,17 @@
       "height": 0.21,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -461,6 +637,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -488,6 +675,17 @@
       "height": 0.195,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -515,6 +713,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -542,6 +751,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -569,6 +789,17 @@
       "height": 0.185,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -596,6 +827,17 @@
       "height": 0.185,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -623,6 +865,17 @@
       "height": 0.18,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -650,6 +903,17 @@
       "height": 0.185,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -677,6 +941,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": false,
     "version": 2
   },
@@ -704,6 +979,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -731,6 +1017,17 @@
       "height": 0.185,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -759,6 +1056,17 @@
       "height": 0.215,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -787,6 +1095,17 @@
       "height": 0.21,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -815,6 +1134,17 @@
       "height": 0.19,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -843,6 +1173,17 @@
       "height": 0.2,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
   },
@@ -871,7 +1212,1618 @@
       "height": 0.21,
       "feather": 0.018
     },
+    "canvas": {
+      "format": "4:5",
+      "orientation": "portrait",
+      "width": 3072,
+      "height": 3840,
+      "previewWidth": 600,
+      "previewHeight": 750,
+      "dpi": 300,
+      "masterFile": "master.png"
+    },
+    "printFormat": "4:5",
     "enabled": true,
     "version": 2
+  },
+  {
+    "id": "child-boy-chechen-mosque-dawn",
+    "title": "У мечети на рассвете",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-mosque-dawn",
+    "tags": [
+      "чечня",
+      "мечеть",
+      "черкеска",
+      "горы",
+      "a4"
+    ],
+    "description": "Чеченский национальный образ на рассвете во дворе мечети и на фоне Кавказских гор.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-mosque-dawn/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-mosque-dawn/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-mosque-dawn/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-mosque-dawn/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-chechen-stone-tower",
+    "title": "У древней башни",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-stone-tower",
+    "tags": [
+      "чечня",
+      "башня",
+      "черкеска",
+      "горы",
+      "a4"
+    ],
+    "description": "Национальный образ у древней вайнахской башни в высокогорной долине.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-stone-tower/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-stone-tower/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-stone-tower/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-stone-tower/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-chechen-wolf-guardian",
+    "title": "Страж гор и волк",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-wolf-guardian",
+    "tags": [
+      "чечня",
+      "волк",
+      "черкеска",
+      "горы",
+      "a4"
+    ],
+    "description": "Юный горец и спокойный кавказский волк на вершине над облаками.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-wolf-guardian/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-chechen-horse-valley",
+    "title": "Джигит с конём",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-horse-valley",
+    "tags": [
+      "чечня",
+      "конь",
+      "долина",
+      "черкеска",
+      "a4"
+    ],
+    "description": "Парадный национальный портрет с конём в солнечной горной долине.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-horse-valley/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-horse-valley/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-horse-valley/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-horse-valley/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-chechen-fortress-sunset",
+    "title": "Крепость на закате",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-fortress-sunset",
+    "tags": [
+      "чечня",
+      "крепость",
+      "мост",
+      "горы",
+      "a4"
+    ],
+    "description": "Чеченский национальный образ перед старинной крепостью и каменным мостом.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-fortress-sunset/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-fortress-sunset/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-fortress-sunset/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-fortress-sunset/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-chechen-waterfall",
+    "title": "У горного водопада",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "chechen-waterfall",
+    "tags": [
+      "чечня",
+      "водопад",
+      "лес",
+      "черкеска",
+      "a4"
+    ],
+    "description": "Светлый национальный костюм у большого горного водопада.",
+    "masterSrc": "./assets/templates/children/child-boy-chechen-waterfall/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-chechen-waterfall/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-chechen-waterfall/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-chechen-waterfall/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-winter-cadet",
+    "title": "Зимний кадет",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "traditional-hat",
+    "theme": "winter-cadet",
+    "tags": [
+      "кадет",
+      "форма",
+      "зима",
+      "парадный",
+      "a4"
+    ],
+    "description": "Мирный парадный кадет в зимнем дворе академии без оружия и знаков реальных армий.",
+    "masterSrc": "./assets/templates/children/child-boy-winter-cadet/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-winter-cadet/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-winter-cadet/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-winter-cadet/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.235,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-rescue-unit",
+    "title": "Горный спасатель",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "mountain-rescue-unit",
+    "tags": [
+      "спасатель",
+      "спецотряд",
+      "каска",
+      "горы",
+      "a4"
+    ],
+    "description": "Юный участник вымышленного горно-спасательного отряда с каской и рацией.",
+    "masterSrc": "./assets/templates/children/child-boy-rescue-unit/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-rescue-unit/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-rescue-unit/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-rescue-unit/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.235,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-field-observer",
+    "title": "Полевой наблюдатель",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "field-observer",
+    "tags": [
+      "форма",
+      "бинокль",
+      "экспедиция",
+      "пустыня",
+      "a4"
+    ],
+    "description": "Постановочный образ мирного полевого наблюдателя в исследовательском лагере.",
+    "masterSrc": "./assets/templates/children/child-boy-field-observer/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-field-observer/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-field-observer/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-field-observer/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.235,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-rescue-helicopter-pilot",
+    "title": "Пилот спасательной службы",
+    "grade": 4,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "rescue-helicopter-pilot",
+    "tags": [
+      "спасатель",
+      "пилот",
+      "вертолёт",
+      "горы",
+      "a4"
+    ],
+    "description": "Юный пилот вымышленной спасательной службы на мирной горной площадке.",
+    "masterSrc": "./assets/templates/children/child-boy-rescue-helicopter-pilot/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-rescue-helicopter-pilot/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-rescue-helicopter-pilot/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-rescue-helicopter-pilot/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.235,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-solar-cape-guardian",
+    "title": "Солнечный страж",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "solar-cape-guardian",
+    "tags": [
+      "супергерой",
+      "плащ",
+      "город",
+      "команда",
+      "a4"
+    ],
+    "description": "Ребёнок рядом с оригинальным солнечным защитником в плаще.",
+    "masterSrc": "./assets/templates/children/child-boy-solar-cape-guardian/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-solar-cape-guardian/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-solar-cape-guardian/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-solar-cape-guardian/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-emerald-giant-friend",
+    "title": "Изумрудный великан",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "emerald-giant-friend",
+    "tags": [
+      "супергерой",
+      "великан",
+      "наука",
+      "дружба",
+      "a4"
+    ],
+    "description": "Добрый изумрудный великан показывает большой палец рядом с ребёнком.",
+    "masterSrc": "./assets/templates/children/child-boy-emerald-giant-friend/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-emerald-giant-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-emerald-giant-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-emerald-giant-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-iron-tech-guardian",
+    "title": "Железный техностраж",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "iron-tech-guardian",
+    "tags": [
+      "супергерой",
+      "броня",
+      "технологии",
+      "команда",
+      "a4"
+    ],
+    "description": "Оригинальный бронированный техностраж рядом с ребёнком в городе будущего.",
+    "masterSrc": "./assets/templates/children/child-boy-iron-tech-guardian/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-iron-tech-guardian/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-iron-tech-guardian/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-iron-tech-guardian/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-thunder-guardian",
+    "title": "Громовой защитник",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "thunder-guardian",
+    "tags": [
+      "супергерой",
+      "гром",
+      "броня",
+      "горы",
+      "a4"
+    ],
+    "description": "Ребёнок в команде с оригинальным защитником небесной обсерватории.",
+    "masterSrc": "./assets/templates/children/child-boy-thunder-guardian/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-thunder-guardian/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-thunder-guardian/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-thunder-guardian/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-speed-hedgehog-friend",
+    "title": "Скоростной синий друг",
+    "grade": 1,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "speed-hedgehog-friend",
+    "tags": [
+      "мультфильм",
+      "скорость",
+      "синий зверёк",
+      "дружба",
+      "a4"
+    ],
+    "description": "Весёлый скоростной зверёк даёт ребёнку пять на яркой трассе.",
+    "masterSrc": "./assets/templates/children/child-boy-speed-hedgehog-friend/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-speed-hedgehog-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-speed-hedgehog-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-speed-hedgehog-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-night-wing-guardian",
+    "title": "Ночной крылатый страж",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "night-wing-guardian",
+    "tags": [
+      "супергерой",
+      "ночь",
+      "крылья",
+      "город",
+      "a4"
+    ],
+    "description": "Оригинальный крылатый защитник рядом с ребёнком в лунном саду.",
+    "masterSrc": "./assets/templates/children/child-boy-night-wing-guardian/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-night-wing-guardian/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-night-wing-guardian/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-night-wing-guardian/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-ninja-turtle-friend",
+    "title": "Черепаха-исследователь",
+    "grade": 1,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "ninja-turtle-friend",
+    "tags": [
+      "мультфильм",
+      "черепаха",
+      "исследователь",
+      "дружба",
+      "a4"
+    ],
+    "description": "Добрая черепаха-путешественник приветствует ребёнка в вечернем саду.",
+    "masterSrc": "./assets/templates/children/child-boy-ninja-turtle-friend/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-ninja-turtle-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-ninja-turtle-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-ninja-turtle-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-robot-lion-pilot",
+    "title": "Белый робот-лев",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "robot-lion-pilot",
+    "tags": [
+      "робот",
+      "лев",
+      "космос",
+      "дружба",
+      "a4"
+    ],
+    "description": "Ребёнок рядом с благородным белым роботом-львом в космическом ангаре.",
+    "masterSrc": "./assets/templates/children/child-boy-robot-lion-pilot/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-robot-lion-pilot/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-robot-lion-pilot/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-robot-lion-pilot/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-cosmic-ranger-friend",
+    "title": "Космический рейнджер",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "cosmic-ranger-friend",
+    "tags": [
+      "космос",
+      "рейнджер",
+      "планета",
+      "команда",
+      "a4"
+    ],
+    "description": "Оригинальный космический исследователь показывает ребёнку карту далёкой планеты.",
+    "masterSrc": "./assets/templates/children/child-boy-cosmic-ranger-friend/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-cosmic-ranger-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-cosmic-ranger-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-cosmic-ranger-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-city-hero-shield",
+    "title": "Герой энергетического щита",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "city-hero-shield",
+    "tags": [
+      "супергерой",
+      "щит",
+      "город",
+      "команда",
+      "a4"
+    ],
+    "description": "Ребёнок рядом с оригинальным городским героем и светящимся энергетическим щитом.",
+    "masterSrc": "./assets/templates/children/child-boy-city-hero-shield/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-city-hero-shield/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-city-hero-shield/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-city-hero-shield/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-chechen-mosque-garden",
+    "title": "В саду у мечети",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "headscarf",
+    "theme": "chechen-mosque-garden",
+    "tags": [
+      "чечня",
+      "мечеть",
+      "национальное платье",
+      "сад",
+      "a4"
+    ],
+    "description": "Чеченский национальный образ в цветущем саду у мечети.",
+    "masterSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-chechen-stone-tower",
+    "title": "Девочка у башни",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "headscarf",
+    "theme": "chechen-stone-tower",
+    "tags": [
+      "чечня",
+      "башня",
+      "национальное платье",
+      "горы",
+      "a4"
+    ],
+    "description": "Парадный национальный портрет у древней вайнахской башни.",
+    "masterSrc": "./assets/templates/children/child-girl-chechen-stone-tower/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-chechen-stone-tower/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-chechen-stone-tower/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-chechen-stone-tower/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-chechen-wolf-companion",
+    "title": "Хозяйка гор и волк",
+    "grade": 4,
+    "gender": "girl",
+    "headwear": "headscarf",
+    "theme": "chechen-wolf-companion",
+    "tags": [
+      "чечня",
+      "волк",
+      "национальное платье",
+      "горы",
+      "a4"
+    ],
+    "description": "Чеченская девочка и спокойный кавказский волк на закатном хребте.",
+    "masterSrc": "./assets/templates/children/child-girl-chechen-wolf-companion/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-chechen-wolf-companion/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-chechen-wolf-companion/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-chechen-wolf-companion/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-chechen-waterfall",
+    "title": "У водопада в белом",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "headscarf",
+    "theme": "chechen-waterfall",
+    "tags": [
+      "чечня",
+      "водопад",
+      "национальное платье",
+      "лес",
+      "a4"
+    ],
+    "description": "Светлый национальный образ у высокого горного водопада.",
+    "masterSrc": "./assets/templates/children/child-girl-chechen-waterfall/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-chechen-waterfall/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-chechen-waterfall/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-chechen-waterfall/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.275,
+      "width": 0.175,
+      "height": 0.155,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-sun-tower-princess",
+    "title": "Златовласка с фонарём",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "sun-tower-princess",
+    "tags": [
+      "принцесса",
+      "длинные волосы",
+      "башня",
+      "сказка",
+      "a4"
+    ],
+    "description": "Длинноволосая принцесса дарит ребёнку сияющий фонарь в солнечной башне.",
+    "masterSrc": "./assets/templates/children/child-girl-sun-tower-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-sun-tower-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-sun-tower-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-sun-tower-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-forest-apple-princess",
+    "title": "Принцесса леса и яблок",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "forest-apple-princess",
+    "tags": [
+      "принцесса",
+      "яблоки",
+      "лес",
+      "сказка",
+      "a4"
+    ],
+    "description": "Добрая лесная принцесса с корзиной яблок рядом с ребёнком.",
+    "masterSrc": "./assets/templates/children/child-girl-forest-apple-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-forest-apple-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-forest-apple-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-forest-apple-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-highland-archer-princess",
+    "title": "Рыжая принцесса гор",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "highland-archer-princess",
+    "tags": [
+      "принцесса",
+      "рыжие волосы",
+      "горы",
+      "сказка",
+      "a4"
+    ],
+    "description": "Смелая рыжая принцесса высокогорья стоит рядом с ребёнком.",
+    "masterSrc": "./assets/templates/children/child-girl-highland-archer-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-highland-archer-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-highland-archer-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-highland-archer-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-rose-princess-beast",
+    "title": "Красавица и добрый зверь",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "rose-princess-beast",
+    "tags": [
+      "принцесса",
+      "зверь",
+      "роза",
+      "библиотека",
+      "a4"
+    ],
+    "description": "Ребёнок, книжная красавица и добрый зверь в зачарованной библиотеке.",
+    "masterSrc": "./assets/templates/children/child-girl-rose-princess-beast/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-rose-princess-beast/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-rose-princess-beast/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-rose-princess-beast/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-glass-slipper-princess",
+    "title": "Принцесса хрустальной туфельки",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "glass-slipper-princess",
+    "tags": [
+      "принцесса",
+      "туфелька",
+      "дворец",
+      "сказка",
+      "a4"
+    ],
+    "description": "Принцесса бала показывает ребёнку хрустальную туфельку на дворцовой лестнице.",
+    "masterSrc": "./assets/templates/children/child-girl-glass-slipper-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-glass-slipper-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-glass-slipper-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-glass-slipper-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-coral-sea-princess",
+    "title": "Коралловая морская принцесса",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "coral-sea-princess",
+    "tags": [
+      "принцесса",
+      "море",
+      "кораллы",
+      "сказка",
+      "a4"
+    ],
+    "description": "Морская принцесса со светящейся раковиной рядом с ребёнком в подводном дворце.",
+    "masterSrc": "./assets/templates/children/child-girl-coral-sea-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-coral-sea-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-coral-sea-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-coral-sea-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-ocean-wayfinder",
+    "title": "Океанская путешественница",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "ocean-wayfinder",
+    "tags": [
+      "океан",
+      "путешествие",
+      "остров",
+      "лодка",
+      "a4"
+    ],
+    "description": "Отважная океанская путешественница встречает ребёнка на тропическом берегу.",
+    "masterSrc": "./assets/templates/children/child-girl-ocean-wayfinder/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-ocean-wayfinder/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-ocean-wayfinder/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-ocean-wayfinder/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-northern-crystal-queen",
+    "title": "Северная кристальная королева",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "northern-crystal-queen",
+    "tags": [
+      "королева",
+      "север",
+      "кристаллы",
+      "сияние",
+      "a4"
+    ],
+    "description": "Добрая северная королева с кристальным фонарём под полярным сиянием.",
+    "masterSrc": "./assets/templates/children/child-girl-northern-crystal-queen/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-northern-crystal-queen/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-northern-crystal-queen/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-northern-crystal-queen/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-moon-warrior-princess",
+    "title": "Лунная принцесса-воительница",
+    "grade": 4,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "moon-warrior-princess",
+    "tags": [
+      "принцесса",
+      "луна",
+      "воительница",
+      "дворец",
+      "a4"
+    ],
+    "description": "Мирная лунная принцесса с веером рядом с ребёнком в цветущем дворе.",
+    "masterSrc": "./assets/templates/children/child-girl-moon-warrior-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-moon-warrior-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-moon-warrior-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-moon-warrior-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-desert-palace-princess",
+    "title": "Принцесса пустынного дворца",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "desert-palace-princess",
+    "tags": [
+      "принцесса",
+      "дворец",
+      "пустыня",
+      "фонарь",
+      "a4"
+    ],
+    "description": "Восточная принцесса с фонарём на террасе над сказочным городом.",
+    "masterSrc": "./assets/templates/children/child-girl-desert-palace-princess/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-desert-palace-princess/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-desert-palace-princess/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-desert-palace-princess/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-star-cape-heroine",
+    "title": "Звёздная героиня",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "star-cape-heroine",
+    "tags": [
+      "супергероиня",
+      "плащ",
+      "город",
+      "команда",
+      "a4"
+    ],
+    "description": "Ребёнок рядом с оригинальной звёздной героиней на крыше города будущего.",
+    "masterSrc": "./assets/templates/children/child-girl-star-cape-heroine/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-star-cape-heroine/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-star-cape-heroine/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-star-cape-heroine/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-sun-shield-heroine",
+    "title": "Героиня солнечного щита",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "sun-shield-heroine",
+    "tags": [
+      "супергероиня",
+      "щит",
+      "храм",
+      "команда",
+      "a4"
+    ],
+    "description": "Оригинальная защитница с солнечным щитом стоит рядом с ребёнком.",
+    "masterSrc": "./assets/templates/children/child-girl-sun-shield-heroine/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-sun-shield-heroine/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-sun-shield-heroine/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-sun-shield-heroine/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-ladybird-heroine",
+    "title": "Героиня удачи",
+    "grade": 2,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "ladybird-heroine",
+    "tags": [
+      "супергероиня",
+      "божья коровка",
+      "город",
+      "талисман",
+      "a4"
+    ],
+    "description": "Городская героиня с мотивом божьей коровки дарит ребёнку талисман удачи.",
+    "masterSrc": "./assets/templates/children/child-girl-ladybird-heroine/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-ladybird-heroine/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-ladybird-heroine/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-ladybird-heroine/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-bear-forest-friend",
+    "title": "Добрый лесной медведь",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "bear-forest-friend",
+    "tags": [
+      "медведь",
+      "лес",
+      "домик",
+      "дружба",
+      "a4"
+    ],
+    "description": "Ребёнок с добрым медведем на солнечной поляне у деревянного домика.",
+    "masterSrc": "./assets/templates/children/child-girl-bear-forest-friend/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-bear-forest-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-bear-forest-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-bear-forest-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-fashion-dream-friend",
+    "title": "Модная мечта",
+    "grade": 3,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "fashion-dream-friend",
+    "tags": [
+      "мода",
+      "розовый",
+      "студия",
+      "наставница",
+      "a4"
+    ],
+    "description": "Модная наставница помогает ребёнку придумать праздничный образ в светлой студии.",
+    "masterSrc": "./assets/templates/children/child-girl-fashion-dream-friend/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-fashion-dream-friend/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-fashion-dream-friend/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-fashion-dream-friend/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-girl-butterfly-fairy-mentor",
+    "title": "Фея-бабочка",
+    "grade": 1,
+    "gender": "girl",
+    "headwear": "none",
+    "theme": "butterfly-fairy-mentor",
+    "tags": [
+      "фея",
+      "бабочка",
+      "сад",
+      "волшебство",
+      "a4"
+    ],
+    "description": "Оригинальная фея-бабочка с цветочным фонарём рядом с ребёнком в волшебном саду.",
+    "masterSrc": "./assets/templates/children/child-girl-butterfly-fairy-mentor/master.jpg",
+    "previewSrc": "./assets/templates/children/child-girl-butterfly-fairy-mentor/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-girl-butterfly-fairy-mentor/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-girl-butterfly-fairy-mentor/metadata.json",
+    "faceGuide": {
+      "centerX": 0.36,
+      "centerY": 0.27,
+      "width": 0.17,
+      "height": 0.15,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
   }
 ]

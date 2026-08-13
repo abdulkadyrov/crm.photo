@@ -1,0 +1,35 @@
+{
+  "id": "child-girl-chechen-mosque-garden",
+  "title": "В саду у мечети",
+  "gender": "girl",
+  "masterSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/master.jpg",
+  "previewSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/face-mask.png",
+  "metadataSrc": "./assets/templates/children/child-girl-chechen-mosque-garden/metadata.json",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.275,
+    "width": 0.175,
+    "height": 0.155,
+    "feather": 0.018
+  },
+  "canvas": {
+    "format": "A4",
+    "orientation": "portrait",
+    "width": 2480,
+    "height": 3508,
+    "previewWidth": 600,
+    "previewHeight": 849,
+    "dpi": 300,
+    "masterFile": "master.jpg"
+  },
+  "printFormat": "A4",
+  "enabled": true,
+  "version": 3,
+  "aiAdapter": "face-swap-v1",
+  "sourceGenerationSize": {
+    "width": 1054,
+    "height": 1492
+  },
+  "masterPreparation": "lanczos-upscale-and-a4-crop"
+}

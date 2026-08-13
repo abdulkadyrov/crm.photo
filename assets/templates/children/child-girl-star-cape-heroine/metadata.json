@@ -1,0 +1,35 @@
+{
+  "id": "child-girl-star-cape-heroine",
+  "title": "Звёздная героиня",
+  "gender": "girl",
+  "masterSrc": "./assets/templates/children/child-girl-star-cape-heroine/master.jpg",
+  "previewSrc": "./assets/templates/children/child-girl-star-cape-heroine/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-girl-star-cape-heroine/face-mask.png",
+  "metadataSrc": "./assets/templates/children/child-girl-star-cape-heroine/metadata.json",
+  "faceGuide": {
+    "centerX": 0.36,
+    "centerY": 0.27,
+    "width": 0.17,
+    "height": 0.15,
+    "feather": 0.018
+  },
+  "canvas": {
+    "format": "A4",
+    "orientation": "portrait",
+    "width": 2480,
+    "height": 3508,
+    "previewWidth": 600,
+    "previewHeight": 849,
+    "dpi": 300,
+    "masterFile": "master.jpg"
+  },
+  "printFormat": "A4",
+  "enabled": true,
+  "version": 3,
+  "aiAdapter": "face-swap-v1",
+  "sourceGenerationSize": {
+    "width": 1053,
+    "height": 1494
+  },
+  "masterPreparation": "lanczos-upscale-and-a4-crop"
+}
