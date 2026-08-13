@@ -2813,9 +2813,20 @@ button.mini-catalog-option {
 .student-statuses {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
   margin-top: 8px;
+  overflow: hidden;
+}
+
+.student-statuses > .status-pill,
+.student-statuses > .price-pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .price-pill {
@@ -2977,6 +2988,32 @@ button.mini-catalog-option {
 
 .service-picker-panel {
   width: min(1120px, calc(100vw - 36px));
+  padding-top: 0;
+}
+
+.service-picker-sticky-header {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  margin: 0 -16px;
+  padding: 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.service-picker-close {
+  flex: 0 0 auto;
+  width: 52px;
+  min-width: 52px;
+  height: 52px;
+  min-height: 52px;
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.service-picker-close:disabled {
+  opacity: 0.65;
 }
 
 .service-picker-grid {
@@ -2987,6 +3024,7 @@ button.mini-catalog-option {
 }
 
 .service-picker-card {
+  position: relative;
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--line);
@@ -2998,19 +3036,74 @@ button.mini-catalog-option {
 }
 
 .service-picker-card.selected {
-  border-color: color-mix(in srgb, var(--primary) 72%, var(--line));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 24%, transparent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 42%, transparent);
 }
 
-.service-picker-select-state {
-  display: inline-flex;
-  width: fit-content;
-  padding: 6px 10px;
+.service-picker-card-preview {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+}
+
+.service-picker-card-preview::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 44%;
+  background: linear-gradient(180deg, transparent, rgb(3 8 20 / 88%));
+  content: "";
+  pointer-events: none;
+}
+
+.service-picker-card-caption {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  color: #fff;
+}
+
+.service-picker-card-caption h3 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(0.86rem, 2vw, 1.08rem);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.service-picker-card-caption strong {
+  color: #fff;
+  font-size: clamp(0.76rem, 1.8vw, 0.94rem);
+  line-height: 1.15;
+  opacity: 0.9;
+}
+
+.service-picker-selected-mark {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #fff;
   border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-size: 0.78rem;
-  font-weight: 900;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 7px 20px rgb(0 0 0 / 36%);
+}
+
+.service-picker-selected-mark svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 3;
 }
 
 .student-action-group {
@@ -4024,15 +4117,28 @@ button.mini-catalog-option {
   .student-statuses {
     display: flex;
     align-items: center;
+    flex-wrap: nowrap;
+    gap: clamp(2px, 1vw, 5px);
   }
 
-  .student-statuses .status-pill {
-    width: fit-content;
-    max-width: 100%;
-    height: 28px;
-    min-height: 28px;
-    padding: 0 10px;
-    font-size: 0.78rem;
+  .student-statuses .status-pill,
+  .student-statuses .price-pill {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    height: 26px;
+    min-height: 26px;
+    padding: 0 clamp(3px, 1.25vw, 8px);
+    gap: clamp(2px, 0.8vw, 5px);
+    font-size: clamp(0.55rem, 2.35vw, 0.72rem);
+    line-height: 1;
+    justify-content: center;
+  }
+
+  .student-statuses .status-dot {
+    width: clamp(5px, 1.8vw, 8px);
+    height: clamp(5px, 1.8vw, 8px);
+    flex: 0 0 auto;
   }
 
   .card-header {
@@ -4167,6 +4273,19 @@ button.mini-catalog-option {
     max-height: calc(100dvh - 16px);
     padding: 12px;
     border-radius: 18px;
+  }
+
+  .service-picker-sticky-header {
+    margin: 0 -12px;
+    padding: 12px;
+  }
+
+  .service-picker-close {
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    border-radius: 14px;
   }
 }
 

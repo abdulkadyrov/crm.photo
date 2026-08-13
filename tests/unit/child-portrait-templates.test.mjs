@@ -134,3 +134,23 @@ test("child portrait templates map into the existing service catalog and montage
     assert.match(service.prompt, /Сохрани лицо/);
   });
 });
+
+test("all 40 A4 portraits are active assignable services", () => {
+  const a4Services = CHILD_PORTRAIT_TEMPLATES
+    .filter((item) => item.canvas.format === "A4")
+    .map(childPortraitCatalogRecord);
+
+  assert.equal(a4Services.length, 40);
+  assert.equal(a4Services.filter((item) => item.gender === "boys").length, 20);
+  assert.equal(a4Services.filter((item) => item.gender === "girls").length, 20);
+  for (const service of a4Services) {
+    assert.equal(service.enabled, true);
+    assert.equal(service.childTemplate, true);
+    assert.equal(service.systemTemplate, true);
+    assert.equal(service.printFormat, "A4");
+    assert.equal(service.angles.length, 1);
+    assert.ok(service.previewSrc);
+    assert.ok(service.masterSrc);
+    assert.ok(service.faceMaskSrc);
+  }
+});

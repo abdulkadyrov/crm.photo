@@ -185,6 +185,7 @@ const SERVICE_SORT_MODES = {
   category: "По категориям"
 };
 const SERVICE_UNCATEGORIZED = "__uncategorized";
+const SERVICE_A4_TEMPLATES = "__a4_templates";
 const SERVICE_DEFAULT_CATEGORIES = ["Мультики", "Военные", "Спортивные", "Сказочные", "Профессии", "Праздничные"];
 const CLASS_COLOR_OPTIONS = [
   { id: "blue", label: "Синий", accent: "#2563eb", gradient: "linear-gradient(135deg, #2563eb, #818cf8)" },
@@ -2274,23 +2275,15 @@ function servicePickerCatalogCard(item, selected = false) {
   const preview = previewUrl
     ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
     : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
-  const category = serviceCategory(item);
   return `
     <button class="service-picker-card ${selected ? "selected" : ""}" data-service-picker-option="${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
-      <div class="catalog-card-preview ${item.childTemplate ? "portrait" : ""}">${preview}</div>
-      <div class="catalog-card-body">
-        <div class="catalog-card-title-row">
+      <div class="catalog-card-preview service-picker-card-preview ${item.childTemplate ? "portrait" : ""}">
+        ${preview}
+        ${selected ? '<span class="service-picker-selected-mark" aria-hidden="true"><span data-icon="check"></span></span>' : ""}
+        <div class="service-picker-card-caption">
           <h3>${escapeHtml(serviceName(item))}</h3>
           <strong>${escapeHtml(formatPrice(item.price))}</strong>
         </div>
-        <p>${escapeHtml(serviceShortDescription(item) || "Описание скоро появится.")}</p>
-        <div class="catalog-card-badges">
-          <span class="catalog-card-badge">${escapeHtml(serviceGenderLabel(item))}</span>
-          ${category ? `<span class="catalog-card-badge">${escapeHtml(category)}</span>` : ""}
-          ${childTemplateBadges(item)}
-          ${servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : ""}
-        </div>
-        ${item.childTemplate ? `<span class="service-picker-select-state">${selected ? "Выбрано" : "Выбрать"}</span>` : ""}
       </div>
     </button>
   `;
@@ -2299,8 +2292,31 @@ function servicePickerCatalogCard(item, selected = false) {
 function showServicePickerPanel({ selectedIds = [], onApply }) {
   document.querySelector(".service-picker-backdrop")?.remove();
   const selected = new Set(normalizeCatalogIds(selectedIds));
+  let savingSelection = false;
   const panel = document.createElement("div");
   panel.className = "catalog-modal-backdrop service-picker-backdrop";
+  const saveAndClose = async () => {
+    if (savingSelection) return;
+    const ids = Array.from(selected);
+    if (!ids.length) return notify("Выберите хотя бы одну услугу.");
+    savingSelection = true;
+    panel.querySelectorAll("[data-save-service-picker]").forEach((node) => {
+      node.disabled = true;
+      node.setAttribute("aria-busy", "true");
+    });
+    try {
+      await onApply(ids);
+      panel.remove();
+    } catch (error) {
+      console.error("Не удалось сохранить услуги ученика", error);
+      notify("Не удалось сохранить выбор. Попробуйте ещё раз.");
+      savingSelection = false;
+      panel.querySelectorAll("[data-save-service-picker]").forEach((node) => {
+        node.disabled = false;
+        node.removeAttribute("aria-busy");
+      });
+    }
+  };
   const renderCards = () => {
     const available = manualOrderedServices(state.data.catalog.filter((item) => serviceIsCatalogVisible(item) || selected.has(item.id)));
     panel.querySelector("[data-service-picker-grid]").innerHTML = available.map((item) => servicePickerCatalogCard(item, selected.has(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>';
@@ -2315,31 +2331,17 @@ function showServicePickerPanel({ selectedIds = [], onApply }) {
   };
   panel.innerHTML = `
     <section class="catalog-modal service-picker-panel" role="dialog" aria-modal="true" aria-label="Выбор услуг">
-      <div class="card-header">
+      <div class="card-header service-picker-sticky-header">
         <div>
           <h2 class="card-title">Выбрать из каталога</h2>
           <p class="muted" data-service-picker-count>${selected.size} выбрано</p>
         </div>
-        <button class="icon-button" data-close-service-picker type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+        <button class="icon-button service-picker-close" data-save-service-picker type="button" aria-label="Сохранить выбор и закрыть" title="Сохранить выбор и закрыть"><span data-icon="close"></span></button>
       </div>
       <div class="service-picker-grid" data-service-picker-grid></div>
-      <div class="toolbar">
-        <button class="secondary-button" data-close-service-picker type="button">Отмена</button>
-        <button class="primary-button" data-apply-service-picker type="button">Готово</button>
-      </div>
     </section>
   `;
-  const close = () => panel.remove();
-  panel.querySelectorAll("[data-close-service-picker]").forEach((node) => node.addEventListener("click", close));
-  panel.addEventListener("click", (event) => {
-    if (event.target === panel) close();
-  });
-  panel.querySelector("[data-apply-service-picker]")?.addEventListener("click", async () => {
-    const ids = Array.from(selected);
-    if (!ids.length) return notify("Выберите хотя бы одну услугу.");
-    await onApply(ids);
-    close();
-  });
+  panel.querySelectorAll("[data-save-service-picker]").forEach((node) => node.addEventListener("click", saveAndClose));
   document.body.append(panel);
   renderCards();
   injectIcons();
@@ -2506,6 +2508,7 @@ function renderServices() {
   pruneSelectedServices();
   const catalog = servicesForAdminView();
   const categories = serviceCategoryOptions();
+  const a4Services = state.data.catalog.filter((item) => item.childTemplate && item.printFormat === "A4" && item.enabled !== false);
   const selectedCount = state.selectedServiceIds.size;
   const canMove = state.serviceSort === "manual" && state.serviceCategoryFilter === "all";
   view.innerHTML = `
@@ -2525,11 +2528,21 @@ function renderServices() {
       </select></label>
       <label class="field-label compact-field"><span>Категория</span><select class="select" data-service-category-filter>
         <option value="all" ${state.serviceCategoryFilter === "all" ? "selected" : ""}>Все категории</option>
+        <option value="${SERVICE_A4_TEMPLATES}" ${state.serviceCategoryFilter === SERVICE_A4_TEMPLATES ? "selected" : ""}>Новые A4 (${a4Services.length})</option>
         <option value="${SERVICE_UNCATEGORIZED}" ${state.serviceCategoryFilter === SERVICE_UNCATEGORIZED ? "selected" : ""}>Без категории</option>
         ${categories.map((category) => `<option value="${escapeAttr(category)}" ${state.serviceCategoryFilter === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
       </select></label>
       <span class="muted">${catalog.length} из ${state.data.catalog.length} услуг</span>
     </section>
+    ${a4Services.length ? `
+      <section class="panel service-a4-summary">
+        <div>
+          <h3 class="card-title">Добавлено A4-услуг: ${a4Services.length}</h3>
+          <p class="muted">20 для мальчиков и 20 для девочек. Их можно назначать ученикам и открывать в монтаже.</p>
+        </div>
+        <button class="secondary-button compact" data-show-a4-services type="button">Показать 40 A4</button>
+      </section>
+    ` : ""}
     ${selectedCount ? serviceBulkPanel(selectedCount) : ""}
     <section class="compact-stack">
       ${catalog.map((item, index) => catalogCard(item, index, catalog.length, canMove)).join("") || empty("Добавьте первую услугу для съемки")}
@@ -2606,6 +2619,7 @@ function catalogCard(item, index = 0, total = 0, canMove = false) {
           <div class="service-card-meta">
             <span>${escapeHtml(serviceGenderLabel(item))}</span>
             <span>${escapeHtml(category || "Без категории")}</span>
+            ${item.printFormat === "A4" ? "<span>A4 · 300 dpi</span>" : ""}
             ${popular ? "<span>Популярное</span>" : ""}
             <span>${(item.angles || []).length} ракурсов</span>
             ${videoBadge}
@@ -2660,6 +2674,7 @@ function renderServiceDetail() {
             <p><strong>Цена:</strong> ${escapeHtml(formatPrice(item.price))}</p>
             <p><strong>Для кого:</strong> ${escapeHtml(serviceGenderLabel(item))}</p>
             <p><strong>Категория:</strong> ${escapeHtml(serviceCategoryLabel(item))}</p>
+            ${item.printFormat === "A4" ? `<p><strong>Формат:</strong> A4 · ${item.canvas?.width || 2480}×${item.canvas?.height || 3508} · ${item.canvas?.dpi || 300} dpi</p>` : ""}
             ${isServicePopular(item) ? '<p><strong>Популярное:</strong> показывается выше в каталоге</p>' : ""}
             ${serviceShortDescription(item) ? `<p><strong>Короткое описание:</strong> ${escapeHtml(serviceShortDescription(item))}</p>` : ""}
             ${serviceDescription(item) ? `<p><strong>Полное описание:</strong> ${escapeHtml(serviceDescription(item))}</p>` : ""}
@@ -4071,6 +4086,11 @@ function bindViewActions() {
   });
   view.querySelector("[data-service-category-filter]")?.addEventListener("change", (event) => {
     state.serviceCategoryFilter = event.currentTarget.value;
+    renderServices();
+  });
+  view.querySelector("[data-show-a4-services]")?.addEventListener("click", () => {
+    state.serviceCategoryFilter = SERVICE_A4_TEMPLATES;
+    state.serviceSort = "manual";
     renderServices();
   });
   view.querySelectorAll("[data-select-service]").forEach((node) => node.addEventListener("change", () => toggleServiceSelection(node.dataset.selectService, node.checked)));
@@ -11170,6 +11190,7 @@ async function deleteServiceCategory(category) {
 
 function serviceMatchesCategoryFilter(item) {
   if (state.serviceCategoryFilter === "all") return true;
+  if (state.serviceCategoryFilter === SERVICE_A4_TEMPLATES) return item?.childTemplate && item?.printFormat === "A4" && item?.enabled !== false;
   if (state.serviceCategoryFilter === SERVICE_UNCATEGORIZED) return !serviceCategory(item);
   return serviceCategory(item) === state.serviceCategoryFilter;
 }
