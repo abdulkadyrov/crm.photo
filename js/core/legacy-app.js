@@ -8264,11 +8264,18 @@ async function buildPublicCatalogExportFiles() {
   const files = [];
   const services = [];
   const watermark = catalogWatermarkSettings();
+  const exportedIds = new Set();
   for (const item of publicOrderedServices(state.data.catalog)) {
     const serviceId = item.id || uid("service");
+    if (exportedIds.has(serviceId)) continue;
+    exportedIds.add(serviceId);
     const fileBase = safePath(serviceId);
-    const imageUrl = servicePreviewImageDataUrl(item);
-    const videoUrl = servicePreviewVideoDataUrl(item);
+    const angleImageSource = (item.angles || []).map((angle) => angle.refDataUrl).find(Boolean) || "";
+    const angleVideoSource = (item.angles || []).map((angle) => angle.videoRefDataUrl).find(Boolean) || "";
+    const imageSource = servicePreviewImageDataUrl(item) || item.previewSrc || item.previewImage || angleImageSource;
+    const videoSource = servicePreviewVideoDataUrl(item) || item.previewVideoSrc || item.previewVideo || angleVideoSource;
+    const imageUrl = await catalogSourceToDataUrl(imageSource, "photo");
+    const videoUrl = await catalogSourceToDataUrl(videoSource, "video");
     let previewImage = "";
     let previewVideo = "";
     const imageExportUrl = await applyCatalogWatermark(imageUrl, watermark);
@@ -8296,7 +8303,7 @@ async function buildPublicCatalogExportFiles() {
     });
   }
   const catalogData = {
-    title: "Каталог услуг",
+    title: "Каталог услуг Vakha Studio",
     exportedAt: now(),
     watermark: publicCatalogWatermarkData(watermark),
     services
@@ -8310,9 +8317,26 @@ async function buildPublicCatalogExportFiles() {
   ];
 }
 
+async function catalogSourceToDataUrl(source, fallbackType = "photo") {
+  const value = String(source || "").trim();
+  if (!value) return "";
+  if (dataUrlToBytes(value)) return value;
+  try {
+    const response = await fetch(new URL(value, document.baseURI).href, { cache: "no-store" });
+    if (!response.ok) return "";
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length) return "";
+    const contentType = response.headers.get("content-type")?.split(";")[0].trim()
+      || mimeForPath(value, fallbackType);
+    return bytesToDataUrl(contentType, bytes);
+  } catch (error) {
+    console.warn("Не удалось добавить файл в публичный каталог", value, error);
+    return "";
+  }
+}
+
 function serviceExportPrice(item) {
-  const amount = parseMoney(item?.price);
-  return amount || undefined;
+  return Math.max(0, parseMoney(item?.price));
 }
 
 function publicCatalogWatermarkData(watermark) {
