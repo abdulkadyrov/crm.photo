@@ -430,6 +430,110 @@ p {
   color: var(--text);
 }
 
+.prompt-variant-list {
+  display: grid;
+  gap: 9px;
+}
+
+.prompt-variant-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-strong);
+}
+
+.prompt-variant-card summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.prompt-variant-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.prompt-variant-card summary span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 13%, var(--card));
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.prompt-variant-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.kindergarten-children-panel {
+  gap: 18px;
+}
+
+.kindergarten-child-group {
+  display: grid;
+  gap: 10px;
+}
+
+.kindergarten-child-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+
+.kindergarten-child-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card-strong);
+}
+
+.kindergarten-child-card > button {
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: zoom-in;
+}
+
+.kindergarten-child-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+}
+
+.kindergarten-child-card > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kindergarten-child-card > div span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.kindergarten-child-card > a {
+  justify-content: center;
+  text-decoration: none;
+}
+
 .service-editor-panel {
   width: min(560px, 100%);
   max-height: min(760px, calc(100dvh - 36px));

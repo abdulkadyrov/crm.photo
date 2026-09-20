@@ -12,6 +12,10 @@ import {
   CHILD_PORTRAIT_TEMPLATES,
   childPortraitCatalogRecord
 } from "../data/child-portrait-templates.js";
+import {
+  KINDERGARTEN_AI_VIDEO_SERVICES,
+  KINDERGARTEN_DEMO_CHILDREN
+} from "../data/kindergarten-ai-video-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
 import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
@@ -723,6 +727,26 @@ async function seedCatalogIfNeeded() {
       price: existing.price ?? seeded.price,
       popular: existing.popular ?? seeded.popular,
       orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : seeded.orderIndex
+    });
+  }
+  for (const [index, seeded] of KINDERGARTEN_AI_VIDEO_SERVICES.entries()) {
+    const existing = existingById.get(seeded.id);
+    if (!existing) {
+      await put("catalog", { ...seeded, orderIndex: 2000 + index });
+      continue;
+    }
+    const needsSystemTemplateRepair = existing.systemTemplateVersion !== seeded.systemTemplateVersion
+      || !existing.kindergartenAiVideo
+      || !existing.previewSrc
+      || !(existing.angles || []).length
+      || !existing.prompt;
+    if (!existing.systemTemplate || !needsSystemTemplateRepair) continue;
+    await put("catalog", {
+      ...existing,
+      ...seeded,
+      price: existing.price ?? seeded.price,
+      popular: existing.popular ?? seeded.popular,
+      orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : 2000 + index
     });
   }
 }
@@ -2534,7 +2558,7 @@ function renderServices() {
       </select></label>
       <span class="muted">${catalog.length} из ${state.data.catalog.length} услуг</span>
     </section>
-    ${a4Services.length ? `
+    ${a4Services.length && ["all", SERVICE_A4_TEMPLATES].includes(state.serviceCategoryFilter) ? `
       <section class="panel service-a4-summary">
         <div>
           <h3 class="card-title">Добавлено A4-услуг: ${a4Services.length}</h3>
@@ -2678,6 +2702,7 @@ function renderServiceDetail() {
             ${isServicePopular(item) ? '<p><strong>Популярное:</strong> показывается выше в каталоге</p>' : ""}
             ${serviceShortDescription(item) ? `<p><strong>Короткое описание:</strong> ${escapeHtml(serviceShortDescription(item))}</p>` : ""}
             ${serviceDescription(item) ? `<p><strong>Полное описание:</strong> ${escapeHtml(serviceDescription(item))}</p>` : ""}
+            ${item.kindergartenAiVideo ? `<p><strong>Модель:</strong> ${escapeHtml(item.videoModel || "Seedance 2.0")} · ${escapeHtml(String(item.durationSeconds || 15))} секунд · 9:16</p>` : ""}
             ${videoUrl ? '<p><strong>Превью видео:</strong> добавлено</p>' : ""}
             <button class="secondary-button compact" data-edit-catalog="${item.id}" type="button">Редактировать услугу</button>
           </div>
@@ -2696,6 +2721,8 @@ function renderServiceDetail() {
           ${prompt ? `<button class="secondary-button" data-copy-service-prompt="${item.id}" type="button">Скопировать</button><button class="secondary-button" data-edit-catalog="${item.id}" type="button">Изменить</button>` : `<button class="secondary-button" data-edit-catalog="${item.id}" type="button">Добавить prompt</button>`}
         </div>
       </article>
+      ${servicePromptVariantsPanel(item)}
+      ${kindergartenDemoChildrenPanel(item)}
       <section class="toolbar">
         <h2 class="card-title">Ракурсы</h2>
         <button class="primary-button" data-add-angle="${item.id}" type="button"><span data-icon="plus"></span>Добавить ракурс</button>
@@ -2706,6 +2733,68 @@ function renderServiceDetail() {
     </section>
   `;
   bindViewActions();
+}
+
+function servicePromptVariantsPanel(item) {
+  const variants = Array.isArray(item?.promptVariants) ? item.promptVariants : [];
+  if (!variants.length) return "";
+  return `
+    <article class="panel grid prompt-variants-panel">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">20 разных интервью</h2>
+          <p class="muted">Откройте сценарий и скопируйте полный 15-секундный промпт для Seedance 2.0.</p>
+        </div>
+        <span class="status-pill in-progress">${variants.length} сценариев</span>
+      </div>
+      <div class="prompt-variant-list">
+        ${variants.map((variant, index) => `
+          <details class="prompt-variant-card">
+            <summary><span>${index + 1}</span><strong>${escapeHtml(variant.title || `Сценарий ${index + 1}`)}</strong></summary>
+            <div class="prompt-variant-body">
+              <div class="prompt-box">${escapeHtml(variant.prompt || "")}</div>
+              <button class="secondary-button" data-copy-service-prompt-variant="${item.id}:${index}" type="button">Скопировать сценарий</button>
+            </div>
+          </details>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function kindergartenDemoChildrenPanel(item) {
+  if (!item?.kindergartenAiVideo) return "";
+  const boys = KINDERGARTEN_DEMO_CHILDREN.filter((child) => child.gender === "boy");
+  const girls = KINDERGARTEN_DEMO_CHILDREN.filter((child) => child.gender === "girl");
+  const group = (title, children) => `
+    <section class="kindergarten-child-group">
+      <div class="catalog-section-heading"><h3>${title}</h3><span>${children.length}</span></div>
+      <div class="kindergarten-child-gallery">
+        ${children.map((child) => `
+          <article class="kindergarten-child-card">
+            <button data-preview-url="${escapeAttr(child.src)}" data-preview-title="${escapeAttr(`${child.title} · ${child.age} ${pluralizeRu(child.age, "год", "года", "лет")}`)}" type="button">
+              <img src="${child.src}" alt="${escapeAttr(`${child.title}, ${child.age} ${pluralizeRu(child.age, "год", "года", "лет")}`)}" loading="lazy" />
+            </button>
+            <div><strong>${escapeHtml(child.title)}</strong><span>${escapeHtml(String(child.age))} ${pluralizeRu(child.age, "год", "года", "лет")}</span></div>
+            <a class="secondary-button compact" href="${child.src}" download="${escapeAttr(`${child.id}.jpg`)}">Скачать фото</a>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+  return `
+    <article class="panel grid kindergarten-children-panel">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Фото детей 3–6 лет</h2>
+          <p class="muted">20 вымышленных детей для подготовки и проверки роликов: 10 мальчиков и 10 девочек, по одному ребёнку на фоне детского сада.</p>
+        </div>
+        <span class="status-pill paid">20 фото</span>
+      </div>
+      ${group("Мальчики", boys)}
+      ${group("Девочки", girls)}
+    </article>
+  `;
 }
 
 function catalogAngleRow(item, angle) {
@@ -4139,6 +4228,13 @@ function bindViewActions() {
     const copied = await copyText(servicePrompt(catalogItemById(node.dataset.copyServicePrompt)));
     notify(copied ? "Промпт скопирован" : "Не удалось скопировать промпт.");
   }));
+  view.querySelectorAll("[data-copy-service-prompt-variant]").forEach((node) => node.addEventListener("click", async () => {
+    const [itemId, indexValue] = node.dataset.copyServicePromptVariant.split(":");
+    const item = catalogItemById(itemId);
+    const promptText = Array.isArray(item?.promptVariants) ? item.promptVariants[Number(indexValue)]?.prompt : "";
+    const copied = await copyText(promptText || "");
+    notify(copied ? "Сценарий интервью скопирован" : "Не удалось скопировать сценарий.");
+  }));
   view.querySelectorAll("[data-upload-reference]").forEach((node) => node.addEventListener("click", () => {
     const [itemId, angleId] = node.dataset.uploadReference.split(":");
     uploadReference(itemId, angleId);
@@ -4148,6 +4244,13 @@ function bindViewActions() {
     const item = catalogItemById(node.dataset.previewServiceDetail);
     const url = servicePreviewImageDataUrl(item);
     if (url) showInlineMediaPreview({ url, title: serviceName(item) });
+  }));
+  view.querySelectorAll("[data-preview-url]").forEach((node) => node.addEventListener("click", () => {
+    showInlineMediaPreview({
+      url: node.dataset.previewUrl,
+      title: node.dataset.previewTitle || "Просмотр",
+      isVideo: node.dataset.previewVideo === "true"
+    });
   }));
   view.querySelectorAll("[data-generate-references]").forEach((node) => node.addEventListener("click", () => generateReferenceSet(node.dataset.generateReferences)));
   view.querySelectorAll("[data-apply-template]").forEach((node) => node.addEventListener("click", () => applyCatalogAsTemplate(node.dataset.applyTemplate)));
@@ -8997,12 +9100,19 @@ function transferTasksFromOrders(orders) {
 async function collectTransferMediaFiles(data) {
   const files = [];
   const taken = new Set();
-  (data.services || []).forEach((service) => {
-    addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview`, servicePreviewImageDataUrl(service));
-    addDataUrlMediaFile(files, taken, `media/services/${service.id}/preview_video`, servicePreviewVideoDataUrl(service));
-    (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}`, angle.refDataUrl));
-    (service.angles || []).forEach((angle) => addDataUrlMediaFile(files, taken, `media/services/${service.id}/${angle.id || uid("angle")}_video`, angle.videoRefDataUrl));
-  });
+  for (const service of data.services || []) {
+    const serviceId = safePath(service.id || uid("service"));
+    await addTransferAsset(files, taken, `media/services/${serviceId}/preview`, servicePreviewImageDataUrl(service));
+    await addTransferAsset(files, taken, `media/services/${serviceId}/preview_video`, servicePreviewVideoDataUrl(service));
+    for (const field of ["masterSrc", "previewSrc", "faceMaskSrc", "metadataSrc"]) {
+      await addTransferAsset(files, taken, `media/services/${serviceId}/asset_${field}`, service?.[field]);
+    }
+    for (const angle of service.angles || []) {
+      const angleId = safePath(angle.id || uid("angle"));
+      await addTransferAsset(files, taken, `media/services/${serviceId}/${angleId}`, angle.refDataUrl);
+      await addTransferAsset(files, taken, `media/services/${serviceId}/${angleId}_video`, angle.videoRefDataUrl);
+    }
+  }
   for (const item of data.media || []) {
     if (!item.blob) continue;
     const path = `media/student_files/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
@@ -9043,6 +9153,49 @@ function addDataUrlMediaFile(files, taken, basePath, dataUrl) {
   files.push({ path, data: parsed.bytes });
 }
 
+async function addTransferAsset(files, taken, basePath, source) {
+  const value = String(source || "").trim();
+  if (!value) return;
+  const parsed = dataUrlToBytes(value);
+  if (parsed) {
+    addDataUrlMediaFile(files, taken, basePath, value);
+    return;
+  }
+  try {
+    const response = await fetch(new URL(value, document.baseURI).href, { cache: "no-store" });
+    if (!response.ok) return;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length) return;
+    const extension = extensionForTransferAsset(value, response.headers.get("content-type"));
+    let path = `${basePath}.${extension}`;
+    let index = 2;
+    while (taken.has(path)) {
+      path = `${basePath}_${index}.${extension}`;
+      index += 1;
+    }
+    taken.add(path);
+    files.push({ path, data: bytes });
+  } catch (error) {
+    console.warn("Не удалось добавить медиа в экспорт услуг", value, error);
+  }
+}
+
+function extensionForTransferAsset(source, contentType = "") {
+  const mime = String(contentType || "").split(";")[0].trim().toLowerCase();
+  if (mime === "application/json") return "json";
+  if (mime === "video/mp4") return "mp4";
+  if (mime === "video/quicktime") return "mov";
+  if (mime === "video/webm") return "webm";
+  if (mime === "image/jpeg") return "jpg";
+  if (mime === "image/png") return "png";
+  if (mime === "image/webp") return "webp";
+  const fromMime = dataUrlExtension(`data:${mime};base64,`);
+  if (mime && fromMime !== "jpg") return fromMime;
+  const pathname = String(source || "").split(/[?#]/)[0];
+  const match = pathname.match(/\.([a-z0-9]+)$/i);
+  return match?.[1]?.toLowerCase() || fromMime || "bin";
+}
+
 function stripTransferMediaDataUrls(data) {
   const next = clonePlainRecord(data);
   (next.services || []).forEach((service) => {
@@ -9070,15 +9223,23 @@ function stripTransferMediaDataUrls(data) {
 
 function hydrateTransferMediaData(data, entries) {
   (data.services || []).forEach((service) => {
-    const imageEntry = findTransferMediaEntry(entries, `media/services/${service.id}/preview`);
-    const videoEntry = findTransferMediaEntry(entries, `media/services/${service.id}/preview_video`);
+    const serviceId = safePath(service.id || "service");
+    const imageEntry = findTransferMediaEntry(entries, `media/services/${serviceId}/preview`);
+    const videoEntry = findTransferMediaEntry(entries, `media/services/${serviceId}/preview_video`);
     if (imageEntry) service.previewDataUrl = zipEntryToDataUrl(imageEntry);
     if (videoEntry) service.previewVideoDataUrl = zipEntryToDataUrl(videoEntry);
+    for (const field of ["masterSrc", "previewSrc", "faceMaskSrc", "metadataSrc"]) {
+      const assetEntry = findTransferMediaEntry(entries, `media/services/${serviceId}/asset_${field}`);
+      if (!assetEntry) continue;
+      const assetUrl = zipEntryToDataUrl(assetEntry);
+      service[field] = assetUrl;
+      if (field === "previewSrc" && !service.previewDataUrl) service.previewDataUrl = assetUrl;
+    }
     (service.angles || []).forEach((angle) => {
       const angleId = angle.id || "";
       if (!angleId) return;
-      const refEntry = findTransferMediaEntry(entries, `media/services/${service.id}/${angleId}`);
-      const videoRefEntry = findTransferMediaEntry(entries, `media/services/${service.id}/${angleId}_video`);
+      const refEntry = findTransferMediaEntry(entries, `media/services/${serviceId}/${safePath(angleId)}`);
+      const videoRefEntry = findTransferMediaEntry(entries, `media/services/${serviceId}/${safePath(angleId)}_video`);
       if (refEntry) angle.refDataUrl = zipEntryToDataUrl(refEntry);
       if (videoRefEntry) angle.videoRefDataUrl = zipEntryToDataUrl(videoRefEntry);
     });
@@ -10323,6 +10484,8 @@ function zipEntryToFile(entry, fallbackType = "photo") {
 
 function mimeForPath(path, fallbackType = "photo") {
   const ext = String(path || "").split(".").pop()?.toLowerCase();
+  if (ext === "json") return "application/json";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
   if (ext === "png") return "image/png";
   if (ext === "webp") return "image/webp";
   if (ext === "gif") return "image/gif";

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v58";
+const CACHE_VERSION = "v59";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -34,6 +34,31 @@ const CHILD_TEMPLATE_PREVIEWS = [
   "child-girl-bear-forest-friend", "child-girl-fashion-dream-friend",
   "child-girl-butterfly-fairy-mentor"
 ].map((id) => `./assets/templates/children/${id}/preview.webp`);
+const KINDERGARTEN_AI_VIDEO_ASSETS = [
+  "./assets/kindergarten-ai-video/children/boys/boy-01-age-3.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-02-age-3.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-03-age-4.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-04-age-4.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-05-age-5.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-06-age-5.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-07-age-6.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-08-age-6.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-09-age-3.jpg",
+  "./assets/kindergarten-ai-video/children/boys/boy-10-age-6.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-01-age-3.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-02-age-3.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-03-age-4.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-04-age-4.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-05-age-5.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-06-age-5.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-07-age-6.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-08-age-6.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-09-age-3.jpg",
+  "./assets/kindergarten-ai-video/children/girls/girl-10-age-5.jpg",
+  "./assets/kindergarten-ai-video/previews/fairytale-princess.jpg",
+  "./assets/kindergarten-ai-video/previews/original-superhero.jpg",
+  "./assets/kindergarten-ai-video/previews/dragon-flight.jpg"
+];
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -51,6 +76,7 @@ const APP_SHELL = [
   "./js/data/db.js",
   "./js/data/child-portrait-templates.js",
   "./js/data/child-portrait-a4-scenes.js",
+  "./js/data/kindergarten-ai-video-services.js",
   "./js/data/migrations.js",
   "./js/data/repositories/base-repository.js",
   "./js/data/repositories/projects-repository.js",
@@ -125,7 +151,8 @@ const APP_SHELL = [
   "./icons/vakha-studio-logo.png",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",
-  ...CHILD_TEMPLATE_PREVIEWS
+  ...CHILD_TEMPLATE_PREVIEWS,
+  ...KINDERGARTEN_AI_VIDEO_ASSETS
 ];
 
 self.addEventListener("install", (event) => {
