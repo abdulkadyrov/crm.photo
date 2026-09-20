@@ -2032,7 +2032,7 @@ function renderCatalog() {
           <h2 class="card-title">Каталог услуг</h2>
           <p class="muted">Покажите детям и родителям доступные варианты</p>
         </div>
-        <button class="primary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать каталог</button>
+        <button class="primary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать ZIP-каталог</button>
       </article>
       <label class="search-box catalog-search">
         <span data-icon="search"></span>
@@ -3566,7 +3566,7 @@ function showSettingsDetail(section) {
             <button class="secondary-button" data-export-services type="button">Экспорт услуг</button>
             <button class="secondary-button" data-import-services type="button">Импорт услуг ZIP</button>
             <button class="secondary-button" data-import-services-folder type="button">Импорт папки услуг</button>
-            <button class="secondary-button" data-export-catalog type="button">Экспорт публичного каталога</button>
+            <button class="secondary-button" data-export-catalog type="button">Экспортировать ZIP-каталог</button>
           </div>
         </section>
         <section class="transfer-group">
@@ -8265,9 +8265,12 @@ async function buildPublicCatalogExportFiles() {
   const services = [];
   const watermark = catalogWatermarkSettings();
   const exportedIds = new Set();
-  for (const item of publicOrderedServices(state.data.catalog)) {
-    const serviceId = item.id || uid("service");
-    if (exportedIds.has(serviceId)) continue;
+  for (const [index, item] of publicOrderedServices(state.data.catalog).entries()) {
+    const rawServiceId = item.id || `service-${index + 1}`;
+    const baseServiceId = normalizeCatalogExportId(rawServiceId, index + 1);
+    let serviceId = baseServiceId;
+    let duplicateIndex = 2;
+    while (exportedIds.has(serviceId)) serviceId = `${baseServiceId}-${duplicateIndex++}`;
     exportedIds.add(serviceId);
     const fileBase = safePath(serviceId);
     const angleImageSource = (item.angles || []).map((angle) => angle.refDataUrl).find(Boolean) || "";
@@ -8298,23 +8301,29 @@ async function buildPublicCatalogExportFiles() {
       gender: serviceGender(item),
       category: serviceCategory(item),
       popular: isServicePopular(item),
-      previewImage,
-      previewVideo
+      ...(previewImage ? { previewImage } : {}),
+      ...(previewVideo ? { previewVideo } : {})
     });
   }
   const catalogData = {
-    title: "Каталог услуг Vakha Studio",
+    title: "Каталог услуг",
     exportedAt: now(),
-    watermark: publicCatalogWatermarkData(watermark),
     services
   };
   return [
-    { path: "index.html", data: new TextEncoder().encode(buildPublicCatalogHtml(catalogData)) },
     { path: "catalog.json", data: jsonBytes(catalogData) },
     { path: "assets/images/", data: new Uint8Array() },
     { path: "assets/videos/", data: new Uint8Array() },
     ...files
   ];
+}
+
+function normalizeCatalogExportId(value, fallbackIndex = 1) {
+  const normalized = String(value || "")
+    .replace(/[^A-Za-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return normalized || `service-${fallbackIndex}`;
 }
 
 async function catalogSourceToDataUrl(source, fallbackType = "photo") {
