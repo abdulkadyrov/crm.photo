@@ -2032,7 +2032,7 @@ function renderCatalog() {
           <h2 class="card-title">Каталог услуг</h2>
           <p class="muted">Покажите детям и родителям доступные варианты</p>
         </div>
-        <button class="primary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать ZIP-каталог</button>
+        <button class="primary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать ZIP-каталог для сайта</button>
       </article>
       <label class="search-box catalog-search">
         <span data-icon="search"></span>
@@ -3563,10 +3563,10 @@ function showSettingsDetail(section) {
         <section class="transfer-group">
           <h3 class="mini-heading">Услуги и каталог</h3>
           <div class="transfer-button-row">
-            <button class="secondary-button" data-export-services type="button">Экспорт услуг</button>
+            <button class="secondary-button" data-export-services type="button">Экспортировать полный архив услуг</button>
             <button class="secondary-button" data-import-services type="button">Импорт услуг ZIP</button>
             <button class="secondary-button" data-import-services-folder type="button">Импорт папки услуг</button>
-            <button class="secondary-button" data-export-catalog type="button">Экспортировать ZIP-каталог</button>
+            <button class="secondary-button" data-export-catalog type="button">Экспортировать ZIP-каталог для сайта</button>
           </div>
         </section>
         <section class="transfer-group">
@@ -8166,20 +8166,20 @@ async function importClass(file) {
 }
 
 async function exportServices() {
-  return withBusy("Экспорт услуг...", async () => {
+  return withBusy("Экспорт полного архива услуг...", async () => {
     const blob = createZip(await buildTransferExportFiles("services"));
     downloadBlob(blob, `SPF_services_${new Date().toISOString().slice(0, 10)}.zip`);
     await recordOperatorEvent("export", { targetType: "services" });
-    notify("Услуги экспортированы.");
+    notify("Полный архив услуг экспортирован.");
   });
 }
 
 async function exportPublicCatalog() {
-  return withBusy("Экспорт каталога...", async () => {
+  return withBusy("Сжатие и экспорт каталога...", async () => {
     const blob = createZip(await buildPublicCatalogExportFiles());
     downloadBlob(blob, "catalog_export.zip");
     await recordOperatorEvent("export", { targetType: "public_catalog" });
-    notify("Каталог экспортирован.");
+    notify("ZIP-каталог для сайта экспортирован.");
   });
 }
 
@@ -8329,7 +8329,9 @@ function normalizeCatalogExportId(value, fallbackIndex = 1) {
 async function catalogSourceToDataUrl(source, fallbackType = "photo") {
   const value = String(source || "").trim();
   if (!value) return "";
-  if (dataUrlToBytes(value)) return value;
+  if (dataUrlToBytes(value)) {
+    return fallbackType === "photo" ? optimizeCatalogImageDataUrl(value) : value;
+  }
   try {
     const response = await fetch(new URL(value, document.baseURI).href, { cache: "no-store" });
     if (!response.ok) return "";
@@ -8337,10 +8339,31 @@ async function catalogSourceToDataUrl(source, fallbackType = "photo") {
     if (!bytes.length) return "";
     const contentType = response.headers.get("content-type")?.split(";")[0].trim()
       || mimeForPath(value, fallbackType);
-    return bytesToDataUrl(contentType, bytes);
+    const dataUrl = bytesToDataUrl(contentType, bytes);
+    return fallbackType === "photo" ? optimizeCatalogImageDataUrl(dataUrl) : dataUrl;
   } catch (error) {
     console.warn("Не удалось добавить файл в публичный каталог", value, error);
     return "";
+  }
+}
+
+async function optimizeCatalogImageDataUrl(dataUrl, { maxSize = 1200, quality = 0.78 } = {}) {
+  if (!dataUrl || !String(dataUrl).startsWith("data:image/")) return dataUrl;
+  try {
+    const image = await loadImageFromUrl(dataUrl);
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (!width || !height) return dataUrl;
+    const scale = Math.min(1, maxSize / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext("2d", { alpha: false });
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch (error) {
+    console.warn("Не удалось сжать превью каталога", error);
+    return dataUrl;
   }
 }
 
