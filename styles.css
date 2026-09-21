@@ -663,6 +663,135 @@ p {
   object-fit: contain;
 }
 
+.service-parent-preview-help {
+  margin: -2px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.service-parent-result-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.catalog-modal-parent-result {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 14% 12%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 40%),
+    var(--card-strong);
+}
+
+.service-parent-result-header {
+  align-items: start;
+}
+
+.service-parent-result-stage {
+  position: relative;
+  display: grid;
+  min-height: 330px;
+  place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, #d7bc92, #b9804d 48%, #8c5634),
+    var(--card-strong);
+}
+
+.service-parent-paper {
+  position: relative;
+  z-index: 1;
+  width: min(68%, 360px);
+  aspect-ratio: 210 / 297;
+  margin: 0;
+  padding: 3px;
+  background: #fff;
+  box-shadow: 0 20px 26px rgba(46, 27, 13, 0.36);
+  transform: rotate(-3deg);
+}
+
+.service-parent-paper img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.service-parent-phone {
+  display: grid;
+  gap: 5px;
+  width: min(39%, 205px);
+  margin: 0;
+  color: #fff;
+  text-align: center;
+}
+
+.service-parent-phone.overlay {
+  position: absolute;
+  z-index: 2;
+  right: clamp(14px, 7%, 64px);
+  top: 18%;
+  transform: rotate(7deg);
+}
+
+.service-parent-phone.standalone {
+  position: relative;
+  z-index: 1;
+  width: min(62%, 265px);
+}
+
+.service-parent-phone-screen {
+  position: relative;
+  aspect-ratio: 9 / 18.6;
+  overflow: hidden;
+  padding: 8px 5px 7px;
+  border: 3px solid #111827;
+  border-radius: 28px;
+  background: #111827;
+  box-shadow: 0 19px 27px rgba(13, 15, 25, 0.5);
+}
+
+.service-parent-phone-screen::before {
+  position: absolute;
+  z-index: 1;
+  top: 6px;
+  left: 50%;
+  width: 42%;
+  height: 13px;
+  border-radius: 0 0 12px 12px;
+  background: #111827;
+  content: "";
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.service-parent-phone-screen video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 21px;
+  background: #000;
+  object-fit: cover;
+}
+
+.service-parent-phone figcaption {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.82);
+  color: #fff;
+  font-size: 0.67rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.service-parent-result-stage:not(.has-phone-overlay) .service-parent-paper {
+  transform: rotate(-1deg);
+}
+
 .service-editor-media-grid,
 .service-form-media-grid {
   display: grid;
@@ -4335,6 +4464,20 @@ button.mini-catalog-option {
   .catalog-modal-media video,
   .catalog-modal-image {
     max-height: min(56dvh, 520px);
+  }
+
+  .service-parent-result-stage {
+    min-height: 280px;
+    padding: 16px;
+  }
+
+  .service-parent-paper {
+    width: 72%;
+  }
+
+  .service-parent-phone.overlay {
+    right: 4%;
+    top: 20%;
   }
 }
 

@@ -19,6 +19,7 @@ import {
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
 import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -2442,6 +2443,7 @@ function showCatalogServiceViewer(itemId) {
         </div>
         <button class="icon-button" data-close-catalog-modal type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
+      ${serviceParentResultMockup(item)}
       ${media}
       <div class="catalog-modal-copy">
         <div class="catalog-card-badges">
@@ -2709,6 +2711,7 @@ function renderServiceDetail() {
         </div>
         ${videoUrl ? `<video class="service-detail-video" src="${videoUrl}" controls playsinline></video>` : ""}
       </article>
+      ${serviceParentResultMockup(item, { panel: true })}
       <article class="panel grid">
         <div class="card-header">
           <div>
@@ -4864,6 +4867,12 @@ function showCatalogEditor(itemId = "") {
         <label class="field-label"><span>Превью фото</span><input class="input" name="preview" type="file" accept="image/*" /></label>
         <label class="field-label"><span>Превью видео</span><input class="input" name="previewVideo" type="file" accept="video/*" /></label>
       </div>
+      <label class="field-label"><span>Как показать итог родителю</span><select class="select" name="parentPreviewMode">
+        <option value="auto" ${serviceParentPreviewMode(item) === "auto" ? "selected" : ""}>Автоматически: A4, а видео — на телефоне поверх фото</option>
+        <option value="print" ${serviceParentPreviewMode(item) === "print" ? "selected" : ""}>Только распечатанное фото A4</option>
+        <option value="digital" ${serviceParentPreviewMode(item) === "digital" ? "selected" : ""}>Только цифровой результат</option>
+      </select></label>
+      <p class="muted service-parent-preview-help">При наличии фото и видео телефон перекрывает часть листа: фото остаётся печатным, а видео запускается только на телефоне.</p>
       <div class="service-form-media-grid">
         ${servicePreviewImageDataUrl(item) ? `<img class="service-form-preview" src="${servicePreviewImageDataUrl(item)}" alt="${escapeAttr(serviceName(item))}" />` : '<div class="service-form-preview empty">Нет фото</div>'}
         ${servicePreviewVideoDataUrl(item) ? `<video class="service-form-preview" src="${servicePreviewVideoDataUrl(item)}" controls playsinline></video>` : '<div class="service-form-preview empty">Нет видео</div>'}
@@ -4907,6 +4916,7 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
     gender: allowOnlyTitle ? serviceGender(item) : normalizeServiceGender(fields.gender.value),
     category: allowOnlyTitle ? serviceCategory(item) : normalizeServiceCategory(fields.category.value),
     popular: allowOnlyTitle ? isServicePopular(item) : Boolean(fields.popular.checked),
+    parentPreviewMode: allowOnlyTitle ? serviceParentPreviewMode(item) : normalizeParentPreviewMode(fields.parentPreviewMode.value),
     previewDataUrl,
     previewImageId: previewDataUrl ? (item?.previewImageId || `${id}_preview_image`) : "",
     previewName: previewFile?.name || item?.previewName || "",
@@ -8301,6 +8311,11 @@ async function buildPublicCatalogExportFiles() {
       gender: serviceGender(item),
       category: serviceCategory(item),
       popular: isServicePopular(item),
+      presentation: buildCatalogPresentation({
+        parentPreviewMode: serviceParentPreviewMode(item),
+        hasPhoto: Boolean(previewImage),
+        hasVideo: Boolean(previewVideo)
+      }),
       ...(previewImage ? { previewImage } : {}),
       ...(previewVideo ? { previewVideo } : {})
     });
@@ -11447,6 +11462,52 @@ function servicePreviewImageDataUrl(item) {
 
 function servicePreviewVideoDataUrl(item) {
   return String(item?.previewVideoDataUrl || item?.previewVideoUrl || "").trim();
+}
+
+function serviceParentPreviewMode(item) {
+  return normalizeParentPreviewMode(item?.parentPreviewMode);
+}
+
+function serviceParentResultMockup(item, { panel = false } = {}) {
+  const imageUrl = servicePreviewImageDataUrl(item);
+  const videoUrl = servicePreviewVideoDataUrl(item);
+  const presentation = buildCatalogPresentation({
+    parentPreviewMode: serviceParentPreviewMode(item),
+    hasPhoto: Boolean(imageUrl),
+    hasVideo: Boolean(videoUrl)
+  });
+  if (presentation.template === "none") return "";
+
+  const phone = presentation.phoneVideo ? `
+    <figure class="service-parent-phone ${presentation.phoneOverlay ? "overlay" : "standalone"}">
+      <div class="service-parent-phone-screen">
+        <video src="${videoUrl}" controls playsinline preload="metadata" aria-label="Видео услуги ${escapeAttr(serviceName(item))}"></video>
+      </div>
+      <figcaption>Видео открывается на телефоне</figcaption>
+    </figure>
+  ` : "";
+  const print = presentation.printPhoto ? `
+    <figure class="service-parent-paper">
+      <img src="${imageUrl}" alt="Распечатанное фото A4: ${escapeAttr(serviceName(item))}" />
+    </figure>
+  ` : "";
+  const content = `
+    <div class="service-parent-result-stage ${presentation.phoneOverlay ? "has-phone-overlay" : ""}">
+      ${print}
+      ${phone}
+    </div>
+  `;
+  const heading = `
+    <div class="card-header service-parent-result-header">
+      <div>
+        <h2 class="card-title">Что получат родители</h2>
+        <p class="muted">${presentation.printPhoto ? "Фото будет напечатано на листе A4." : "Цифровой результат доступен на телефоне."}</p>
+      </div>
+    </div>
+  `;
+  return panel
+    ? `<article class="panel grid service-parent-result-panel">${heading}${content}</article>`
+    : `<section class="service-parent-result-panel catalog-modal-parent-result">${heading}${content}</section>`;
 }
 
 function servicePreviewImageId(item) {
