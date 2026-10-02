@@ -69,7 +69,7 @@ const SUPERHERO_PROMPT = `${IDENTITY_LOCK}\n\n${VIDEO_FORMAT}\n\nЕсли доб
 
 const DRAGON_FLIGHT_PROMPT = `${IDENTITY_LOCK}\n\n${VIDEO_FORMAT}\n\nЕсли добавлено @Image 2, используй его только как референс доброго бирюзово-золотого дракона, безопасного седла, долины, света и композиции; лицо из @Image 2 полностью игнорируй.\n\nСюжет «Полёт на драконе»: 0–3 с — золотой свет переносит ребёнка из первого кадра в безопасное седло на спине большого доброго оригинального дракона; лицо и возраст ребёнка не меняются, страховочный ремень виден. 3–9 с — дракон плавно летит над сказочной зелёной долиной и водопадами, камера держится сбоку и немного впереди, ветер естественно двигает волосы и одежду. 9–13 с — дракон спокойно поворачивает к замку в облаках, ребёнок радостно смотрит вокруг и держится обеими руками. 13–15 с — средний план лица ребёнка, улыбка, мягкий золотой свет рассвета. Без огня, резких виражей, падения, страха или боя.\n\n${NO_DIALOGUE_AUDIO}\n\nНе добавляй других людей, текст, логотипы, оружие, опасные трюки, резкие движения или смену внешности.`;
 
-function service({ id, title, gender, preview, shortDescription, description, prompt, promptVariants = [], tags, category = KINDERGARTEN_AI_VIDEO_CATEGORY, mediaKind = "video", previewVideoUrl = "", parentPreviewMode = "auto", angles = null }) {
+function service({ id, title, gender, preview, shortDescription, description, prompt, promptVariants = [], tags, category = KINDERGARTEN_AI_VIDEO_CATEGORY, mediaKind = "video", previewVideoUrl = "", parentPreviewMode = "auto", angles = null, systemTemplateVersion = 1 }) {
   return Object.freeze({
     id,
     title,
@@ -94,7 +94,7 @@ function service({ id, title, gender, preview, shortDescription, description, pr
     videoModel: "Seedance 2.0",
     durationSeconds: 15,
     systemTemplate: true,
-    systemTemplateVersion: 1,
+    systemTemplateVersion,
     enabled: true
   });
 }
@@ -116,10 +116,12 @@ export const KINDERGARTEN_AI_VIDEO_SERVICES = Object.freeze([
     title: "Принцесса в сказочном мире",
     gender: "girls",
     preview: assetPath("previews/fairytale-princess.jpg"),
+    previewVideoUrl: assetPath("previews/fairytale-princess-15s-user.mp4"),
     shortDescription: "Доброе превращение в оригинальную принцессу с сохранением лица ребёнка.",
     description: "Немой 15-секундный сказочный ролик: волшебное платье, солнечный сад, замок и светящиеся бабочки. Речи и других персонажей нет.",
     prompt: FAIRYTALE_PRINCESS_PROMPT,
-    tags: ["детский сад", "принцесса", "сказка", "замок", "без речи", "15 секунд", "Seedance 2.0"]
+    tags: ["детский сад", "принцесса", "сказка", "замок", "без речи", "15 секунд", "Seedance 2.0"],
+    systemTemplateVersion: 2
   }),
   service({
     id: "kindergarten-video-original-superhero",

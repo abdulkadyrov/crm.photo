@@ -111,3 +111,11 @@ test("school interview service includes printable photo and phone video result",
   assert.match(service.prompt, /Teacher, off-camera/);
   assert.match(service.prompt, /инженером/);
 });
+
+test("fairytale princess service includes the attached 15-second video result", async () => {
+  const service = KINDERGARTEN_AI_VIDEO_SERVICES.find((item) => item.id === "kindergarten-video-fairytale-princess");
+  assert.ok(service);
+  assert.match(service.previewVideoUrl, /fairytale-princess-15s-user\.mp4$/);
+  assert.equal(service.systemTemplateVersion, 2);
+  assert.ok((await stat(localAsset(service.previewVideoUrl))).size > 100_000);
+});
