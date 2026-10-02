@@ -63,13 +63,13 @@ export const KINDERGARTEN_INTERVIEW_PROMPTS = Object.freeze([
 
 const NO_DIALOGUE_AUDIO = "Звук: только мягкая кинематографичная музыка и естественные звуки сцены. Без речи, без голосов, без пения и без артикуляции слов.";
 
-const FAIRYTALE_PRINCESS_PROMPT = `${IDENTITY_LOCK}\n\n${VIDEO_FORMAT}\n\nUse the attached image as the exact visual reference for the girl, her face, age, hairstyle, lavender princess dress, tiara, magical garden, castle, waterfalls, flowers, lighting, and overall composition. Preserve the girl's identity, face, age, hairstyle, dress, tiara, body proportions, and facial features throughout the entire video.\n\n0–3 seconds: The young princess stands in a magical garden in front of a fairytale castle. Warm golden sunset light shines through the trees and flowers. A gentle breeze moves her hair and the transparent layers of her lavender dress. She looks directly at the camera and smiles softly.\n\n3–6 seconds: The girl slowly raises one hand. Small golden magical particles begin to appear around her. Tiny lights glow among the flowers, and several blossoms gently open as the magic spreads through the garden.\n\n6–10 seconds: The camera slowly pulls backward and rises upward like a smooth cinematic drone shot, revealing the full enchanted garden, waterfalls, stone arches, winding paths, and the fairytale castle in the background. Glowing butterflies fly gracefully around the girl.\n\n10–13 seconds: The princess takes two or three elegant steps along the garden path and turns slightly toward the castle. Her lavender and gold dress moves naturally in the breeze, with realistic fabric motion and sparkling embroidery.\n\n13–15 seconds: The camera smoothly returns to a medium shot. The girl turns back toward the camera, performs a small graceful royal curtsy, and smiles warmly. Golden particles softly float around her as the scene ends in a magical sunset glow.\n\nCamera and style: high-end cinematic fantasy film, photorealistic, elegant camera movement, smooth dolly-in and dolly-out transitions, gentle aerial reveal, shallow depth of field, realistic fabric and hair movement, soft lens flare, warm golden-hour lighting, detailed flowers, natural childlike expressions.\n\nSound: soft magical orchestral music, gentle wind, subtle sparkling sounds, distant waterfalls, light butterfly wing sounds. No dialogue, no singing, no subtitles, no text.\n\nDo not change the girl's face, age, hairstyle, dress, tiara, body proportions, or identity. No extra children, adults, characters, weapons, horror, costume changes, deformed hands, extra fingers, flickering, melting details, sudden camera shakes, text, subtitles, logos, or watermark.`;
+const FAIRYTALE_PRINCESS_PROMPT = `${IDENTITY_LOCK}\n\n${VIDEO_FORMAT}\n\nЕсли добавлено @Image 2, используй его только как референс сказочного сада, платья, света и композиции; лицо из @Image 2 полностью игнорируй.\n\nСюжет «Сказочная принцесса»: 0–3 с — вокруг ребёнка мягко загораются золотые частицы, обычная одежда плавно превращается в оригинальное сиренево-золотое платье юной принцессы; лицо остаётся без изменений. 3–8 с — камера медленно отъезжает, открывая солнечный волшебный сад и далёкий замок, ребёнок делает два спокойных шага. 8–12 с — рядом пролетают светящиеся бабочки, ребёнок поворачивается к ним и легко машет рукой. 12–15 с — плавный средний план, ребёнок смотрит в камеру и улыбается, частицы мягко сияют. Семейная добрая сказка, оригинальный мир и костюм, никаких узнаваемых персонажей.\n\n${NO_DIALOGUE_AUDIO}\n\nНе добавляй других людей, текст, логотипы, корону перед лицом, резкие движения или смену внешности.`;
 
 const SUPERHERO_PROMPT = `${IDENTITY_LOCK}\n\n${VIDEO_FORMAT}\n\nЕсли добавлено @Image 2, используй его только как референс оригинального сине-серебряного костюма, крыши города, света и композиции; лицо из @Image 2 полностью игнорируй.\n\nСюжет «Юный супергерой»: 0–3 с — голубое свечение собирается вокруг ребёнка и формирует оригинальный сине-серебряный костюм с коротким плащом, без маски и шлема; лицо остаётся без изменений. 3–8 с — камера плавно обходит ребёнка на безопасной крыше города будущего, лёгкий ветер шевелит плащ. 8–12 с — ребёнок мягко поднимается над крышей на полметра в сияющем поле и спокойно опускается обратно. 12–15 с — герой уверенно улыбается в камеру, за ним загораются огни города. Без оружия, боя, опасности и сходства с известными героями.\n\n${NO_DIALOGUE_AUDIO}\n\nНе добавляй других людей, текст, логотипы, маску, шлем, резкие движения, агрессию или смену внешности.`;
 
 const DRAGON_FLIGHT_PROMPT = `${IDENTITY_LOCK}\n\n${VIDEO_FORMAT}\n\nЕсли добавлено @Image 2, используй его только как референс доброго бирюзово-золотого дракона, безопасного седла, долины, света и композиции; лицо из @Image 2 полностью игнорируй.\n\nСюжет «Полёт на драконе»: 0–3 с — золотой свет переносит ребёнка из первого кадра в безопасное седло на спине большого доброго оригинального дракона; лицо и возраст ребёнка не меняются, страховочный ремень виден. 3–9 с — дракон плавно летит над сказочной зелёной долиной и водопадами, камера держится сбоку и немного впереди, ветер естественно двигает волосы и одежду. 9–13 с — дракон спокойно поворачивает к замку в облаках, ребёнок радостно смотрит вокруг и держится обеими руками. 13–15 с — средний план лица ребёнка, улыбка, мягкий золотой свет рассвета. Без огня, резких виражей, падения, страха или боя.\n\n${NO_DIALOGUE_AUDIO}\n\nНе добавляй других людей, текст, логотипы, оружие, опасные трюки, резкие движения или смену внешности.`;
 
-function service({ id, title, gender, preview, shortDescription, description, prompt, promptVariants = [], tags, category = KINDERGARTEN_AI_VIDEO_CATEGORY, mediaKind = "video", previewVideoUrl = "", parentPreviewMode = "auto", angles = null, videoModel = "Seedance 2.0", systemTemplateVersion = 1 }) {
+function service({ id, title, gender, preview, shortDescription, description, prompt, promptVariants = [], tags, category = KINDERGARTEN_AI_VIDEO_CATEGORY, mediaKind = "video", previewVideoUrl = "", parentPreviewMode = "auto", angles = null }) {
   return Object.freeze({
     id,
     title,
@@ -91,10 +91,10 @@ function service({ id, title, gender, preview, shortDescription, description, pr
     previewVideoUrl,
     parentPreviewMode,
     kindergartenAiVideo: true,
-    videoModel,
+    videoModel: "Seedance 2.0",
     durationSeconds: 15,
     systemTemplate: true,
-    systemTemplateVersion,
+    systemTemplateVersion: 1,
     enabled: true
   });
 }
@@ -115,13 +115,11 @@ export const KINDERGARTEN_AI_VIDEO_SERVICES = Object.freeze([
     id: "kindergarten-video-fairytale-princess",
     title: "Принцесса в сказочном мире",
     gender: "girls",
-    preview: assetPath("previews/fairytale-princess-reference.jpg"),
+    preview: assetPath("previews/fairytale-princess.jpg"),
     shortDescription: "Доброе превращение в оригинальную принцессу с сохранением лица ребёнка.",
     description: "Немой 15-секундный сказочный ролик: волшебное платье, солнечный сад, замок и светящиеся бабочки. Речи и других персонажей нет.",
     prompt: FAIRYTALE_PRINCESS_PROMPT,
-    videoModel: "Kling 3.0",
-    systemTemplateVersion: 2,
-    tags: ["детский сад", "принцесса", "сказка", "замок", "без речи", "15 секунд", "Kling 3.0"]
+    tags: ["детский сад", "принцесса", "сказка", "замок", "без речи", "15 секунд", "Seedance 2.0"]
   }),
   service({
     id: "kindergarten-video-original-superhero",

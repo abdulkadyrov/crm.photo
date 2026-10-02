@@ -63,7 +63,7 @@ test("four Seedance services include one interview and three no-dialogue stories
     assert.equal(service.category, KINDERGARTEN_AI_VIDEO_CATEGORY);
     assert.equal(service.mediaKind, "video");
     assert.equal(service.durationSeconds, 15);
-    assert.ok(["Seedance 2.0", "Kling 3.0"].includes(service.videoModel));
+    assert.equal(service.videoModel, "Seedance 2.0");
     assert.equal(service.kindergartenAiVideo, true);
     assert.equal(service.systemTemplate, true);
     assert.equal(service.enabled, true);
@@ -77,19 +77,9 @@ test("four Seedance services include one interview and three no-dialogue stories
   const silent = KINDERGARTEN_AI_VIDEO_SERVICES.filter((item) => item.id !== interview.id);
   assert.equal(silent.length, 3);
   for (const service of silent) {
-    assert.match(service.prompt, /Без речи, без голосов|No dialogue, no singing/);
+    assert.match(service.prompt, /Без речи, без голосов/);
     assert.match(service.prompt, /сохраняй возраст, форму лица/);
   }
-});
-
-test("fairytale princess service uses the supplied reference and Kling prompt", async () => {
-  const service = KINDERGARTEN_AI_VIDEO_SERVICES.find((item) => item.id === "kindergarten-video-fairytale-princess");
-  assert.ok(service);
-  assert.equal(service.videoModel, "Kling 3.0");
-  assert.match(service.previewSrc, /fairytale-princess-reference\.jpg$/);
-  assert.match(service.prompt, /royal curtsy/);
-  assert.match(service.prompt, /No dialogue/);
-  assert.ok((await stat(localAsset(service.previewSrc))).size > 100_000);
 });
 
 test("every interview scenario has distinct exact Russian dialogue and off-camera educator", () => {
