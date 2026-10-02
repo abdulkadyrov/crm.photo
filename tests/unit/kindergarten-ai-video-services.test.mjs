@@ -102,6 +102,7 @@ test("school interview service includes printable photo and phone video result",
   assert.equal(service.parentPreviewMode, "auto");
   assert.equal(service.durationSeconds, 15);
   assert.equal(service.videoModel, "Seedance 2.0");
+  assert.match(service.previewVideoUrl, /schoolboy-interview-15s-user\.mp4$/);
   assert.equal(service.angles.length, 2);
   assert.equal(service.angles[0].id, "print-photo");
   assert.equal(service.angles[1].id, "interview-video");

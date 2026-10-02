@@ -151,7 +151,7 @@ export const SCHOOL_INTERVIEW_SERVICES = Object.freeze([
     category: SCHOOL_INTERVIEW_CATEGORY,
     mediaKind: "both",
     preview: schoolAssetPath("schoolboy-print-front.png"),
-    previewVideoUrl: schoolAssetPath("schoolboy-interview-15s.mp4"),
+    previewVideoUrl: schoolAssetPath("schoolboy-interview-15s-user.mp4"),
     shortDescription: "Фронтальное фото для печати и персональное 15-секундное интервью на телефоне.",
     description: "Один заказ включает фотографию ребёнка, которую можно распечатать, и готовое вертикальное интервью с тем же ребёнком. На печатном фото ребёнок смотрит в камеру, а на телефоне запускается видео с ответами ученика учителю.",
     prompt: `Use the provided schoolboy reference image as the identity and scene reference. Create a realistic 15-second documentary-style interview in a classroom. The same boy sits at a wooden desk, looks slightly away from the camera toward the teacher, and wears a small black DJI lavalier microphone clipped to his collar. A bookshelf with books is visible in the background. The teacher stays off-camera and is heard only by voice. Preserve the boy's face, age, hairstyle, clothing, microphone, desk, classroom, and bookshelf. Use natural Russian lip synchronization, realistic pauses, subtle head and eye movements, and a small smile at the end. Do not add other people, subtitles, logos, text, or dramatic camera movement.
@@ -159,10 +159,11 @@ Teacher, off-camera: «Скажи, какой предмет тебе больш
 Student: «Мне нравится история. Особенно когда мы узнаём, как жили люди раньше.»
 Teacher: «А кем ты хочешь стать, когда вырастешь?»
 Student: «Пока не знаю… может быть, инженером.»`,
+    systemTemplateVersion: 2,
     tags: ["школа", "фото", "печать", "интервью", "видео", "15 секунд", "Seedance 2.0"],
     angles: [
       { id: "print-photo", name: "Фото для печати", details: "Фронтальный портрет ребёнка, смотрит прямо в камеру; используется для распечатки.", refDataUrl: schoolAssetPath("schoolboy-print-front.png"), refName: "schoolboy-print-front.png" },
-      { id: "interview-video", name: "Интервью 15 секунд", details: "Готовое вертикальное видео с учителем за кадром; запускается на телефоне.", refDataUrl: schoolAssetPath("schoolboy-classroom-side-glance.png"), refName: "schoolboy-classroom-side-glance.png", videoRefDataUrl: schoolAssetPath("schoolboy-interview-15s.mp4"), videoRefName: "schoolboy-interview-15s.mp4" }
+      { id: "interview-video", name: "Интервью 15 секунд", details: "Готовое вертикальное видео с учителем за кадром; запускается на телефоне.", refDataUrl: schoolAssetPath("schoolboy-classroom-side-glance.png"), refName: "schoolboy-classroom-side-glance.png", videoRefDataUrl: schoolAssetPath("schoolboy-interview-15s-user.mp4"), videoRefName: "schoolboy-interview-15s-user.mp4" }
     ]
   })
 ]);
