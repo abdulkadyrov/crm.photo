@@ -14,7 +14,8 @@ import {
 } from "../data/child-portrait-templates.js";
 import {
   KINDERGARTEN_AI_VIDEO_SERVICES,
-  KINDERGARTEN_DEMO_CHILDREN
+  KINDERGARTEN_DEMO_CHILDREN,
+  SCHOOL_INTERVIEW_SERVICES
 } from "../data/kindergarten-ai-video-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
 import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js";
@@ -730,7 +731,7 @@ async function seedCatalogIfNeeded() {
       orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : seeded.orderIndex
     });
   }
-  for (const [index, seeded] of KINDERGARTEN_AI_VIDEO_SERVICES.entries()) {
+  for (const [index, seeded] of [...KINDERGARTEN_AI_VIDEO_SERVICES, ...SCHOOL_INTERVIEW_SERVICES].entries()) {
     const existing = existingById.get(seeded.id);
     if (!existing) {
       await put("catalog", { ...seeded, orderIndex: 2000 + index });

@@ -7,7 +7,9 @@ import {
   KINDERGARTEN_AI_VIDEO_CATEGORY,
   KINDERGARTEN_AI_VIDEO_SERVICES,
   KINDERGARTEN_DEMO_CHILDREN,
-  KINDERGARTEN_INTERVIEW_PROMPTS
+  KINDERGARTEN_INTERVIEW_PROMPTS,
+  SCHOOL_INTERVIEW_CATEGORY,
+  SCHOOL_INTERVIEW_SERVICES
 } from "../../js/data/kindergarten-ai-video-services.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -90,4 +92,21 @@ test("every interview scenario has distinct exact Russian dialogue and off-camer
     assert.match(item.prompt, /не появляется в кадре/);
     assert.match(item.prompt, /@Image 1/);
   }
+});
+
+test("school interview service includes printable photo and phone video result", async () => {
+  assert.equal(SCHOOL_INTERVIEW_SERVICES.length, 1);
+  const service = SCHOOL_INTERVIEW_SERVICES[0];
+  assert.equal(service.category, SCHOOL_INTERVIEW_CATEGORY);
+  assert.equal(service.mediaKind, "both");
+  assert.equal(service.parentPreviewMode, "auto");
+  assert.equal(service.durationSeconds, 15);
+  assert.equal(service.videoModel, "Seedance 2.0");
+  assert.equal(service.angles.length, 2);
+  assert.equal(service.angles[0].id, "print-photo");
+  assert.equal(service.angles[1].id, "interview-video");
+  assert.ok((await stat(localAsset(service.previewSrc))).size > 100_000);
+  assert.ok((await stat(localAsset(service.previewVideoUrl))).size > 100_000);
+  assert.match(service.prompt, /Teacher, off-camera/);
+  assert.match(service.prompt, /инженером/);
 });
