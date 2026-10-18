@@ -2448,12 +2448,6 @@ function showCatalogServiceViewer(itemId) {
           ${videoUrl ? '<span class="catalog-card-badge video">Видео</span>' : ""}
         </div>
         <p>${escapeHtml(description)}</p>
-        ${item.childTemplate ? `
-          <div class="child-template-ready-note">
-            <strong>Готово к монтажу</strong>
-            <span>${item.canvas?.format === "A4" ? `A4 · ${item.canvas.width}×${item.canvas.height} · ${item.canvas.dpi || 300} dpi` : `Мастер ${item.canvas?.width || 3072}×${item.canvas?.height || 3840}`} · мягкая маска лица · направляющие сохранены</span>
-          </div>
-        ` : ""}
       </div>
       <button class="secondary-button" data-close-catalog-modal type="button">Назад</button>
     </section>
