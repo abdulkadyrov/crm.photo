@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v62";
+const CACHE_VERSION = "v63";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -57,7 +57,8 @@ const KINDERGARTEN_AI_VIDEO_ASSETS = [
   "./assets/kindergarten-ai-video/children/girls/girl-10-age-5.jpg",
   "./assets/kindergarten-ai-video/previews/fairytale-princess.jpg",
   "./assets/kindergarten-ai-video/previews/original-superhero.jpg",
-  "./assets/kindergarten-ai-video/previews/dragon-flight.jpg"
+  "./assets/kindergarten-ai-video/previews/dragon-flight.jpg",
+  "./assets/kindergarten-ai-video/previews/dragon-flight-15s-user.mp4"
 ];
 const APP_SHELL = [
   "./",

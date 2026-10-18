@@ -65,7 +65,7 @@ test("four Seedance services include one interview and three no-dialogue stories
     assert.equal(service.durationSeconds, 15);
     assert.equal(service.videoModel, "Seedance 2.0");
     assert.equal(service.price, "1200");
-    assert.equal(service.catalogPriceVersion, 3);
+    assert.equal(service.catalogPriceVersion, 4);
     assert.equal(service.kindergartenAiVideo, true);
     assert.equal(service.systemTemplate, true);
     assert.equal(service.enabled, true);
@@ -78,6 +78,9 @@ test("four Seedance services include one interview and three no-dialogue stories
 
   const silent = KINDERGARTEN_AI_VIDEO_SERVICES.filter((item) => item.id !== interview.id);
   assert.equal(silent.length, 3);
+  const dragon = KINDERGARTEN_AI_VIDEO_SERVICES.find((item) => item.id === "kindergarten-video-dragon-flight");
+  assert.match(dragon.previewVideoUrl, /dragon-flight-15s-user\.mp4$/);
+  assert.ok((await stat(localAsset(dragon.previewVideoUrl))).size > 100_000);
   for (const service of silent) {
     assert.match(service.prompt, /Без речи, без голосов/);
     assert.match(service.prompt, /сохраняй возраст, форму лица/);
@@ -105,7 +108,7 @@ test("school interview service includes printable photo and phone video result",
   assert.equal(service.durationSeconds, 15);
   assert.equal(service.videoModel, "Seedance 2.0");
   assert.equal(service.price, "800");
-  assert.equal(service.catalogPriceVersion, 3);
+  assert.equal(service.catalogPriceVersion, 4);
   assert.match(service.previewVideoUrl, /schoolboy-interview-15s-user\.mp4$/);
   assert.equal(service.angles.length, 2);
   assert.equal(service.angles[0].id, "print-photo");

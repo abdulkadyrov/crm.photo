@@ -2170,12 +2170,7 @@ function childTemplateGradeLabel(value) {
 }
 
 function childTemplateBadges(item) {
-  if (!item?.childTemplate) return "";
-  return `
-    ${item.canvas?.format === "A4" ? '<span class="catalog-card-badge template">A4 · 300 dpi</span>' : ""}
-    <span class="catalog-card-badge template">${escapeHtml(childTemplateGradeLabel(item.grade))}</span>
-    <span class="catalog-card-badge template">${escapeHtml(childTemplateHeadwearLabel(item.headwear))}</span>
-  `;
+  return "";
 }
 
 function catalogSection(section) {
@@ -2194,10 +2189,13 @@ function catalogSection(section) {
 
 function catalogServiceCard(item) {
   const previewUrl = servicePreviewImageDataUrl(item);
-  const preview = previewUrl
+  const videoUrl = servicePreviewVideoDataUrl(item);
+  const preview = videoUrl
+    ? `<video class="catalog-card-video" src="${videoUrl}" muted autoplay loop playsinline preload="metadata" aria-label="Видео-превью: ${escapeAttr(serviceName(item))}"></video>`
+    : previewUrl
     ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
     : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
-  const videoBadge = servicePreviewVideoDataUrl(item) ? '<span class="catalog-card-badge video">Видео</span>' : "";
+  const videoBadge = videoUrl ? '<span class="catalog-card-badge video">Видео</span>' : "";
   const shortDescription = serviceShortDescription(item);
   const category = serviceCategory(item);
   const isPortraitCard = Boolean(item.childTemplate && previewUrl);
@@ -2420,7 +2418,9 @@ function showCatalogServiceViewer(itemId) {
   document.querySelector(".catalog-modal-backdrop")?.remove();
   const videoUrl = servicePreviewVideoDataUrl(item);
   const imageUrl = servicePreviewImageDataUrl(item);
-  const description = serviceDescription(item) || serviceShortDescription(item) || "Описание скоро появится.";
+  const description = item.childTemplate
+    ? serviceShortDescription(item) || "Описание скоро появится."
+    : serviceDescription(item) || serviceShortDescription(item) || "Описание скоро появится.";
   const mediaItems = [
     imageUrl ? `<figure class="catalog-modal-media-item"><img class="catalog-modal-image" src="${imageUrl}" alt="${escapeAttr(serviceName(item))}" /></figure>` : "",
     videoUrl ? `<figure class="catalog-modal-media-item"><video data-catalog-modal-video src="${videoUrl}" controls playsinline preload="metadata"></video><button class="secondary-button compact" data-catalog-video-fullscreen type="button">На весь экран</button></figure>` : ""
