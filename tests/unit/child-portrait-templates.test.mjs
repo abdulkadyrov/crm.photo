@@ -131,6 +131,8 @@ test("child portrait templates map into the existing service catalog and montage
     assert.deepEqual(service.faceGuide, item.faceGuide);
     assert.deepEqual(service.canvas, item.canvas);
     assert.equal(service.angles[0].id, "portrait");
+    assert.equal(service.price, "350");
+    assert.equal(service.catalogPriceVersion, 2);
     assert.match(service.prompt, /Сохрани лицо/);
   });
 });
@@ -152,5 +154,6 @@ test("all 40 A4 portraits are active assignable services", () => {
     assert.ok(service.previewSrc);
     assert.ok(service.masterSrc);
     assert.ok(service.faceMaskSrc);
+    assert.equal(service.price, "350");
   }
 });

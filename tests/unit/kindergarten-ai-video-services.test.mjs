@@ -64,6 +64,8 @@ test("four Seedance services include one interview and three no-dialogue stories
     assert.equal(service.mediaKind, "video");
     assert.equal(service.durationSeconds, 15);
     assert.equal(service.videoModel, "Seedance 2.0");
+    assert.equal(service.price, "1200");
+    assert.equal(service.catalogPriceVersion, 2);
     assert.equal(service.kindergartenAiVideo, true);
     assert.equal(service.systemTemplate, true);
     assert.equal(service.enabled, true);
@@ -102,6 +104,8 @@ test("school interview service includes printable photo and phone video result",
   assert.equal(service.parentPreviewMode, "auto");
   assert.equal(service.durationSeconds, 15);
   assert.equal(service.videoModel, "Seedance 2.0");
+  assert.equal(service.price, "800");
+  assert.equal(service.catalogPriceVersion, 2);
   assert.match(service.previewVideoUrl, /schoolboy-interview-15s-user\.mp4$/);
   assert.equal(service.angles.length, 2);
   assert.equal(service.angles[0].id, "print-photo");

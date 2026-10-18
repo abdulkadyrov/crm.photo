@@ -717,6 +717,7 @@ async function seedCatalogIfNeeded() {
       continue;
     }
     const needsSystemTemplateRepair = existing.systemTemplateVersion !== seeded.systemTemplateVersion
+      || existing.catalogPriceVersion !== seeded.catalogPriceVersion
       || !existing.childTemplate
       || !existing.previewSrc
       || !existing.masterSrc
@@ -726,7 +727,8 @@ async function seedCatalogIfNeeded() {
     await put("catalog", {
       ...existing,
       ...seeded,
-      price: existing.price ?? seeded.price,
+      price: seeded.price,
+      catalogPriceVersion: seeded.catalogPriceVersion,
       popular: existing.popular ?? seeded.popular,
       orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : seeded.orderIndex
     });
@@ -738,6 +740,7 @@ async function seedCatalogIfNeeded() {
       continue;
     }
     const needsSystemTemplateRepair = existing.systemTemplateVersion !== seeded.systemTemplateVersion
+      || existing.catalogPriceVersion !== seeded.catalogPriceVersion
       || !existing.kindergartenAiVideo
       || !existing.previewSrc
       || !(existing.angles || []).length
@@ -746,7 +749,8 @@ async function seedCatalogIfNeeded() {
     await put("catalog", {
       ...existing,
       ...seeded,
-      price: existing.price ?? seeded.price,
+      price: seeded.price,
+      catalogPriceVersion: seeded.catalogPriceVersion,
       popular: existing.popular ?? seeded.popular,
       orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : 2000 + index
     });
