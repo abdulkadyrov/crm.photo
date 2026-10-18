@@ -683,31 +683,20 @@ async function seedIfNeeded() {
 
 async function seedCatalogIfNeeded() {
   let catalog = await getAll("catalog");
-  if (!catalog.length) {
-    await put("catalog", {
-      id: uid("catalog"),
-      title: "Стандартный проектный пакет",
-      name: "Стандартный проектный пакет",
-      mediaKind: "both",
-      price: "0",
-      shortDescription: "Портреты, полный рост, профиль, короткое видео и интервью.",
-      description: "Базовый пакет для школьной фотосъемки с набором ракурсов и короткими видео-сценами.",
-      gender: "unisex",
-      category: "",
-      popular: false,
-      orderIndex: 0,
-      orderInfo: "Портреты, полный рост, профиль, короткое видео и интервью.",
-      requirements: "Ровный свет, чистый фон, готовый список учеников и место для съемки.",
-      angles: [
-        { id: "portrait", name: "Портрет", details: "Лицо и плечи, взгляд в камеру.", refDataUrl: "", refName: "" },
-        { id: "full", name: "Полный рост", details: "Ученик полностью в кадре.", refDataUrl: "", refName: "" },
-        { id: "side", name: "Профиль", details: "Ракурс сбоку.", refDataUrl: "", refName: "" },
-        { id: "video", name: "Видео", details: "Короткий проход или приветствие.", refDataUrl: "", refName: "" },
-        { id: "interview", name: "Интервью", details: "Ответ на вопрос в камеру.", refDataUrl: "", refName: "" }
-      ]
-    });
-    catalog = await getAll("catalog");
-  }
+  const emptyCatalogItems = catalog.filter((item) => {
+    const title = String(item.title || item.name || "").trim();
+    const description = String(item.shortDescription || item.description || "").trim();
+    const hasMedia = Boolean(item.previewSrc || item.previewDataUrl || item.previewVideoUrl || item.previewVideoDataUrl);
+    const hasReference = (item.angles || []).some((angle) => angle.refDataUrl || angle.videoRefDataUrl);
+    const isLegacyEmptyPackage = title === "Стандартный проектный пакет"
+      && !hasMedia
+      && !hasReference
+      && !item.createdAt
+      && !item.updatedAt;
+    return isLegacyEmptyPackage || (!title && !description && !hasMedia && !hasReference);
+  });
+  for (const item of emptyCatalogItems) await del("catalog", item.id);
+  if (emptyCatalogItems.length) catalog = await getAll("catalog");
   const existingById = new Map(catalog.map((item) => [item.id, item]));
   for (const [index, item] of CHILD_PORTRAIT_TEMPLATES.entries()) {
     const seeded = childPortraitCatalogRecord(item, index);
