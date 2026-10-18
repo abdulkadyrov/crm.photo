@@ -1,6 +1,9 @@
 export const KINDERGARTEN_AI_VIDEO_CATEGORY = "ИИ-видео · Детский сад";
 export const SCHOOL_INTERVIEW_CATEGORY = "Фото с видео · Школа";
 
+const SCHOOL_INTERVIEW_PACKAGE = "Распечатанное фото ребёнка, оживление фото по QR-коду и персональное интервью ребёнка.";
+const AI_VIDEO_PACKAGE = "Распечатанное фото ребёнка, оживление фото по QR-коду и персональное ИИ-видео.";
+
 const assetPath = (path) => `./assets/kindergarten-ai-video/${path}`;
 const schoolAssetPath = (path) => `./assets/seedance-schoolboy-reference/${path}`;
 
@@ -76,7 +79,7 @@ function service({ id, title, gender, preview, shortDescription, description, pr
     name: title,
     mediaKind,
     price,
-    catalogPriceVersion: 2,
+    catalogPriceVersion: 3,
     shortDescription,
     description,
     gender,
@@ -106,8 +109,8 @@ export const KINDERGARTEN_AI_VIDEO_SERVICES = Object.freeze([
     title: "Интервью в детском саду",
     gender: "unisex",
     preview: KINDERGARTEN_DEMO_CHILDREN[0].src,
-    shortDescription: "Ребёнок один в кадре отвечает воспитательнице за камерой; 20 разных сценариев.",
-    description: "Вертикальное интервью на 15 секунд. Воспитательница задаёт вопрос только голосом за кадром, ребёнок отвечает с точной русской артикуляцией, фон детского сада сохраняется.",
+    shortDescription: `${AI_VIDEO_PACKAGE} Ребёнок отвечает воспитательнице за камерой; доступны 20 сценариев.`,
+    description: `${AI_VIDEO_PACKAGE} Вертикальное интервью на 15 секунд: воспитательница задаёт вопрос только голосом за кадром, ребёнок отвечает с точной русской артикуляцией, фон детского сада сохраняется.`,
     prompt: "Выберите ниже один из 20 готовых сценариев интервью и нажмите «Скопировать сценарий». Каждый вариант уже содержит тайминг, точную речь и правила сохранения лица для Seedance 2.0.",
     promptVariants: KINDERGARTEN_INTERVIEW_PROMPTS,
     tags: ["детский сад", "интервью", "речь", "воспитательница", "мечта", "15 секунд", "Seedance 2.0"]
@@ -118,8 +121,8 @@ export const KINDERGARTEN_AI_VIDEO_SERVICES = Object.freeze([
     gender: "girls",
     preview: assetPath("previews/fairytale-princess.jpg"),
     previewVideoUrl: assetPath("previews/fairytale-princess-15s-user.mp4"),
-    shortDescription: "Доброе превращение в оригинальную принцессу с сохранением лица ребёнка.",
-    description: "Немой 15-секундный сказочный ролик: волшебное платье, солнечный сад, замок и светящиеся бабочки. Речи и других персонажей нет.",
+    shortDescription: `${AI_VIDEO_PACKAGE} Доброе превращение в оригинальную принцессу с сохранением лица ребёнка.`,
+    description: `${AI_VIDEO_PACKAGE} Немой 15-секундный сказочный ролик: волшебное платье, солнечный сад, замок и светящиеся бабочки. Речи и других персонажей нет.`,
     prompt: FAIRYTALE_PRINCESS_PROMPT,
     tags: ["детский сад", "принцесса", "сказка", "замок", "без речи", "15 секунд", "Seedance 2.0"],
     systemTemplateVersion: 2
@@ -129,8 +132,8 @@ export const KINDERGARTEN_AI_VIDEO_SERVICES = Object.freeze([
     title: "Юный супергерой",
     gender: "boys",
     preview: assetPath("previews/original-superhero.jpg"),
-    shortDescription: "Оригинальный супергеройский образ без маски, боя и изменения лица.",
-    description: "Немой 15-секундный ролик на безопасной крыше города будущего: костюм появляется в сиянии, плащ движется на ветру, ребёнок ненадолго поднимается над землёй.",
+    shortDescription: `${AI_VIDEO_PACKAGE} Оригинальный супергеройский образ без маски, боя и изменения лица.`,
+    description: `${AI_VIDEO_PACKAGE} Немой 15-секундный ролик на безопасной крыше города будущего: костюм появляется в сиянии, плащ движется на ветру, ребёнок ненадолго поднимается над землёй.`,
     prompt: SUPERHERO_PROMPT,
     tags: ["детский сад", "супергерой", "город будущего", "без речи", "15 секунд", "Seedance 2.0"]
   }),
@@ -139,8 +142,8 @@ export const KINDERGARTEN_AI_VIDEO_SERVICES = Object.freeze([
     title: "Полёт на добром драконе",
     gender: "unisex",
     preview: assetPath("previews/dragon-flight.jpg"),
-    shortDescription: "Безопасный сказочный полёт на оригинальном драконе с сохранением лица.",
-    description: "Немой 15-секундный ролик: ребёнок в надёжном седле летит над волшебной долиной к замку в облаках. Без огня, боя, падения и страха.",
+    shortDescription: `${AI_VIDEO_PACKAGE} Безопасный сказочный полёт на оригинальном драконе с сохранением лица.`,
+    description: `${AI_VIDEO_PACKAGE} Немой 15-секундный ролик: ребёнок в надёжном седле летит над волшебной долиной к замку в облаках. Без огня, боя, падения и страха.`,
     prompt: DRAGON_FLIGHT_PROMPT,
     tags: ["детский сад", "дракон", "полёт", "сказка", "без речи", "15 секунд", "Seedance 2.0"]
   })
@@ -156,14 +159,14 @@ export const SCHOOL_INTERVIEW_SERVICES = Object.freeze([
     price: "800",
     preview: schoolAssetPath("schoolboy-print-front.png"),
     previewVideoUrl: schoolAssetPath("schoolboy-interview-15s-user.mp4"),
-    shortDescription: "Фронтальное фото для печати и персональное 15-секундное интервью на телефоне.",
-    description: "Один заказ включает фотографию ребёнка, которую можно распечатать, и готовое вертикальное интервью с тем же ребёнком. На печатном фото ребёнок смотрит в камеру, а на телефоне запускается видео с ответами ученика учителю.",
+    shortDescription: SCHOOL_INTERVIEW_PACKAGE,
+    description: `${SCHOOL_INTERVIEW_PACKAGE} На фото ребёнок смотрит в камеру, а на телефоне запускается видео с ответами ученика учителю.`,
     prompt: `Use the provided schoolboy reference image as the identity and scene reference. Create a realistic 15-second documentary-style interview in a classroom. The same boy sits at a wooden desk, looks slightly away from the camera toward the teacher, and wears a small black DJI lavalier microphone clipped to his collar. A bookshelf with books is visible in the background. The teacher stays off-camera and is heard only by voice. Preserve the boy's face, age, hairstyle, clothing, microphone, desk, classroom, and bookshelf. Use natural Russian lip synchronization, realistic pauses, subtle head and eye movements, and a small smile at the end. Do not add other people, subtitles, logos, text, or dramatic camera movement.
 Teacher, off-camera: «Скажи, какой предмет тебе больше всего нравится в школе?»
 Student: «Мне нравится история. Особенно когда мы узнаём, как жили люди раньше.»
 Teacher: «А кем ты хочешь стать, когда вырастешь?»
 Student: «Пока не знаю… может быть, инженером.»`,
-    systemTemplateVersion: 2,
+    systemTemplateVersion: 3,
     tags: ["школа", "фото", "печать", "интервью", "видео", "15 секунд", "Seedance 2.0"],
     angles: [
       { id: "print-photo", name: "Фото для печати", details: "Фронтальный портрет ребёнка, смотрит прямо в камеру; используется для распечатки.", refDataUrl: schoolAssetPath("schoolboy-print-front.png"), refName: "schoolboy-print-front.png" },
