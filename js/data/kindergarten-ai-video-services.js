@@ -90,7 +90,7 @@ function service({ id, title, gender, preview, shortDescription, description, pr
     name: title,
     mediaKind,
     price,
-    catalogPriceVersion: 5,
+    catalogPriceVersion: 6,
     shortDescription,
     description,
     gender,
