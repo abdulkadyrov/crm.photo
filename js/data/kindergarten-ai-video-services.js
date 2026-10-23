@@ -6,6 +6,17 @@ const AI_VIDEO_PACKAGE = "Распечатанное фото ребёнка, о
 
 const assetPath = (path) => `./assets/kindergarten-ai-video/${path}`;
 const schoolAssetPath = (path) => `./assets/seedance-schoolboy-reference/${path}`;
+const poseReferencePath = (gender, pose) => `./assets/reference-poses/${gender === "girls" ? "girl" : "boy"}-${pose}.jpg`;
+
+function aiVideoAngles(gender) {
+  const referenceGender = gender === "girls" ? "girls" : "boys";
+  return [
+    { id: "portrait", name: "Портрет", details: "Портрет по грудь: ребёнок смотрит в камеру, лицо открыто.", refDataUrl: poseReferencePath(referenceGender, "portrait"), refName: `${referenceGender}-portrait.jpg` },
+    { id: "face", name: "Лицо крупно", details: "Крупный план лица: ровный свет, глаза открыты, без перекрытий.", refDataUrl: poseReferencePath(referenceGender, "face"), refName: `${referenceGender}-face.jpg` },
+    { id: "full-body", name: "Полный рост", details: "Ребёнок стоит прямо, руки свободно, обувь видна целиком.", refDataUrl: poseReferencePath(referenceGender, "full-body"), refName: `${referenceGender}-full-body.jpg` },
+    { id: "side", name: "Сбоку", details: "Профиль в полный рост, ребёнок спокойно стоит боком.", refDataUrl: poseReferencePath(referenceGender, "side"), refName: `${referenceGender}-side.jpg` }
+  ];
+}
 
 export const KINDERGARTEN_DEMO_CHILDREN = Object.freeze([
   { id: "kindergarten-boy-01", title: "Мальчик 1", gender: "boy", age: 3, src: assetPath("children/boys/boy-01-age-3.jpg") },
@@ -79,7 +90,7 @@ function service({ id, title, gender, preview, shortDescription, description, pr
     name: title,
     mediaKind,
     price,
-    catalogPriceVersion: 4,
+    catalogPriceVersion: 5,
     shortDescription,
     description,
     gender,
@@ -87,7 +98,7 @@ function service({ id, title, gender, preview, shortDescription, description, pr
     popular: false,
     orderInfo: "Загрузите вертикальное фото ребёнка как @Image 1, скопируйте промпт в Seedance 2.0, создайте ролик и загрузите готовое видео в карточку ребёнка.",
     requirements: "Вертикальное фото 9:16: один ребёнок, лицо открыто, взгляд рядом с камерой, ровный свет, без других людей и текста.",
-    angles: angles || [{ id: "video", name: "ИИ-видео 15 секунд", details: "Готовый ролик после генерации в Seedance 2.0.", refDataUrl: preview, refName: `${id}-preview.jpg` }],
+    angles: angles || aiVideoAngles(gender),
     prompt,
     promptVariants,
     tags,
@@ -167,11 +178,10 @@ Teacher, off-camera: «Скажи, какой предмет тебе больш
 Student: «Мне нравится история. Особенно когда мы узнаём, как жили люди раньше.»
 Teacher: «А кем ты хочешь стать, когда вырастешь?»
 Student: «Пока не знаю… может быть, инженером.»`,
-    systemTemplateVersion: 3,
+    systemTemplateVersion: 4,
     tags: ["школа", "фото", "печать", "интервью", "видео", "15 секунд", "Seedance 2.0"],
     angles: [
-      { id: "print-photo", name: "Фото для печати", details: "Фронтальный портрет ребёнка, смотрит прямо в камеру; используется для распечатки.", refDataUrl: schoolAssetPath("schoolboy-print-front.png"), refName: "schoolboy-print-front.png" },
-      { id: "interview-video", name: "Интервью 15 секунд", details: "Готовое вертикальное видео с учителем за кадром; запускается на телефоне.", refDataUrl: schoolAssetPath("schoolboy-classroom-side-glance.png"), refName: "schoolboy-classroom-side-glance.png", videoRefDataUrl: schoolAssetPath("schoolboy-interview-15s-user.mp4"), videoRefName: "schoolboy-interview-15s-user.mp4" }
+      { id: "interview-desk", name: "Интервью за партой", details: "Ребёнок сидит за партой, смотрит чуть в сторону учителя; на фоне — полка с книгами.", refDataUrl: poseReferencePath("boys", "interview-desk"), refName: "boy-interview-desk.jpg" }
     ]
   })
 ]);

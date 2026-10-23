@@ -1671,49 +1671,95 @@ button.mini-catalog-option {
 }
 
 .plain-dashboard {
-  display: grid;
-  gap: 14px;
-  padding: 16px;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   border-radius: var(--radius);
   background: var(--card);
   box-shadow: var(--shadow);
 }
 
-.plain-dashboard-head {
+.plain-dashboard-summary {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
+  gap: 8px;
+  min-height: 50px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
 }
 
-.plain-dashboard-head > div {
+.plain-dashboard-summary::-webkit-details-marker {
+  display: none;
+}
+
+.plain-dashboard-summary h2 {
+  flex: 1 1 auto;
   min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.plain-dashboard-summary .status-pill {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  font-size: 0.7rem;
+}
+
+.plain-dashboard-chevron {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 160ms ease;
+}
+
+.plain-dashboard[open] .plain-dashboard-chevron {
+  transform: rotate(225deg) translateY(-2px);
+}
+
+.plain-dashboard-content {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.plain-dashboard-subtitle {
+  margin: 0;
+  padding-top: 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
 }
 
 .plain-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .plain-dashboard-item {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
-  min-height: 112px;
+  min-height: 84px;
   align-content: center;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+  border-radius: 12px;
   background: var(--card-strong);
 }
 
 .plain-dashboard-item span,
 .plain-dashboard-item small {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 800;
   line-height: 1.25;
   overflow-wrap: anywhere;
@@ -1721,7 +1767,7 @@ button.mini-catalog-option {
 
 .plain-dashboard-item strong {
   color: var(--text);
-  font-size: 1.28rem;
+  font-size: 1.05rem;
   line-height: 1.12;
   overflow-wrap: anywhere;
 }
@@ -4194,16 +4240,23 @@ button.mini-catalog-option {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .plain-dashboard-head {
-    display: grid;
-  }
-
   .plain-dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .plain-dashboard-item {
-    min-height: 88px;
+    min-height: 78px;
+    padding: 8px;
+  }
+
+  .plain-dashboard-item span,
+  .plain-dashboard-item small {
+    font-size: 0.66rem;
+  }
+
+  .plain-dashboard-item strong {
+    font-size: 1rem;
   }
 
   .service-picker-grid {

@@ -996,20 +996,21 @@ function plainWorkDashboard({ title, students, doneTasks, totalTasks, finance })
       ? `Закрыть ${remainingTasks} ${pluralizeRu(remainingTasks, "задачу", "задачи", "задач")}`
       : "Проверить готовые работы и печать";
   return `
-    <section class="plain-dashboard" aria-label="${escapeAttr(title)}">
-      <div class="plain-dashboard-head">
-        <div>
-          <h2 class="card-title">${escapeHtml(title)}</h2>
-          <p class="muted">Простой итог по съемке, оплате и следующему шагу.</p>
-        </div>
+    <details class="plain-dashboard" aria-label="${escapeAttr(title)}">
+      <summary class="plain-dashboard-summary">
+        <h2>${escapeHtml(title)}</h2>
         <span class="status-pill ${workPercent >= 80 ? "paid" : workPercent ? "in-progress" : "unpaid"}">${workPercent}% готово</span>
+        <span class="plain-dashboard-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="plain-dashboard-content">
+        <p class="plain-dashboard-subtitle">Простой итог по съёмке, оплате и следующему шагу.</p>
+        <div class="plain-dashboard-grid">
+          ${plainDashboardItem("Сделано", `${doneTasks}/${totalTasks}`, `${photographed} ${pluralizeRu(photographed, "ученик", "ученика", "учеников")} снято`)}
+          ${plainDashboardItem("Нужно сделать", String(remainingTasks), nextStep)}
+          ${plainDashboardItem("Оплата", formatMoney(finance.paidAmount), `Осталось ${formatMoney(finance.remainingAmount)}`)}
+        </div>
       </div>
-      <div class="plain-dashboard-grid">
-        ${plainDashboardItem("Сделано", `${doneTasks}/${totalTasks}`, `${photographed} ${pluralizeRu(photographed, "ученик", "ученика", "учеников")} снято`)}
-        ${plainDashboardItem("Нужно сделать", String(remainingTasks), nextStep)}
-        ${plainDashboardItem("Оплата", formatMoney(finance.paidAmount), `Осталось ${formatMoney(finance.remainingAmount)}`)}
-      </div>
-    </section>
+    </details>
   `;
 }
 

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v64";
+const CACHE_VERSION = "v65";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -59,6 +59,18 @@ const KINDERGARTEN_AI_VIDEO_ASSETS = [
   "./assets/kindergarten-ai-video/previews/original-superhero.jpg",
   "./assets/kindergarten-ai-video/previews/dragon-flight.jpg",
   "./assets/kindergarten-ai-video/previews/dragon-flight-15s-user.mp4"
+];
+const REFERENCE_POSE_ASSETS = [
+  "./assets/reference-poses/boy-portrait.jpg",
+  "./assets/reference-poses/boy-face.jpg",
+  "./assets/reference-poses/boy-full-body.jpg",
+  "./assets/reference-poses/boy-side.jpg",
+  "./assets/reference-poses/boy-interview-desk.jpg",
+  "./assets/reference-poses/girl-portrait.jpg",
+  "./assets/reference-poses/girl-face.jpg",
+  "./assets/reference-poses/girl-full-body.jpg",
+  "./assets/reference-poses/girl-side.jpg",
+  "./assets/reference-poses/girl-interview-desk.jpg"
 ];
 const APP_SHELL = [
   "./",
@@ -154,7 +166,8 @@ const APP_SHELL = [
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",
   ...CHILD_TEMPLATE_PREVIEWS,
-  ...KINDERGARTEN_AI_VIDEO_ASSETS
+  ...KINDERGARTEN_AI_VIDEO_ASSETS,
+  ...REFERENCE_POSE_ASSETS
 ];
 
 self.addEventListener("install", (event) => {

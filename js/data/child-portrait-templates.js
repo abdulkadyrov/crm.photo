@@ -247,13 +247,14 @@ export const CHILD_PORTRAIT_TEMPLATES = [
 
 export function childPortraitCatalogRecord(item, index = 0) {
   const prompt = `Сохрани лицо, возраст и индивидуальные черты ребёнка с исходной фотографии. Аккуратно совмести лицо с шаблоном «${item.title}», сохрани естественную кожу, свет и резкость. Не меняй мимику, форму лица и этнические особенности.`;
+  const poseGender = item.gender === "boy" ? "boy" : "girl";
   return {
     id: item.id,
     title: item.title,
     name: item.title,
     mediaKind: "photo",
     price: "350",
-    catalogPriceVersion: 2,
+    catalogPriceVersion: 3,
     shortDescription: item.description,
     description: `${item.description} Подготовлены мастер ${item.canvas.width}×${item.canvas.height}${item.canvas.format === "A4" ? " (A4, 300 dpi)" : ""}, превью и мягкая маска лица.`,
     gender: item.gender === "boy" ? "boys" : "girls",
@@ -262,7 +263,7 @@ export function childPortraitCatalogRecord(item, index = 0) {
     orderIndex: 1000 + index,
     orderInfo: "Выберите фотографию ребёнка в карточке ученика и откройте монтаж.",
     requirements: "Фронтальное фото ребёнка, ровный свет, открытые глаза, лицо без перекрытий.",
-    angles: [{ id: "portrait", name: "Портрет по шаблону", details: "Фронтальный портрет для замены лица.", refDataUrl: item.previewSrc, refName: `${item.id}-preview.webp` }],
+    angles: [{ id: "portrait", name: "Портрет", details: "Фронтальный портрет: ребёнок смотрит в камеру, лицо открыто.", refDataUrl: `./assets/reference-poses/${poseGender}-portrait.jpg`, refName: `${poseGender}-portrait.jpg` }],
     prompt,
     tags: [...item.tags],
     childTemplate: true,
