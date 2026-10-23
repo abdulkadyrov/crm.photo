@@ -953,35 +953,36 @@ function homeDashboardStats(projects, classes, students, doneTasks, totalTasks) 
 function homeDashboard(stats) {
   const remainingTasks = Math.max(0, stats.totalTasks - stats.doneTasks);
   return `
-    <section class="dashboard-panel" aria-label="Дашборд съемки">
-      <div class="dashboard-head">
-        <div>
-          <h2 class="card-title">Дашборд</h2>
-          <p class="muted">Что готово, что осталось и где нужен фокус.</p>
-        </div>
+    <details class="dashboard-panel" aria-label="Дашборд съемки">
+      <summary class="dashboard-head">
+        <h2 class="card-title">Дашборд</h2>
         <span class="status-pill ${stats.taskPercent >= 80 ? "paid" : stats.taskPercent ? "in-progress" : "unpaid"}">${stats.taskPercent}% задач</span>
+        <span class="dashboard-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="dashboard-content">
+        <p class="dashboard-subtitle">Что готово, что осталось и где нужен фокус.</p>
+        <div class="dashboard-grid">
+          <article class="dashboard-donut-card">
+            <div class="dashboard-donut" style="--value:${stats.taskPercent}"><strong>${stats.taskPercent}%</strong><span>готово</span></div>
+            <div class="dashboard-legend">
+              <span><i class="legend-dot done"></i>${stats.doneTasks} сделано</span>
+              <span><i class="legend-dot todo"></i>${remainingTasks} осталось</span>
+            </div>
+          </article>
+          <article class="dashboard-bars">
+            ${dashboardBar("Оплачено", stats.paid, stats.students, stats.paidPercent)}
+            ${dashboardBar("Обработано", stats.ready, stats.students, stats.readyPercent)}
+            ${dashboardBar("Напечатано", stats.printed, stats.finalWorks, stats.finalWorks ? Math.round((stats.printed / stats.finalWorks) * 100) : 0)}
+          </article>
+          <article class="dashboard-kpis">
+            <div><strong>${stats.todo}</strong><span>надо снять</span></div>
+            <div><strong>${stats.shooting}</strong><span>на съемке</span></div>
+            <div><strong>${stats.finalWorks}</strong><span>готовых работ</span></div>
+            <div><strong>${stats.media}</strong><span>медиа</span></div>
+          </article>
+        </div>
       </div>
-      <div class="dashboard-grid">
-        <article class="dashboard-donut-card">
-          <div class="dashboard-donut" style="--value:${stats.taskPercent}"><strong>${stats.taskPercent}%</strong><span>готово</span></div>
-          <div class="dashboard-legend">
-            <span><i class="legend-dot done"></i>${stats.doneTasks} сделано</span>
-            <span><i class="legend-dot todo"></i>${remainingTasks} осталось</span>
-          </div>
-        </article>
-        <article class="dashboard-bars">
-          ${dashboardBar("Оплачено", stats.paid, stats.students, stats.paidPercent)}
-          ${dashboardBar("Обработано", stats.ready, stats.students, stats.readyPercent)}
-          ${dashboardBar("Напечатано", stats.printed, stats.finalWorks, stats.finalWorks ? Math.round((stats.printed / stats.finalWorks) * 100) : 0)}
-        </article>
-        <article class="dashboard-kpis">
-          <div><strong>${stats.todo}</strong><span>надо снять</span></div>
-          <div><strong>${stats.shooting}</strong><span>на съемке</span></div>
-          <div><strong>${stats.finalWorks}</strong><span>готовых работ</span></div>
-          <div><strong>${stats.media}</strong><span>медиа</span></div>
-        </article>
-      </div>
-    </section>
+    </details>
   `;
 }
 
@@ -2261,7 +2262,13 @@ function selectedServiceSettingsCard(item, studentId) {
   const quantity = studentServiceQuantity(student, item.id);
   const totalPrice = parseMoney(item.price) * quantity;
   return `
-    <article class="selected-service-card">
+    <details class="selected-service-card">
+      <summary class="selected-service-card-summary">
+        <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
+        <span class="mini-catalog-copy"><strong>${escapeHtml(serviceName(item))}</strong><small>${escapeHtml(formatMoney(totalPrice))}</small></span>
+        <span class="selected-service-card-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="selected-service-card-body">
       <div class="student-service-card-main">
         <button class="student-service-preview-button" data-preview-student-service="${studentId}:${item.id}" type="button" aria-label="Превью ${escapeAttr(serviceName(item))}">
           <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
@@ -2284,7 +2291,8 @@ function selectedServiceSettingsCard(item, studentId) {
         <span>Комментарий к услуге</span>
         <textarea class="textarea student-service-comment-input" data-service-comment="${studentId}:${item.id}" placeholder="Например: без шляпы, сделать темнее, добавить имя">${escapeHtml(comment)}</textarea>
       </label>
-    </article>
+      </div>
+    </details>
   `;
 }
 
@@ -5059,6 +5067,14 @@ function showAngleEditor(itemId, angleId = "") {
   const item = catalogItemById(itemId);
   const angle = (item?.angles || []).find((entry) => entry.id === angleId);
   if (!item) return;
+  const poseGender = item.gender === "girls" ? "girl" : "boy";
+  const posePresets = [
+    ["portrait", "Портрет", "Фронтальный портрет: ребёнок смотрит в камеру, лицо открыто."],
+    ["face", "Лицо крупно", "Крупный план лица: ровный свет, глаза открыты, без перекрытий."],
+    ["full-body", "Полный рост", "Ребёнок стоит прямо, руки свободно, обувь видна целиком."],
+    ["side", "Сбоку", "Профиль в полный рост, ребёнок спокойно стоит боком."],
+    ["interview-desk", "Интервью за партой", "Ребёнок сидит за партой и смотрит чуть в сторону учителя; на фоне — полка с книгами."]
+  ];
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop service-editor-backdrop";
   panel.innerHTML = `
@@ -5072,6 +5088,13 @@ function showAngleEditor(itemId, angleId = "") {
       </div>
       <label class="field-label"><span>Название ракурса</span><input class="input" name="name" required placeholder="Портрет, полный рост, бок, видео, интервью" value="${escapeAttr(angle?.name || "")}" /></label>
       <label class="field-label"><span>Описание ракурса</span><textarea class="input textarea" name="details" placeholder="Описание ракурса, сценарий или короткая инструкция">${escapeHtml(angle?.details || "")}</textarea></label>
+      <input name="posePreset" type="hidden" value="" />
+      <section class="pose-preset-picker" aria-label="Готовые референсы поз">
+        <span>Готовые референсы поз</span>
+        <div>
+          ${posePresets.map(([id, name, details]) => `<button class="pose-preset-option" data-pose-preset="${id}" data-pose-name="${escapeAttr(name)}" data-pose-details="${escapeAttr(details)}" data-pose-src="./assets/reference-poses/${poseGender}-${id}.jpg" type="button"><img src="./assets/reference-poses/${poseGender}-${id}.jpg" alt="${escapeAttr(name)}" /><small>${escapeHtml(name)}</small></button>`).join("")}
+        </div>
+      </section>
       <label class="field-label"><span>Референс изображения</span><input class="input" name="imageReference" type="file" accept="image/*" /></label>
       <label class="field-label"><span>Референс видео</span><input class="input" name="videoReference" type="file" accept="video/*" /></label>
       <div class="service-reference-summary">
@@ -5087,6 +5110,12 @@ function showAngleEditor(itemId, angleId = "") {
   `;
   const close = () => panel.remove();
   panel.querySelectorAll("[data-close-angle-editor]").forEach((node) => node.addEventListener("click", close));
+  panel.querySelectorAll("[data-pose-preset]").forEach((node) => node.addEventListener("click", () => {
+    panel.querySelector('[name="posePreset"]').value = node.dataset.poseSrc || "";
+    panel.querySelector('[name="name"]').value = node.dataset.poseName || "";
+    panel.querySelector('[name="details"]').value = node.dataset.poseDetails || "";
+    panel.querySelectorAll("[data-pose-preset]").forEach((entry) => entry.classList.toggle("is-selected", entry === node));
+  }));
   panel.querySelector("[data-skip-angle-editor]")?.addEventListener("click", () => saveAngleEditor(panel.querySelector("[data-angle-editor]"), item, angle, true, close));
   panel.querySelector("[data-angle-editor]")?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -5102,7 +5131,8 @@ async function saveAngleEditor(form, item, angle, allowOnlyName, close) {
   if (!name) return notify("Введите название ракурса.");
   const imageFile = fields.imageReference.files?.[0];
   const videoFile = fields.videoReference.files?.[0];
-  const refDataUrl = imageFile ? await fileToOptimizedImageDataUrl(imageFile, { maxSize: 1600, quality: 0.84 }) : angle?.refDataUrl || "";
+  const presetReference = fields.posePreset.value.trim();
+  const refDataUrl = imageFile ? await fileToOptimizedImageDataUrl(imageFile, { maxSize: 1600, quality: 0.84 }) : presetReference || angle?.refDataUrl || "";
   const videoRefDataUrl = videoFile ? await fileToDataUrl(videoFile) : angle?.videoRefDataUrl || "";
   const baseId = angle?.id || uniqueAngleId(item, normalizeOrderType(name));
   const nextAngle = {
@@ -5113,7 +5143,7 @@ async function saveAngleEditor(form, item, angle, allowOnlyName, close) {
     details: allowOnlyName ? (angle?.details || "") : fields.details.value.trim(),
     description: allowOnlyName ? (angle?.description || "") : fields.details.value.trim(),
     refDataUrl,
-    refName: imageFile?.name || angle?.refName || "",
+    refName: imageFile?.name || (presetReference ? presetReference.split("/").pop() : angle?.refName || ""),
     imageReferenceId: refDataUrl ? `${baseId}_image` : "",
     videoRefDataUrl,
     videoRefName: videoFile?.name || angle?.videoRefName || "",
@@ -6060,13 +6090,14 @@ async function showFinalWorkViewer(workId) {
           ${resultUrl ? `<img class="final-work-viewer-image" src="${escapeAttr(resultUrl)}" alt="${escapeAttr(titleText)}" />` : '<div class="empty">Preview не найден</div>'}
         </article>
       </div>
-      <article class="panel grid">
-        <div class="card-header">
+      <details class="panel grid final-work-a4-details">
+        <summary class="card-header">
           <div>
             <h3 class="card-title">Печать A4</h3>
             <p class="muted">${escapeHtml(finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(actualWork)))} · ${escapeHtml(formatActivityDate(actualWork?.a4PreparedAt || actualWork?.updatedAt || actualWork?.createdAt))}</p>
           </div>
-        </div>
+          <span class="final-work-a4-chevron" aria-hidden="true"></span>
+        </summary>
         ${a4Url ? `<img class="final-work-viewer-image final-work-viewer-a4" src="${escapeAttr(a4Url)}" alt="${escapeAttr(`${titleText} A4`)}" />` : '<div class="empty">A4-макет ещё не создан</div>'}
         <div class="toolbar final-work-a4-toolbar">
           <label class="field-label compact-field">
@@ -6080,7 +6111,7 @@ async function showFinalWorkViewer(workId) {
           <button class="secondary-button" data-download-final-a4-pdf="${actualWork.id}" type="button">Скачать PDF</button>
           <button class="secondary-button" data-print-final-work="${actualWork.id}" type="button">Печать</button>
         </div>
-      </article>
+      </details>
       <div class="toolbar">
         <button class="secondary-button" data-download-final-work="${actualWork.id}" type="button">Скачать готовую работу</button>
         <button class="danger-button" data-delete-final-work="${actualWork.id}" type="button">Удалить</button>
