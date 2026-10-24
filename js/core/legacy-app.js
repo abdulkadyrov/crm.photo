@@ -2448,7 +2448,6 @@ function showCatalogServiceViewer(itemId) {
       </div>
       ${serviceParentResultMockup(item)}
       ${media}
-      ${standardPhotoPackageMockup(item)}
       <div class="catalog-modal-copy">
         <div class="catalog-card-badges">
           ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
@@ -11481,27 +11480,6 @@ function serviceParentPreviewMode(item) {
   return normalizeParentPreviewMode(item?.parentPreviewMode);
 }
 
-function serviceHasStandardPhotoPackage(item) {
-  return normalizeMediaKind(item?.mediaKind, "both") === "photo" && parseMoney(item?.price) === 350;
-}
-
-function standardPhotoPackageMockup(item) {
-  if (!serviceHasStandardPhotoPackage(item)) return "";
-  return `
-    <section class="standard-photo-package" aria-label="Что входит в обычное фото">
-      <figure class="standard-photo-lamination-visual">
-        <img src="./assets/standard-photo-lamination-mockup.png" alt="Распечатанное детское фото с защитной ламинацией" />
-        <span class="lamination-magnifier" aria-hidden="true"></span>
-        <span class="standard-photo-lamination-label">Ламинация · защита</span>
-      </figure>
-      <div class="standard-photo-package-copy">
-        <h3>Что входит в 350 ₽</h3>
-        <p>Фотомонтаж · распечатка · ламинация</p>
-      </div>
-    </section>
-  `;
-}
-
 function serviceParentResultMockup(item, { panel = false } = {}) {
   const imageUrl = servicePreviewImageDataUrl(item);
   const videoUrl = servicePreviewVideoDataUrl(item);
@@ -11521,8 +11499,10 @@ function serviceParentResultMockup(item, { panel = false } = {}) {
     </figure>
   ` : "";
   const print = presentation.printPhoto ? `
-    <figure class="service-parent-paper">
-      <img src="${imageUrl}" alt="Распечатанное фото A4: ${escapeAttr(serviceName(item))}" />
+    <figure class="service-parent-paper is-laminated">
+      <img class="service-parent-print-image" src="${imageUrl}" alt="Распечатанное фото A4: ${escapeAttr(serviceName(item))}" />
+      <span class="service-parent-lamination-magnifier" aria-hidden="true"><img src="${imageUrl}" alt="" /></span>
+      <span class="service-parent-lamination-label">Ламинация · защита</span>
     </figure>
   ` : "";
   const content = `
@@ -11535,7 +11515,7 @@ function serviceParentResultMockup(item, { panel = false } = {}) {
     <div class="card-header service-parent-result-header">
       <div>
         <h2 class="card-title">Что получат родители</h2>
-        <p class="muted">${presentation.printPhoto ? "Фото будет напечатано на листе A4." : "Цифровой результат доступен на телефоне."}</p>
+        <p class="muted">${presentation.printPhoto ? "Фотомонтаж · распечатка · ламинация" : "Цифровой результат доступен на телефоне."}</p>
       </div>
     </div>
   `;
