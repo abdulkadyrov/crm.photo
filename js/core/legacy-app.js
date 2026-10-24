@@ -2448,6 +2448,7 @@ function showCatalogServiceViewer(itemId) {
       </div>
       ${serviceParentResultMockup(item)}
       ${media}
+      ${standardPhotoPackageMockup(item)}
       <div class="catalog-modal-copy">
         <div class="catalog-card-badges">
           ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
@@ -11478,6 +11479,27 @@ function servicePreviewVideoDataUrl(item) {
 
 function serviceParentPreviewMode(item) {
   return normalizeParentPreviewMode(item?.parentPreviewMode);
+}
+
+function serviceHasStandardPhotoPackage(item) {
+  return normalizeMediaKind(item?.mediaKind, "both") === "photo" && parseMoney(item?.price) === 350;
+}
+
+function standardPhotoPackageMockup(item) {
+  if (!serviceHasStandardPhotoPackage(item)) return "";
+  return `
+    <section class="standard-photo-package" aria-label="Что входит в обычное фото">
+      <figure class="standard-photo-lamination-visual">
+        <img src="./assets/standard-photo-lamination-mockup.png" alt="Распечатанное детское фото с защитной ламинацией" />
+        <span class="lamination-magnifier" aria-hidden="true"></span>
+        <span class="standard-photo-lamination-label">Ламинация · защита</span>
+      </figure>
+      <div class="standard-photo-package-copy">
+        <h3>Что входит в 350 ₽</h3>
+        <p>Фотомонтаж · распечатка · ламинация</p>
+      </div>
+    </section>
+  `;
 }
 
 function serviceParentResultMockup(item, { panel = false } = {}) {

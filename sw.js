@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v68";
+const CACHE_VERSION = "v69";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -76,6 +76,7 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./assets/standard-photo-lamination-mockup.png",
   "./app.js",
   "./js/core/app.js",
   "./js/core/bootstrap.js",

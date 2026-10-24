@@ -254,7 +254,7 @@ export function childPortraitCatalogRecord(item, index = 0) {
     name: item.title,
     mediaKind: "photo",
     price: "350",
-    catalogPriceVersion: 4,
+    catalogPriceVersion: 5,
     shortDescription: item.description,
     description: `${item.description} Подготовлены мастер ${item.canvas.width}×${item.canvas.height}${item.canvas.format === "A4" ? " (A4, 300 dpi)" : ""}, превью и мягкая маска лица.`,
     gender: item.gender === "boy" ? "boys" : "girls",
