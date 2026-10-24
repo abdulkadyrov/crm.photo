@@ -1769,26 +1769,26 @@ function renderStudent() {
             <button class="secondary-button" data-export-student="${student.id}" type="button">Экспорт</button>
           </div>
           <div class="media-grid">
-            ${media.map(mediaTile).join("") || '<p class="muted">Фото и видео появятся здесь.</p>'}
+            ${media.map(mediaTile).join("")}
           </div>
         </article>
         <div class="grid student-detail-results student-detail-section ${activeStudentDetailTab === "media" ? "is-active" : ""}" data-student-detail-section="media">
           <article class="panel final-results-panel">
             <div class="card-header">
               <h2 class="card-title">Готовые работы</h2>
-              <span class="muted">${finalWorks.length ? `${finalWorks.length} ${pluralizeRu(finalWorks.length, "результат", "результата", "результатов")}` : "Пока нет"}</span>
+              ${finalWorks.length ? `<span class="muted">${finalWorks.length} ${pluralizeRu(finalWorks.length, "результат", "результата", "результатов")}</span>` : ""}
             </div>
             <div class="final-results-grid">
-              ${finalWorks.map(finalResultCard).join("") || '<p class="muted">AI-результаты появятся здесь после монтажа.</p>'}
+              ${finalWorks.map(finalResultCard).join("")}
             </div>
           </article>
           <article class="panel final-results-panel">
             <div class="card-header">
               <h2 class="card-title">Печать A4</h2>
-              <span class="muted">${a4Works.length ? `${a4Works.length} ${pluralizeRu(a4Works.length, "макет", "макета", "макетов")}` : "Подготавливается автоматически"}</span>
+              ${a4Works.length ? `<span class="muted">${a4Works.length} ${pluralizeRu(a4Works.length, "макет", "макета", "макетов")}</span>` : ""}
             </div>
             <div class="final-results-grid">
-              ${finalWorks.map(finalPrintA4Card).join("") || '<p class="muted">Печатные макеты A4 появятся после загрузки готовой работы.</p>'}
+              ${finalWorks.map(finalPrintA4Card).join("")}
             </div>
           </article>
         </div>
@@ -1937,7 +1937,7 @@ function taskRow(item, studentId) {
           ${reference}
         <div>
           <strong>${escapeHtml(orderItemLabel(item))}</strong>
-          <p class="muted">${item.fileIds.length} файлов${angle?.details ? ` · ${escapeHtml(angle.details)}` : ""}</p>
+          <p class="muted">${item.fileIds.length} файлов</p>
         </div>
       </div>
       <button class="${item.status === "done" ? "secondary-button" : "primary-button"} compact" data-toggle-task="${studentId}:${item.type}" type="button">
@@ -2811,7 +2811,6 @@ function catalogAngleRow(item, angle) {
         ${reference}
         <div class="list-copy">
           <strong>${escapeHtml(angle.name)}</strong>
-          <p class="muted">${escapeHtml(angle.details || "Описание ракурса не заполнено")}</p>
           <div class="service-card-meta">${badges || "<span>Нет референса</span>"}</div>
         </div>
         <details class="item-menu">
@@ -3779,7 +3778,7 @@ function studentCard(student) {
           <div class="student-statuses">
             <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
             <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
-            <span class="price-pill">${student.paymentStatus === "paid" ? "Оплачено" : "К оплате"} ${escapeHtml(formatMoney(price))}</span>
+            <span class="price-pill">${escapeHtml(formatMoney(price))}</span>
             ${finalStats.total ? `<span class="status-pill paid">Готовые работы: ${finalStats.total}</span><span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "in-progress"}">Напечатано: ${finalStats.printed}</span>` : ""}
           </div>
         </div>
@@ -5277,12 +5276,12 @@ function documentsSection(ownerType, ownerId) {
       <div class="card-header">
         <div>
           <h2 class="card-title">${titleText}</h2>
-          <p class="muted">${docs.length ? `${docs.length} ${pluralizeRu(docs.length, "файл", "файла", "файлов")}` : "PDF, DOC, DOCX, JPG, PNG, WEBP"}</p>
+          ${docs.length ? `<p class="muted">${docs.length} ${pluralizeRu(docs.length, "файл", "файла", "файлов")}</p>` : ""}
         </div>
         <button class="primary-button compact" data-upload-document="${ownerType}:${ownerId}" type="button"><span data-icon="plus"></span>Файл</button>
       </div>
       <div class="document-list">
-        ${docs.map(documentCard).join("") || '<p class="muted">Документы появятся здесь.</p>'}
+        ${docs.map(documentCard).join("")}
       </div>
     </section>
   `;
@@ -5810,26 +5809,19 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
             <div class="toolbar">
               ${referenceUrl ? `<button class="secondary-button compact" data-preview-url="${escapeAttr(referenceUrl)}" data-preview-title="${escapeAttr(reference.name || serviceName(service) || "Референс")}" data-preview-video="${reference.isVideo ? "true" : "false"}" type="button">Открыть</button><button class="secondary-button compact" data-download-url="${escapeAttr(referenceUrl)}" data-download-name="${escapeAttr(reference.name || "reference")}" type="button">Скачать</button>` : ""}
             </div>
-            ${service?.childTemplate ? `
-              <div class="child-template-ready-note montage-template-note">
-                <strong>Мастер и маска подготовлены</strong>
-                <span>${escapeHtml(`${childTemplateGradeLabel(service.grade)} · ${childTemplateHeadwearLabel(service.headwear)}`)}</span>
-                <span>AI-адаптер: face-swap-v1. Готовый результат добавляется кнопкой ниже.</span>
-              </div>
-            ` : ""}
           </article>
         </div>
         <div class="montage-grid montage-secondary-grid">
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Комментарий клиента</h3></div>
-            ${serviceComment ? `<div class="prompt-box montage-comment-box">${escapeHtml(serviceComment)}</div>` : '<p class="muted">Комментарий к этой услуге пока не добавлен.</p>'}
+            ${serviceComment ? `<div class="prompt-box montage-comment-box">${escapeHtml(serviceComment)}</div>` : ""}
           </article>
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Prompt</h3>${promptText ? `<button class="secondary-button compact" data-copy-montage-prompt type="button">Скопировать</button>` : ""}</div>
-            ${promptText ? `<div class="prompt-box montage-prompt-box">${escapeHtml(promptText)}</div>` : '<p class="muted">Промпт не добавлен.</p>'}
+            ${promptText ? `<div class="prompt-box montage-prompt-box">${escapeHtml(promptText)}</div>` : ""}
           </article>
           <article class="panel grid">
-            <div class="card-header"><h3 class="card-title">Результат</h3><span class="muted">${works.length ? `Готовых работ: ${works.length}` : "Пока нет"}</span></div>
+            <div class="card-header"><h3 class="card-title">Результат</h3>${works.length ? `<span class="muted">${works.length}</span>` : ""}</div>
             <div class="toolbar">
               <button class="primary-button" data-add-final-work type="button"><span data-icon="plus"></span>Добавить результат</button>
             </div>

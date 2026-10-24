@@ -3154,20 +3154,18 @@ button.mini-catalog-option {
 .student-statuses {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
   width: 100%;
   min-width: 0;
   margin-top: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .student-statuses > .status-pill,
 .student-statuses > .price-pill {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 .price-pill {
@@ -4571,20 +4569,21 @@ button.mini-catalog-option {
   .student-statuses {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
-    gap: clamp(2px, 1vw, 5px);
+    flex-wrap: wrap;
+    gap: 6px;
+    overflow: visible;
   }
 
   .student-statuses .status-pill,
   .student-statuses .price-pill {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     width: auto;
-    max-width: none;
+    max-width: 100%;
     height: 26px;
     min-height: 26px;
-    padding: 0 clamp(3px, 1.25vw, 8px);
-    gap: clamp(2px, 0.8vw, 5px);
-    font-size: clamp(0.55rem, 2.35vw, 0.72rem);
+    padding: 0 8px;
+    gap: 4px;
+    font-size: 0.7rem;
     line-height: 1;
     justify-content: center;
   }
