@@ -2029,7 +2029,10 @@ function renderCatalog() {
           <h2 class="card-title">Каталог услуг</h2>
           <p class="muted">Покажите детям и родителям доступные варианты</p>
         </div>
-        <button class="primary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать ZIP-каталог для сайта</button>
+        <div class="catalog-hero-actions">
+          <button class="primary-button" data-export-parent-video-catalog type="button"><span data-icon="download"></span>Экспорт 3 услуг: фото + видео</button>
+          <button class="secondary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать весь ZIP-каталог</button>
+        </div>
       </article>
       <label class="search-box catalog-search">
         <span data-icon="search"></span>
@@ -4134,6 +4137,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
   view.querySelector("[data-back-settings]")?.addEventListener("click", () => navigate("settings"));
   view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);
+  view.querySelector("[data-export-parent-video-catalog]")?.addEventListener("click", exportParentVideoCatalog);
   view.querySelectorAll("[data-catalog-audience]").forEach((node) => node.addEventListener("click", () => {
     state.catalogAudience = node.dataset.catalogAudience;
     renderCatalog();
@@ -8205,6 +8209,24 @@ async function exportPublicCatalog() {
   });
 }
 
+const PARENT_VIDEO_CATALOG_SERVICE_IDS = new Set([
+  "school-photo-interview-seedance",
+  "kindergarten-video-fairytale-princess",
+  "kindergarten-video-dragon-flight"
+]);
+
+async function exportParentVideoCatalog() {
+  return withBusy("Сжатие трёх услуг с фото и видео...", async () => {
+    const services = publicOrderedServices(state.data.catalog)
+      .filter((item) => PARENT_VIDEO_CATALOG_SERVICE_IDS.has(item.id));
+    if (services.length !== 3) throw new Error("Не найдены все три готовые услуги для родителей.");
+    const blob = createZip(await buildPublicCatalogExportFiles(services));
+    downloadBlob(blob, "parent_video_catalog.zip");
+    await recordOperatorEvent("export", { targetType: "parent_video_catalog", serviceCount: services.length });
+    notify("Экспортированы 3 услуги: фото A4, QR-оживление и видео.");
+  });
+}
+
 async function importServices(file) {
   return importTransferFile(file, "services");
 }
@@ -8282,12 +8304,12 @@ async function buildTransferExportFiles(exportType, scope = {}) {
   ];
 }
 
-async function buildPublicCatalogExportFiles() {
+async function buildPublicCatalogExportFiles(sourceItems = publicOrderedServices(state.data.catalog)) {
   const files = [];
   const services = [];
   const watermark = catalogWatermarkSettings();
   const exportedIds = new Set();
-  for (const [index, item] of publicOrderedServices(state.data.catalog).entries()) {
+  for (const [index, item] of sourceItems.entries()) {
     const rawServiceId = item.id || `service-${index + 1}`;
     const baseServiceId = normalizeCatalogExportId(rawServiceId, index + 1);
     let serviceId = baseServiceId;

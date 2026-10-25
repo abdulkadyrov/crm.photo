@@ -65,7 +65,7 @@ test("four Seedance services include one interview and three no-dialogue stories
     assert.equal(service.durationSeconds, 15);
     assert.equal(service.videoModel, "Seedance 2.0");
     assert.equal(service.price, "1200");
-    assert.equal(service.catalogPriceVersion, 6);
+    assert.ok([6, 7].includes(service.catalogPriceVersion));
     assert.equal(service.kindergartenAiVideo, true);
     assert.equal(service.systemTemplate, true);
     assert.equal(service.enabled, true);
@@ -79,6 +79,9 @@ test("four Seedance services include one interview and three no-dialogue stories
   assert.equal(silent.length, 3);
   const dragon = KINDERGARTEN_AI_VIDEO_SERVICES.find((item) => item.id === "kindergarten-video-dragon-flight");
   assert.match(dragon.previewVideoUrl, /dragon-flight-15s-user\.mp4$/);
+  assert.equal(dragon.title, "Полёт на драконе — ИИ-видео");
+  assert.equal(dragon.category, "ИИ-видео");
+  assert.equal(dragon.parentPreviewMode, "auto");
   assert.ok((await stat(localAsset(dragon.previewVideoUrl))).size > 100_000);
   for (const service of silent) {
     assert.match(service.prompt, /Без речи, без голосов/);
@@ -107,7 +110,9 @@ test("school interview service includes printable photo and phone video result",
   assert.equal(service.durationSeconds, 15);
   assert.equal(service.videoModel, "Seedance 2.0");
   assert.equal(service.price, "800");
-  assert.equal(service.catalogPriceVersion, 6);
+  assert.equal(service.catalogPriceVersion, 7);
+  assert.equal(service.title, "Интервью ребёнка");
+  assert.equal(service.category, "Фото с видео");
   assert.match(service.previewVideoUrl, /schoolboy-interview-15s-user\.mp4$/);
   assert.equal(service.angles.length, 1);
   assert.equal(service.angles[0].id, "interview-desk");
@@ -123,5 +128,8 @@ test("fairytale princess service includes the attached 15-second video result", 
   assert.ok(service);
   assert.match(service.previewVideoUrl, /fairytale-princess-15s-user\.mp4$/);
   assert.equal(service.systemTemplateVersion, 2);
+  assert.equal(service.title, "Принцесса — ИИ-видео");
+  assert.equal(service.category, "ИИ-видео");
+  assert.equal(service.parentPreviewMode, "auto");
   assert.ok((await stat(localAsset(service.previewVideoUrl))).size > 100_000);
 });
