@@ -3233,6 +3233,45 @@ button.mini-catalog-option {
   max-width: 100%;
 }
 
+.student-status-details {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+}
+
+.student-status-details > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.student-status-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.student-status-details > summary::after {
+  width: 7px;
+  height: 7px;
+  margin-left: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.student-status-details[open] > summary::after {
+  transform: rotate(225deg) translate(-2px, -1px);
+}
+
+.student-statuses-extra {
+  margin-top: 4px;
+}
+
 .price-pill {
   display: inline-flex;
   align-items: center;
@@ -4857,6 +4896,39 @@ button.mini-catalog-option {
   overflow: auto;
 }
 
+.montage-animation-qr-content {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.montage-animation-qr-preview,
+.montage-animation-qr-empty {
+  width: 86px;
+  height: 86px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.montage-animation-qr-empty {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.montage-animation-qr-actions {
+  display: grid;
+  gap: 8px;
+}
+
 @media (max-height: 820px) {
   .montage-panel {
     gap: 10px;
@@ -4873,6 +4945,16 @@ button.mini-catalog-option {
 
   .montage-prompt-box {
     max-height: 72px;
+  }
+
+  .montage-animation-qr-content {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .montage-animation-qr-preview,
+  .montage-animation-qr-empty {
+    width: 72px;
+    height: 72px;
   }
 }
 

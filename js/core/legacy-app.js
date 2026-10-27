@@ -232,6 +232,7 @@ const state = {
   currentPreview: null,
   currentAlbumMedia: null,
   currentFinalWork: null,
+  currentMontageQr: null,
   pendingFinalWorkViewerId: "",
   finalWorkMergeQueue: new Set(),
   finalWorkA4Queue: new Set(),
@@ -299,6 +300,7 @@ const transferFolderInput = document.querySelector("#transfer-folder-input");
 const albumMediaInput = document.querySelector("#album-media-input");
 const albumZipInput = document.querySelector("#album-zip-input");
 const finalWorkInput = document.querySelector("#final-work-input");
+const montageQrInput = document.querySelector("#montage-qr-input");
 const documentInput = document.querySelector("#document-input");
 
 init();
@@ -769,6 +771,7 @@ function bindShell() {
   albumMediaInput.addEventListener("change", handleAlbumMediaInput);
   albumZipInput.addEventListener("change", handleAlbumZipInput);
   finalWorkInput?.addEventListener("change", handleFinalWorkInput);
+  montageQrInput?.addEventListener("change", handleMontageQrInput);
   documentInput?.addEventListener("change", handleDocumentInput);
 }
 
@@ -3782,8 +3785,16 @@ function studentCard(student) {
             <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
             <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
             <span class="price-pill">${escapeHtml(formatMoney(price))}</span>
-            ${finalStats.total ? `<span class="status-pill paid">Готовые работы: ${finalStats.total}</span><span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "in-progress"}">Напечатано: ${finalStats.printed}</span>` : ""}
           </div>
+          ${finalStats.total ? `
+            <details class="student-status-details">
+              <summary>Детали готовности</summary>
+              <div class="student-statuses student-statuses-extra">
+                <span class="status-pill paid">Готовые: ${finalStats.total}</span>
+                <span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "in-progress"}">Напечатано: ${finalStats.printed}</span>
+              </div>
+            </details>
+          ` : ""}
         </div>
         <details class="item-menu student-menu">
           <summary aria-label="Меню ученика">...</summary>
@@ -5781,8 +5792,13 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   const reference = service ? montageReferenceForService(service) : null;
   const promptText = service ? servicePrompt(service) : "";
   const works = service ? finalWorksForStudent(student.id).filter((work) => work.serviceId === service.id) : [];
+  const animationQrFile = state.currentMontageQr?.studentId === student.id && state.currentMontageQr?.serviceId === service?.id
+    ? state.currentMontageQr.file
+    : null;
+  const needsAnimationQr = service && ["video", "both"].includes(normalizeMediaKind(service.mediaKind, "both"));
   const sourceUrl = source?.blob ? URL.createObjectURL(source.blob) : "";
   const referenceUrl = reference?.url || "";
+  const animationQrUrl = animationQrFile ? URL.createObjectURL(animationQrFile) : "";
   document.querySelector(".montage-backdrop")?.remove();
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop montage-backdrop";
@@ -5816,6 +5832,18 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
           </article>
         </div>
         <div class="montage-grid montage-secondary-grid">
+          ${needsAnimationQr ? `
+            <article class="panel grid montage-animation-qr-panel">
+              <div class="card-header"><h3 class="card-title">QR для оживления</h3></div>
+              <div class="montage-animation-qr-content">
+                ${animationQrUrl ? `<img class="montage-animation-qr-preview" src="${animationQrUrl}" alt="QR для оживления" />` : '<div class="montage-animation-qr-empty">QR будет в углу фото</div>'}
+                <div class="montage-animation-qr-actions">
+                  <button class="secondary-button compact" data-upload-montage-qr type="button">${animationQrUrl ? "Заменить QR" : "Загрузить QR"}</button>
+                  ${animationQrUrl ? '<button class="secondary-button compact" data-remove-montage-qr type="button">Убрать</button>' : ""}
+                </div>
+              </div>
+            </article>
+          ` : ""}
           <article class="panel grid">
             <div class="card-header"><h3 class="card-title">Комментарий клиента</h3></div>
             ${serviceComment ? `<div class="prompt-box montage-comment-box">${escapeHtml(serviceComment)}</div>` : ""}
@@ -5836,6 +5864,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   `;
   const close = () => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    if (animationQrUrl) URL.revokeObjectURL(animationQrUrl);
     panel.remove();
   };
   panel.addEventListener("click", (event) => {
@@ -5843,11 +5872,13 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   });
   panel.querySelector("[data-montage-service]")?.addEventListener("change", (event) => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    if (animationQrUrl) URL.revokeObjectURL(animationQrUrl);
     panel.remove();
     showMontagePanel(student.id, event.currentTarget.value, source?.id || "");
   });
   panel.querySelector("[data-montage-source]")?.addEventListener("change", (event) => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    if (animationQrUrl) URL.revokeObjectURL(animationQrUrl);
     panel.remove();
     showMontagePanel(student.id, service?.id || "", event.currentTarget.value);
   });
@@ -5857,9 +5888,19 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   });
   panel.querySelector("[data-add-final-work]")?.addEventListener("click", () => {
     if (!service) return notify("Выберите услугу для монтажа.");
-    state.currentFinalWork = { studentId: student.id, serviceId: service.id, sourceMediaId: source?.id || "", referenceMediaId: reference?.id || "" };
+    state.currentFinalWork = { studentId: student.id, serviceId: service.id, sourceMediaId: source?.id || "", referenceMediaId: reference?.id || "", animationQrFile };
     finalWorkInput.value = "";
     finalWorkInput.click();
+  });
+  panel.querySelector("[data-upload-montage-qr]")?.addEventListener("click", () => {
+    state.currentMontageQr = { studentId: student.id, serviceId: service.id, sourceMediaId: source?.id || "", file: null };
+    montageQrInput.value = "";
+    montageQrInput.click();
+  });
+  panel.querySelector("[data-remove-montage-qr]")?.addEventListener("click", () => {
+    state.currentMontageQr = null;
+    close();
+    showMontagePanel(student.id, service?.id || "", source?.id || "");
   });
   panel.querySelectorAll("[data-preview-url]").forEach((node) => node.addEventListener("click", () => {
     showInlineMediaPreview({
@@ -5874,6 +5915,18 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   }));
   document.body.append(panel);
   injectIcons();
+}
+
+async function handleMontageQrInput(event) {
+  const file = event.target.files?.[0];
+  const target = state.currentMontageQr;
+  event.target.value = "";
+  if (!file || !target) return;
+  if (!fileLooksImage(file)) return notify("Загрузите QR как изображение: JPG, PNG или WebP.");
+  state.currentMontageQr = { ...target, file };
+  document.querySelector(".montage-backdrop")?.remove();
+  showMontagePanel(target.studentId, target.serviceId, target.sourceMediaId);
+  notify("QR добавлен: он будет размещён в углу готового фото.");
 }
 
 async function handleFinalWorkInput(event) {
@@ -5896,12 +5949,14 @@ async function handleFinalWorkInput(event) {
       title: serviceName(service) || "Готовый результат",
       originalFile: file,
       sourceMediaId: target.sourceMediaId,
-      referenceMediaId: target.referenceMediaId
+      referenceMediaId: target.referenceMediaId,
+      animationQrFile: target.animationQrFile || null
     });
     await put("finalWorks", work);
     workId = work.id;
   });
   state.currentFinalWork = null;
+  state.currentMontageQr = null;
   await refreshData();
   await markStudentOrderReadyAfterFinalWork(student.id);
   await refreshData();
@@ -5934,11 +5989,12 @@ function montageReferenceForService(service) {
 async function createFinalWorkRecord(input) {
   const id = uid("final");
   const qrData = finalWorkQrData({ id, ...input });
-  const mergedAsset = await buildFinalWorkMergedAsset(input.originalFile, qrData.payload);
+  const mergedAsset = await buildFinalWorkMergedAsset(input.originalFile, qrData.payload, input.animationQrFile);
   const a4Assets = await buildFinalWorkA4Assets({
     file: input.originalFile,
     studentId: input.studentId,
-    orientationMode: "auto"
+    orientationMode: "auto",
+    qrOverlayFile: input.animationQrFile
   });
   return stampCreated({
     id,
@@ -5952,15 +6008,18 @@ async function createFinalWorkRecord(input) {
     originalFinalImage: input.originalFile || null,
     mergedPrintImage: mergedAsset.blob,
     qrData,
-    finalImageVersion: 2,
+    finalImageVersion: 3,
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
     printQrPayload: qrData.payload,
+    animationQrImage: input.animationQrFile || null,
+    animationQrFileName: input.animationQrFile?.name || "",
     a4OrientationMode: a4Assets.orientationMode,
     a4OrientationResolved: a4Assets.orientation,
     a4PrintImage: a4Assets.jpgBlob,
     a4PrintPdf: a4Assets.pdfBlob,
+    a4QrVersion: 2,
     a4PreparedAt: now(),
     status: "ready"
   });
@@ -6463,7 +6522,7 @@ function finalWorkNeedsMergedImage(work) {
   return Boolean(work) && (
     !(work?.mergedPrintImage instanceof Blob) ||
     finalWorkPrintPayloadNeedsRefresh(work) ||
-    work?.finalImageVersion !== 2
+    work?.finalImageVersion !== 3
   ) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
 }
 
@@ -6487,6 +6546,7 @@ function finalWorkA4ResolvedOrientation(work) {
 function finalWorkA4OrientationNeedsRefresh(work) {
   return !finalWorkA4ImageBlob(work)
     || !finalWorkA4PdfBlob(work)
+    || work?.a4QrVersion !== 2
     || !["vertical", "horizontal"].includes(work?.a4OrientationResolved)
     || !["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode);
 }
@@ -6519,14 +6579,14 @@ async function ensureFinalWorkMergedImage(workId) {
   state.finalWorkMergeQueue.add(workId);
   try {
     const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage);
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
       originalFinalImage: work.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 2,
+      finalImageVersion: 3,
       printQrPayload: qrPayload
     }));
     await refreshData();
@@ -6546,14 +6606,14 @@ async function rebuildStoredFinalWorkPrintImages() {
     const original = finalWorkOriginalBlob(work) || work.image;
     if (!(original instanceof Blob)) continue;
     const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage);
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
       originalFinalImage: work.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 2,
+      finalImageVersion: 3,
       printQrPayload: qrPayload
     }, { warn: false }));
   }
@@ -6572,7 +6632,8 @@ async function ensureFinalWorkA4Assets(workId) {
     const assets = await buildFinalWorkA4Assets({
       file: original,
       studentId: work.studentId,
-      orientationMode: finalWorkA4Mode(work)
+      orientationMode: finalWorkA4Mode(work),
+      qrOverlayFile: work.animationQrImage
     });
     const latestWork = finalWorkById(workId) || work;
     const next = stampUpdated({
@@ -6581,6 +6642,7 @@ async function ensureFinalWorkA4Assets(workId) {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
+      a4QrVersion: 2,
       a4PreparedAt: now()
     });
     await put("finalWorks", next);
@@ -6604,23 +6666,25 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
     const assets = await buildFinalWorkA4Assets({
       file: original,
       studentId: work.studentId,
-      orientationMode
+      orientationMode,
+      qrOverlayFile: work.animationQrImage
     });
     const latestWork = finalWorkById(workId) || work;
     const qrPayload = finalWorkTextQrPayload(latestWork);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, latestWork.animationQrImage);
     await put("finalWorks", stampUpdated({
       ...latestWork,
       image: mergedAsset.blob,
       originalFinalImage: latestWork.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: latestWork.qrData || finalWorkQrData(latestWork),
-      finalImageVersion: 2,
+      finalImageVersion: 3,
       printQrPayload: qrPayload,
       a4OrientationMode: assets.orientationMode,
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
+      a4QrVersion: 2,
       a4PreparedAt: now()
     }));
   });
@@ -6630,7 +6694,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
   notify("Макет A4 обновлён.");
 }
 
-async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto" }) {
+async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null }) {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -6643,7 +6707,7 @@ async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto
   const context = canvas.getContext("2d");
   drawCoverImage(context, image, page.width, page.height, sourceWidth, sourceHeight);
   if (typeof image.close === "function") image.close();
-  await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId);
+  await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile);
   const jpgBlob = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
   const pdfBlob = jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
   return {
@@ -6668,13 +6732,12 @@ function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight
   context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
 }
 
-async function drawFinalWorkA4QrOverlay(context, width, height, studentId) {
+async function drawFinalWorkA4QrOverlay(context, width, height, studentId, qrOverlayFile = null) {
   const settings = finalWorkPrintSettings();
   if (settings.qrEnabled === false) return;
   const student = studentById(studentId);
   const qrPayload = studentQrPayload(student || { id: studentId, qrId: studentId });
-  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
-  const qrImage = await loadImageFromUrl(qrDataUrl);
+  const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);
   const size = finalWorkQrPixelSize(width, height, settings);
   const padding = Math.max(18, Math.round(size * 0.12));
   const radius = Math.max(12, Math.round(size * 0.12));
@@ -6747,7 +6810,7 @@ async function createPdfBlobFromJpeg(jpegBlob, orientation) {
   return new Blob(chunks, { type: "application/pdf" });
 }
 
-async function buildFinalWorkMergedAsset(file, qrPayload) {
+async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null) {
   const image = await loadImageForCanvas(file);
   const width = image.width || image.naturalWidth || 0;
   const height = image.height || image.naturalHeight || 0;
@@ -6758,6 +6821,7 @@ async function buildFinalWorkMergedAsset(file, qrPayload) {
   const context = canvas.getContext("2d");
   context.drawImage(image, 0, 0, width, height);
   if (typeof image.close === "function") image.close();
+  await drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile);
   const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
   const blob = await canvasToImageBlob(canvas, type, 0.95);
   return {
@@ -6766,11 +6830,10 @@ async function buildFinalWorkMergedAsset(file, qrPayload) {
   };
 }
 
-async function drawFinalWorkQrOverlay(context, width, height, qrPayload) {
+async function drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile = null) {
   const settings = finalWorkPrintSettings();
   if (settings.qrEnabled === false) return;
-  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
-  const qrImage = await loadImageFromUrl(qrDataUrl);
+  const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);
   const size = finalWorkQrPixelSize(width, height, settings);
   const padding = Math.max(4, Math.round(size * 0.08));
   const radius = Math.max(6, Math.round(size * 0.12));
@@ -6789,6 +6852,12 @@ async function drawFinalWorkQrOverlay(context, width, height, qrPayload) {
   context.shadowOffsetY = 0;
   context.drawImage(qrImage, x + padding, y + padding, size, size);
   context.restore();
+}
+
+async function finalWorkQrOverlayImage(qrPayload, qrOverlayFile = null) {
+  if (qrOverlayFile instanceof Blob) return loadImageForCanvas(qrOverlayFile);
+  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8))}`;
+  return loadImageFromUrl(qrDataUrl);
 }
 
 function finalWorkQrPixelSize(width, height, settings = finalWorkPrintSettings()) {
