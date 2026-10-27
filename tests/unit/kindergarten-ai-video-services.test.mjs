@@ -113,7 +113,7 @@ test("school interview service includes printable photo and phone video result",
   assert.equal(service.catalogPriceVersion, 7);
   assert.equal(service.title, "Интервью ребёнка");
   assert.equal(service.category, "Фото с видео");
-  assert.match(service.previewVideoUrl, /schoolboy-interview-15s-user\.mp4$/);
+  assert.match(service.previewVideoUrl, /schoolboy-interview-15s\.mp4$/);
   assert.equal(service.angles.length, 1);
   assert.equal(service.angles[0].id, "interview-desk");
   assert.match(service.angles[0].refDataUrl, /reference-poses\/boy-interview-desk\.jpg$/);

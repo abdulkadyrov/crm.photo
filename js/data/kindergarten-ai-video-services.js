@@ -172,7 +172,7 @@ export const SCHOOL_INTERVIEW_SERVICES = Object.freeze([
     mediaKind: "both",
     price: "800",
     preview: schoolAssetPath("schoolboy-print-front.png"),
-    previewVideoUrl: schoolAssetPath("schoolboy-interview-15s-user.mp4"),
+    previewVideoUrl: schoolAssetPath("schoolboy-interview-15s.mp4"),
     shortDescription: "Распечатанное фото + оживление + интервью ребёнка.",
     description: `${SCHOOL_INTERVIEW_PACKAGE} На фото ребёнок смотрит в камеру, а на телефоне запускается видео с ответами ученика учителю.`,
     prompt: `Use the provided schoolboy reference image as the identity and scene reference. Create a realistic 15-second documentary-style interview in a classroom. The same boy sits at a wooden desk, looks slightly away from the camera toward the teacher, and wears a small black DJI lavalier microphone clipped to his collar. A bookshelf with books is visible in the background. The teacher stays off-camera and is heard only by voice. Preserve the boy's face, age, hairstyle, clothing, microphone, desk, classroom, and bookshelf. Use natural Russian lip synchronization, realistic pauses, subtle head and eye movements, and a small smile at the end. Do not add other people, subtitles, logos, text, or dramatic camera movement.
