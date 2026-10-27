@@ -88,7 +88,7 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.5, centerY: 0.255, width: 0.235, height: 0.205 }
   }),
   template({
-    id: "child-boy-armored-tech-hero", title: "Бронированный техногерой", grade: 2, gender: "boy", theme: "armored-tech-hero",
+    id: "child-boy-armored-tech-hero", title: "Железный человек", grade: 2, gender: "boy", theme: "armored-tech-hero",
     tags: ["техногерой", "броня", "будущее"], description: "Оригинальный герой в графитово-синей технологичной броне с открытым лицом.",
     faceGuide: { centerX: 0.5, centerY: 0.245, width: 0.225, height: 0.195 }
   }),
@@ -143,17 +143,17 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.455, centerY: 0.265, width: 0.22, height: 0.2 }
   }),
   template({
-    id: "child-boy-rescue-puppy-team", title: "Щенки-спасатели", grade: 0, gender: "boy", theme: "rescue-puppy-team",
+    id: "child-boy-rescue-puppy-team", title: "Щенячий патруль", grade: 0, gender: "boy", theme: "rescue-puppy-team",
     tags: ["садик", "щенки", "спасатели", "команда"], description: "Ребёнок обнимает дружную команду оригинальных щенков-спасателей.",
     faceGuide: { centerX: 0.51, centerY: 0.235, width: 0.21, height: 0.195 }
   }),
   template({
-    id: "child-boy-block-world-friend", title: "Друг из блочного мира", grade: 1, gender: "boy", theme: "block-world-friend",
+    id: "child-boy-block-world-friend", title: "Майнкрафт", grade: 1, gender: "boy", theme: "block-world-friend",
     tags: ["игра", "блочный мир", "голем", "приключение"], description: "Юный исследователь даёт пять доброму каменному голему в оригинальном блочном мире.",
     faceGuide: { centerX: 0.43, centerY: 0.3, width: 0.22, height: 0.19 }
   }),
   template({
-    id: "child-boy-speed-fox-team", title: "Скоростной лис", grade: 2, gender: "boy", theme: "speed-fox-team",
+    id: "child-boy-speed-fox-team", title: "Тейлз", grade: 2, gender: "boy", theme: "speed-fox-team",
     tags: ["игра", "скорость", "лис", "гонка"], description: "Ребёнок празднует победу вместе с оригинальным героем скоростной трассы.",
     faceGuide: { centerX: 0.34, centerY: 0.18, width: 0.23, height: 0.19 }
   }),
@@ -173,17 +173,17 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.5, centerY: 0.265, width: 0.225, height: 0.195 }
   }),
   template({
-    id: "child-girl-long-haired-tower-princess", title: "Принцесса солнечной башни", grade: 2, gender: "girl", theme: "tower-princess",
+    id: "child-girl-long-haired-tower-princess", title: "Рапунцель", grade: 2, gender: "girl", theme: "tower-princess",
     tags: ["длинные волосы", "башня", "принцесса"], description: "Оригинальная длинноволосая принцесса в библиотеке солнечной башни.",
     faceGuide: { centerX: 0.5, centerY: 0.255, width: 0.215, height: 0.19 }
   }),
   template({
-    id: "child-girl-ice-queen", title: "Ледяная королева", grade: 4, gender: "girl", theme: "ice-queen",
+    id: "child-girl-ice-queen", title: "Эльза", grade: 4, gender: "girl", theme: "ice-queen",
     tags: ["лед", "зима", "королева"], description: "Самостоятельный образ ледяной королевы в северном дворце под сиянием.",
     faceGuide: { centerX: 0.5, centerY: 0.25, width: 0.22, height: 0.19 }
   }),
   template({
-    id: "child-girl-brave-highland-princess", title: "Смелая принцесса гор", grade: 3, gender: "girl", theme: "brave-highland-princess",
+    id: "child-girl-brave-highland-princess", title: "Мерида", grade: 3, gender: "girl", theme: "brave-highland-princess",
     tags: ["смелая", "горы", "принцесса"], description: "Оригинальная отважная исследовательница высокогорья без оружия.",
     faceGuide: { centerX: 0.5, centerY: 0.27, width: 0.215, height: 0.185 }
   }),
@@ -203,7 +203,7 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.5, centerY: 0.255, width: 0.21, height: 0.185 }
   }),
   template({
-    id: "child-girl-sea-princess", title: "Морская принцесса", grade: 2, gender: "girl", theme: "sea-princess",
+    id: "child-girl-sea-princess", title: "Ариэль", grade: 2, gender: "girl", theme: "sea-princess",
     tags: ["море", "русалка", "подводный дворец"], description: "Оригинальная морская принцесса в кораллово-бирюзовом подводном дворце.",
     faceGuide: { centerX: 0.5, centerY: 0.255, width: 0.22, height: 0.19 }
   }),
@@ -218,7 +218,7 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.5, centerY: 0.235, width: 0.215, height: 0.185 }
   }),
   template({
-    id: "child-girl-snowman-friend", title: "Друг-снеговик", grade: 0, gender: "girl", theme: "snowman-friend",
+    id: "child-girl-snowman-friend", title: "Олаф", grade: 0, gender: "girl", theme: "snowman-friend",
     tags: ["садик", "снеговик", "зима", "новый год"], description: "Ребёнок даёт пять доброму снеговику в сказочной зимней деревне.",
     faceGuide: { centerX: 0.39, centerY: 0.365, width: 0.24, height: 0.215 }
   }),
@@ -228,7 +228,7 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.48, centerY: 0.255, width: 0.25, height: 0.21 }
   }),
   template({
-    id: "child-girl-electric-creature-friend", title: "Искристый зверёк", grade: 1, gender: "girl", theme: "electric-creature-friend",
+    id: "child-girl-electric-creature-friend", title: "Пикачу", grade: 1, gender: "girl", theme: "electric-creature-friend",
     tags: ["игра", "волшебный зверёк", "лес", "приключение"], description: "Ребёнок держит за лапку оригинального искристого лесного зверька.",
     faceGuide: { centerX: 0.36, centerY: 0.165, width: 0.23, height: 0.19 }
   }),
@@ -254,7 +254,7 @@ export function childPortraitCatalogRecord(item, index = 0) {
     name: item.title,
     mediaKind: "photo",
     price: "350",
-    catalogPriceVersion: 5,
+    catalogPriceVersion: 6,
     shortDescription: item.description,
     description: `${item.description} Подготовлены мастер ${item.canvas.width}×${item.canvas.height}${item.canvas.format === "A4" ? " (A4, 300 dpi)" : ""}, превью и мягкая маска лица.`,
     gender: item.gender === "boy" ? "boys" : "girls",

@@ -132,7 +132,7 @@ test("child portrait templates map into the existing service catalog and montage
     assert.deepEqual(service.canvas, item.canvas);
     assert.equal(service.angles[0].id, "portrait");
     assert.equal(service.price, "350");
-    assert.equal(service.catalogPriceVersion, 5);
+    assert.equal(service.catalogPriceVersion, 6);
     assert.match(service.angles[0].refDataUrl, /reference-poses\/(boy|girl)-portrait\.jpg$/);
     assert.match(service.prompt, /Сохрани лицо/);
   });
