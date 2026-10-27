@@ -6734,7 +6734,7 @@ function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight
 
 async function drawFinalWorkA4QrOverlay(context, width, height, studentId, qrOverlayFile = null) {
   const settings = finalWorkPrintSettings();
-  if (settings.qrEnabled === false) return;
+  if (settings.qrEnabled === false && !(qrOverlayFile instanceof Blob)) return;
   const student = studentById(studentId);
   const qrPayload = studentQrPayload(student || { id: studentId, qrId: studentId });
   const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);
@@ -6832,7 +6832,7 @@ async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null) 
 
 async function drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile = null) {
   const settings = finalWorkPrintSettings();
-  if (settings.qrEnabled === false) return;
+  if (settings.qrEnabled === false && !(qrOverlayFile instanceof Blob)) return;
   const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);
   const size = finalWorkQrPixelSize(width, height, settings);
   const padding = Math.max(4, Math.round(size * 0.08));
