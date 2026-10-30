@@ -3507,7 +3507,7 @@ button.mini-catalog-option {
 }
 
 .service-picker-panel {
-  width: min(1120px, calc(100vw - 36px));
+  width: min(1600px, calc(100vw - 36px));
   padding-top: 0;
 }
 
@@ -3538,7 +3538,7 @@ button.mini-catalog-option {
 
 .service-picker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, clamp(128px, 18vw, 180px)), 1fr));
   gap: 14px;
   margin: 12px 0 16px;
 }
@@ -4521,7 +4521,6 @@ button.mini-catalog-option {
   }
 
   .service-picker-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
 
@@ -5388,8 +5387,37 @@ button.mini-catalog-option {
   padding-right: 52px;
 }
 
-.group-card .class-main > .muted {
-  padding-right: 52px;
+.class-open-button {
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.class-open-button .muted {
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.class-open-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (hover: none) {
+  .group-card:hover {
+    transform: none;
+    box-shadow: var(--shadow);
+  }
 }
 
 .group-card .class-menu {

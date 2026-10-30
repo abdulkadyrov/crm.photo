@@ -1181,9 +1181,10 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
       </div>
       <div class="class-main">
         <div class="class-head">
-          <div>
-            <h2 class="card-title">${escapeHtml(klass.name)}</h2>
-          </div>
+          <button class="class-open-button" data-open-class-action="${klass.id}" type="button" aria-label="Открыть группу ${escapeAttr(klass.name)}">
+            <span class="card-title">${escapeHtml(klass.name)}</span>
+            <span class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</span>
+          </button>
           <details class="item-menu class-menu">
             <summary aria-label="Меню группы">...</summary>
             <div class="menu-panel">
@@ -1204,7 +1205,6 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
             </div>
           </details>
         </div>
-        <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
         <details class="compact-card-details">
           <summary>${pct}% готово</summary>
           <div class="compact-card-extra">
@@ -1651,7 +1651,6 @@ function albumExportTab(klass) {
 function studentQuickForm(classId) {
   const klass = classById(classId);
   if (!klass) return "";
-  const selectedCatalogId = state.data.catalog[0]?.id || "";
   return `
     <form class="panel grid quick-student-form" data-student-form="${classId}">
       <div class="card-header">
@@ -1669,9 +1668,9 @@ function studentQuickForm(classId) {
         <div class="field-label student-service-picker-field">
           <span>Услуги</span>
           <div class="service-picker-summary" data-service-picker-form-summary>
-            ${servicePickerHiddenInputs([selectedCatalogId])}
+            ${servicePickerHiddenInputs([])}
             <div class="student-service-selected-strip" data-service-picker-selected>
-              ${servicePickerSelectedChips([selectedCatalogId])}
+              ${servicePickerSelectedChips([])}
             </div>
             <button class="secondary-button" data-open-service-picker-form type="button"><span data-icon="catalog"></span>Выбрать из каталога</button>
           </div>
@@ -2324,7 +2323,7 @@ function servicePickerCatalogCard(item, selected = false) {
   `;
 }
 
-function showServicePickerPanel({ selectedIds = [], onApply }) {
+function showServicePickerPanel({ selectedIds = [], allowEmpty = false, onApply }) {
   document.querySelector(".service-picker-backdrop")?.remove();
   const selected = new Set(normalizeCatalogIds(selectedIds));
   let savingSelection = false;
@@ -2333,7 +2332,7 @@ function showServicePickerPanel({ selectedIds = [], onApply }) {
   const saveAndClose = async () => {
     if (savingSelection) return;
     const ids = Array.from(selected);
-    if (!ids.length) return notify("Выберите хотя бы одну услугу.");
+    if (!ids.length && !allowEmpty) return notify("Выберите хотя бы одну услугу.");
     savingSelection = true;
     panel.querySelectorAll("[data-save-service-picker]").forEach((node) => {
       node.disabled = true;
@@ -3936,6 +3935,7 @@ function bindViewActions() {
     const selectedIds = new FormData(form).getAll("catalogIds");
     showServicePickerPanel({
       selectedIds,
+      allowEmpty: true,
       onApply: (ids) => updateFormServicePicker(form, ids)
     });
   }));
@@ -4449,26 +4449,42 @@ function showStudentForm(classId) {
 async function handleStudentFormSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  if (form.dataset.saving === "true") return;
+  const formData = new FormData(form);
+  const classId = form.dataset.studentForm;
   const submitter = event.submitter;
-  const student = await addStudent({
-    classId: form.dataset.studentForm,
-    fio: new FormData(form).get("fio"),
-    catalogIds: new FormData(form).getAll("catalogIds"),
-    paymentStatus: new FormData(form).get("paymentStatus"),
-    orderStatus: new FormData(form).get("orderStatus")
-  });
-  if (!student) return;
-  if (submitter?.value === "open") {
-    state.studentFormClassId = null;
-    state.classId = null;
-    navigate("student", { studentId: student.id });
-    return;
+  const saveMode = submitter?.value || "next";
+  form.dataset.saving = "true";
+  form.setAttribute("aria-busy", "true");
+  const submitButtons = form.querySelectorAll('[type="submit"]');
+  submitButtons.forEach((button) => { button.disabled = true; });
+  try {
+    const student = await addStudent({
+      classId,
+      fio: formData.get("fio"),
+      catalogIds: formData.getAll("catalogIds"),
+      paymentStatus: formData.get("paymentStatus"),
+      orderStatus: formData.get("orderStatus")
+    });
+    if (!student) return;
+    await refreshData();
+    notify("Ученик сохранен.");
+    if (saveMode === "open") {
+      state.studentFormClassId = null;
+      navigate("student", { studentId: student.id });
+      return;
+    }
+    state.studentFormClassId = classId;
+    renderClasses();
+    requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
+  } catch (error) {
+    console.error("Не удалось сохранить ученика", error);
+    notify("Не удалось сохранить ученика. Данные формы сохранены — попробуйте ещё раз.");
+  } finally {
+    delete form.dataset.saving;
+    form.removeAttribute("aria-busy");
+    submitButtons.forEach((button) => { button.disabled = false; });
   }
-  await refreshData();
-  notify("Ученик сохранен.");
-  state.studentFormClassId = form.dataset.studentForm;
-  renderClasses();
-  requestAnimationFrame(() => view.querySelector("[data-student-form] input[name='fio']")?.focus());
 }
 
 async function addStudent({ classId, fio, catalogId = "", catalogIds = [], paymentStatus = "unpaid", orderStatus = "auto" }) {
@@ -4478,14 +4494,14 @@ async function addStudent({ classId, fio, catalogId = "", catalogIds = [], payme
     return null;
   }
   const { firstName, lastName } = splitFullName(fio);
-  const selectedCatalogIds = normalizeCatalogIds(catalogIds.length ? catalogIds : [catalogId || state.data.catalog[0]?.id || ""]);
+  const selectedCatalogIds = normalizeCatalogIds(catalogIds.length ? catalogIds : [catalogId]);
   const selectedCatalogId = selectedCatalogIds[0] || "";
   const selectedServices = buildSelectedServices(selectedCatalogIds);
   const id = uid("student");
   const manualStatus = STUDENT_MANUAL_STATUS_KEYS.includes(orderStatus) ? orderStatus : "";
   const student = stampCreated({ id, classId, firstName, lastName, qrId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, selectedServices, paymentStatus, orderStatus: manualStatus, status: manualStatus });
   await put("students", student);
-  await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: manualStatus, items: orderItemsFromCatalogs(selectedCatalogIds) }));
+  await put("orders", stampCreated({ id: `order_${id}`, studentId: id, catalogId: selectedCatalogId, catalogIds: selectedCatalogIds, status: manualStatus, items: selectedCatalogIds.length ? orderItemsFromCatalogs(selectedCatalogIds) : [] }));
   return student;
 }
 
