@@ -143,7 +143,8 @@ p {
   left: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
   min-height: var(--nav-h);
   padding: 6px max(10px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
   background: color-mix(in srgb, var(--card) 94%, transparent);
@@ -166,6 +167,7 @@ p {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
+  padding: 4px 0;
 }
 
 .nav-item svg,
@@ -1956,27 +1958,26 @@ button.mini-catalog-option {
 }
 
 .class-order-toolbar {
-  display: grid;
-  gap: 8px;
   margin: 12px 0;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--line) 62%, transparent);
-  border-radius: 18px;
-  background: var(--card);
-  box-shadow: var(--shadow);
 }
 
 .class-order-toolbar label {
   display: grid;
-  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
 }
 
 .class-order-toolbar label span {
   color: var(--muted);
   font-size: 0.78rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.class-order-toolbar .select {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
 }
 
 .class-section {
@@ -2717,18 +2718,19 @@ button.mini-catalog-option {
 }
 
 .group-card {
-  min-height: 126px;
-  align-content: space-between;
+  position: relative;
+  min-height: 0;
+  align-content: start;
 }
 
 .group-card .class-cover {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
 }
 
 .group-card .class-main {
   display: grid;
-  gap: 10px;
+  gap: 2px;
 }
 
 .class-cover {
@@ -5170,6 +5172,10 @@ button.mini-catalog-option {
   align-content: start;
 }
 
+.nav-label-short {
+  display: none;
+}
+
 @media (max-width: 899px) {
   .student-detail-tabs {
     position: fixed;
@@ -5341,5 +5347,158 @@ button.mini-catalog-option {
 
   .montage-grid:not(.montage-secondary-grid) .montage-preview {
     max-height: min(180px, 24dvh);
+  }
+}
+
+/* List summaries stay compact; operational details are available on demand. */
+.project-summary-card,
+.group-card,
+.student-card {
+  min-height: 0;
+  padding: 8px 12px;
+}
+
+.project-summary-card .list-card-main {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: start;
+}
+
+.project-summary-card .card-title,
+.group-card .card-title,
+.student-card .student-copy h3 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-summary-card .list-copy > .muted,
+.group-card .class-main > .muted,
+.student-card .student-copy p {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.group-card .class-head {
+  display: block;
+  padding-right: 52px;
+}
+
+.group-card .class-main > .muted {
+  padding-right: 52px;
+}
+
+.group-card .class-menu {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+}
+
+.student-card .student-card-grid {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 8px;
+}
+
+.student-card .student-thumb {
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+}
+
+.project-summary-card .item-menu > summary,
+.group-card .item-menu > summary,
+.student-card .item-menu > summary {
+  width: 44px;
+  height: 44px;
+}
+
+.compact-card-details {
+  min-width: 0;
+}
+
+.compact-card-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  width: fit-content;
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.compact-card-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.compact-card-details > summary::after {
+  flex: 0 0 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  content: "";
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.compact-card-details[open] > summary::after {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.compact-card-extra {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+
+.compact-card-extra .muted {
+  margin: 0;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.compact-card-extra .student-statuses {
+  margin: 0;
+  gap: 8px;
+}
+
+.compact-card-details > summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 899px) {
+  .bottom-nav {
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+
+  .nav-item {
+    font-size: clamp(0.6875rem, 3.2vw, 0.75rem);
+    letter-spacing: -0.02em;
+  }
+
+  .nav-item > span:last-child {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 399px) {
+  .nav-item .nav-label-full {
+    display: none;
+  }
+
+  .nav-item .nav-label-short {
+    display: inline;
   }
 }

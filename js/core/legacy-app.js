@@ -1045,16 +1045,21 @@ function projectCard(project) {
   const finance = projectFinancialStats(project.id);
   const docsCount = documentsForOwner("project", project.id).length;
   return `
-    <article class="list-card card-button" data-open-project="${project.id}">
+    <article class="list-card project-summary-card card-button" data-open-project="${project.id}">
       <div class="list-card-main">
         <span class="list-icon metric-blue" data-icon="classes"></span>
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.name)}</h2>
-          <p class="muted">${classes.length} групп · ${students.length} учеников · Документы: ${docsCount}</p>
-          <div class="progress-label"><span>Прогресс ${pct}%</span></div>
-          <div class="progress"><span style="width:${pct}%"></span></div>
-          <div class="progress-label"><span>Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</span><strong>${finance.paymentPercent}%</strong></div>
-          <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
+          <p class="muted">${classes.length} ${pluralizeRu(classes.length, "группа", "группы", "групп")} · ${students.length} ${pluralizeRu(students.length, "ученик", "ученика", "учеников")}</p>
+          <details class="compact-card-details">
+            <summary>${pct}% готово</summary>
+            <div class="compact-card-extra">
+              <div class="progress"><span style="width:${pct}%"></span></div>
+              <p class="muted">Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</p>
+              <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
+              <p class="muted">Документы: ${docsCount}</p>
+            </div>
+          </details>
         </div>
         <details class="item-menu">
           <summary aria-label="Меню проекта">...</summary>
@@ -1123,12 +1128,11 @@ function renderClasses() {
     ${isClassOpen ? "" : `
       <section class="class-order-toolbar">
         <label>
-          <span>Порядок групп</span>
+          <span>Порядок</span>
           <select class="select" data-class-sort-project="${activeProject}" aria-label="Порядок групп">
             ${Object.entries(CLASS_SORT_MODES).map(([value, label]) => `<option value="${value}" ${sortMode === value ? "selected" : ""}>${label}</option>`).join("")}
           </select>
         </label>
-        <p class="muted">Для ручного порядка используйте кнопки "Выше" и "Ниже" в меню карточки.</p>
       </section>
       <section class="group-card-grid">
         ${classes.map((klass, index) => classCard(klass, index, classes.length, sortMode)).join("") || empty("В проекте пока нет групп")}
@@ -1200,17 +1204,16 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
             </div>
           </details>
         </div>
-        <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")} · Документы: ${docsCount}</p>
-        <div class="progress-label">
-          <span>Прогресс: ${pct}%</span>
-          <strong>${pct}%</strong>
-        </div>
-        <div class="progress"><span style="width:${pct}%"></span></div>
-        <div class="progress-label">
-          <span>Оплата: ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</span>
-          <strong>${finance.paymentPercent}%</strong>
-        </div>
-        <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
+        <p class="muted">${allStudents.length} ${pluralizeRu(allStudents.length, "ученик", "ученика", "учеников")}</p>
+        <details class="compact-card-details">
+          <summary>${pct}% готово</summary>
+          <div class="compact-card-extra">
+            <div class="progress"><span style="width:${pct}%"></span></div>
+            <p class="muted">Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</p>
+            <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
+            <p class="muted">Документы: ${docsCount}</p>
+          </div>
+        </details>
       </div>
     </article>
   `;
@@ -3774,27 +3777,21 @@ function studentCard(student) {
             <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
             <p class="muted">${escapeHtml(project?.name || "")} • ${escapeHtml(klass?.name || "")}</p>
           </div>
-          <div class="student-progress">
-            <div class="progress-label">
-              <span>${c.doneCount} из ${c.total} задач</span>
-              <strong>${c.percent}%</strong>
-            </div>
-            <div class="progress"><span style="width:${c.percent}%"></span></div>
-          </div>
-          <div class="student-statuses">
-            <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
-            <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
-            <span class="price-pill">${escapeHtml(formatMoney(price))}</span>
-          </div>
-          ${finalStats.total ? `
-            <details class="student-status-details">
-              <summary>Детали готовности</summary>
-              <div class="student-statuses student-statuses-extra">
+          <details class="compact-card-details">
+            <summary>${c.doneCount}/${c.total} задач · ${c.percent}%</summary>
+            <div class="compact-card-extra">
+              <div class="progress"><span style="width:${c.percent}%"></span></div>
+              <div class="student-statuses">
+                <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
+                <span class="status-pill ${student.paymentStatus}">${statusDot(student.paymentStatus)}${paymentLabel(student.paymentStatus)}</span>
+                <span class="price-pill">${escapeHtml(formatMoney(price))}</span>
+                ${finalStats.total ? `
                 <span class="status-pill paid">Готовые: ${finalStats.total}</span>
                 <span class="status-pill ${finalStats.printed === finalStats.total ? "paid" : "in-progress"}">Напечатано: ${finalStats.printed}</span>
+                ` : ""}
               </div>
-            </details>
-          ` : ""}
+            </div>
+          </details>
         </div>
         <details class="item-menu student-menu">
           <summary aria-label="Меню ученика">...</summary>
