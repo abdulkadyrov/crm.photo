@@ -2290,17 +2290,17 @@ function catalogServiceCard(item) {
   const previewUrl = servicePreviewImageDataUrl(item);
   const videoUrl = servicePreviewVideoDataUrl(item);
   const preview = videoUrl
-    ? `<video class="catalog-card-video" src="${videoUrl}" muted autoplay loop playsinline preload="metadata" aria-label="Видео-превью: ${escapeAttr(serviceName(item))}"></video>`
+    ? `<video class="catalog-card-video" src="${videoUrl}" ${previewUrl ? `poster="${escapeAttr(previewUrl)}"` : ""} muted autoplay loop playsinline preload="metadata" aria-label="Видео-превью: ${escapeAttr(serviceName(item))}"></video>`
     : previewUrl
     ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
     : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
   const videoBadge = videoUrl ? '<span class="catalog-card-badge video">Видео</span>' : "";
   const shortDescription = serviceShortDescription(item);
   const category = serviceCategory(item);
-  const isPortraitCard = Boolean(item.childTemplate && previewUrl);
+  const isPortraitCard = Boolean(previewUrl || videoUrl);
   return `
     <article class="catalog-service-card card-button ${isPortraitCard ? "portrait-overlay-card" : ""}" data-open-catalog-service="${item.id}" tabindex="0">
-      <div class="catalog-card-preview ${item.childTemplate ? "portrait" : ""}">${preview}</div>
+      <div class="catalog-card-preview ${isPortraitCard ? "portrait" : ""}">${preview}</div>
       <div class="catalog-card-body">
         <div class="catalog-card-title-row">
           <h3>${escapeHtml(serviceName(item))}</h3>
