@@ -871,7 +871,38 @@ p {
 
 .catalog-page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  width: 100%;
   gap: 14px;
+}
+
+.catalog-page > *,
+.catalog-hero > *,
+.catalog-feed,
+.catalog-section {
+  min-width: 0;
+}
+
+.catalog-hero-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.catalog-hero-actions button {
+  min-width: 0;
+  width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.catalog-print-hint,
+.catalog-pdf-progress {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .catalog-hero {
@@ -889,9 +920,15 @@ p {
 }
 
 .catalog-tabs {
-  overflow-x: auto;
-  flex-wrap: nowrap;
+  min-width: 0;
+  flex-wrap: wrap;
   padding-bottom: 2px;
+}
+
+.catalog-tabs .chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .child-template-filters {
@@ -1902,7 +1939,20 @@ button.mini-catalog-option {
 }
 
 .project-select {
-  max-width: 360px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  text-overflow: ellipsis;
+}
+
+.project-picker {
+  min-width: 0;
+}
+
+.empty-project-state {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
 }
 
 .equal-button {
@@ -1961,23 +2011,36 @@ button.mini-catalog-option {
   margin: 12px 0;
 }
 
-.class-order-toolbar label {
+.class-sort-options {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--card-strong);
 }
 
-.class-order-toolbar label span {
+.class-sort-options button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
-.class-order-toolbar .select {
-  min-height: 44px;
-  padding: 8px 12px;
-  font-size: 0.875rem;
+.class-sort-options button[aria-pressed="true"] {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.class-sort-options button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
 
 .class-section {

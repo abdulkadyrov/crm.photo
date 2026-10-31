@@ -21,6 +21,7 @@ import { backupWarnings, calculateDataCounts } from "../services/backup-service.
 import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -886,9 +887,6 @@ function renderHome() {
   });
   view.innerHTML = `
     <section class="crm-overview">
-      <article class="brand-hero" aria-label="${APP_NAME}">
-        <img class="brand-hero-logo" src="${APP_LOGO_SRC}" alt="${APP_NAME}" />
-      </article>
       <div class="toolbar home-toolbar">
         <div>
           <h2 class="card-title">Проекты съемки</h2>
@@ -1088,9 +1086,20 @@ function matchesSearch(student) {
 
 function renderClasses() {
   const projects = state.data.projects;
-  const activeProject = state.projectId || projects[0]?.id || "";
+  const activeProject = projects.find(project => project.id === state.projectId)?.id || projects[0]?.id || "";
   state.projectId = activeProject;
   const project = projectById(activeProject);
+  if (!project) {
+    state.classId = null;
+    state.studentFormClassId = null;
+    setShell({ heading: "Проекты", context: APP_NAME, summary: "" });
+    view.innerHTML = `<section class="panel empty-project-state">
+      <h2 class="card-title">Нет проектов</h2>
+      <button class="primary-button" data-add-project="classes" type="button"><span data-icon="plus"></span>Создать проект</button>
+    </section>`;
+    bindViewActions();
+    return;
+  }
   const classes = activeProject ? classesByProject(activeProject) : [];
   const sortMode = classSortMode(project);
   const allProjectStudents = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id));
@@ -1108,9 +1117,12 @@ function renderClasses() {
   });
   view.innerHTML = `
     ${isClassOpen ? "" : `<section class="projects-actions">
-      <select class="select project-select" data-project-select aria-label="Проект">
-        ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
-      </select>
+      <label class="field-label project-picker">
+        <span>Проект</span>
+        <select class="select project-select" data-project-select>
+          ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
+        </select>
+      </label>
       <div class="project-button-row">
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
@@ -1126,13 +1138,10 @@ function renderClasses() {
     ${!isClassOpen && activeProject ? documentsSection("project", activeProject) : ""}
     ${formClassId ? studentQuickForm(formClassId) : ""}
     ${isClassOpen ? "" : `
-      <section class="class-order-toolbar">
-        <label>
-          <span>Порядок</span>
-          <select class="select" data-class-sort-project="${activeProject}" aria-label="Порядок групп">
-            ${Object.entries(CLASS_SORT_MODES).map(([value, label]) => `<option value="${value}" ${sortMode === value ? "selected" : ""}>${label}</option>`).join("")}
-          </select>
-        </label>
+      <section class="class-order-toolbar" aria-label="Порядок групп">
+        <div class="class-sort-options" role="group" aria-label="Сортировка групп">
+          ${[["manual", "Вручную"], ["numeric", "По номеру"], ["alpha", "А–Я"]].map(([value, label]) => `<button type="button" data-class-sort-project="${activeProject}" data-class-sort-mode="${value}" aria-pressed="${sortMode === value}" title="${escapeAttr(CLASS_SORT_MODES[value])}">${label}</button>`).join("")}
+        </div>
       </section>
       <section class="group-card-grid">
         ${classes.map((klass, index) => classCard(klass, index, classes.length, sortMode)).join("") || empty("В проекте пока нет групп")}
@@ -2035,8 +2044,11 @@ function renderCatalog() {
           <p class="muted">Покажите детям и родителям доступные варианты</p>
         </div>
         <div class="catalog-hero-actions">
-          <button class="primary-button" data-export-parent-video-catalog type="button"><span data-icon="download"></span>Экспорт 3 услуг: фото + видео</button>
-          <button class="secondary-button" data-export-catalog type="button"><span data-icon="download"></span>Экспортировать весь ZIP-каталог</button>
+          <button class="primary-button" data-export-photo-pdf type="button" ${state.catalogPdfExporting ? 'disabled aria-busy="true"' : ""}><span data-icon="download"></span>Скачать PDF A4</button>
+          <button class="secondary-button" data-export-parent-video-catalog type="button">Фото + видео (ZIP)</button>
+          <button class="secondary-button" data-export-catalog type="button">Весь каталог (ZIP)</button>
+          <p class="muted catalog-print-hint">По одному фото на лист, без полей. Учитывает фильтры.</p>
+          <p class="muted catalog-pdf-progress" data-catalog-pdf-progress role="status" aria-live="polite" hidden></p>
         </div>
       </article>
       <label class="search-box catalog-search">
@@ -2062,6 +2074,83 @@ function renderCatalog() {
     </section>
   `;
   bindViewActions();
+}
+
+function catalogPhotosForPrint() {
+  return publicOrderedServices(state.data.catalog)
+    .filter(serviceMatchesCatalogQuery)
+    .filter(serviceMatchesCatalogCategory)
+    .filter(serviceMatchesCatalogAudience)
+    .filter(serviceMatchesChildTemplateFilters)
+    .filter(item => item.masterSrc || servicePreviewImageDataUrl(item));
+}
+
+async function exportCatalogPhotoPdf() {
+  if (state.catalogPdfExporting) return notify("PDF уже готовится.");
+  const photos = catalogPhotosForPrint();
+  if (!photos.length) return notify("Нет фотографий для печати. Измените фильтры.");
+  state.catalogPdfExporting = true;
+  const canvas = document.createElement("canvas");
+  canvas.width = A4_VERTICAL_PX.width;
+  canvas.height = A4_VERTICAL_PX.height;
+  const context = canvas.getContext("2d", { alpha: false });
+  const setProgress = message => {
+    const button = view.querySelector("[data-export-photo-pdf]");
+    if (button) {
+      button.disabled = state.catalogPdfExporting;
+      button.setAttribute("aria-busy", String(state.catalogPdfExporting));
+    }
+    const progress = view.querySelector("[data-catalog-pdf-progress]");
+    if (progress) {
+      progress.hidden = !message;
+      progress.textContent = message;
+    }
+  };
+  async function* pages() {
+    for (const [index, item] of photos.entries()) {
+      setProgress(`Подготовка PDF: ${index + 1} из ${photos.length}`);
+      const sources = [...new Set([item.masterSrc, servicePreviewImageDataUrl(item)].filter(Boolean))];
+      let image;
+      for (const source of sources) {
+        try {
+          const response = await fetch(source);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          image = await loadImageForCanvas(await response.blob());
+          break;
+        } catch (error) {
+          console.warn("Не удалось загрузить исходник для PDF", item.id, error.message);
+        }
+      }
+      if (!image) throw new Error(`Не удалось загрузить фото «${serviceName(item)}».`);
+      try {
+        const rect = coverImageRect(image.width || image.naturalWidth, image.height || image.naturalHeight, canvas.width, canvas.height);
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+      } finally {
+        image.close?.();
+      }
+      const jpeg = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
+      if (!jpeg) throw new Error("Не удалось подготовить страницу PDF.");
+      yield { jpeg, width: canvas.width, height: canvas.height };
+    }
+  }
+  try {
+    const pdf = await createPhotoPagesPdf(pages());
+    downloadBlob(pdf, "Vakha-Studio-Catalog-A4.pdf");
+    notify(`PDF готов: ${photos.length} стр. Для печати выберите A4 без полей.`);
+    state.catalogPdfExporting = false;
+    setProgress(`PDF готов: ${photos.length} стр. · A4 без полей`);
+  } catch (error) {
+    console.error("Не удалось создать PDF каталога", error);
+    state.catalogPdfExporting = false;
+    setProgress("Не удалось создать PDF. Проверьте доступ к фотографиям и повторите.");
+    notify(error.message || "Не удалось создать PDF.");
+  } finally {
+    state.catalogPdfExporting = false;
+    canvas.width = 0;
+    canvas.height = 0;
+  }
 }
 
 function childPortraitCatalogFilters() {
@@ -3872,7 +3961,7 @@ function bindViewActions() {
     renderClasses();
   });
   view.querySelectorAll("[data-show-class-stats]").forEach((node) => node.addEventListener("click", () => showClassStatsPanel(node.dataset.showClassStats)));
-  view.querySelector("[data-class-sort-project]")?.addEventListener("change", (event) => updateProjectClassSort(event.currentTarget.dataset.classSortProject, event.currentTarget.value));
+  view.querySelectorAll("[data-class-sort-project]").forEach(node => node.addEventListener("click", () => updateProjectClassSort(node.dataset.classSortProject, node.dataset.classSortMode)));
   view.querySelectorAll("[data-move-class]").forEach((node) => node.addEventListener("click", () => moveClass(node.dataset.moveClass)));
   view.querySelectorAll("[data-set-class-color]").forEach((node) => node.addEventListener("click", () => setClassColor(node.dataset.setClassColor)));
   view.querySelector("[data-close-class-stats]")?.addEventListener("click", () => {
@@ -4145,6 +4234,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
   view.querySelector("[data-back-settings]")?.addEventListener("click", () => navigate("settings"));
   view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);
+  view.querySelector("[data-export-photo-pdf]")?.addEventListener("click", exportCatalogPhotoPdf);
   view.querySelector("[data-export-parent-video-catalog]")?.addEventListener("click", exportParentVideoCatalog);
   view.querySelectorAll("[data-catalog-audience]").forEach((node) => node.addEventListener("click", () => {
     state.catalogAudience = node.dataset.catalogAudience;
