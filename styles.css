@@ -5593,3 +5593,12 @@ button.mini-catalog-option {
     display: inline;
   }
 }
+
+/* Compare source and result before exporting the selected print batch. */
+.print-review-panel { width: min(1200px, 96vw); max-height: 94dvh; display: flex; flex-direction: column; gap: 16px; }
+.print-review-list { overflow-y: auto; min-height: 0; display: grid; gap: 20px; }
+.print-review-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.print-review-pair img { display: block; width: 100%; height: clamp(200px, 45vh, 560px); object-fit: contain; background: #f1f5f9; }
+.print-review-pair h3 { margin: 12px 0 8px; }
+.print-review-panel input[type="checkbox"] { width: 24px; height: 24px; }
+.print-review-panel .toolbar { flex-shrink: 0; }

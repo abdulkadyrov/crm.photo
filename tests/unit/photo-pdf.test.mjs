@@ -46,3 +46,17 @@ test("empty or invalid page collections cannot produce a misleading PDF", async 
   await assert.rejects(createPhotoPagesPdf([{ jpeg: new Blob([], { type: "image/jpeg" }), width: 1, height: 1 }]));
   await assert.rejects(createPhotoPagesPdf([{ jpeg: new Blob(["png"], { type: "image/png" }), width: 1, height: 1 }]));
 });
+
+
+test("mixed portrait and landscape batch preserves A4 page size and image placement", async () => {
+  const jpeg = new Blob([new Uint8Array([255,216,255,217])], { type: "image/jpeg" });
+  const pdf = await createPhotoPagesPdf([
+    { jpeg, width: 2480, height: 3508 },
+    { jpeg, width: 3508, height: 2480, landscape: true }
+  ]);
+  const text = await pdf.text();
+  assert.match(text, /MediaBox \[0 0 595.28 841.89\]/);
+  assert.match(text, /MediaBox \[0 0 841.89 595.28\]/);
+  assert.match(text, /841.89 0 0 595.28 0 0 cm/);
+  assert.match(text, /Count 2/);
+});

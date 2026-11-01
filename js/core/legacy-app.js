@@ -1064,6 +1064,7 @@ function projectCard(project) {
           <div class="menu-panel">
             <button data-open-project-action="${project.id}" type="button">Открыть</button>
             <button data-export-status-project="${project.id}" type="button">Экспорт</button>
+            <button data-print-final-project="${project.id}" type="button">Печать результатов с QR</button>
             <button data-export-project="${project.id}" type="button">ZIP проекта</button>
             <button data-open-project-documents="${project.id}" type="button">Документы</button>
             <button data-assign-operator-project="${project.id}" type="button">Назначить сотрудника</button>
@@ -1125,6 +1126,7 @@ function renderClasses() {
       </label>
       <div class="project-button-row">
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
+        <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button>
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
       </div>
     </section>`}
@@ -4150,6 +4152,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportFullBackup()));
   view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", () => exportProject(node.dataset.exportProject)));
   view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
+  view.querySelectorAll("[data-print-final-project]").forEach((node) => node.addEventListener("click", () => reviewFinalWorksForPrint({ projectId: node.dataset.printFinalProject })));
   view.querySelectorAll("[data-print-final-class]").forEach((node) => node.addEventListener("click", () => printClassFinalWorksWithQr(node.dataset.printFinalClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
@@ -6364,28 +6367,102 @@ function printFinalWork(workId) {
   });
 }
 
-async function printClassFinalWorksWithQr(classId) {
-  const klass = classById(classId);
-  if (!klass) return notify("Группа не найдена.");
-  return withBusy("Готовлю результаты для печати...", async () => {
-    const works = state.data.finalWorks.filter((work) => work.groupId === classId && finalWorkImageBlob(work));
-    if (!works.length) return notify("В группе нет готовых результатов для печати.");
-    const pages = [];
-    for (const work of works) {
-      const imageBlob = await finalWorkPrintableBlob(work);
-      if (!imageBlob) continue;
-      const imageUrl = await fileToDataUrl(imageBlob);
-      const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
-      for (let copy = 0; copy < quantity; copy += 1) {
-        pages.push(finalWorkPrintPageHtml(work, imageUrl));
+function printClassFinalWorksWithQr(classId) {
+  return reviewFinalWorksForPrint({ classId });
+}
+
+function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
+  const scope = classId ? classById(classId) : projectById(projectId);
+  if (!scope) return notify("Проект или группа не найдены.");
+  const works = state.data.finalWorks.filter(work => {
+    const groupId = work.groupId || studentById(work.studentId)?.classId;
+    return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && finalWorkImageBlob(work);
+  });
+  if (!works.length) return notify("Нет готовых результатов для печати.");
+  const panel = document.createElement("div");
+  panel.className = "qr-panel-backdrop print-review-backdrop";
+  const urls = [];
+  const image = (blob, label) => {
+    if (!(blob instanceof Blob)) return '<div class="empty">Оригинал не найден — проверьте работу вручную</div>';
+    const url = URL.createObjectURL(blob);
+    urls.push(url);
+    return `<img src="${escapeAttr(url)}" alt="${escapeAttr(label)}" loading="lazy" />`;
+  };
+  panel.innerHTML = `<section class="qr-panel print-review-panel" role="dialog" aria-modal="true" aria-label="Проверка перед печатью" tabindex="-1">
+    <div class="card-header"><div><h2 class="card-title">Проверка перед печатью · ${escapeHtml(scope.name)}</h2><p class="muted">Сравните лица. Снимите выбор с работ, которые не подходят для печати.</p></div><button class="secondary-button" data-review-close type="button">Закрыть</button></div>
+    <div class="toolbar"><button class="secondary-button" data-review-all type="button">Выбрать все</button><button class="secondary-button" data-review-none type="button">Снять выбор</button><strong data-review-count aria-live="polite"></strong></div>
+    <div class="print-review-list">${works.map(work => {
+      const student = studentById(work.studentId);
+      const source = mediaById(work.sourceMediaId)?.blob;
+      const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
+      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Результат</h3>${image(finalWorkImageBlob(work), "Результат")}</div></div></article>`;
+    }).join("")}</div>
+    <div class="toolbar"><button class="primary-button" data-review-download type="button">Скачать выбранные в PDF с QR</button><span class="muted">A4 · одна работа на странице · количество копий из заказа</span></div>
+  </section>`;
+  const inputs = [...panel.querySelectorAll("[data-review-work]")];
+  const download = panel.querySelector("[data-review-download]");
+  let busy = false;
+  const update = () => {
+    panel.querySelector("[data-review-count]").textContent = `Выбрано ${inputs.filter(input => input.checked).length} из ${works.length}`;
+    download.disabled = busy || !inputs.some(input => input.checked);
+  };
+  const previousFocus = document.activeElement;
+  const close = () => {
+    if (busy) return;
+    urls.forEach(url => URL.revokeObjectURL(url));
+    panel.remove();
+    previousFocus?.focus();
+  };
+  panel.querySelector("[data-review-close]").onclick = close;
+  panel.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.stopPropagation(); close(); }
+    if (event.key === "Tab") {
+      const focusable = [...panel.querySelectorAll('button:not(:disabled), input')];
+      const first = focusable[0], last = focusable.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+  inputs.forEach(input => input.onchange = update);
+  for (const [selector, checked] of [["[data-review-all]", true], ["[data-review-none]", false]]) {
+    panel.querySelector(selector).onclick = () => { inputs.forEach(input => input.checked = checked); update(); };
+  }
+  download.onclick = async () => {
+    const selectedIds = new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork));
+    const selected = works.filter(work => selectedIds.has(work.id));
+    busy = true; update();
+    download.textContent = "Готовлю PDF…";
+    async function* pages() {
+      for (const work of selected) {
+        const assets = await buildFinalWorkA4Assets({
+          file: finalWorkOriginalBlob(work) || finalWorkImageBlob(work),
+          studentId: work.studentId,
+          orientationMode: finalWorkA4Mode(work),
+          qrOverlayFile: work.animationQrImage,
+          forceQr: true
+        });
+        const jpeg = assets.jpgBlob;
+        if (!jpeg) throw new Error("Не удалось создать A4: " + finalWorkTitle(work));
+        const horizontal = assets.orientation === "horizontal";
+        const dimensions = horizontal ? A4_HORIZONTAL_PX : A4_VERTICAL_PX;
+        const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
+        for (let copy = 0; copy < quantity; copy++) yield { jpeg, ...dimensions, landscape: horizontal };
       }
     }
-    const title = `Печать готовых результатов · ${klass.name}`;
-    const fileName = safeFileName(`final_results_${klass.name}_${new Date().toISOString().slice(0, 10)}.html`);
-    showInternalPrintPreview(title, finalWorksPrintSheetHtml(title, pages.join("")), fileName);
-    await recordOperatorEvent("export", { targetType: "final_results_print_html", targetId: classId });
-    notify("Печатный лист готов внутри приложения.");
-  });
+    try {
+      const pdf = await createPhotoPagesPdf(pages());
+      downloadBlob(pdf, safeFileName(`print_${scope.name}_A4_QR.pdf`));
+      notify("PDF выбранных работ готов.");
+    } catch (error) {
+      console.error(error);
+      notify("Не удалось создать PDF. " + error.message);
+    } finally {
+      busy = false; download.textContent = "Скачать выбранные в PDF с QR"; update();
+    }
+  };
+  document.body.append(panel);
+  update();
+  panel.querySelector("[data-review-close]").focus();
 }
 
 function finalWorkPrintPageHtml(work, imageUrl) {
@@ -6418,8 +6495,8 @@ function finalWorksPrintSheetHtml(title, pagesHtml) {
           html, body { margin: 0; background: #fff; color: #111827; font-family: Arial, sans-serif; }
           .print-page {
             position: relative;
-            width: 100vw;
-            min-height: 100vh;
+            width: 210mm;
+            height: 297mm;
             display: grid;
             place-items: center;
             break-after: page;
@@ -6430,8 +6507,8 @@ function finalWorksPrintSheetHtml(title, pagesHtml) {
           .print-page:last-child { break-after: auto; page-break-after: auto; }
           .print-page > img {
             display: block;
-            max-width: 100vw;
-            max-height: 100vh;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
           }
           .print-qr svg {
@@ -6797,7 +6874,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
   notify("Макет A4 обновлён.");
 }
 
-async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null }) {
+async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false }) {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -6810,7 +6887,7 @@ async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto
   const context = canvas.getContext("2d");
   drawCoverImage(context, image, page.width, page.height, sourceWidth, sourceHeight);
   if (typeof image.close === "function") image.close();
-  await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile);
+  await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile, forceQr);
   const jpgBlob = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
   const pdfBlob = jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
   return {
@@ -6835,9 +6912,9 @@ function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight
   context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
 }
 
-async function drawFinalWorkA4QrOverlay(context, width, height, studentId, qrOverlayFile = null) {
+async function drawFinalWorkA4QrOverlay(context, width, height, studentId, qrOverlayFile = null, forceQr = false) {
   const settings = finalWorkPrintSettings();
-  if (settings.qrEnabled === false && !(qrOverlayFile instanceof Blob)) return;
+  if (!forceQr && settings.qrEnabled === false && !(qrOverlayFile instanceof Blob)) return;
   const student = studentById(studentId);
   const qrPayload = studentQrPayload(student || { id: studentId, qrId: studentId });
   const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);

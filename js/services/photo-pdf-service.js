@@ -29,15 +29,16 @@ export async function createPhotoPagesPdf(pages) {
     append("\nendobj\n");
   }
   append("%PDF-1.4\n");
-  for await (const { jpeg, width, height } of pages) {
+  for await (const { jpeg, width, height, landscape = false } of pages) {
     if (!(jpeg instanceof Blob) || jpeg.type !== "image/jpeg" || !jpeg.size
       || ![width, height].every(value => Number.isInteger(value) && value > 0)) {
       throw new Error("Expected a JPEG page with valid pixel dimensions");
     }
+    const page = landscape ? { width: PHOTO_A4.height, height: PHOTO_A4.width } : PHOTO_A4;
     const id = 3 + pageIds.length * 3;
     pageIds.push(id);
-    const contents = `q\n${PHOTO_A4.width} 0 0 ${PHOTO_A4.height} 0 0 cm\n/Photo Do\nQ`;
-    object(id, [`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PHOTO_A4.width} ${PHOTO_A4.height}] /Resources << /XObject << /Photo ${id + 1} 0 R >> >> /Contents ${id + 2} 0 R >>`]);
+    const contents = `q\n${page.width} 0 0 ${page.height} 0 0 cm\n/Photo Do\nQ`;
+    object(id, [`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /XObject << /Photo ${id + 1} 0 R >> >> /Contents ${id + 2} 0 R >>`]);
     object(id + 1, [`<< /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.size} >>\nstream\n`, jpeg, "\nendstream"]);
     object(id + 2, [`<< /Length ${encoder.encode(contents).length} >>\nstream\n${contents}\nendstream`]);
   }
