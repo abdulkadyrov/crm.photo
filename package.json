@@ -9,5 +9,11 @@
     "start": "python3 -m http.server 4173",
     "test": "node --test tests/unit/*.test.mjs tests/integration/*.test.mjs",
     "check": "node --check js/core/legacy-app.js && node --test tests/unit/*.test.mjs tests/integration/*.test.mjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.7"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.4.0"
   }
 }

@@ -11,7 +11,7 @@ export function openVakhaDb({ name = DB_NAME, version = DB_VERSION, stores = STO
       ensureObjectStores(db, stores);
       upgrade?.(db, event.oldVersion, event.newVersion, event);
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => { request.result.onversionchange=()=>request.result.close(); resolve(request.result); };
     request.onerror = () => reject(request.error);
     request.onblocked = () => reject(new Error("IndexedDB upgrade is blocked by another open tab."));
   });

@@ -1,6 +1,7 @@
 """Private CRM accounts and immutable project transfers. Run behind Caddy/Gunicorn."""
 from types import SimpleNamespace
 import parent_orders
+import sync_api
 import hashlib, hmac, json, os, re, secrets, sqlite3, tempfile, time, zipfile
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
@@ -18,6 +19,9 @@ class Error(Exception):
 def fail(condition, status=400, message='Некорректные данные'):
     if condition: raise Error(status, message)
 
+def reject_json_constant(value):
+    raise ValueError("Non-finite JSON number")
+
 def initialize():
     ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
     (ROOT/'packages').mkdir(exist_ok=True, mode=0o700)
@@ -32,6 +36,7 @@ def initialize():
         CREATE TABLE IF NOT EXISTS attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, until REAL NOT NULL);
         ''')
         parent_orders.initialize(c)
+        sync_api.initialize(c)
 
 @contextmanager
 def db():
@@ -124,8 +129,8 @@ class Request:
         data=self.e['wsgi.input'].read(size)
         fail(len(data)!=size,400,'Загрузка прервана')
         return data
-    def json(self):
-        try: value=json.loads(self.body())
+    def json(self,limit=1024*1024):
+        try: value=json.loads(self.body(limit),parse_constant=reject_json_constant)
         except (ValueError,UnicodeError): raise Error(400,'Некорректный JSON')
         fail(not isinstance(value,dict)); return value
     def user(self,c):
@@ -171,6 +176,8 @@ class Request:
                 self.headers.append(('Set-Cookie',f'{COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800'))
                 audit(c,u,'login'); return public_user(c,u)
             u=self.user(c)
+            if path.startswith('/sync/'):
+                return sync_api.route(self,c,u,path,SimpleNamespace(**globals()))
             if path.startswith('/parents/'):
                 return parent_orders.route(self,c,u,path,SimpleNamespace(**globals()))
             if path=='/me' and self.method=='GET': return public_user(c,u)
@@ -312,6 +319,13 @@ def application(environ,start_response):
     headers=[('Cache-Control','no-store'),('X-Content-Type-Options','nosniff')]
     try:
         result=r.route(); status=200
+        if isinstance(result,sync_api.BlobFile):
+            path=result.path
+            start_response("200 OK",headers+[("Content-Type","application/octet-stream"),("Content-Length",str(path.stat().st_size))])
+            def binary_stream():
+                with path.open("rb") as f:
+                    while chunk:=f.read(1024*1024): yield chunk
+            return binary_stream()
         if isinstance(result,Media):
             path=result.path; size=path.stat().st_size; start=0; end=size-1
             requested=environ.get('HTTP_RANGE','')

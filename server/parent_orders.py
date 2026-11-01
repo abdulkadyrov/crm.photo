@@ -70,6 +70,8 @@ def route(r,c,u,path,a):
                 fail(not isinstance(url,str) or len(url)>2048 or bool(url) and (parsed.scheme!='https' or parsed.hostname not in ('crm.khanzama.ru','zakaz.khanzama.ru')) ,message='Медиа должно храниться в CRM')
                 item[field]=url
             mode=value.get('parent_preview_mode','auto'); fail(mode not in ('auto','print','digital'));item['parent_preview_mode']=mode
+            canonical=c.execute("SELECT data FROM sync_records WHERE store='catalog' AND id=? AND data IS NOT NULL",(sid,)).fetchone()
+            if canonical:item=a.sync_api.public_catalog(a,json.loads(canonical[0]),item)
             c.execute('INSERT INTO parent_catalog VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',(sid,json.dumps(item,ensure_ascii=False)))
         a.audit(c,u,'parent_catalog_saved',str(len(entries))); return {'ok':True}
     if path.startswith('/parents/media/') and r.method in ('GET','POST'):

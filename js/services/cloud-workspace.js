@@ -13,6 +13,7 @@ export const canSeeMoney = () => !cloudRequired || account?.role === 'admin';
 export function assertCloudWrite(store, value, deleting=false) {
   if (!cloudRequired || !account || account.role==='admin') return;
   if (store==='settings' || store==='operatorEvents') return;
+  if (['catalog','templates','documents'].includes(store)) throw new Error('Этот раздел изменяет администратор');
   if (store==='projects' && !account.projects?.includes(value?.id)) throw new Error('Новые проекты и доступ назначает администратор');
   if (account.role==='viewer') throw new Error('Роль «Просмотр»: изменения недоступны');
   if (account.role==='photographer' && !['media','students','orders'].includes(store)) throw new Error('Фотограф может сохранять съёмки и отметки оплаты');
@@ -107,7 +108,7 @@ export async function showCloud() {
   openDialog();
   if(!account) {loginForm(()=>location.reload());return;}
   const body=dialog.querySelector('[data-cloud-body]');
-  body.innerHTML=`<p>${esc(account.name)} · ${esc(roles[account.role])}</p><p>Сначала работай на устройстве. «Отправить на сервер» сохраняет отдельную версию проекта или группы. Уже отправленные версии не перезаписываются.</p><div class="cloud-actions"><button data-refresh>Обновить</button><button data-retry>Повторить отправку очереди</button><button data-password>Сменить пароль</button><button data-logout>Выйти</button></div><h3>На этом устройстве</h3><div data-local></div><h3>Очередь отправки</h3><div data-queue></div><h3>На сервере</h3><div data-projects></div>${account.role==='admin'?'<h3>Сотрудники и права</h3><div data-users></div>':''}`;
+  body.innerHTML=`<p>${esc(account.name)} · ${esc(roles[account.role])}</p><p>Рабочие изменения синхронизируются автоматически при подключении к интернету. «Отправить на сервер» дополнительно сохраняет отдельный ZIP-снимок проекта или группы. Уже отправленные архивы не перезаписываются.</p><div class="cloud-actions"><button data-refresh>Обновить</button><button data-retry>Повторить отправку очереди</button><button data-password>Сменить пароль</button><button data-logout>Выйти</button></div><h3>На этом устройстве</h3><div data-local></div><h3>Очередь отправки</h3><div data-queue></div><h3>На сервере</h3><div data-projects></div>${account.role==='admin'?'<h3>Сотрудники и права</h3><div data-users></div>':''}`;
   body.querySelector('[data-refresh]').onclick=()=>showRefresh();
   body.querySelector('[data-retry]').onclick=async()=>{await drain();await showRefresh();};
   body.querySelector('[data-logout]').onclick=async()=>{try{await post('/logout',{});saveAccount(null);location.reload();}catch(e){status('Для выхода подключитесь к интернету: '+e.message);}};

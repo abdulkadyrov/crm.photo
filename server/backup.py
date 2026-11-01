@@ -10,6 +10,7 @@ with tempfile.TemporaryDirectory() as temp:
     path=out/('crm-'+time.strftime('%Y%m%dT%H%M%SZ',time.gmtime())+'.tar.gz')
     with tarfile.open(path,'x:gz') as archive:
         archive.add(target,arcname='crm.sqlite3')
+        if (root/'sync-blobs').exists(): archive.add(root/'sync-blobs',arcname='sync-blobs')
         if (root/'parent-media').exists(): archive.add(root/'parent-media',arcname='parent-media')
         for id in ids: archive.add(root/'packages'/f'{id}.zip',arcname=f'packages/{id}.zip')
     path.chmod(0o600)

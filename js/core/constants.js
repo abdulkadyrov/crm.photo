@@ -1,7 +1,7 @@
 export const APP_NAME = "Vakha Studio";
 export const APP_VERSION = "0.1.0";
 export const DB_NAME = "school-photo-flow";
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
 export const ROUTES = {
   dashboard: "#dashboard",

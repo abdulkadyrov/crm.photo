@@ -1,3 +1,4 @@
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parseChildrenList, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
@@ -39,9 +40,10 @@ import {
 
 let DB_NAME = "school-photo-flow";
 let cloudImportInProgress = false;
+let recordSync = null;
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const STORE_NAMES = [
   "projects",
   "classes",
@@ -321,6 +323,18 @@ async function init() {
   await initializeCloud();
   DB_NAME = cloudDatabase();
   state.db = await openDb();
+  recordSync = createRecordSync({db:state.db,user:cloudAccount,enabled:cloudRequired,notify,prepareRecord:async(store,value)=>{
+    if(store!=="documents"||!value||value.blob)return value;
+    const blob=await documentBlob(value);
+    if(!blob){const error=new Error("Файл документа недоступен. Откройте его на исходном устройстве и повторите отправку.");error.status=425;throw error;}
+    return {...value,blob,storageMode:"indexeddb"};
+  },canApply:()=>!document.querySelector('dialog[open], [role="dialog"], input:focus, textarea:focus, select:focus, video, form[data-sync-editing], .transfer-import-backdrop'),onRemote:async()=>{
+    await refreshData();
+    // Preserve drafts, camera sessions, open panels and the exact current view.
+    if(!document.querySelector('dialog[open], input:focus, textarea:focus, select:focus, video, .qr-panel-backdrop, .transfer-import-backdrop, .item-menu[open], form')){
+      const y=window.scrollY;state.preserveScroll=true;render();window.scrollTo(0,y);
+    }
+  }});
   if (!cloudRequired || cloudAccount()?.role === "admin") {
     await seedIfNeeded();
     await seedCatalogIfNeeded();
@@ -328,6 +342,7 @@ async function init() {
   await refreshData();
   normalizeCurrentOperator();
   bindShell();
+  document.addEventListener("input",event=>{const form=event.target.closest?.("form");if(form)form.dataset.syncEditing="true";});
   mountCloud({
     notify, projects: () => state.data.projects, groups: id => classesByProject(id),
     export: async (kind, id) => {
@@ -391,7 +406,7 @@ async function init() {
       const nextStudent=stampUpdated({...student,catalogId:ids[0],catalogIds:ids,selectedServices:buildSelectedServices(ids,selectedServicesForStudent(student)),parentPrices:{...student.parentPrices,...prices},parentOrderIds:[...(student.parentOrderIds||[]),incoming.id]});
       const nextOrder=stampUpdated({...order,catalogId:ids[0],catalogIds:ids,items:orderItemsFromCatalogs(ids,order.items||[]),parentOrderId:incoming.id,parentOrderNumber:incoming.order_number});
       assertCloudWrite("students",nextStudent);assertCloudWrite("orders",nextOrder);
-      await new Promise((resolve,reject)=>{const tx=state.db.transaction(["students","orders"],"readwrite");tx.objectStore("students").put(nextStudent);tx.objectStore("orders").put(nextOrder);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});
+      await recordSync.writeBatch([{store:"students",value:nextStudent,expected:student},{store:"orders",value:nextOrder,expected:order}]);
       await refreshData();
     }
   });
@@ -402,6 +417,7 @@ async function init() {
   }
   navigateFromUrl() || navigate("home");
   registerServiceWorker();
+  recordSync.start().catch(error=>notify(`Синхронизация: ${error.message}. Локальные данные сохранены.`));
 }
 
 function lockGestures() {
@@ -437,7 +453,7 @@ function emptyData() {
 }
 
 function openDb() {
-  return openVakhaDb({ name: DB_NAME, version: DB_VERSION, stores: STORE_NAMES });
+  return openVakhaDb({ name: DB_NAME, version: DB_VERSION, stores: [...STORE_NAMES,...SYNC_LOCAL_STORES] });
 }
 
 function tx(storeName, mode = "readonly") {
@@ -463,29 +479,17 @@ function put(storeName, value) {
       }
     } catch (error) { notify(error.message); return Promise.reject(error); }
   }
-  return new Promise((resolve, reject) => {
-    const request = tx(storeName, "readwrite").put(value);
-    request.onsuccess = () => resolve(value);
-    request.onerror = () => reject(request.error);
-  });
+  return recordSync.put(storeName,value,state.data[storeName]?.find(row=>row.id===value.id));
 }
 
 function del(storeName, id) {
   try { assertCloudWrite(storeName, {id}, true); } catch(e) { notify(e.message); return Promise.reject(e); }
-  return new Promise((resolve, reject) => {
-    const request = tx(storeName, "readwrite").delete(id);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return recordSync.del(storeName,id,state.data[storeName]?.find(row=>row.id===id));
 }
 
 function clearStore(storeName) {
   if (cloudRequired && cloudAccount()?.role !== "admin") return Promise.reject(new Error("Очистка доступна администратору"));
-  return new Promise((resolve, reject) => {
-    const request = tx(storeName, "readwrite").clear();
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return recordSync.clear(storeName);
 }
 
 async function refreshData() {
@@ -4647,7 +4651,7 @@ function showChildrenList(classId,trigger) {
   input.oninput=()=>{draft=null;save.disabled=true;};
   d.querySelector('[data-file]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>1024*1024)throw new Error('Файл должен быть меньше 1 МБ');input.value=await file.text();input.oninput();}catch(e){result.textContent=e.message;}};
   d.querySelector('[data-preview]').onclick=()=>{try{draft=parseChildrenList(input.value,studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`));result.textContent=`Новых: ${draft.added.length}. Совпадений: ${draft.duplicates.length}. Нужна проверка: ${draft.invalid.length}. Совпадения не добавляются; однофамильцев с одинаковыми именами можно добавить отдельно.`;d.querySelector('[data-review]').innerHTML=`<ol>${draft.added.map(name=>`<li>${escapeHtml(name)}</li>`).join('')}</ol>${draft.invalid.length?`<p>Исправьте: ${escapeHtml(draft.invalid.join('; '))}</p>`:''}`;save.disabled=!draft.added.length||draft.invalid.length>0;}catch(e){draft=null;save.disabled=true;result.textContent=e.message;}};
-  save.onclick=async()=>{if(!draft)return;save.disabled=true;try{const existing=new Set(studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`.trim().toLocaleLowerCase('ru')));const rows=draft.added.filter(fio=>!existing.has(fio.toLocaleLowerCase('ru'))).map(fio=>{const id=uid("student");const student=stampCreated({id,classId,...splitFullName(fio),qrId:id,catalogId:"",catalogIds:[],selectedServices:[],paymentStatus:"unpaid",orderStatus:"",status:""});const order=stampCreated({id:`order_${id}`,studentId:id,catalogId:"",catalogIds:[],status:"",items:[]});assertCloudWrite("students",student);assertCloudWrite("orders",order);return {student,order};});await new Promise((resolve,reject)=>{const tx=state.db.transaction(["students","orders"],"readwrite");for(const row of rows){tx.objectStore("students").put(row.student);tx.objectStore("orders").put(row.order);}tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});await refreshData();result.textContent='Дети сохранены на устройстве. В «Заказы родителей и ссылка» обновите список для родителей.';draft=null;notify('Список детей добавлен');}catch(e){result.textContent=e.message;}};
+  save.onclick=async()=>{if(!draft)return;save.disabled=true;try{const existing=new Set(studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`.trim().toLocaleLowerCase('ru')));const rows=draft.added.filter(fio=>!existing.has(fio.toLocaleLowerCase('ru'))).map(fio=>{const id=uid("student");const student=stampCreated({id,classId,...splitFullName(fio),qrId:id,catalogId:"",catalogIds:[],selectedServices:[],paymentStatus:"unpaid",orderStatus:"",status:""});const order=stampCreated({id:`order_${id}`,studentId:id,catalogId:"",catalogIds:[],status:"",items:[]});assertCloudWrite("students",student);assertCloudWrite("orders",order);return {student,order};});await recordSync.writeBatch(rows.flatMap(row=>[{store:"students",value:row.student},{store:"orders",value:row.order}]));await refreshData();result.textContent='Дети сохранены на устройстве. В «Заказы родителей и ссылка» обновите список для родителей.';draft=null;notify('Список детей добавлен');}catch(e){result.textContent=e.message;}};
 }
 
 function showStudentForm(classId) {
