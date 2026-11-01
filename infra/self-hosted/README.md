@@ -137,3 +137,55 @@ group upload and server confirmation. Server ZIP inspection confirmed the
 browser-submitted payment flag. Browser Back from the Server dialog restored
 the same student card and payment state. Synthetic server users/data were removed.
 Physical phone-camera and real airplane-mode tests remain device checks.
+
+## Parent orders — zakaz.khanzama.ru (v95)
+
+Vakha Studio's existing parent screens are built with `VITE_CRM_MODE=true`.
+The default build still uses its original Supabase backend; that database and
+old hosting are untouched. New deployment lives in `/srv/vakha-studia/releases`
+and uses `/etc/caddy/zakaz-studia.caddy`. No Supabase keys enter the CRM build.
+
+CRM class menu → **Заказы родителей и ссылка**: choose available services and
+publish the class. The administrator publishes catalog metadata once per service
+ID; classes hold only service IDs. Existing CRM asset URLs are reused; embedded
+previews are uploaded once by SHA-256 to private `parent-media/`, served through
+a read-only media endpoint supporting video ranges. No parent-site media copy.
+Manager publishes the roster using services already published by the owner.
+Updates to roster/catalog are explicitly published from this panel. A revision
+check rejects stale class edits. Closing intake preserves orders and the link.
+
+Public capability URLs expose only that class's names and selected services.
+No parent-created child records. Orders validate class membership and catalog,
+calculate prices on the server, snapshot name/price, and enforce unique child
+and request identifiers. A personal order capability is returned only to the
+original request. Changing an already submitted order requires the organizer;
+parent editing is not enabled. Parent links must be shared only with the class.
+
+Connected owner/manager workspaces poll orders every minute and on reconnect.
+A matching/new selection applies atomically to local students+orders using the
+original IDs, preserving payment flags and existing task progress. Conflicting
+service selections require explicit review in the class panel. Receipt IDs travel
+with student records in the existing ZIP format. Existing ZIP preview/merge remains;
+there is no general bidirectional live synchronization of all CRM fields. Offline
+edits remain local and are transferred with the existing queued ZIP workflow.
+Server snapshots are not overwritten by this bridge.
+
+**Добавить детей списком** accepts line-separated OCR text or a JSON array of
+`{ "firstName": "Иван", "lastName": "Иванов" }`. Preview detects repeated names
+and incomplete entries before addition. Same-name children can be added individually.
+No automatic OCR service or teacher account is introduced.
+
+Backups now include `parent-media/` as well as the database and private ZIPs.
+For migration restore all three, move both frontend releases and Caddy fragments,
+then update CRM and zakaz DNS together. Domain-based links remain unchanged.
+Rolling server code back does not require dropping the additive parent tables.
+
+Release validation: 100 CRM JavaScript tests, 9 Python API tests, 12 Vakha tests;
+both legacy and CRM-mode frontend builds pass. HTTPS/Safari smoke completed
+child selection → service preview/selection → submission and personal order link;
+API confirmed both synthetic orders in CRM. Roster preview detected duplicate and
+incomplete names without modifying existing children. QR decoder test verifies
+the complete class URL. AR frontend hash and health endpoint remained unchanged.
+Synthetic QA records were archived privately and removed from active tables.
+Independent post-deploy backup copied to the owner's Mac. Real phone camera and
+physical airplane-mode checks remain device verification.

@@ -2,6 +2,7 @@ import io,json,os,tempfile,unittest,zipfile,sys,importlib.util
 from pathlib import Path
 TEST_ROOT=tempfile.TemporaryDirectory()
 os.environ['CRM_DATA_DIR']=TEST_ROOT.name
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'server'))
 spec=importlib.util.spec_from_file_location('cloud',Path(__file__).resolve().parents[2]/'server/app.py')
 app=importlib.util.module_from_spec(spec);spec.loader.exec_module(app)
 PASSWORD='Test-only-password-2026'

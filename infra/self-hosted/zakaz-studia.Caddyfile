@@ -1,0 +1,27 @@
+zakaz.khanzama.ru {
+    encode zstd gzip
+    root * /srv/vakha-studia/current
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        X-Robots-Tag "noindex, nofollow"
+        Cache-Control no-cache
+    }
+    handle /api/v1/public/* {
+        request_body {
+            max_size 1MB
+        }
+        reverse_proxy 127.0.0.1:8091
+    }
+    handle /api/* {
+        respond "Not found" 404
+    }
+    handle /healthz {
+        respond "Vakha Studio CRM orders" 200
+    }
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}

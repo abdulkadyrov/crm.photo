@@ -1,3 +1,6 @@
+import { captureDialogReturn } from "../services/dialog-return.js";
+import { incomingOrderState, parseChildrenList, parentUnitPrice } from "../services/parent-order-model.js";
+import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud } from "../services/cloud-workspace.js";
 import { decodeCode128ImageData } from "../services/barcode-reader.js";
 import { printCodeLayout } from "../services/print-code-layout.js";
@@ -352,6 +355,44 @@ async function init() {
       }
       draft.cloudTrusted = true;
       showTransferImportPreview(draft);
+    }
+  });
+  mountParentOrders({
+    notify, projects:()=>state.data.projects, qr:url=>`data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(url))}`,
+    canAutoApply: incoming => {
+      const student=studentById(incoming.child_id);
+      return student?.classId===incoming.class_id && incoming.selected_items.every(i=>catalogItemById(i.id)) && ['new','matching','applied'].includes(incomingOrderState(selectedCatalogIdsForStudent(student),incoming,student.parentOrderIds||[]));
+    },
+    classData: id => {
+      const klass=classById(id); const project=projectById(klass?.projectId); if(!klass||!project)return null;
+      return {projectId:project.id,projectName:project.name,name:klass.name,
+        children:studentsByClass(id).map(s=>({id:s.id,name:`${s.lastName||""} ${s.firstName||""}`.trim()})),
+        catalog:publicOrderedServices(state.data.catalog).map(item=>({id:item.id,name:serviceName(item),description:serviceDescription(item),short_description:serviceShortDescription(item),category:serviceCategory(item),gender:serviceGender(item),type:item.type||"photo",price:parseMoney(item.price),preview_url:servicePreviewImageDataUrl(item),preview_video_url:servicePreviewVideoDataUrl(item),parent_preview_mode:serviceParentPreviewMode(item)}))};
+    },
+    isApplied: order => {
+      const student=studentById(order.child_id);
+      return (student?.parentOrderIds||[]).includes(order.id) && (!canSeeMoney() || order.selected_items.every(i=>student?.parentPrices?.[i.id]?.orderId===order.id));
+    },
+    apply: async incoming => {
+      const student=studentById(incoming.child_id);
+      if(!student||student.classId!==incoming.class_id)throw new Error("Сначала загрузите исходный класс на это устройство");
+      const prices=canSeeMoney()?Object.fromEntries(incoming.selected_items.filter(i=>Number.isFinite(i.price)).map(i=>[i.id,{price:i.price,orderId:incoming.id}])):{};
+      if((student.parentOrderIds||[]).includes(incoming.id)){
+        if(canSeeMoney()){await put("students",stampUpdated({...student,parentPrices:{...student.parentPrices,...prices}}));await refreshData();}
+        return;
+      }
+      const ids=incoming.selected_items.map(i=>i.id);
+      if(ids.some(id=>!catalogItemById(id)))throw new Error("Сначала загрузите актуальный каталог CRM");
+      const existing=selectedCatalogIdsForStudent(student);
+      const order=orderByStudent(student.id);
+      if(existing.length && (existing.length!==ids.length || existing.some(id=>!ids.includes(id)))) {
+        if(!confirm(`У ${student.lastName} ${student.firstName} уже выбраны другие услуги.\nСейчас: ${existing.map(id=>serviceName(catalogItemById(id))).join(", ")}\nЗаказ родителя: ${incoming.selected_items.map(i=>i.name).join(", ")}\nЗаменить выбор услуг заказом родителя? Отметка оплаты сохранится.`))return false;
+      }
+      const nextStudent=stampUpdated({...student,catalogId:ids[0],catalogIds:ids,selectedServices:buildSelectedServices(ids,selectedServicesForStudent(student)),parentPrices:{...student.parentPrices,...prices},parentOrderIds:[...(student.parentOrderIds||[]),incoming.id]});
+      const nextOrder=stampUpdated({...order,catalogId:ids[0],catalogIds:ids,items:orderItemsFromCatalogs(ids,order.items||[]),parentOrderId:incoming.id,parentOrderNumber:incoming.order_number});
+      assertCloudWrite("students",nextStudent);assertCloudWrite("orders",nextOrder);
+      await new Promise((resolve,reject)=>{const tx=state.db.transaction(["students","orders"],"readwrite");tx.objectStore("students").put(nextStudent);tx.objectStore("orders").put(nextOrder);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});
+      await refreshData();
     }
   });
   if (shouldShowOperatorGate()) {
@@ -1255,7 +1296,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-open-class-action="${klass.id}" type="button">Открыть группу</button>
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
-              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button>
+              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button><button data-children-list="${klass.id}" type="button">Добавить детей списком</button><button data-parent-class="${klass.id}" type="button">Заказы родителей и ссылка</button>
               <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button>
               <button data-mark-printed-class="${klass.id}" type="button">Отметить печать</button>
               <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
@@ -3969,6 +4010,8 @@ function templateEditorRow(item) {
 
 function bindViewActions() {
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
+  view.querySelectorAll("[data-children-list]").forEach(b => b.addEventListener("click", () => showChildrenList(b.dataset.childrenList,b)));
+  view.querySelectorAll("[data-parent-class]").forEach(b => b.addEventListener("click", () => showParentOrders(b.dataset.parentClass,b)));
   view.querySelectorAll("[data-cloud-class]").forEach(b => b.addEventListener("click", () => enqueueCloud("class", b.dataset.cloudClass)));
   clearStudentDetailScrollSpy();
   injectIcons();
@@ -4588,6 +4631,23 @@ async function setClassColor(payload) {
   await refreshData();
   state.preserveScroll = true;
   renderClasses();
+}
+
+function showChildrenList(classId,trigger) {
+  if(cloudRequired && !["admin","manager"].includes(cloudAccount()?.role))return notify("Список детей добавляет менеджер или администратор");
+  const klass=classById(classId);if(!klass)return;
+  const restore=captureDialogReturn(document,window,trigger);
+  const d=document.createElement("dialog");d.className="cloud-dialog";d.setAttribute("aria-label","Добавить детей списком");
+  d.innerHTML=`<div class="cloud-head"><h2>Добавить детей · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div><label>Фамилия и имя, каждый ребёнок с новой строки<textarea data-names rows="10" placeholder="Иванов Иван\nПетрова Анна"></textarea></label><p>Можно вставить текст после распознавания журнала или JSON-массив с полями firstName и lastName. Проверьте имена перед сохранением.</p><label>Загрузить TXT или JSON<input data-file type="file" accept=".txt,.json,text/plain,application/json"></label><button data-preview>Проверить список</button><p data-result role="status"></p><div data-review></div><button data-save disabled>Добавить проверенных детей</button>`;
+  document.body.append(d);d.showModal();history.pushState({...history.state,childrenListModal:true},'');
+  const back=()=>d.close();window.addEventListener('popstate',back,{once:true});
+  d.onclose=()=>{window.removeEventListener('popstate',back);d.remove();if(history.state?.childrenListModal)history.back();restore();};d.querySelector('[data-close]').onclick=()=>d.close();
+  let draft;
+  const input=d.querySelector('[data-names]'),save=d.querySelector('[data-save]'),result=d.querySelector('[data-result]');
+  input.oninput=()=>{draft=null;save.disabled=true;};
+  d.querySelector('[data-file]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>1024*1024)throw new Error('Файл должен быть меньше 1 МБ');input.value=await file.text();input.oninput();}catch(e){result.textContent=e.message;}};
+  d.querySelector('[data-preview]').onclick=()=>{try{draft=parseChildrenList(input.value,studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`));result.textContent=`Новых: ${draft.added.length}. Совпадений: ${draft.duplicates.length}. Нужна проверка: ${draft.invalid.length}. Совпадения не добавляются; однофамильцев с одинаковыми именами можно добавить отдельно.`;d.querySelector('[data-review]').innerHTML=`<ol>${draft.added.map(name=>`<li>${escapeHtml(name)}</li>`).join('')}</ol>${draft.invalid.length?`<p>Исправьте: ${escapeHtml(draft.invalid.join('; '))}</p>`:''}`;save.disabled=!draft.added.length||draft.invalid.length>0;}catch(e){draft=null;save.disabled=true;result.textContent=e.message;}};
+  save.onclick=async()=>{if(!draft)return;save.disabled=true;try{const existing=new Set(studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`.trim().toLocaleLowerCase('ru')));const rows=draft.added.filter(fio=>!existing.has(fio.toLocaleLowerCase('ru'))).map(fio=>{const id=uid("student");const student=stampCreated({id,classId,...splitFullName(fio),qrId:id,catalogId:"",catalogIds:[],selectedServices:[],paymentStatus:"unpaid",orderStatus:"",status:""});const order=stampCreated({id:`order_${id}`,studentId:id,catalogId:"",catalogIds:[],status:"",items:[]});assertCloudWrite("students",student);assertCloudWrite("orders",order);return {student,order};});await new Promise((resolve,reject)=>{const tx=state.db.transaction(["students","orders"],"readwrite");for(const row of rows){tx.objectStore("students").put(row.student);tx.objectStore("orders").put(row.order);}tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});await refreshData();result.textContent='Дети сохранены на устройстве. В «Заказы родителей и ссылка» обновите список для родителей.';draft=null;notify('Список детей добавлен');}catch(e){result.textContent=e.message;}};
 }
 
 function showStudentForm(classId) {
@@ -11458,7 +11518,7 @@ function financialStatsForStudents(students) {
 function studentTotalPrice(student) {
   return selectedServicesForStudent(student).reduce((sum, item) => {
     const service = catalogItemById(item.serviceId);
-    return sum + (parseMoney(service?.price) * normalizeSelectedServiceQuantity(item.quantity));
+    return sum + (parentUnitPrice(student,item.serviceId,parseMoney(service?.price)) * normalizeSelectedServiceQuantity(item.quantity));
   }, 0);
 }
 

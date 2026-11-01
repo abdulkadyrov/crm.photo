@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v91";
+const CACHE_VERSION = "v95";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -76,13 +76,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=91",
+  "./styles.css?v=95",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=91",
+  "./js/core/app.js?v=95",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=91",
+  "./js/core/legacy-app.js?v=95",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -127,6 +127,9 @@ const APP_SHELL = [
   "./js/modules/checklist.js",
   "./js/modules/public-catalog.js",
   "./js/services/cloud-workspace.js",
+  "./js/services/parent-orders.js",
+  "./js/services/parent-order-model.js",
+  "./js/services/dialog-return.js",
   "./js/services/qr-service.js",
   "./js/services/zip-service.js",
   "./js/services/media-service.js",

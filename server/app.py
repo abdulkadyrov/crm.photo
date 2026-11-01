@@ -1,4 +1,6 @@
 """Private CRM accounts and immutable project transfers. Run behind Caddy/Gunicorn."""
+from types import SimpleNamespace
+import parent_orders
 import hashlib, hmac, json, os, re, secrets, sqlite3, tempfile, time, zipfile
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
@@ -29,6 +31,7 @@ def initialize():
         CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, at REAL NOT NULL, user_id TEXT, action TEXT NOT NULL, target TEXT);
         CREATE TABLE IF NOT EXISTS attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, until REAL NOT NULL);
         ''')
+        parent_orders.initialize(c)
 
 @contextmanager
 def db():
@@ -134,10 +137,18 @@ class Request:
         fail(not u,401,'Войдите в серверный аккаунт'); return u
     def route(self):
         if self.method not in ('GET','HEAD'):
-            fail(self.e.get('HTTP_ORIGIN')!=ORIGIN,403,'Недопустимый источник запроса')
+            fail(self.e.get('HTTP_ORIGIN')!=(parent_orders.ORIGIN if self.path.startswith('/api/v1/public/') else ORIGIN),403,'Недопустимый источник запроса')
         path=self.path.removeprefix('/api/v1')
+        if path.startswith('/public/media/') and self.method=='GET':
+            name=path.split('/')[-1]
+            fail(not re.fullmatch(r'[a-f0-9]{64}\.(jpg|png|webp|mp4|webm)',name),404,'Не найдено')
+            target=ROOT/'parent-media'/name
+            fail(not target.is_file(),404,'Не найдено')
+            return Media(target)
         if path=='/health' and self.method=='GET': return {'ok':True}
         with db() as c:
+            if path.startswith('/public/'):
+                return parent_orders.route(self,c,None,path,SimpleNamespace(**globals()))
             if path=='/login' and self.method=='POST':
                 body=self.json(); login=str(body.get('login','')).strip().lower()
                 key=hashlib.sha256((self.e.get('REMOTE_ADDR','')+'|'+login).encode()).hexdigest()
@@ -160,6 +171,8 @@ class Request:
                 self.headers.append(('Set-Cookie',f'{COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800'))
                 audit(c,u,'login'); return public_user(c,u)
             u=self.user(c)
+            if path.startswith('/parents/'):
+                return parent_orders.route(self,c,u,path,SimpleNamespace(**globals()))
             if path=='/me' and self.method=='GET': return public_user(c,u)
             if path=='/logout' and self.method=='POST':
                 cookie=SimpleCookie(self.e.get('HTTP_COOKIE',''))[COOKIE].value
@@ -291,11 +304,34 @@ class Request:
             destination.unlink(missing_ok=True); raise
         finally: Path(tmp).unlink(missing_ok=True)
 
+class Media:
+    def __init__(self,path): self.path=path
+
 def application(environ,start_response):
     r=Request(environ)
     headers=[('Cache-Control','no-store'),('X-Content-Type-Options','nosniff')]
     try:
         result=r.route(); status=200
+        if isinstance(result,Media):
+            path=result.path; size=path.stat().st_size; start=0; end=size-1
+            requested=environ.get('HTTP_RANGE','')
+            if requested:
+                match=re.fullmatch(r'bytes=(\d+)-(\d*)',requested)
+                fail(not match,400,'Некорректный диапазон')
+                start=int(match[1]);end=min(int(match[2]) if match[2] else end,end)
+                fail(start>end or start>=size,400,'Некорректный диапазон')
+            mime={'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'}[path.suffix]
+            head=[('Content-Type',mime),('Content-Length',str(end-start+1)),('Accept-Ranges','bytes'),('Cache-Control','public, max-age=31536000, immutable'),('X-Content-Type-Options','nosniff')]
+            if requested: head.append(('Content-Range',f'bytes {start}-{end}/{size}'))
+            start_response('206 Partial Content' if requested else '200 OK',head)
+            def media_stream():
+                with path.open('rb') as f:
+                    f.seek(start);remaining=end-start+1
+                    while remaining:
+                        chunk=f.read(min(1024*1024,remaining))
+                        if not chunk: break
+                        remaining-=len(chunk);yield chunk
+            return media_stream()
         if isinstance(result,Path) or isinstance(result,tuple):
             path,remove=result if isinstance(result,tuple) else (result,False)
             start_response('200 OK',headers+[('Content-Type','application/zip'),('Content-Disposition','attachment; filename="project.zip"'),('Content-Length',str(path.stat().st_size))])
