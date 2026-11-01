@@ -6389,15 +6389,15 @@ function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     return `<img src="${escapeAttr(url)}" alt="${escapeAttr(label)}" loading="lazy" />`;
   };
   panel.innerHTML = `<section class="qr-panel print-review-panel" role="dialog" aria-modal="true" aria-label="Проверка перед печатью" tabindex="-1">
-    <div class="card-header"><div><h2 class="card-title">Проверка перед печатью · ${escapeHtml(scope.name)}</h2><p class="muted">Сравните лица. Снимите выбор с работ, которые не подходят для печати.</p></div><button class="secondary-button" data-review-close type="button">Закрыть</button></div>
-    <div class="toolbar"><button class="secondary-button" data-review-all type="button">Выбрать все</button><button class="secondary-button" data-review-none type="button">Снять выбор</button><strong data-review-count aria-live="polite"></strong></div>
-    <div class="print-review-list">${works.map(work => {
+    <div class="print-review-header"><div><h2 class="card-title">Проверка перед печатью</h2><p class="muted">${escapeHtml(scope.name)}</p></div><button class="icon-button" data-review-close type="button" aria-label="Закрыть">×</button></div>
+    <div class="toolbar print-review-controls"><button class="secondary-button" data-review-all type="button">Выбрать все</button><button class="secondary-button" data-review-none type="button">Снять выбор</button><strong data-review-count aria-live="polite"></strong></div>
+    <div class="print-review-list" tabindex="0" aria-label="Фотографии для сравнения">${works.map(work => {
       const student = studentById(work.studentId);
       const source = mediaById(work.sourceMediaId)?.blob;
       const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
       return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Результат</h3>${image(finalWorkImageBlob(work), "Результат")}</div></div></article>`;
     }).join("")}</div>
-    <div class="toolbar"><button class="primary-button" data-review-download type="button">Скачать выбранные в PDF с QR</button><span class="muted">A4 · одна работа на странице · количество копий из заказа</span></div>
+    <div class="print-review-footer"><button class="primary-button" data-review-download type="button">Скачать PDF с QR</button><span class="muted">A4 · копии из заказа</span></div>
   </section>`;
   const inputs = [...panel.querySelectorAll("[data-review-work]")];
   const download = panel.querySelector("[data-review-download]");
@@ -6457,7 +6457,7 @@ function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
       console.error(error);
       notify("Не удалось создать PDF. " + error.message);
     } finally {
-      busy = false; download.textContent = "Скачать выбранные в PDF с QR"; update();
+      busy = false; download.textContent = "Скачать PDF с QR"; update();
     }
   };
   document.body.append(panel);
