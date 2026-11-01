@@ -5610,7 +5610,7 @@ button.mini-catalog-option {
 .print-review-list .checkbox-row { font-size: 13px; line-height: 1.4; padding: 4px; min-height: 36px; }
 .print-review-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .print-review-pair > div { min-width: 0; }
-.print-review-pair img { display: block; width: 100%; height: clamp(200px, 45dvh, 560px); object-fit: contain; background: var(--bg); }
+.print-review-pair img { display: block; width: 100%; height: auto; aspect-ratio: var(--print-review-ratio, 2480 / 3508); object-fit: cover; background: var(--bg); }
 .print-review-pair h3 { margin: 8px 0 6px; font-size: 13px; }
 .print-review-panel input[type="checkbox"] { width: 20px; height: 20px; flex: 0 0 20px; }
 .print-review-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; }
@@ -5619,12 +5619,9 @@ button.mini-catalog-option {
 @media (max-width: 600px) {
   .print-review-backdrop { padding: 0; }
   .print-review-panel { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); border-radius: 0; gap: 8px; }
-  .print-review-pair img { height: clamp(210px, 43dvh, 400px); }
   .print-review-footer .muted { max-width: 100px; text-align: right; }
 }
 
-/* The print result keeps its actual A4 ratio; the source stays uncropped. */
-.print-review-pair > div:last-child img { height: auto; object-fit: contain; background: transparent; }
 
 .print-settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 340px); gap: 20px; align-items: start; }
 .print-settings-preview { margin: 0; display: grid; gap: 8px; }

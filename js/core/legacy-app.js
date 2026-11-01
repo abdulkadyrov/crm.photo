@@ -20,7 +20,7 @@ import {
   SCHOOL_INTERVIEW_SERVICES
 } from "../data/kindergarten-ai-video-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=87";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=88";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js";
@@ -6421,7 +6421,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
       const student = studentById(work.studentId);
       const source = mediaById(work.sourceMediaId)?.blob;
       const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
-      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать (проверьте лицо и мимику)</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
+      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать (проверьте лицо и мимику)</span></label><div class="print-review-pair" style="--print-review-ratio: ${printAssets.get(work.id).orientation === "horizontal" ? "3508 / 2480" : "2480 / 3508"}"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
     }).join("")}</div>
     <div class="print-review-footer"><button class="primary-button" data-review-download type="button">${exportLabel}</button><span class="muted">A4 · копии из заказа</span></div>
   </section>`;
