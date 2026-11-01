@@ -20,7 +20,7 @@ import {
   SCHOOL_INTERVIEW_SERVICES
 } from "../data/kindergarten-ai-video-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=87";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js";

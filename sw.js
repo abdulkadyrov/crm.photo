@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v86";
+const CACHE_VERSION = "v87";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -132,6 +132,7 @@ const APP_SHELL = [
   "./js/services/export-service.js",
   "./js/services/album-service.js",
   "./js/services/finalwork-service.js",
+  "./js/services/finalwork-service.js?v=87",
   "./js/services/archive-service.js",
   "./js/services/backup-service.js",
   "./js/services/conflict-service.js",
