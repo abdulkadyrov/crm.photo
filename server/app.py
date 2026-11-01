@@ -256,13 +256,27 @@ class Request:
                 # catalog, final artwork, or arbitrary order/financial records on the server.
                 data={key:(value if key in ('media',) else []) for key,value in data.items()}
                 original,_=package_data(tmp)
-                known={}
+                known={}; known_orders={}
                 for published in c.execute("SELECT id FROM packages WHERE project_id=? AND role IN ('admin','manager') ORDER BY created",(project,)):
                     published_data,_=package_data(ROOT/'packages'/f'{published[0]}.zip')
                     known.update({s['id']:s for s in published_data.get('students',[])})
+                    known_orders.update({o['studentId']:o for o in published_data.get('orders',[])})
                 fail(any(s['id'] not in known or known[s['id']].get('classId')!=s.get('classId') for s in original.get('students',[])),403,'Сначала получите опубликованный проект от администратора')
                 data['students']=[{'id':s['id'],'paymentStatus':s.get('paymentStatus','unpaid')} for s in original.get('students',[])]
                 fail(any(s['paymentStatus'] not in ('paid','unpaid') for s in data['students']))
+                data['orders']=[]
+                media_by_student={sid:{m['id'] for m in original.get('media',[]) if m.get('studentId')==sid} for sid in student_ids}
+                for order in original.get('orders',[]):
+                    baseline=known_orders.get(order['studentId'])
+                    if not baseline: continue
+                    incoming={item.get('type'):item for item in order.get('items',[]) if isinstance(item,dict)}
+                    items=[]
+                    for base in baseline.get('items',[]):
+                        item=incoming.get(base.get('type'))
+                        if not item: continue
+                        files=[f for f in item.get('fileIds',[]) if f in media_by_student[order['studentId']]]
+                        items.append({**{k:base[k] for k in ('id','taskId','type','label') if k in base},'status':'done' if item.get('status')=='done' else base.get('status','pending'),'fileIds':files,'completedBy':u['id']})
+                    data['orders'].append({'id':baseline['id'],'studentId':order['studentId'],'items':items})
                 manifest['contributionOnly']=True
             manifest['serverRole']=u['role']; manifest['serverProjectId']=project; manifest['serverGroupId']=group
             manifest['exportedBy']=u['id']

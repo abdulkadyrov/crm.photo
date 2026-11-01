@@ -27,7 +27,8 @@ revokes its current server sessions. There is no public registration.
 | photographer | Assigned | Receive projects; submit shots and paid/unpaid flags | Hidden |
 | viewer | Assigned | Receive published versions only | Hidden |
 
-Photographer submissions contain media and payment flags only; no project
+Photographer submissions contain media, payment flags and completion/file references
+for existing published checklist tasks; no project
 structure, prices, catalog changes, documents or final-work replacements.
 The server checks submitted students against previously published project
 versions. Employee archives never include local operator PINs or global settings.

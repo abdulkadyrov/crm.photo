@@ -64,7 +64,7 @@ class CloudTest(unittest.TestCase):
         response=self.upload('photo-package','photographer');self.assertEqual(response['status'],200,response)
         raw=request('/packages/photo-package',cookie=self.cookies['admin'])['raw']
         with zipfile.ZipFile(io.BytesIO(raw)) as z:
-            data=json.loads(z.read('data.json'));self.assertEqual(data['projects'],[]);self.assertEqual(data['services'],[]);self.assertEqual(data['students'],[{'id':'s1','paymentStatus':'paid'}]);self.assertEqual(z.read('media/student_files/m1/a.jpg'),b'photo')
+            data=json.loads(z.read('data.json'));self.assertEqual(data['projects'],[]);self.assertEqual(data['services'],[]);self.assertEqual(data['orders'][0]['items'][0]['status'],'done');self.assertEqual(data['orders'][0]['items'][0]['fileIds'],['m1']);self.assertEqual(data['students'],[{'id':'s1','paymentStatus':'paid'}]);self.assertEqual(z.read('media/student_files/m1/a.jpg'),b'photo')
         self.assertEqual(request('/packages/photo-package',cookie=self.cookies['viewer'])['status'],403)
     def test_05_create_update_revoke(self):
         payload={'login':'new-worker','name':'Worker','role':'photographer','password':PASSWORD,'projects':['p1'],'active':True}
