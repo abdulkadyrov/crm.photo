@@ -36,3 +36,26 @@ test('the shared live/print renderer applies opacity and generates a real Code12
   assert.equal(encoded.payload,'student_abc'); assert.equal(encoded.options.format,'CODE128');
   assert.equal(calls[1][1],0.6); assert.equal(calls[1].at(-2),800);assert.equal(calls[1].at(-1),200);
 });
+
+test('transparent print mode omits the backing rectangle and requests transparent barcode pixels', async()=>{
+  const {readFileSync}=await import('node:fs'); const vm=await import('node:vm');
+  const src=readFileSync(new URL('../../js/core/legacy-app.js',import.meta.url),'utf8');
+  const fn=src.slice(src.indexOf('async function drawFinalWorkCodeOverlay('),src.indexOf('\nasync function createPdfBlobFromJpeg'));
+  let fills=0, barcodeOptions, qrBackground;
+  const sandbox=vm.createContext({Blob,printCodeLayout,document:{createElement:()=>({})},window:{JsBarcode:(c,p,options)=>barcodeOptions=options},finalWorkQrOverlayImage:async(p,f,background)=>{qrBackground=background;return {}}});
+  vm.runInContext(fn,sandbox);
+  const ctx={save(){},restore(){},fillRect(){fills++},drawImage(){}};
+  const settings={qrEnabled:true,codeBackground:'transparent',codeType:'barcode',qrPixelSize:200};
+  await sandbox.drawFinalWorkCodeOverlay(ctx,2480,3508,'student_abc',null,settings);
+  assert.equal(fills,0); assert.equal(barcodeOptions.background,'transparent');
+  await sandbox.drawFinalWorkCodeOverlay(ctx,2480,3508,'student_abc',null,{...settings,codeType:'qr'});
+  assert.equal(fills,0); assert.equal(qrBackground,false);
+});
+test('transparent QR SVG omits white modules and quiet-zone backing',async()=>{
+  const {readFileSync}=await import('node:fs'); const vm=await import('node:vm');
+  const src=readFileSync(new URL('../../js/core/legacy-app.js',import.meta.url),'utf8');
+  const fn=src.slice(src.indexOf('function createQrSvg('),src.indexOf('\nfunction createQrModules('));
+  const sandbox=vm.createContext({createQrModules:()=>[[true,false],[false,true]]});vm.runInContext(fn,sandbox);
+  assert(!sandbox.createQrSvg('test',6,false).includes('fill="#fff"'));
+  assert(sandbox.createQrSvg('test',6,true).includes('fill="#fff"'));
+});

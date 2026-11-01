@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v88";
+const CACHE_VERSION = "v89";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -132,7 +132,7 @@ const APP_SHELL = [
   "./js/services/export-service.js",
   "./js/services/album-service.js",
   "./js/services/finalwork-service.js",
-  "./js/services/finalwork-service.js?v=88",
+  "./js/services/finalwork-service.js?v=89",
   "./js/services/archive-service.js",
   "./js/services/backup-service.js",
   "./js/services/conflict-service.js",
@@ -163,6 +163,8 @@ const APP_SHELL = [
   "./js/utils/validation.js",
   "./js/utils/debounce.js",
   "./vendor/jsQR.js",
+  "./vendor/zxing.min.js",
+  "./js/services/barcode-reader.js",
   "./vendor/JsBarcode.code128.min.js",
   "./js/services/print-code-layout.js",
   "./js/services/portrait-identity-policy.js",
