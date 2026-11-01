@@ -6112,9 +6112,10 @@ async function createFinalWorkRecord(input) {
     fileName: finalWorkStorageFileName(input, mergedAsset.fileExtension),
     image: mergedAsset.blob,
     originalFinalImage: input.originalFile || null,
+    sourceHasEmbeddedQr: false,
     mergedPrintImage: mergedAsset.blob,
     qrData,
-    finalImageVersion: 4,
+    finalImageVersion: 5,
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
@@ -6125,7 +6126,7 @@ async function createFinalWorkRecord(input) {
     a4OrientationResolved: a4Assets.orientation,
     a4PrintImage: a4Assets.jpgBlob,
     a4PrintPdf: a4Assets.pdfBlob,
-    a4QrVersion: 2,
+    a4QrVersion: 3,
     a4PreparedAt: now(),
     status: "ready"
   });
@@ -6388,7 +6389,8 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
         studentId: work.studentId,
         orientationMode: finalWorkA4Mode(work),
         qrOverlayFile: work.animationQrImage,
-        forceQr: true
+        forceQr: true,
+        sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
       });
       printAssets.set(work.id, assets);
     }
@@ -6711,7 +6713,7 @@ function finalWorkNeedsMergedImage(work) {
   return Boolean(work) && (
     !(work?.mergedPrintImage instanceof Blob) ||
     finalWorkPrintPayloadNeedsRefresh(work) ||
-    work?.finalImageVersion !== 4
+    work?.finalImageVersion !== 5
   ) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
 }
 
@@ -6735,7 +6737,7 @@ function finalWorkA4ResolvedOrientation(work) {
 function finalWorkA4OrientationNeedsRefresh(work) {
   return !finalWorkA4ImageBlob(work)
     || !finalWorkA4PdfBlob(work)
-    || work?.a4QrVersion !== 2
+    || work?.a4QrVersion !== 3
     || !["vertical", "horizontal"].includes(work?.a4OrientationResolved)
     || !["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode);
 }
@@ -6768,14 +6770,15 @@ async function ensureFinalWorkMergedImage(workId) {
   state.finalWorkMergeQueue.add(workId);
   try {
     const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work));
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
       originalFinalImage: work.originalFinalImage || original,
+      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work),
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 4,
+      finalImageVersion: 5,
       printQrPayload: qrPayload
     }));
     await refreshData();
@@ -6795,14 +6798,15 @@ async function rebuildStoredFinalWorkPrintImages() {
     const original = finalWorkOriginalBlob(work) || work.image;
     if (!(original instanceof Blob)) continue;
     const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work));
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
       originalFinalImage: work.originalFinalImage || original,
+      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work),
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 4,
+      finalImageVersion: 5,
       printQrPayload: qrPayload
     }, { warn: false }));
   }
@@ -6822,7 +6826,8 @@ async function ensureFinalWorkA4Assets(workId) {
       file: original,
       studentId: work.studentId,
       orientationMode: finalWorkA4Mode(work),
-      qrOverlayFile: work.animationQrImage
+      qrOverlayFile: work.animationQrImage,
+      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
     });
     const latestWork = finalWorkById(workId) || work;
     const next = stampUpdated({
@@ -6831,7 +6836,7 @@ async function ensureFinalWorkA4Assets(workId) {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 2,
+      a4QrVersion: 3,
       a4PreparedAt: now()
     });
     await put("finalWorks", next);
@@ -6856,24 +6861,26 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       file: original,
       studentId: work.studentId,
       orientationMode,
-      qrOverlayFile: work.animationQrImage
+      qrOverlayFile: work.animationQrImage,
+      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
     });
     const latestWork = finalWorkById(workId) || work;
     const qrPayload = finalWorkTextQrPayload(latestWork);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, latestWork.animationQrImage);
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, latestWork.animationQrImage, finalWorkSourceHasEmbeddedQr(latestWork));
     await put("finalWorks", stampUpdated({
       ...latestWork,
       image: mergedAsset.blob,
       originalFinalImage: latestWork.originalFinalImage || original,
+      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(latestWork),
       mergedPrintImage: mergedAsset.blob,
       qrData: latestWork.qrData || finalWorkQrData(latestWork),
-      finalImageVersion: 4,
+      finalImageVersion: 5,
       printQrPayload: qrPayload,
       a4OrientationMode: assets.orientationMode,
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 2,
+      a4QrVersion: 3,
       a4PreparedAt: now()
     }));
   });
@@ -6883,7 +6890,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
   notify("Макет A4 обновлён.");
 }
 
-async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false }) {
+async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false, sourceHasEmbeddedQr = false }) {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -6894,9 +6901,10 @@ async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto
   canvas.width = page.width;
   canvas.height = page.height;
   const context = canvas.getContext("2d");
-  drawCoverImage(context, image, page.width, page.height, sourceWidth, sourceHeight);
+  const embeddedQr = findFinalWorkEmbeddedQr(image, sourceWidth, sourceHeight, sourceHasEmbeddedQr);
+  drawCoverImage(context, image, page.width, page.height, sourceWidth, sourceHeight, embeddedQr?.position);
   if (typeof image.close === "function") image.close();
-  await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile, forceQr);
+  if (!embeddedQr) await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile, forceQr);
   const jpgBlob = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
   const pdfBlob = jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
   return {
@@ -6912,12 +6920,39 @@ function resolveA4Orientation(width, height, mode = "auto") {
   return width > height ? "horizontal" : "vertical";
 }
 
-function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight) {
+function finalWorkSourceHasEmbeddedQr(work) {
+  if (typeof work?.sourceHasEmbeddedQr === "boolean") return work.sourceHasEmbeddedQr;
+  return work?.finalImageVersion >= 3 && work?.finalImageVersion <= 4
+    && work?.originalFinalImage instanceof Blob && work?.mergedPrintImage instanceof Blob
+    && work.originalFinalImage.size === work.mergedPrintImage.size;
+}
+
+function findFinalWorkEmbeddedQr(image, width, height, knownEmbedded = false) {
+  // Old ZIPs only contained the flattened print image. Preserve its QR even
+  // when the small raster code cannot be decoded by jsQR.
+  const fallback = knownEmbedded ? { position: finalWorkPrintSettings().qrPosition } : null;
+  if (typeof window.jsQR !== "function") return fallback;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(width * 0.25);
+  canvas.height = Math.ceil(height * 0.25);
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  for (const position of ["bottom-right", "bottom-left", "top-right", "top-left"]) {
+    const x = position.endsWith("right") ? width - canvas.width : 0;
+    const y = position.startsWith("bottom") ? height - canvas.height : 0;
+    context.drawImage(image, x, y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    const qr = window.jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" });
+    if (qr?.data) return { position, payload: qr.data };
+  }
+  return fallback;
+}
+
+function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight, anchor = "center") {
   const scale = Math.max(width / sourceWidth, height / sourceHeight);
   const drawWidth = sourceWidth * scale;
   const drawHeight = sourceHeight * scale;
-  const offsetX = Math.round((width - drawWidth) / 2);
-  const offsetY = Math.round((height - drawHeight) / 2);
+  const offsetX = Math.round(anchor.endsWith("right") ? width - drawWidth : anchor.endsWith("left") ? 0 : (width - drawWidth) / 2);
+  const offsetY = Math.round(anchor.startsWith("bottom") ? height - drawHeight : anchor.startsWith("top") ? 0 : (height - drawHeight) / 2);
   context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
 }
 
@@ -6999,7 +7034,7 @@ async function createPdfBlobFromJpeg(jpegBlob, orientation) {
   return new Blob(chunks, { type: "application/pdf" });
 }
 
-async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null) {
+async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null, sourceHasEmbeddedQr = false) {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -7009,9 +7044,10 @@ async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null) 
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
-  drawCoverImage(context, image, width, height, sourceWidth, sourceHeight);
+  const embeddedQr = findFinalWorkEmbeddedQr(image, sourceWidth, sourceHeight, sourceHasEmbeddedQr);
+  drawCoverImage(context, image, width, height, sourceWidth, sourceHeight, embeddedQr?.position);
   if (typeof image.close === "function") image.close();
-  await drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile);
+  if (!embeddedQr) await drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile);
   const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
   const blob = await canvasToImageBlob(canvas, type, 0.95);
   return {
@@ -9491,6 +9527,8 @@ async function collectTransferMediaFiles(data) {
     if (taken.has(path)) continue;
     taken.add(path);
     files.push({ path, data: new Uint8Array(await blob.arrayBuffer()) });
+    const original = finalWorkOriginalBlob(item);
+    if (original) files.push({ path: `final_sources/${item.id}/original`, data: new Uint8Array(await original.arrayBuffer()) });
   }
   for (const item of data.documents || []) {
     const blob = item.blob || await documentBlob(item);
@@ -9622,7 +9660,9 @@ function hydrateTransferMediaData(data, entries) {
     });
     if (entry) {
       const imageBlob = new Blob([entry.data], { type: item.mimeType || documentMimeType(item.fileName || "result.jpg") });
-      Object.assign(item, hydrateImportedFinalWorkImage(item, imageBlob));
+      const sourceEntry = entries.find(entry => entry.path.replace(/\\/g, "/").endsWith(`final_sources/${item.id}/original`));
+      const originalBlob = sourceEntry ? new Blob([sourceEntry.data], { type: imageBlob.type }) : null;
+      Object.assign(item, hydrateImportedFinalWorkImage(item, imageBlob, originalBlob));
     }
   });
   (data.documents || []).forEach((item) => {
@@ -10403,6 +10443,8 @@ async function buildFullExportFiles() {
     const blob = finalWorkImageBlob(item);
     if (!blob) continue;
     files.push({ path: `final_results/${item.id}/${finalWorkFileName(item)}`, data: new Uint8Array(await blob.arrayBuffer()) });
+    const original = finalWorkOriginalBlob(item);
+    if (original) files.push({ path: `final_sources/${item.id}/original`, data: new Uint8Array(await original.arrayBuffer()) });
   }
   for (const item of state.data.documents || []) {
     const blob = item.blob || await documentBlob(item);
@@ -10553,7 +10595,9 @@ async function importFullMeta(meta, entries) {
     const fileName = record.fileName || finalWorkFileName(record);
     const entry = entries.find((item) => item.path.endsWith(`final_results/${record.id}/${fileName}`) || item.path.endsWith(`/${fileName}`));
     const image = entry ? new Blob([entry.data], { type: record.mimeType || documentMimeType(fileName) }) : undefined;
-    await put("finalWorks", image ? { ...record, image } : record);
+    const sourceEntry = entries.find(item => item.path.endsWith(`final_sources/${record.id}/original`));
+    const original = sourceEntry ? new Blob([sourceEntry.data], { type: image?.type || "image/jpeg" }) : null;
+    await put("finalWorks", image ? hydrateImportedFinalWorkImage(record, image, original) : record);
   }
   for (const record of meta.documents || []) {
     const entry = entries.find((item) => item.path.endsWith(`documents/${record.id}/${record.fileName}`) || item.path.endsWith(`/${record.fileName}`));

@@ -23,12 +23,14 @@ export function createFinalWork(input) {
   };
 }
 
-export function hydrateImportedFinalWorkImage(finalWork, imageBlob) {
+export function hydrateImportedFinalWorkImage(finalWork, imageBlob, originalBlob = null) {
   if (!(imageBlob instanceof Blob)) return finalWork;
   return {
     ...finalWork,
     image: imageBlob,
-    originalFinalImage: imageBlob,
+    originalFinalImage: originalBlob instanceof Blob ? originalBlob : imageBlob,
+    sourceHasEmbeddedQr: typeof finalWork?.sourceHasEmbeddedQr === "boolean"
+      ? finalWork.sourceHasEmbeddedQr : !(originalBlob instanceof Blob) && finalWork?.finalImageVersion >= 3,
     mergedPrintImage: imageBlob,
     a4PrintImage: null,
     a4PrintPdf: null,

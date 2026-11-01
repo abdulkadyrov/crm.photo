@@ -68,3 +68,19 @@ test("prepareTransferRecordForStorage keeps hydrated final-work blobs", () => {
   assert.equal(prepared.originalFinalImage, imported);
   assert.equal(prepared.mergedPrintImage, imported);
 });
+
+
+test("ZIP import keeps the separate clean original for regenerating QR derivatives", () => {
+  const printed = new Blob(["with QR"], { type: "image/jpeg" });
+  const original = new Blob(["clean"], { type: "image/png" });
+  const restored = hydrateImportedFinalWorkImage({ id: "work" }, printed, original);
+  assert.equal(restored.image, printed);
+  assert.equal(restored.originalFinalImage, original);
+});
+
+
+test("legacy flattened ZIP image is marked as already carrying QR", () => {
+  const printed = new Blob(["with QR"]);
+  assert.equal(hydrateImportedFinalWorkImage({ finalImageVersion: 3 }, printed).sourceHasEmbeddedQr, true);
+  assert.equal(hydrateImportedFinalWorkImage({ finalImageVersion: 5 }, printed, new Blob(["clean"])).sourceHasEmbeddedQr, false);
+});
