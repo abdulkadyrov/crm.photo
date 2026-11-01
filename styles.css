@@ -5625,3 +5625,16 @@ button.mini-catalog-option {
 
 /* The print result keeps its actual A4 ratio; the source stays uncropped. */
 .print-review-pair > div:last-child img { height: auto; object-fit: contain; background: transparent; }
+
+.print-settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 340px); gap: 20px; align-items: start; }
+.print-settings-preview { margin: 0; display: grid; gap: 8px; }
+.print-settings-preview canvas { display: block; width: 100%; height: auto; aspect-ratio: 2480 / 3508; }
+.print-settings-preview p { font-size: 12px; line-height: 1.4; margin: 0; }
+@media (max-width: 650px) { .print-settings-layout { grid-template-columns: minmax(0, 1fr); gap: 14px; } .print-settings-preview { width: min(100%, 340px); justify-self: center; } }
+@media (max-width: 650px) {
+  .print-settings-layout { grid-template-columns: minmax(0, 1fr) minmax(120px, 40%); gap: 12px; }
+  .print-settings-preview { width: 100%; position: sticky; top: 10px; }
+  .print-settings-layout .field-label { gap: 4px; font-size: 13px; }
+  .print-settings-layout .input, .print-settings-layout .select { min-height: 38px; padding: 8px; font-size: 14px; }
+  .print-settings-preview .muted { font-size: 11px; }
+}

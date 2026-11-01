@@ -1,3 +1,5 @@
+import { printCodeLayout } from "../services/print-code-layout.js";
+import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
   getStorageEstimate,
@@ -2851,7 +2853,7 @@ function servicePromptVariantsPanel(item) {
           <details class="prompt-variant-card">
             <summary><span>${index + 1}</span><strong>${escapeHtml(variant.title || `Сценарий ${index + 1}`)}</strong></summary>
             <div class="prompt-variant-body">
-              <div class="prompt-box">${escapeHtml(variant.prompt || "")}</div>
+              <div class="prompt-box">${escapeHtml(withPortraitIdentityPolicy(variant.prompt || ""))}</div>
               <button class="secondary-button" data-copy-service-prompt-variant="${item.id}:${index}" type="button">Скопировать сценарий</button>
             </div>
           </details>
@@ -3332,7 +3334,7 @@ function renderSettings() {
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button>
-      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>A4, QR, положение и экспорт HTML</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>A4 · QR и штрихкод · размер и прозрачность</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="storage" type="button"><span>💾</span><div><strong>Хранилище и резервные копии</strong><small>Квота, выбранная папка и проверка доступа</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
@@ -3615,15 +3617,19 @@ function showSettingsDetail(section) {
       </article>`,
     finalPrint: `
       <article class="panel grid">
-        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">QR добавляется только в макет печати A4. На готовой работе QR больше не отображается.</p></div>
-        <label class="checkbox-row"><input type="checkbox" data-final-print-qr-enabled ${finalPrint.qrEnabled ? "checked" : ""} /><span>Включить QR для A4-печати</span></label>
-        <label class="field-label"><span>Положение QR</span><select class="select" data-final-print-qr-position>
-          ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${value}</option>`).join("")}
+        <div><h2 class="card-title">Печать готовых работ</h2><p class="muted">Настройте код на живом примере A4. Изменения видны сразу; сохраните их перед печатью.</p></div>
+        <label class="checkbox-row"><input type="checkbox" data-final-print-qr-enabled ${finalPrint.qrEnabled ? "checked" : ""} /><span>Включить код для печати</span></label>
+        <div class="print-settings-layout"><div class="grid">
+        <label class="field-label"><span>Тип кода</span><select class="select" data-final-print-code-type><option value="qr" ${finalPrint.codeType === "qr" ? "selected" : ""}>QR-код</option><option value="barcode" ${finalPrint.codeType === "barcode" ? "selected" : ""}>Штрихкод Code 128</option></select></label>
+        <label class="field-label"><span>Положение кода</span><select class="select" data-final-print-qr-position>
+          ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${({"bottom-right":"Справа снизу","bottom-left":"Слева снизу","top-right":"Справа сверху","top-left":"Слева сверху"})[value]}</option>`).join("")}
         </select></label>
-        <label class="field-label"><span>Размер QR в пикселях</span><input class="input" data-final-print-qr-px type="number" min="48" max="240" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
-        <label class="field-label"><span>Отступ QR</span><select class="select" data-final-print-qr-margin>
-          ${["5px", "10px", "20px"].map((value) => `<option value="${value}" ${value === finalPrint.qrMargin ? "selected" : ""}>${value}</option>`).join("")}
-        </select></label>
+        <label class="field-label"><span>Размер кода в пикселях A4</span><input class="input" data-final-print-qr-px type="number" min="48" max="600" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
+        <label class="field-label"><span>Отступ, px</span><input class="input" data-final-print-qr-margin type="number" min="0" max="300" value="${Number.parseInt(finalPrint.qrMargin, 10)}" /></label>
+        <label class="field-label"><span>Непрозрачность: <output data-print-opacity-label>${Math.round(finalPrint.codeOpacity * 100)}%</output></span><input data-final-print-opacity type="range" min="10" max="100" step="1" value="${Math.round(finalPrint.codeOpacity * 100)}" /></label>
+        </div><figure class="print-settings-preview"><canvas data-print-settings-preview width="2480" height="3508" aria-label="Живой пример фотографии A4 с кодом"></canvas><figcaption class="muted" data-print-preview-caption>Пример A4 · 2480 × 3508 px</figcaption></figure></div><p class="muted">Маленький размер и низкая непрозрачность могут мешать считыванию. Штрихкод содержит ID ученика.</p>
+        <p class="muted">Лицо, мимика и эмоции ребёнка должны совпадать с оригиналом. Печать меняет только кадрирование и код.</p>
+        <p class="muted">Если код уже впечатан в импортированную фотографию, для его изменения нужен чистый исходник. Второй код поверх него не добавляется.</p>
         <div class="transfer-button-row">
           <button class="primary-button" data-save-final-print-settings type="button">Сохранить настройки</button>
         </div>
@@ -4182,6 +4188,7 @@ function bindViewActions() {
   view.querySelector("[data-save-status-export-template]")?.addEventListener("click", saveStatusExportTemplate);
   view.querySelector("[data-save-watermark-settings]")?.addEventListener("click", saveWatermarkSettingsFromView);
   view.querySelector("[data-save-final-print-settings]")?.addEventListener("click", saveFinalPrintSettingsFromView);
+  if (view.querySelector("[data-print-settings-preview]")) mountPrintSettingsPreview();
   view.querySelector("[data-request-persistent-storage]")?.addEventListener("click", requestPersistentStorageFromSettings);
   view.querySelector("[data-refresh-storage-status]")?.addEventListener("click", hydrateStorageSettingsPanel);
   view.querySelector("[data-choose-storage-directory]")?.addEventListener("click", chooseStorageDirectory);
@@ -4336,7 +4343,7 @@ function bindViewActions() {
     const [itemId, indexValue] = node.dataset.copyServicePromptVariant.split(":");
     const item = catalogItemById(itemId);
     const promptText = Array.isArray(item?.promptVariants) ? item.promptVariants[Number(indexValue)]?.prompt : "";
-    const copied = await copyText(promptText || "");
+    const copied = await copyText(withPortraitIdentityPolicy(promptText || ""));
     notify(copied ? "Сценарий интервью скопирован" : "Не удалось скопировать сценарий.");
   }));
   view.querySelectorAll("[data-upload-reference]").forEach((node) => node.addEventListener("click", () => {
@@ -6095,7 +6102,7 @@ function montageReferenceForService(service) {
 async function createFinalWorkRecord(input) {
   const id = uid("final");
   const qrData = finalWorkQrData({ id, ...input });
-  const mergedAsset = await buildFinalWorkMergedAsset(input.originalFile, qrData.payload, input.animationQrFile);
+  const mergedAsset = await buildFinalWorkMergedAsset(input.originalFile, qrData.payload, input.animationQrFile, false, input.studentId);
   const a4Assets = await buildFinalWorkA4Assets({
     file: input.originalFile,
     studentId: input.studentId,
@@ -6126,7 +6133,8 @@ async function createFinalWorkRecord(input) {
     a4OrientationResolved: a4Assets.orientation,
     a4PrintImage: a4Assets.jpgBlob,
     a4PrintPdf: a4Assets.pdfBlob,
-    a4QrVersion: 3,
+    a4QrVersion: 4,
+    a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
     a4PreparedAt: now(),
     status: "ready"
   });
@@ -6381,6 +6389,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && finalWorkImageBlob(work);
   });
   if (!works.length) return notify("Нет готовых результатов для печати.");
+  const exportLabel = finalWorkPrintSettings().codeType === "barcode" ? "Скачать PDF со штрихкодом" : "Скачать PDF с QR";
   const printAssets = new Map();
   await withBusy("Готовлю фотографии A4…", async () => {
     for (const work of works) {
@@ -6412,9 +6421,9 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
       const student = studentById(work.studentId);
       const source = mediaById(work.sourceMediaId)?.blob;
       const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
-      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
+      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать (проверьте лицо и мимику)</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
     }).join("")}</div>
-    <div class="print-review-footer"><button class="primary-button" data-review-download type="button">Скачать PDF с QR</button><span class="muted">A4 · копии из заказа</span></div>
+    <div class="print-review-footer"><button class="primary-button" data-review-download type="button">${exportLabel}</button><span class="muted">A4 · копии из заказа</span></div>
   </section>`;
   const inputs = [...panel.querySelectorAll("[data-review-work]")];
   const download = panel.querySelector("[data-review-download]");
@@ -6462,13 +6471,13 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     }
     try {
       const pdf = await createPhotoPagesPdf(pages());
-      downloadBlob(pdf, safeFileName(`print_${scope.name}_A4_QR.pdf`));
+      downloadBlob(pdf, safeFileName(`print_${scope.name}_A4_${finalWorkPrintSettings().codeType === "barcode" ? "Code128" : "QR"}.pdf`));
       notify("PDF выбранных работ готов.");
     } catch (error) {
       console.error(error);
       notify("Не удалось создать PDF. " + error.message);
     } finally {
-      busy = false; download.textContent = "Скачать PDF с QR"; update();
+      busy = false; download.textContent = exportLabel; update();
     }
   };
   document.body.append(panel);
@@ -6536,29 +6545,66 @@ function finalWorksPrintSheetHtml(title, pagesHtml) {
 function finalWorkPrintSettings() {
   const saved = state.data.settings.find((item) => item.id === SETTING_IDS.finalWorkPrint) || {};
   const legacySize = { small: 72, medium: 96, large: 124 }[saved.qrSize] || 72;
-  const qrPixelSize = clampNumber(saved.qrPixelSize, 48, 240, legacySize);
+  const qrPixelSize = clampNumber(saved.qrPixelSize, 48, 600, legacySize);
   return {
     id: SETTING_IDS.finalWorkPrint,
     qrEnabled: saved.qrEnabled !== false,
     qrPosition: ["bottom-right", "bottom-left", "top-right", "top-left"].includes(saved.qrPosition) ? saved.qrPosition : "bottom-right",
     qrSize: ["small", "medium", "large"].includes(saved.qrSize) ? saved.qrSize : "small",
-    qrMargin: ["5px", "10px", "20px"].includes(saved.qrMargin) ? saved.qrMargin : "10px",
+    qrMargin: `${clampNumber(Number.parseFloat(saved.qrMargin), 0, 300, 10)}px`,
+    codeType: saved.codeType === "barcode" ? "barcode" : "qr",
+    codeOpacity: clampNumber(saved.codeOpacity, 0.1, 1, 1),
     qrPixelSize
   };
 }
 
+function printSettingsFromView() {
+  return {
+    ...finalWorkPrintSettings(),
+    qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
+    qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
+    qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 48, 600, 72),
+    qrMargin: `${clampNumber(view.querySelector("[data-final-print-qr-margin]")?.value, 0, 300, 10)}px`,
+    codeType: view.querySelector("[data-final-print-code-type]")?.value === "barcode" ? "barcode" : "qr",
+    codeOpacity: clampNumber(Number(view.querySelector("[data-final-print-opacity]")?.value) / 100, 0.1, 1, 1)
+  };
+}
+
+async function mountPrintSettingsPreview() {
+  const canvas = view.querySelector("[data-print-settings-preview]");
+  if (!canvas) return;
+  let revision = 0;
+  let image;
+  try { image = await loadImageFromUrl("./assets/templates/children/child-boy-pirate-captain/preview.webp"); }
+  catch { notify("Не удалось загрузить фотографию для примера. Откройте настройки ещё раз."); return; }
+  if (!canvas.isConnected) return;
+  const update = async () => {
+    const current = ++revision;
+    const settings = printSettingsFromView();
+    view.querySelector("[data-print-opacity-label]").textContent = `${Math.round(settings.codeOpacity * 100)}%`;
+    const buffer = document.createElement("canvas");
+    buffer.width = 2480; buffer.height = 3508;
+    const ctx = buffer.getContext("2d");
+    drawCoverImage(ctx, image, 2480, 3508, image.naturalWidth || image.width, image.naturalHeight || image.height);
+    try {
+      await drawFinalWorkCodeOverlay(ctx, 2480, 3508, "student_00000000-0000-4000-8000-000000000001", null, settings);
+      if (current === revision && canvas.isConnected) canvas.getContext("2d").drawImage(buffer, 0, 0);
+    } catch (error) {
+      if (current === revision) notify("Не удалось показать пример кода.");
+      console.error(error);
+    }
+  };
+  view.querySelectorAll("[data-final-print-qr-enabled], [data-final-print-qr-position], [data-final-print-qr-px], [data-final-print-qr-margin], [data-final-print-opacity], [data-final-print-code-type]").forEach(input => input.addEventListener("input", update));
+  await update();
+}
+
 async function saveFinalPrintSettingsFromView() {
-  await withBusy("Сохраняю QR и обновляю готовые работы...", async () => {
-    await put("settings", {
-      id: SETTING_IDS.finalWorkPrint,
-      qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
-      qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
-      qrSize: view.querySelector("[data-final-print-qr-size]")?.value || "small",
-      qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 48, 240, 72),
-      qrMargin: view.querySelector("[data-final-print-qr-margin]")?.value || "10px"
-    });
+  const settings = printSettingsFromView();
+  await withBusy("Сохраняю настройки печати…", async () => {
+    await put("settings", settings);
     await refreshData();
     await rebuildStoredFinalWorkPrintImages();
+    for (const work of state.data.finalWorks) await ensureFinalWorkA4Assets(work.id);
   });
   notify("Настройки печати сохранены.");
   showSettingsDetail("finalPrint");
@@ -6737,7 +6783,8 @@ function finalWorkA4ResolvedOrientation(work) {
 function finalWorkA4OrientationNeedsRefresh(work) {
   return !finalWorkA4ImageBlob(work)
     || !finalWorkA4PdfBlob(work)
-    || work?.a4QrVersion !== 3
+    || work?.a4QrVersion !== 4
+    || work?.a4CodeSettingsKey !== JSON.stringify(finalWorkPrintSettings())
     || !["vertical", "horizontal"].includes(work?.a4OrientationResolved)
     || !["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode);
 }
@@ -6770,7 +6817,7 @@ async function ensureFinalWorkMergedImage(workId) {
   state.finalWorkMergeQueue.add(workId);
   try {
     const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work));
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work), work.studentId);
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
@@ -6798,7 +6845,7 @@ async function rebuildStoredFinalWorkPrintImages() {
     const original = finalWorkOriginalBlob(work) || work.image;
     if (!(original instanceof Blob)) continue;
     const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work));
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work), work.studentId);
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
@@ -6836,7 +6883,8 @@ async function ensureFinalWorkA4Assets(workId) {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 3,
+      a4QrVersion: 4,
+    a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       a4PreparedAt: now()
     });
     await put("finalWorks", next);
@@ -6866,7 +6914,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
     });
     const latestWork = finalWorkById(workId) || work;
     const qrPayload = finalWorkTextQrPayload(latestWork);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, latestWork.animationQrImage, finalWorkSourceHasEmbeddedQr(latestWork));
+    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, latestWork.animationQrImage, finalWorkSourceHasEmbeddedQr(latestWork), latestWork.studentId);
     await put("finalWorks", stampUpdated({
       ...latestWork,
       image: mergedAsset.blob,
@@ -6880,7 +6928,8 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 3,
+      a4QrVersion: 4,
+    a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       a4PreparedAt: now()
     }));
   });
@@ -6958,28 +7007,28 @@ function drawCoverImage(context, image, width, height, sourceWidth, sourceHeight
 
 async function drawFinalWorkA4QrOverlay(context, width, height, studentId, qrOverlayFile = null, forceQr = false) {
   const settings = finalWorkPrintSettings();
-  if (!forceQr && settings.qrEnabled === false && !(qrOverlayFile instanceof Blob)) return;
   const student = studentById(studentId);
-  const qrPayload = studentQrPayload(student || { id: studentId, qrId: studentId });
-  const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);
-  const size = finalWorkQrPixelSize(width, height, settings);
-  const padding = Math.max(18, Math.round(size * 0.12));
-  const radius = Math.max(12, Math.round(size * 0.12));
-  const margin = finalWorkQrPixelMargin(width, height, size, settings);
-  const boxSize = size + padding * 2;
-  const { x, y } = finalWorkQrCoordinates(width, height, boxSize, margin, settings.qrPosition || "bottom-right");
+  const payload = settings.codeType === "barcode" ? (student?.qrId || studentId || "DEMO-001") : studentQrPayload(student || { id: studentId, qrId: studentId });
+  return drawFinalWorkCodeOverlay(context, width, height, payload, qrOverlayFile, settings, forceQr);
+}
+
+async function drawFinalWorkCodeOverlay(context, width, height, payload, qrOverlayFile, settings, force = false) {
+  if (!settings.qrEnabled && !force && !(qrOverlayFile instanceof Blob)) return;
+  const barcode = settings.codeType === "barcode";
+  let codeImage;
+  if (barcode) {
+    codeImage = document.createElement("canvas");
+    if (typeof window.JsBarcode !== "function") throw new Error("Штрихкод недоступен");
+    window.JsBarcode(codeImage, String(payload).replace(/[^\x20-\x7E]/g, "").slice(0, 100) || "DEMO-001", { format: "CODE128", width: 3, height: 180, displayValue: false, margin: 24 });
+  } else codeImage = await finalWorkQrOverlayImage(payload, qrOverlayFile);
+  const layout = printCodeLayout(width, height, settings);
   context.save();
-  context.shadowColor = "rgba(15,23,42,0.18)";
-  context.shadowBlur = Math.max(12, Math.round(size * 0.14));
-  context.shadowOffsetY = Math.max(3, Math.round(size * 0.04));
-  context.fillStyle = "rgba(255,255,255,0.96)";
-  drawRoundedRect(context, x, y, boxSize, boxSize, radius);
-  context.fill();
-  context.shadowColor = "transparent";
-  context.shadowBlur = 0;
-  context.shadowOffsetY = 0;
-  context.drawImage(qrImage, x + padding, y + padding, size, size);
+  context.globalAlpha = layout.opacity;
+  context.fillStyle = "#ffffff";
+  context.fillRect(layout.x, layout.y, layout.boxWidth, layout.boxHeight);
+  context.drawImage(codeImage, layout.x + layout.padding, layout.y + layout.padding, layout.codeWidth, layout.codeHeight);
   context.restore();
+  codeImage.close?.();
 }
 
 async function createPdfBlobFromJpeg(jpegBlob, orientation) {
@@ -7034,7 +7083,7 @@ async function createPdfBlobFromJpeg(jpegBlob, orientation) {
   return new Blob(chunks, { type: "application/pdf" });
 }
 
-async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null, sourceHasEmbeddedQr = false) {
+async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null, sourceHasEmbeddedQr = false, studentId = "") {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -7047,7 +7096,7 @@ async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null, 
   const embeddedQr = findFinalWorkEmbeddedQr(image, sourceWidth, sourceHeight, sourceHasEmbeddedQr);
   drawCoverImage(context, image, width, height, sourceWidth, sourceHeight, embeddedQr?.position);
   if (typeof image.close === "function") image.close();
-  if (!embeddedQr) await drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile);
+  if (!embeddedQr) await drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile, studentId);
   const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
   const blob = await canvasToImageBlob(canvas, type, 0.95);
   return {
@@ -7056,28 +7105,11 @@ async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null, 
   };
 }
 
-async function drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile = null) {
+async function drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile = null, studentId = "") {
   const settings = finalWorkPrintSettings();
-  if (settings.qrEnabled === false && !(qrOverlayFile instanceof Blob)) return;
-  const qrImage = await finalWorkQrOverlayImage(qrPayload, qrOverlayFile);
-  const size = finalWorkQrPixelSize(width, height, settings);
-  const padding = Math.max(4, Math.round(size * 0.08));
-  const radius = Math.max(6, Math.round(size * 0.12));
-  const margin = finalWorkQrPixelMargin(width, height, size, settings);
-  const boxSize = size + padding * 2;
-  const { x, y } = finalWorkQrCoordinates(width, height, boxSize, margin, settings.qrPosition || "bottom-right");
-  context.save();
-  context.shadowColor = "rgba(15,23,42,0.18)";
-  context.shadowBlur = Math.max(8, Math.round(size * 0.14));
-  context.shadowOffsetY = Math.max(2, Math.round(size * 0.03));
-  context.fillStyle = "rgba(255,255,255,0.96)";
-  drawRoundedRect(context, x, y, boxSize, boxSize, radius);
-  context.fill();
-  context.shadowColor = "transparent";
-  context.shadowBlur = 0;
-  context.shadowOffsetY = 0;
-  context.drawImage(qrImage, x + padding, y + padding, size, size);
-  context.restore();
+  const work = settings.codeType === "barcode" ? findFinalWorkFromPrintPayload(qrPayload) : null;
+  const payload = settings.codeType === "barcode" ? (studentQrPayload(studentById(studentId || work?.studentId)) || studentId || qrPayload) : qrPayload;
+  return drawFinalWorkCodeOverlay(context, width, height, payload, qrOverlayFile, settings);
 }
 
 async function finalWorkQrOverlayImage(qrPayload, qrOverlayFile = null) {
@@ -8156,7 +8188,8 @@ async function detectQrFromVideo(video, detector, canvas) {
 async function detectQrFromImageFile(file) {
   if ("BarcodeDetector" in window && "createImageBitmap" in window) {
     try {
-      const detector = new BarcodeDetector({ formats: ["qr_code"] });
+      const formats = await BarcodeDetector.getSupportedFormats?.();
+      const detector = new BarcodeDetector({ formats: formats ? ["qr_code", "code_128"].filter(format => formats.includes(format)) : ["qr_code"] });
       const bitmap = await createImageBitmap(file);
       const codes = await detector.detect(bitmap).catch(() => []);
       bitmap.close?.();
@@ -8235,8 +8268,8 @@ async function createQrDetector() {
   if (!("BarcodeDetector" in window)) return null;
   try {
     const supported = await BarcodeDetector.getSupportedFormats?.();
-    if (supported && !supported.includes("qr_code")) return null;
-    return new BarcodeDetector({ formats: ["qr_code"] });
+    if (supported && !supported.some(format => ["qr_code", "code_128"].includes(format))) return null;
+    return new BarcodeDetector({ formats: supported ? ["qr_code", "code_128"].filter(format => supported.includes(format)) : ["qr_code"] });
   } catch {
     return null;
   }
@@ -12019,7 +12052,7 @@ function serviceTaskLabel(catalog, angle) {
 }
 
 function servicePrompt(item) {
-  return String(item?.prompt || item?.orderInfo || "").trim();
+  return withPortraitIdentityPolicy(String(item?.prompt || item?.orderInfo || "").trim());
 }
 
 function paymentLabel(status) {

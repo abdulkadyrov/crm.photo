@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v83";
+const CACHE_VERSION = "v86";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -162,6 +162,9 @@ const APP_SHELL = [
   "./js/utils/validation.js",
   "./js/utils/debounce.js",
   "./vendor/jsQR.js",
+  "./vendor/JsBarcode.code128.min.js",
+  "./js/services/print-code-layout.js",
+  "./js/services/portrait-identity-policy.js",
   "./manifest.webmanifest",
   "./icons/vakha-studio-logo.png",
   "./icons/icon-192.svg",
