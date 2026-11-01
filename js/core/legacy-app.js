@@ -1348,7 +1348,7 @@ function renderScan() {
           <button class="secondary-button" data-import-shoot-zip type="button">Импорт ZIP</button>
           <button class="secondary-button" data-stop-scan type="button">Стоп</button>
         </div>
-        <p class="muted scan-note">Импорт съемки распределяет фото по QR-разделителям: QR ученика, затем его снимки, потом QR следующего ученика.</p>
+        <p class="muted scan-note">Импорт съёмки распределяет фото по кодам-разделителям: QR или Code 128 ученика, затем его снимки, потом код следующего ученика.</p>
       </div>
     </section>
   `;
@@ -7998,7 +7998,7 @@ function showImportDraftPanel(draft) {
       </div>
       <div class="stats finance-stats">
         <div class="stat"><strong>${draft.totalFiles}</strong><span class="muted">Всего файлов</span></div>
-        <div class="stat"><strong>${draft.qrMarkers.length}</strong><span class="muted">QR найдено</span></div>
+        <div class="stat"><strong>${draft.qrMarkers.length}</strong><span class="muted">Кодов найдено</span></div>
         <div class="stat"><strong>${assigned}</strong><span class="muted">Распределено</span></div>
         <div class="stat"><strong>${unassignedCount}</strong><span class="muted">Не распределено</span></div>
       </div>
