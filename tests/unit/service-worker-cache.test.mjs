@@ -13,7 +13,7 @@ test("service worker APP_SHELL only references existing local files", () => {
   const paths = [...match[1].matchAll(/"([^"]+)"/g)].map((item) => item[1]);
   const missing = paths
     .filter((path) => path !== "./")
-    .filter((path) => !existsSync(resolve(root, path.replace(/^\.\//, ""))));
+    .filter((path) => !existsSync(resolve(root, path.split(/[?#]/)[0].replace(/^\.\//, ""))));
 
   assert.deepEqual(missing, []);
 });
