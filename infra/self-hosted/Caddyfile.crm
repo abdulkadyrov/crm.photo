@@ -1,0 +1,18 @@
+# Import this file from the existing Caddyfile; do not replace AR Photo's blocks.
+crm.khanzama.ru {
+    encode zstd gzip
+    root * /srv/crm-photo/current
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        Permissions-Policy "camera=(self), microphone=(self), geolocation=(), payment=()"
+        Cache-Control "no-cache"
+    }
+    @private path /.git/* /.env* /backups/* /tmp/* /output/* /infra/*
+    respond @private 404
+    handle /healthz {
+        respond "CRM Photo frontend" 200
+    }
+    file_server
+}
