@@ -1,3 +1,4 @@
+import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud } from "../services/cloud-workspace.js";
 import { decodeCode128ImageData } from "../services/barcode-reader.js";
 import { printCodeLayout } from "../services/print-code-layout.js";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
@@ -33,7 +34,8 @@ import {
   mergeTransferRecord
 } from "../services/transfer-merge-service.js";
 
-const DB_NAME = "school-photo-flow";
+let DB_NAME = "school-photo-flow";
+let cloudImportInProgress = false;
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
 const DB_VERSION = 6;
@@ -313,12 +315,45 @@ async function init() {
   injectIcons();
   lockGestures();
   document.documentElement.dataset.theme = localStorage.getItem("spf-theme") || "light";
+  await initializeCloud();
+  DB_NAME = cloudDatabase();
   state.db = await openDb();
-  await seedIfNeeded();
-  await seedCatalogIfNeeded();
+  if (!cloudRequired || cloudAccount()?.role === "admin") {
+    await seedIfNeeded();
+    await seedCatalogIfNeeded();
+  }
   await refreshData();
   normalizeCurrentOperator();
   bindShell();
+  mountCloud({
+    notify, projects: () => state.data.projects, groups: id => classesByProject(id),
+    export: async (kind, id) => {
+      const klass = kind === "class" ? classById(id) : null;
+      const project = projectById(klass?.projectId || id);
+      if (!project) throw new Error("Проект не найден");
+      const files = await buildTransferExportFiles(kind, kind === "class" ? {classId:id} : {projectId:id});
+      const dataFile = files.find(f => f.path === "data.json");
+      const data = JSON.parse(new TextDecoder().decode(dataFile.data));
+      for (const key of ["operators", "operatorEvents", "settings", "statuses", "checklistTemplates"]) data[key] = [];
+      dataFile.data = jsonBytes(data);
+      return {projectId:project.id, projectName:project.name, groupId:klass?.id || "", name:klass?.name || project.name, blob:createZip(files)};
+    },
+    import: async (blob, projectId) => {
+      const entries = await parseZip(new Uint8Array(await blob.arrayBuffer()));
+      const draft = await createTransferImportDraft(entries);
+      if (draft.manifest.serverProjectId !== projectId) throw new Error("Архив другого проекта");
+      if (draft.manifest.contributionOnly) {
+        if (!["admin", "manager"].includes(cloudAccount()?.role)) throw new Error("Получение результатов доступно администратору и менеджеру");
+        for (const student of draft.data.students) {
+          const existing = studentById(student.id);
+          if (!existing || classById(existing.classId)?.projectId !== projectId) throw new Error("Сначала загрузите исходный проект");
+          Object.assign(student, {...existing, paymentStatus:student.paymentStatus});
+        }
+      }
+      draft.cloudTrusted = true;
+      showTransferImportPreview(draft);
+    }
+  });
   if (shouldShowOperatorGate()) {
     renderOperatorGate();
     registerServiceWorker();
@@ -377,6 +412,16 @@ function getAll(storeName) {
 }
 
 function put(storeName, value) {
+  if (!cloudImportInProgress) {
+    try {
+      assertCloudWrite(storeName, value);
+      if (cloudRequired && cloudAccount()?.role === "photographer" && storeName === "students") {
+        const previous = state.data.students.find(s => s.id === value.id);
+        if (!previous) throw new Error("Новых учеников добавляет менеджер");
+        value = {...previous, paymentStatus:value.paymentStatus, updatedAt:value.updatedAt, updatedBy:value.updatedBy};
+      }
+    } catch (error) { notify(error.message); return Promise.reject(error); }
+  }
   return new Promise((resolve, reject) => {
     const request = tx(storeName, "readwrite").put(value);
     request.onsuccess = () => resolve(value);
@@ -385,6 +430,7 @@ function put(storeName, value) {
 }
 
 function del(storeName, id) {
+  try { assertCloudWrite(storeName, {id}, true); } catch(e) { notify(e.message); return Promise.reject(e); }
   return new Promise((resolve, reject) => {
     const request = tx(storeName, "readwrite").delete(id);
     request.onsuccess = () => resolve();
@@ -393,6 +439,7 @@ function del(storeName, id) {
 }
 
 function clearStore(storeName) {
+  if (cloudRequired && cloudAccount()?.role !== "admin") return Promise.reject(new Error("Очистка доступна администратору"));
   return new Promise((resolve, reject) => {
     const request = tx(storeName, "readwrite").clear();
     request.onsuccess = () => resolve();
@@ -419,6 +466,7 @@ function normalizeCurrentOperator() {
 }
 
 function shouldShowOperatorGate() {
+  if (cloudRequired && cloudAccount()) return false;
   if (sessionStorage.getItem(OPERATOR_SKIP_SESSION_KEY) === "true") return false;
   if (!state.data.operators.length) return true;
   return !currentOperator() && activeOperators().length > 0;
@@ -538,6 +586,7 @@ function operatorById(operatorId) {
 }
 
 function currentOperator() {
+  if (cloudRequired && cloudAccount()) return {...cloudAccount(), role: cloudAccount().role === "admin" ? "owner" : cloudAccount().role};
   const operator = operatorById(state.currentOperatorId);
   return operator?.isActive === false ? null : operator;
 }
@@ -780,6 +829,7 @@ function bindShell() {
 }
 
 function navigate(route, params = {}) {
+  if (cloudRequired && cloudAccount()?.role !== "admin" && ["profile", "services", "serviceDetail"].includes(route)) return notify("Этот раздел доступен администратору");
   stopQrStream();
   const prevRoute = state.route;
   const prevScrollY = window.scrollY;
@@ -928,7 +978,7 @@ function renderHome() {
       </div>
     </section>
     <section class="compact-stack">
-      ${projects.map(projectCard).join("") || empty("Создайте первый проект")}
+      ${projects.map(projectCard).join("") || empty(cloudRequired && cloudAccount()?.role !== "admin" ? "Нажмите «Сервер», чтобы получить назначенный проект" : "Создайте первый проект")}
     </section>
   `;
   bindViewActions();
@@ -1056,7 +1106,7 @@ function projectCard(project) {
             <summary>${pct}% готово</summary>
             <div class="compact-card-extra">
               <div class="progress"><span style="width:${pct}%"></span></div>
-              <p class="muted">Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</p>
+              <p class="muted" data-financial>Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</p>
               <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
               <p class="muted">Документы: ${docsCount}</p>
             </div>
@@ -1068,7 +1118,7 @@ function projectCard(project) {
             <button data-open-project-action="${project.id}" type="button">Открыть</button>
             <button data-export-status-project="${project.id}" type="button">Экспорт</button>
             <button data-print-final-project="${project.id}" type="button">Печать результатов с QR</button>
-            <button data-export-project="${project.id}" type="button">ZIP проекта</button>
+            <button data-export-project="${project.id}" type="button">ZIP проекта</button><button data-cloud-project="${project.id}" type="button">Отправить на сервер</button>
             <button data-open-project-documents="${project.id}" type="button">Документы</button>
             <button data-assign-operator-project="${project.id}" type="button">Назначить сотрудника</button>
             <button data-rename-project="${project.id}" type="button">Переименовать</button>
@@ -1205,7 +1255,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-open-class-action="${klass.id}" type="button">Открыть группу</button>
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
-              <button data-export-class="${klass.id}" type="button">Экспорт</button>
+              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button>
               <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button>
               <button data-mark-printed-class="${klass.id}" type="button">Отметить печать</button>
               <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
@@ -1223,7 +1273,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
           <summary>${pct}% готово</summary>
           <div class="compact-card-extra">
             <div class="progress"><span style="width:${pct}%"></span></div>
-            <p class="muted">Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</p>
+            <p class="muted" data-financial>Оплачено ${formatMoney(finance.paidAmount)} из ${formatMoney(finance.totalAmount)}</p>
             <div class="progress finance-mini-progress"><span style="width:${finance.paymentPercent}%"></span></div>
             <p class="muted">Документы: ${docsCount}</p>
           </div>
@@ -1259,9 +1309,9 @@ function classStatsContent(classId) {
     </div>
     <h3 class="mini-heading">По группе</h3>
     <div class="stats finance-stats">
-      <div class="stat"><strong>${formatMoney(stats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
-      <div class="stat"><strong>${formatMoney(stats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
-      <div class="stat"><strong>${formatMoney(stats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
+      <div class="stat" data-financial><strong>${formatMoney(stats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
+      <div class="stat" data-financial><strong>${formatMoney(stats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
+      <div class="stat" data-financial><strong>${formatMoney(stats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
       <div class="stat"><strong>${stats.paidStudents}/${stats.students}</strong><span class="muted">Оплатили</span></div>
     </div>
     <div class="finance-progress">
@@ -1275,9 +1325,9 @@ function classStatsContent(classId) {
     </div>
     <h3 class="mini-heading">По проекту</h3>
     <div class="stats finance-stats">
-      <div class="stat"><strong>${formatMoney(projectStats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
-      <div class="stat"><strong>${formatMoney(projectStats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
-      <div class="stat"><strong>${formatMoney(projectStats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
+      <div class="stat" data-financial><strong>${formatMoney(projectStats.paidAmount)}</strong><span class="muted">Оплачено</span></div>
+      <div class="stat" data-financial><strong>${formatMoney(projectStats.totalAmount)}</strong><span class="muted">Должны всего</span></div>
+      <div class="stat" data-financial><strong>${formatMoney(projectStats.remainingAmount)}</strong><span class="muted">Осталось оплатить</span></div>
       <div class="stat"><strong>${projectStats.workPercent}%</strong><span class="muted">Работы готово</span></div>
     </div>
   `;
@@ -1760,7 +1810,7 @@ function renderStudent() {
           <div class="detail-stats">
             <div class="detail-stat"><span>Статус</span><strong>${orderStatusLabel(student)}</strong></div>
             <div class="detail-stat"><span>Оплата</span><strong>${paymentLabel(student.paymentStatus)}</strong></div>
-            <div class="detail-stat"><span>Сумма</span><strong>${escapeHtml(formatMoney(orderPrice))}</strong></div>
+            <div class="detail-stat" data-financial><span>Сумма</span><strong>${escapeHtml(formatMoney(orderPrice))}</strong></div>
             <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(selectedCatalogTitle)}</strong></div>
             <div class="detail-stat"><span>Прогресс</span><strong>${c.percent}%</strong></div>
             <div class="detail-stat"><span>Готовые работы</span><strong>${finalStats.total}</strong></div>
@@ -3918,6 +3968,8 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
+  view.querySelectorAll("[data-cloud-class]").forEach(b => b.addEventListener("click", () => enqueueCloud("class", b.dataset.cloudClass)));
   clearStudentDetailScrollSpy();
   injectIcons();
   bindDetailsMenus();
@@ -10001,7 +10053,9 @@ async function confirmTransferImport(draft, panel) {
       const select = panel.querySelector(`[data-transfer-conflict-resolution="${index}"]`);
       if (select?.value) conflict.resolution = select.value;
     });
-    const result = await applyTransferImport(draft);
+    let result;
+    cloudImportInProgress = draft.cloudTrusted === true;
+    try { result = await applyTransferImport(draft); } finally { cloudImportInProgress = false; }
     await recordOperatorEvent("import", { targetType: draft.mode || draft.manifest.exportType || "transfer", targetId: draft.id });
     await refreshData();
     normalizeCurrentOperator();
@@ -10013,6 +10067,17 @@ async function confirmTransferImport(draft, panel) {
     }
     navigate("home");
   });
+}
+
+function preserveServerFinance(existing, incoming) {
+  if (!existing || !incoming || typeof existing !== "object" || typeof incoming !== "object") return incoming;
+  if (Array.isArray(incoming)) return incoming.map((item, index) => preserveServerFinance(existing.find?.(old => old.id && old.id === item?.id) || existing[index], item));
+  const next = {...incoming};
+  for (const [key, value] of Object.entries(existing)) {
+    if (key !== "paymentStatus" && /price|amount|cost|salary|profit|revenue|discount|budget|finance|balance|debt|fee|expense|income|money|payments/i.test(key)) next[key] = value;
+    else if (next[key] && typeof next[key] === "object" && !(next[key] instanceof Blob)) next[key] = preserveServerFinance(value, next[key]);
+  }
+  return next;
 }
 
 async function applyTransferImport(draft) {
@@ -10057,6 +10122,9 @@ async function applyTransferImport(draft) {
           result.skipped += 1;
           continue;
         }
+      }
+      if (draft.manifest.serverRole && draft.manifest.serverRole !== "admin" && existingRecord) {
+        record = preserveServerFinance(existingRecord, record);
       }
       await put(store, record);
       if (exists && resolution !== "copy") result.updated += 1;
@@ -11408,6 +11476,7 @@ function normalizeServicePriceInput(value) {
 }
 
 function formatMoney(value) {
+  if (!canSeeMoney()) return "—";
   return `${Math.round(Number(value || 0)).toLocaleString("ru-RU")} ₽`;
 }
 
@@ -12157,6 +12226,7 @@ function normalizeMediaKind(value, fallback = "both") {
 }
 
 function formatPrice(value) {
+  if (!canSeeMoney()) return "";
   const text = String(value || "").trim();
   if (!text || text === "0") return "Цена не указана";
   if (/₽|руб|rub|eur|€|usd|\$/i.test(text)) return text;

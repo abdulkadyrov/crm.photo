@@ -11,6 +11,12 @@ crm.khanzama.ru {
     }
     @private path /.git/* /.env* /backups/* /tmp/* /output/* /infra/*
     respond @private 404
+    handle /api/v1/* {
+        request_body {
+            max_size 1GB
+        }
+        reverse_proxy 127.0.0.1:8091
+    }
     handle /healthz {
         respond "CRM Photo frontend" 200
     }

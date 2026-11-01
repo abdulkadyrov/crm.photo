@@ -1,0 +1,23 @@
+[Unit]
+Description=CRM Photo private accounts and project transfers
+After=network.target
+[Service]
+User=crm-photo
+Group=crm-photo
+WorkingDirectory=/opt/crm-photo/server
+Environment=CRM_DATA_DIR=/var/lib/crm-photo
+Environment=CRM_ORIGIN=https://crm.khanzama.ru
+ExecStart=/opt/crm-photo/venv/bin/gunicorn --bind 127.0.0.1:8091 --workers 1 --threads 4 --timeout 600 --limit-request-line 4094 app:application
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/crm-photo
+MemoryMax=512M
+CPUQuota=75%
+TasksMax=32
+[Install]
+WantedBy=multi-user.target

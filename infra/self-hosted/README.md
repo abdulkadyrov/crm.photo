@@ -1,68 +1,138 @@
-# CRM Photo: independent hosting and later migration
+# CRM Photo: accounts, offline work and project transfers
 
-## Actual state — 2026-11-01
+## Current deployment (2026-11-01)
 
-DNS A `crm.khanzama.ru` -> `141.133.204.84` was created in Beget and verified via Google public DNS.
-Safari is open on the Beget server panel. AR Photo HTTPS returned 200 before any server changes.
-Direct SSH times out before authentication. Access was recovered through the existing WayYaam SSH host as a jump host; no SSH security settings were changed.
-Frontend deployment completed at https://crm.khanzama.ru/. Safari loaded the app over valid HTTPS and the main screen was checked using Continue without profile. Shared backend work remains outstanding.
+CRM runs at https://crm.khanzama.ru independently of AR Photo. DNS points to
+141.133.204.84. SSH uses the existing WayYaam host as a jump host; server security
+settings were not weakened. The original offline source snapshot remains at
+`/Users/abdulkadyrov2002/Documents/crm-photo-preserved-20261101/offline-source.tar.gz`.
+This source archive is not a backup of browser IndexedDB data.
 
-The current CRM is a browser-local IndexedDB application. Hosting its frontend does NOT provide a shared database, employee authentication or S3 uploads. Do not describe this package as multi-user online CRM.
+The frontend includes the existing print/QR/Code128 work through f2e1da5 and
+e178a4e, including A4 comparison, transparent codes and clean original sources.
+Admin layouts and existing print behavior are retained. Server controls are
+additional; restricted roles hide finances and unsupported actions.
 
-An exact source snapshot (including pending barcode/print work) is outside the repository at
-`/Users/abdulkadyrov2002/Documents/crm-photo-preserved-20261101/offline-source.tar.gz`,
-with `uncommitted.patch` and `base-commit.txt`. This is NOT a backup of users' IndexedDB data.
-Before moving real data, each browser/device holding unique records must make a full ZIP export via the existing application. Keep the original origin and backups until imports are verified.
+## Accounts and roles
 
-## Frontend deployment
+Open **Сервер**. The owner creates employee accounts with a login, a password
+(minimum 12 characters), role and explicitly assigned projects. The owner can
+change passwords, role/assignments or disable an account. Changing an account
+revokes its current server sessions. There is no public registration.
 
-1. Run `npm run check` locally.
-2. Run `python3 scripts/package-self-hosted.py /absolute/path/crm-photo.tar.gz`.
-   Its adjacent JSON records the commit, actual file hashes (including uncommitted changes), archive hash and local storage mode.
-3. Copy archive and activation script to the target server. Verify the JSON hash against the archive.
-4. Run `bash activate-release.sh /path/crm-photo.tar.gz ARCHIVE_SHA256 RELEASE_ID`.
-   Releases are isolated under `/srv/crm-photo/releases`; activation changes only `/srv/crm-photo/current`.
-5. Run `bash install-caddy.sh Caddyfile.crm` on the server. This backs up the existing configuration, installs the isolated CRM fragment, adds one import, validates, and reloads Caddy. It restores configuration files on failure. Preserve every AR Photo host and handler.
-6. Run `caddy validate --config /etc/caddy/Caddyfile` before `systemctl reload caddy`.
-   If validation fails, restore the configuration before doing anything else. Do not restart AR Photo containers.
-7. Verify public HTTPS and certificate validation, `/healthz`, module and media loads, camera permissions, ZIP export/import, service worker update, and AR Photo frontend/API smoke tests.
-8. If any regression occurs, restore the previous Caddy configuration and reload after validation. To roll frontend code back, atomically repoint `current` to the saved previous release. Retain all releases until the new version is verified.
+| Role | Project access | Server permissions | Money |
+| --- | --- | --- | --- |
+| admin | All | Create projects, manage accounts, send/receive full project/group versions | Visible |
+| manager | Assigned | Send/receive project/group versions; review employee submissions | Hidden |
+| photographer | Assigned | Receive projects; submit shots and paid/unpaid flags | Hidden |
+| viewer | Assigned | Receive published versions only | Hidden |
 
-Only allowlisted public application assets are packaged. Backups, ZIP exports, environment files, tests, source Git metadata and work directories are excluded. No production media export is implicitly authorized by packaging.
+Photographer submissions contain media and payment flags only; no project
+structure, prices, catalog changes, documents or final-work replacements.
+The server checks submitted students against previously published project
+versions. Employee archives never include local operator PINs or global settings.
+Finance keys are removed recursively from employee downloads and uploads.
+Documents are omitted for staff because PDFs/images may contain invoices.
+Finance fields already held by the owner are retained when importing staff data.
 
-## Shared online CRM — required implementation before team use
+Accounts and access checks are server-side. Passwords are PBKDF2-SHA256 hashes
+with random salts (600,000 iterations), never plaintext database fields.
+Sessions use random tokens, stored hashed, and Secure/HttpOnly/SameSite=Strict
+host-only cookies. Writes require the configured Origin. Login attempts are
+limited. The first owner credential is delivered as a private local file; it
+is not included in Git, frontend assets, or public archives.
 
-Use a separate backend service (loopback listener, bounded memory/CPU), database and database user owned by CRM. Do not use AR Photo's service role or tables. Keep secrets outside the frontend and repository. Browser requests should use same-origin `/api/v1/`, with the upstream configurable in the CRM host block.
+## Offline and sending
 
-Implement employee authentication, permissions and a migration-aware data layer first. Existing `getAll/put/del/clearStore` in `js/core/legacy-app.js` currently talk directly to IndexedDB; simply replacing the host cannot synchronize them. Online writes need server-side authorization, record versions and conflict responses; batch imports need resumable/idempotent jobs and verified counts. Preserve local-only mode for the old installation. Never silently fall back to local writes after a failed online save.
+Existing IndexedDB workflows remain. Each employee has a separate local database;
+the administrator retains `school-photo-flow`. First login and receiving a project
+require internet. After the application and project have loaded, they can be
+used offline. Server account management always requires an online connection.
 
-Keep local directory handles and device preferences on each device. Transfer Blob media separately and persist durable object identifiers in database records. Load remote media on demand, rather than downloading every file on each refresh. Use a private dedicated S3 bucket, limited server credentials, upload size limits, and authenticated temporary media URLs. Bucket creation may carry a provider charge and has not been performed.
+**Отправить на сервер** is available for a project or group. It freezes a ZIP
+snapshot in a separate persistent IndexedDB queue. Upload starts immediately
+when possible and retries on reconnect while the app is open, on the next app
+startup, or via **Повторить отправку очереди**. Closing the app does not promise
+background upload. Upload requests time out after five minutes; failed snapshots
+remain queued and retries keep the same identifier. A lost success response does
+not create duplicate versions. The limit is 1 GiB per archive; send groups for
+large projects. Quota errors never delete original local data.
 
-Backups must cover the independent database AND media. Schedule encrypted backups outside the VPS and test restoration. Define retention and deletion behavior before enabling destructive operations.
+Server versions are immutable, with author/time/role recorded. Receiving uses the
+existing import preview/conflict handling. There is no silent overwrite or live
+record synchronization; the owner/manager reviews submissions. Previously
+exported archives and old-origin browser data are not automatically migrated.
 
-## API to AR Photo / printed QR
+Revocation prevents new server reads/writes immediately. An offline device may
+retain previously downloaded data and cached role until it reconnects: offline
+access is not remote wipe. Use separate OS/browser profiles on shared devices.
 
-The integration is planned, not implemented. Add a server-to-server adapter with configurable `AR_PHOTO_API_URL`, `AR_PHOTO_PUBLIC_URL` and a narrowly scoped server credential. Verify the actual AR Photo endpoints before selecting routes; do not invent working endpoints.
+## Runtime and storage
 
-A CRM request uses a stable job identifier and idempotency key. AR Photo returns its project/object identifier, processing status and permanent public viewer URL. CRM stores that mapping and renders the public URL into the QR. Failed processing must support safe retries. Do not put credentials, S3 signed URLs or server IP addresses in printed QR codes. Changing CRM servers must not change AR Photo's public viewer URLs.
+- Frontend releases: `/srv/crm-photo/releases`, atomic `current` symlink.
+- API: `/opt/crm-photo/server`, dedicated `crm-photo` system user.
+- Service: `crm-photo-api.service`; Gunicorn 26.2.0, loopback `127.0.0.1:8091`.
+- Resource limits: 512 MiB RAM, 75% of one CPU; one worker/four threads.
+- Private SQLite database and ZIP packages: `/var/lib/crm-photo` (0700).
+- Caddy fragment: `/etc/caddy/crm-photo.caddy`; `/api/v1/*` routes only to CRM.
+- AR Photo Caddy host blocks, containers, database and S3 are independent.
 
-## Move to another server
+Current files are stored privately on the VPS, not in S3. A dedicated CRM bucket
+has not been provisioned. Migrating these packages to S3 remains separate work;
+no AR Photo storage keys or service-role credentials are reused.
 
-Keep `crm.khanzama.ru` and the S3 bucket unchanged. Provision only CRM services on the new server. Transfer verified immutable release, database backup and separately delivered secrets; verify media access and a restored database before switching DNS.
+## Deployment and rollback
 
-For the final database cutover, pause writes on the old CRM, make and restore the final backup, then update only CRM's DNS A record. Keep the old CRM in maintenance mode during DNS propagation to prevent split writes. Verify employee sessions, record counts, media, imports and AR Photo integration. After new writes begin, rollback requires transferring those writes back; changing DNS alone is not a data-safe rollback.
+1. Run `npm run check` and `python3 -m unittest discover -s tests/server -v`.
+2. Package public files with `scripts/package-self-hosted.py`; the adjacent JSON
+   records actual file hashes. Exclude backups, secrets, output/, tmp/, .DS_Store.
+3. Create a new release directory; copy public files and verify every manifest
+   hash. `activate-release.sh` accepts a full archive/hash and atomically switches
+   only CRM's symlink. Keep prior releases available.
+4. Install server code and `server/requirements.txt` in a dedicated virtualenv;
+   copy the CRM systemd units and Caddy fragment. `install-caddy.sh` backs up,
+   validates and reloads Caddy while retaining every AR Photo host block.
+5. Bootstrap an owner once with `server/bootstrap.py PRIVATE_OUTPUT_FILE` running
+   as the CRM user. It refuses to replace an existing administrator. Deliver the
+   0600 credential file privately; change password from the application.
+6. Check HTTPS, login/access rejection, archive transfer and AR Photo health.
 
-AR Photo stays on its own host/service with unchanged public QR URLs. Moving CRM neither requires moving S3 nor modifying AR Photo's deployment.
+Rollback frontend by atomically switching to the prior symlink target. Restore
+CRM's previous Caddy fragment after validation if necessary. Database/package
+rollback requires a verified backup and accounting for new writes; reverting
+DNS or code is not a data rollback.
 
-## Verified deployment record
+## Backups and moving servers
 
-- Release: `release-20261101-6bb97f7-workspace` (includes preserved pending barcode/print changes).
-- Archive SHA-256: `14edb157c5785f20833c2cbddf319e49e7519ff16890b34fe20adf42da83fa00`.
-- All 504 deployed file hashes match the packaging manifest.
-- All 90 existing automated tests passed before packaging; deployment scripts passed shell syntax checks.
-- Caddy validated, CRM and AR Photo HTTPS returned 200, and the existing AR Photo configuration is preserved byte-for-byte with only a CRM import appended.
-- Original AR Photo frontend SHA-256 remains `6fec010b6c7d70392172dee6ef9cfdf6b21339b0fd03c685294c55dffe9086ad`.
-- Caddy rollback backup: `/opt/crm-photo/backups/caddy-20261101T174447Z/`.
-- Browser inspection verified initial setup and main screen; real camera capture, production-data import, shared editing and S3 uploads were not validated.
-- Original browser data was not exported or moved. New-domain browser data is independent.
-- Beget panel showed paid-through 2026-11-03; no paid services were added.
+`crm-photo-backup.timer` runs daily at 04:20 server time (UTC). `server/backup.py`
+uses SQLite's online backup API and includes every immutable package referenced
+by that consistent snapshot. It retains seven completed private archives under
+`/var/lib/crm-photo/backups`. Copies on this VPS alone do not protect against loss
+of the VPS; copy them to independent storage. Initial verified backup is also
+copied to the owner's Mac after deployment.
+
+For relocation: retain `crm.khanzama.ru`; install the CRM runtime on the new VPS,
+stop writes on the old CRM for final cutover, create a final backup, restore
+`crm.sqlite3` and `packages/` into the new private data directory with CRM-user
+ownership, verify accounts/record counts/media, then switch only CRM's DNS.
+Keep the old CRM read-only during DNS propagation. AR Photo remains on its
+current host and its printed QR links remain unchanged.
+
+Future AR integration must use a server-to-server adapter, narrowly scoped
+credentials, idempotent job IDs and permanent AR Photo viewer URLs. It is not
+implemented by this release. Never print server IPs or temporary signed S3 URLs.
+
+## Verification
+
+95 JS tests and 7 server tests passed: existing print/scanner tests, offline
+account/database isolation, API cache exclusion, ACLs, finance removal, payment
+flags, archive/media preservation, idempotency, account revocation and CSRF.
+All 201 offline precache paths exist in the release source.
+
+Safari checks used temporary synthetic accounts/data: admin login and account
+form; photographer login, isolated local database, assigned-project download,
+import preview, no monetary amount in the student card, paid/unpaid action,
+group upload and server confirmation. Server ZIP inspection confirmed the
+browser-submitted payment flag. Browser Back from the Server dialog restored
+the same student card and payment state. Synthetic server users/data were removed.
+Physical phone-camera and real airplane-mode tests remain device checks.

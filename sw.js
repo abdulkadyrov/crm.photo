@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v89";
+const CACHE_VERSION = "v91";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -76,10 +76,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./styles.css?v=91",
   "./app.js",
   "./js/core/app.js",
+  "./js/core/app.js?v=91",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
+  "./js/core/legacy-app.js?v=91",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -123,6 +126,7 @@ const APP_SHELL = [
   "./js/modules/settings.js",
   "./js/modules/checklist.js",
   "./js/modules/public-catalog.js",
+  "./js/services/cloud-workspace.js",
   "./js/services/qr-service.js",
   "./js/services/zip-service.js",
   "./js/services/media-service.js",
@@ -197,7 +201,7 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-  if (url.origin !== location.origin) return;
+  if (url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(event.request);

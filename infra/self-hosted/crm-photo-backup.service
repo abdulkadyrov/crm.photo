@@ -1,0 +1,11 @@
+[Unit]
+Description=CRM Photo consistent database and archive backup
+[Service]
+Type=oneshot
+User=crm-photo
+Group=crm-photo
+Environment=CRM_DATA_DIR=/var/lib/crm-photo
+ExecStart=/usr/bin/python3 /opt/crm-photo/server/backup.py /var/lib/crm-photo/backups
+UMask=0077
+Nice=15
+CPUQuota=25%

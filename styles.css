@@ -5635,3 +5635,26 @@ button.mini-catalog-option {
   .print-settings-layout .input, .print-settings-layout .select { min-height: 38px; padding: 8px; font-size: 14px; }
   .print-settings-preview .muted { font-size: 11px; }
 }
+
+/* Server workspace: existing local UI remains mounted behind the dialog. */
+.cloud-dialog { width:min(760px,calc(100vw - 24px));max-height:90dvh;overflow:auto;border:1px solid var(--line,#ddd);border-radius:20px;padding:20px;background:var(--panel,#fff);color:var(--text,#172033); }
+.cloud-dialog::backdrop { background:rgba(15,23,42,.55); }
+.cloud-head,.cloud-actions,.cloud-row { display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
+.cloud-head { justify-content:space-between; }
+.cloud-dialog button,.cloud-dialog input:not([type=checkbox]),.cloud-dialog select { min-height:44px;padding:10px;border:1px solid #b4bbc6;border-radius:10px;font:inherit; }
+.cloud-dialog button { cursor:pointer; }
+.cloud-dialog button:disabled { opacity:.5;cursor:wait; }
+.cloud-dialog label { display:grid;gap:6px;margin-block:8px; }
+.cloud-dialog fieldset label { display:flex;align-items:center; }
+.cloud-dialog [data-user-list],.cloud-dialog [data-local],.cloud-dialog [data-versions] { display:grid;gap:8px; }
+.cloud-row { padding-block:12px;border-bottom:1px solid #b4bbc6; }
+.cloud-dialog [data-cloud-status] { padding:10px;background:#eef3ff;color:#172033;border-radius:10px; }
+html[data-cloud-role=photographer] [data-delete-project],html[data-cloud-role=photographer] [data-delete-class],html[data-cloud-role=photographer] [data-delete-student],html[data-cloud-role=viewer] [data-toggle-payment] { display:none!important; }
+
+html[data-cloud-role]:not([data-cloud-role="admin"]) [data-financial],html[data-cloud-role]:not([data-cloud-role="admin"]) .service-card-price,html[data-cloud-role]:not([data-cloud-role="admin"]) .student-service-quantity-total { display:none!important; }
+
+html[data-cloud-role]:not([data-cloud-role="admin"]) [data-add-project],
+html[data-cloud-role="photographer"] :is([data-add-class],[data-add-student],[data-edit-student],[data-upload-document],[data-add-album-project],[data-add-album-class],[data-add-album-student],[data-add-album-group],[data-add-album-teacher]),
+html[data-cloud-role="viewer"] :is([data-add-class],[data-add-student],[data-edit-student],[data-upload-document],[data-capture],[data-import-media],[data-delete-student],[data-delete-class],[data-delete-project],[data-cloud-project],[data-cloud-class]) {display:none!important;}
+
+html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-student-service]),html[data-cloud-role="viewer"] :is([data-open-montage],[data-remove-student-service]) { display:none!important; }
