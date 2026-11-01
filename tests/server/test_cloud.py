@@ -18,6 +18,7 @@ def request(path,method='GET',body=None,cookie='',origin=None,headers=None):
 
 def archive(project='p1',group='g1',student='s1',role=None):
     data={'projects':[{'id':project,'name':'School','price':9900}], 'classes':[{'id':group,'projectId':project}], 'students':[{'id':student,'classId':group,'paymentStatus':'paid','paidAmount':500,'firstName':'Student'}], 'services':[{'id':'svc','price':500,'name':'Portrait'}], 'media':[{'id':'m1','studentId':student,'fileName':'a.jpg'}], 'finalWorks':[], 'documents':[{'id':'doc','projectId':project,'fileName':'bill.pdf'}], 'operators':[{'id':'owner','code':'secret-local-pin'}], 'settings':[{'id':'private','value':'secret'}]}
+    data['orders']=[{'id':'order_'+student,'studentId':student,'items':[{'id':'task1','type':'portrait','status':'done' if role=='photographer' else 'pending','fileIds':['m1']}]}]
     out=io.BytesIO()
     with zipfile.ZipFile(out,'w') as z:
         z.writestr('manifest.json',json.dumps({'app':'Vakha Studio','exportType':'class'}));z.writestr('data.json',json.dumps(data));z.writestr('media/student_files/m1/a.jpg',b'photo');z.writestr('documents/doc/bill.pdf',b'private finance');z.writestr('unreferenced.txt','must not distribute')
@@ -36,7 +37,7 @@ class CloudTest(unittest.TestCase):
             r=request('/login','POST',{'login':role,'password':PASSWORD});assert r['status']==200,r
             cls.cookies[role]=r['headers']['Set-Cookie'].split(';')[0]
     def upload(self,id,role='admin',project='p1',student='s1'):
-        return request('/packages/'+id,'POST',archive(project=project,student=student),self.cookies[role],headers={'HTTP_X_PROJECT_ID':project,'HTTP_X_GROUP_ID':'g1','HTTP_X_PACKAGE_NAME':'Test'})
+        return request('/packages/'+id,'POST',archive(project=project,student=student,role=role),self.cookies[role],headers={'HTTP_X_PROJECT_ID':project,'HTTP_X_GROUP_ID':'g1','HTTP_X_PACKAGE_NAME':'Test'})
     def test_01_auth_and_csrf(self):
         self.assertEqual(request('/users')['status'],401)
         self.assertEqual(request('/users',cookie=self.cookies['photographer'])['status'],403)
