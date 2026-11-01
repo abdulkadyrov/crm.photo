@@ -5622,3 +5622,6 @@ button.mini-catalog-option {
   .print-review-pair img { height: clamp(210px, 43dvh, 400px); }
   .print-review-footer .muted { max-width: 100px; text-align: right; }
 }
+
+/* The print result keeps its actual A4 ratio; the source stays uncropped. */
+.print-review-pair > div:last-child img { height: auto; object-fit: contain; background: transparent; }

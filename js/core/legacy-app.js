@@ -6114,7 +6114,7 @@ async function createFinalWorkRecord(input) {
     originalFinalImage: input.originalFile || null,
     mergedPrintImage: mergedAsset.blob,
     qrData,
-    finalImageVersion: 3,
+    finalImageVersion: 4,
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
@@ -6306,7 +6306,8 @@ async function showFinalWorkViewer(workId) {
   injectIcons();
 }
 
-function downloadFinalWork(workId) {
+async function downloadFinalWork(workId) {
+  await ensureFinalWorkMergedImage(workId);
   const work = finalWorkById(workId);
   const blob = finalWorkImageBlob(work);
   if (!work || !blob) return notify("Изображение результата не найдено.");
@@ -6371,7 +6372,7 @@ function printClassFinalWorksWithQr(classId) {
   return reviewFinalWorksForPrint({ classId });
 }
 
-function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
+async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   const scope = classId ? classById(classId) : projectById(projectId);
   if (!scope) return notify("Проект или группа не найдены.");
   const works = state.data.finalWorks.filter(work => {
@@ -6379,6 +6380,20 @@ function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && finalWorkImageBlob(work);
   });
   if (!works.length) return notify("Нет готовых результатов для печати.");
+  const printAssets = new Map();
+  await withBusy("Готовлю фотографии A4…", async () => {
+    for (const work of works) {
+      const assets = await buildFinalWorkA4Assets({
+        file: finalWorkOriginalBlob(work) || finalWorkImageBlob(work),
+        studentId: work.studentId,
+        orientationMode: finalWorkA4Mode(work),
+        qrOverlayFile: work.animationQrImage,
+        forceQr: true
+      });
+      printAssets.set(work.id, assets);
+    }
+  });
+  if (printAssets.size !== works.length) return notify("Не удалось подготовить все фотографии A4. Повторите попытку.");
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop print-review-backdrop";
   const urls = [];
@@ -6395,7 +6410,7 @@ function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
       const student = studentById(work.studentId);
       const source = mediaById(work.sourceMediaId)?.blob;
       const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
-      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Результат</h3>${image(finalWorkImageBlob(work), "Результат")}</div></div></article>`;
+      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать</span></label><div class="print-review-pair"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
     }).join("")}</div>
     <div class="print-review-footer"><button class="primary-button" data-review-download type="button">Скачать PDF с QR</button><span class="muted">A4 · копии из заказа</span></div>
   </section>`;
@@ -6434,13 +6449,7 @@ function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     download.textContent = "Готовлю PDF…";
     async function* pages() {
       for (const work of selected) {
-        const assets = await buildFinalWorkA4Assets({
-          file: finalWorkOriginalBlob(work) || finalWorkImageBlob(work),
-          studentId: work.studentId,
-          orientationMode: finalWorkA4Mode(work),
-          qrOverlayFile: work.animationQrImage,
-          forceQr: true
-        });
+        const assets = printAssets.get(work.id);
         const jpeg = assets.jpgBlob;
         if (!jpeg) throw new Error("Не удалось создать A4: " + finalWorkTitle(work));
         const horizontal = assets.orientation === "horizontal";
@@ -6702,7 +6711,7 @@ function finalWorkNeedsMergedImage(work) {
   return Boolean(work) && (
     !(work?.mergedPrintImage instanceof Blob) ||
     finalWorkPrintPayloadNeedsRefresh(work) ||
-    work?.finalImageVersion !== 3
+    work?.finalImageVersion !== 4
   ) && Boolean(finalWorkOriginalBlob(work) || work?.image instanceof Blob);
 }
 
@@ -6766,7 +6775,7 @@ async function ensureFinalWorkMergedImage(workId) {
       originalFinalImage: work.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 3,
+      finalImageVersion: 4,
       printQrPayload: qrPayload
     }));
     await refreshData();
@@ -6793,7 +6802,7 @@ async function rebuildStoredFinalWorkPrintImages() {
       originalFinalImage: work.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 3,
+      finalImageVersion: 4,
       printQrPayload: qrPayload
     }, { warn: false }));
   }
@@ -6858,7 +6867,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       originalFinalImage: latestWork.originalFinalImage || original,
       mergedPrintImage: mergedAsset.blob,
       qrData: latestWork.qrData || finalWorkQrData(latestWork),
-      finalImageVersion: 3,
+      finalImageVersion: 4,
       printQrPayload: qrPayload,
       a4OrientationMode: assets.orientationMode,
       a4OrientationResolved: assets.orientation,
@@ -6992,14 +7001,15 @@ async function createPdfBlobFromJpeg(jpegBlob, orientation) {
 
 async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null) {
   const image = await loadImageForCanvas(file);
-  const width = image.width || image.naturalWidth || 0;
-  const height = image.height || image.naturalHeight || 0;
-  if (!width || !height) throw new Error("Unable to build final work image");
+  const sourceWidth = image.width || image.naturalWidth || 0;
+  const sourceHeight = image.height || image.naturalHeight || 0;
+  if (!sourceWidth || !sourceHeight) throw new Error("Unable to build final work image");
+  const { width, height } = sourceWidth > sourceHeight ? A4_HORIZONTAL_PX : A4_VERTICAL_PX;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0, width, height);
+  drawCoverImage(context, image, width, height, sourceWidth, sourceHeight);
   if (typeof image.close === "function") image.close();
   await drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile);
   const type = String(file.type || "").includes("png") ? "image/png" : "image/jpeg";
