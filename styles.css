@@ -5658,3 +5658,15 @@ html[data-cloud-role="photographer"] :is([data-add-class],[data-add-student],[da
 html[data-cloud-role="viewer"] :is([data-add-class],[data-add-student],[data-edit-student],[data-upload-document],[data-capture],[data-import-media],[data-delete-student],[data-delete-class],[data-delete-project],[data-cloud-project],[data-cloud-class]) {display:none!important;}
 
 html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-student-service]),html[data-cloud-role="viewer"] :is([data-open-montage],[data-remove-student-service]) { display:none!important; }
+
+/* Settings administration uses the existing palette and panel styles. */
+.admin-console { width:min(840px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); }
+.admin-console section { margin-block:24px; }
+.admin-console [data-user-list] { display:grid; gap:8px; margin-block:12px; }
+.admin-console [data-user-list] button { text-align:left; overflow-wrap:anywhere; min-height:44px; }
+.admin-console input:not([type="checkbox"]), .admin-console select { width:100%; min-width:0; }
+.admin-console fieldset { min-width:0; display:grid; gap:8px; }
+.admin-person { margin-block:12px; overflow-wrap:anywhere; }
+.admin-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.admin-metrics dt { font-size:13px; }
+.admin-metrics dd { font-size:24px; font-weight:700; margin:4px 0; }

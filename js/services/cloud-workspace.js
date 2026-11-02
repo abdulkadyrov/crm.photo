@@ -27,17 +27,17 @@ async function api(path, options={}) {
 const json = async (path,options) => (await api(path,options)).json();
 const post = (path,data) => json(path,{method:'POST',body:JSON.stringify(data)});
 function status(message) { const node=dialog?.querySelector('[data-cloud-status]'); if(node) node.textContent=message; }
-function openDialog(required=false) {
+function openDialog(required=false,title='Архивы на сервере',trigger=document.activeElement) {
   if(dialog?.open) return;
-  dialog=document.createElement('dialog'); dialog.className='cloud-dialog'; dialog.setAttribute('aria-label','Сервер и сотрудники');
-  dialog.innerHTML=`<div class="cloud-head"><h2>Сервер и сотрудники</h2>${required?'':'<button type="button" data-close>Закрыть</button>'}</div><p data-cloud-status role="status" aria-live="polite"></p><div data-cloud-body></div>`;
-  const origin=document.activeElement; const y=window.scrollY;
+  dialog=document.createElement('dialog'); dialog.className='cloud-dialog'; dialog.setAttribute('aria-label',required?'Вход':title);
+  dialog.innerHTML=`<div class="cloud-head"><h2>${esc(required?'Вход':title)}</h2>${required?'':'<button type="button" data-close>Закрыть</button>'}</div><p data-cloud-status role="status" aria-live="polite"></p><div data-cloud-body></div>`;
+  const origin=trigger; const x=window.scrollX,y=window.scrollY;
   const instance=dialog;
   if(!required) history.pushState({...history.state,crmCloudModal:true},'');
   const onBack=()=>{if(instance.open)instance.close();};
   if(!required)window.addEventListener('popstate',onBack,{once:true});
   dialog.addEventListener('cancel',e=>{ if(required)e.preventDefault(); });
-  dialog.addEventListener('close',()=>{window.removeEventListener('popstate',onBack);instance.remove();if(!required&&history.state?.crmCloudModal)history.back();origin?.focus({preventScroll:true});window.scrollTo(0,y);});
+  dialog.addEventListener('close',()=>{window.removeEventListener('popstate',onBack);instance.remove();if(!required&&history.state?.crmCloudModal)history.back();origin?.focus({preventScroll:true});window.scrollTo(x,y);});
   dialog.querySelector('[data-close]')?.addEventListener('click',()=>dialog.close());
   document.body.append(dialog); dialog.showModal();
 }
@@ -99,16 +99,15 @@ async function drain() {
 }
 export function mountCloud(context) {
   hooks=context;
-  const button=document.createElement('button');button.type='button';button.className='secondary-button';button.textContent='Сервер';button.onclick=()=>showCloud();document.querySelector('.topbar-actions')?.prepend(button);
   window.addEventListener('online',()=>drain());
   // A previous manual submission may resume while this application is open.
   if(account) drain();
 }
-export async function showCloud() {
-  openDialog();
+export async function showCloud(trigger) {
+  openDialog(false,'Архивы на сервере',trigger);
   if(!account) {loginForm(()=>location.reload());return;}
   const body=dialog.querySelector('[data-cloud-body]');
-  body.innerHTML=`<p>${esc(account.name)} · ${esc(roles[account.role])}</p><p>Рабочие изменения синхронизируются автоматически при подключении к интернету. «Отправить на сервер» дополнительно сохраняет отдельный ZIP-снимок проекта или группы. Уже отправленные архивы не перезаписываются.</p><div class="cloud-actions"><button data-refresh>Обновить</button><button data-retry>Повторить отправку очереди</button><button data-password>Сменить пароль</button><button data-logout>Выйти</button></div><h3>На этом устройстве</h3><div data-local></div><h3>Очередь отправки</h3><div data-queue></div><h3>На сервере</h3><div data-projects></div>${account.role==='admin'?'<h3>Сотрудники и права</h3><div data-users></div>':''}`;
+  body.innerHTML=`<p>${esc(account.name)} · ${esc(roles[account.role])}</p><p>Рабочие изменения синхронизируются автоматически при подключении к интернету. «Отправить на сервер» дополнительно сохраняет отдельный ZIP-снимок проекта или группы. Уже отправленные архивы не перезаписываются.</p><div class="cloud-actions"><button data-refresh>Обновить</button><button data-retry>Повторить отправку очереди</button><button data-password>Сменить пароль</button><button data-logout>Выйти</button></div><h3>На этом устройстве</h3><div data-local></div><h3>Очередь отправки</h3><div data-queue></div><h3>На сервере</h3><div data-projects></div>`;
   body.querySelector('[data-refresh]').onclick=()=>showRefresh();
   body.querySelector('[data-retry]').onclick=async()=>{await drain();await showRefresh();};
   body.querySelector('[data-logout]').onclick=async()=>{try{await post('/logout',{});saveAccount(null);location.reload();}catch(e){status('Для выхода подключитесь к интернету: '+e.message);}};
@@ -132,9 +131,9 @@ async function showRefresh() {
     const projects=await json('/projects');const target=dialog.querySelector('[data-projects]');target.innerHTML='';
     for(const p of projects){const row=document.createElement('div');row.className='cloud-row';row.innerHTML=`<strong>${esc(p.name)}</strong>`;const b=document.createElement('button');b.textContent='Версии и получение';b.onclick=()=>versions(p,row);row.append(b);target.append(row);}
     if(!projects.length)target.textContent='Проектов пока нет. Администратор отправляет проект и назначает его сотрудникам.';
-    if(account.role==='admin') await users(projects);
+
     status(navigator.onLine?'Соединение с сервером установлено':'Работа без интернета');
-  } catch(e){status(`Сервер недоступен: ${e.message}. Локальные проекты и очередь сохранены.`);}
+  } catch(e){status(`Нет соединения с сервером. Проверьте интернет и повторите. Локальные проекты и очередь сохранены.`);}
 }
 async function versions(project,row) {
   try{const list=await json('/projects/'+encodeURIComponent(project.id)+'/packages');row.querySelector('[data-versions]')?.remove();const box=document.createElement('div');box.dataset.versions='';row.append(box);
@@ -150,7 +149,37 @@ async function users(projects) {
 }
 function userForm(u,projects) {
   const target=dialog.querySelector('[data-user-form]');
-  target.innerHTML=`<form class="grid"><h4>${u.id?'Изменить аккаунт':'Новый аккаунт'}</h4><label>Имя<input name="name" value="${esc(u.name)}" required></label><label>Логин<input name="login" value="${esc(u.login)}" required pattern="[a-zA-Z0-9_.@-]{3,80}" autocomplete="off"></label><label>${u.id?'Новый пароль (пусто — сохранить прежний)':'Пароль'}<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" ${u.id?'':'required'}></label><label>Роль<select name="role">${Object.entries(roles).map(([k,v])=>`<option value="${k}" ${(u.role||'photographer')===k?'selected':''}>${v}</option>`).join('')}</select></label><p>Администратор видит деньги и управляет аккаунтами. Менеджер управляет назначенными проектами без финансов. Фотограф отправляет снимки и отметки оплаты. Просмотр получает проекты без изменений.</p><fieldset><legend>Доступные проекты</legend>${projects.map(p=>`<label><input type="checkbox" name="projects" value="${esc(p.id)}" ${(u.projects||[]).includes(p.id)?'checked':''}> ${esc(p.name)}</label>`).join('')}</fieldset><label><input type="checkbox" name="active" ${u.active!==0?'checked':''}> Аккаунт включён</label><button class="primary-button">Сохранить</button></form>`;
-  target.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const b=e.target.querySelector('button');b.disabled=true;try{await post('/users',{id:u.id,name:f.get('name'),login:f.get('login'),password:f.get('password'),role:f.get('role'),projects:f.getAll('projects'),active:f.has('active')});status('Аккаунт сохранён. Передай сотруднику логин и пароль лично');await users(projects);}catch(err){status(err.message);}finally{b.disabled=false;}};
+  target.innerHTML=`<form class="grid"><h4>${u.id?'Изменить аккаунт':'Новый аккаунт'}</h4><label>Имя<input name="name" value="${esc(u.name)}" required></label><label>Логин<input name="login" value="${esc(u.login)}" required pattern="[a-zA-Z0-9_.@-]{3,80}" autocomplete="off"></label><label>${u.id?'Новый пароль (пусто — сохранить прежний)':'Пароль'}<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" ${u.id?'':'required'}></label><label>Роль<select name="role">${Object.entries(roles).map(([k,v])=>`<option value="${k}" ${(u.role||'photographer')===k?'selected':''}>${v}</option>`).join('')}</select></label><p>Администратор видит деньги и управляет аккаунтами. Менеджер управляет назначенными проектами без финансов. Фотограф отправляет снимки и отметки оплаты. Просмотр получает проекты без изменений.</p><fieldset><legend>Доступные проекты</legend>${projects.map(p=>`<label><input type="checkbox" name="projects" value="${esc(p.id)}" ${(u.projects||[]).includes(p.id)?'checked':''}> ${esc(p.name)}</label>`).join('')}</fieldset><label><input type="checkbox" name="active" ${u.active!==0?'checked':''}> Аккаунт включён</label><div class="cloud-actions"><button class="primary-button">Сохранить</button><button type="button" data-cancel-user>Отмена</button></div></form>`;
+  target.querySelector('[data-cancel-user]').onclick=()=>{target.innerHTML='';dialog.querySelector('[data-new-user]')?.focus();};
+  target.querySelector('input')?.focus();
+  target.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const b=e.target.querySelector('button');b.disabled=true;try{await post('/users',{id:u.id,name:f.get('name'),login:f.get('login'),password:f.get('password'),role:f.get('role'),projects:f.getAll('projects'),active:f.has('active')});status('Аккаунт сохранён. Передай сотруднику логин и пароль лично');await users(projects);await refreshAdminStats();}catch(err){status(err.message);}finally{b.disabled=false;}};
 }
 function passwordForm(){const target=dialog.querySelector('[data-cloud-body]');target.innerHTML='<form class="grid"><label>Текущий пароль<input name="current" type="password" required autocomplete="current-password"></label><label>Новый пароль<input name="password" type="password" minlength="12" maxlength="128" required autocomplete="new-password"></label><button>Сохранить пароль</button></form>';target.querySelector('form').onsubmit=async e=>{e.preventDefault();try{await post('/password',Object.fromEntries(new FormData(e.target)));saveAccount(null);location.reload();}catch(err){status(err.message);}};}
+
+const dateText=value=>value?new Date(value*1000).toLocaleString('ru-RU'):'Пока нет';
+export async function showAdmin(trigger){
+  if(account?.role!=='admin'){hooks?.notify('Раздел доступен только администратору');return;}
+  openDialog(false,'Суперадминка',trigger);
+  dialog.classList.add('admin-console');
+  dialog.querySelector('[data-cloud-body]').innerHTML=`<p>Сотрудники, доступ к проектам и работа команды.</p><div class="cloud-actions"><button data-admin-refresh>Обновить</button></div><section><h3>Сотрудники и права</h3><div data-users></div></section><section><h3>Статистика за 30 дней</h3><p class="muted">Только изменения, полученные сервером. Офлайн-работа появится после синхронизации. Повторная отправка не увеличивает показатели.</p><div data-admin-stats></div></section><details><summary>Последние действия с аккаунтами</summary><div data-admin-events></div></details>`;
+  const panel=dialog;
+  const refresh=async()=>{const button=panel.querySelector('[data-admin-refresh]');button.disabled=true;status('Загрузка…');try{const projects=await json('/projects');if(dialog!==panel||!panel.open)return;await users(projects);await refreshAdminStats();status('Данные обновлены');}catch{status('Нет соединения с сервером. Управление сотрудниками доступно при подключении. Локальная работа сохранена.');}finally{button.disabled=false;}};
+  panel.querySelector('[data-admin-refresh]').onclick=refresh;
+  await refresh();
+}
+async function refreshAdminStats(){
+  const panel=dialog;if(!panel?.querySelector('[data-admin-stats]'))return;
+  const [data,people]=await Promise.all([json('/admin/overview'),json('/users')]);
+  if(dialog!==panel||!panel.open)return;
+  const names=new Map(people.map(u=>[u.id,u]));
+  panel.querySelector('[data-admin-stats]').innerHTML=data.users.map(s=>{const u=names.get(s.id)||{};return `<article class="panel admin-person"><h4>${esc(u.name||'Аккаунт')} · ${esc(roles[u.role]||'')}</h4><p>${u.active?'Включён':'Отключён'} · ${u.role==='admin'?'Все проекты':`Назначено проектов: ${(u.projects||[]).length}`}</p><dl class="admin-metrics"><div><dt>Изменений</dt><dd>${s.changes}</dd></div><div><dt>Карточек детей</dt><dd>${s.students}</dd></div><div><dt>Карточек съёмок</dt><dd>${s.media}</dd></div></dl><p>Последняя синхронизация за период: ${esc(dateText(s.last_sync))}</p><p>Последний вход: ${esc(dateText(s.last_login))}</p></article>`;}).join('');
+  const actions={login:'Вход',user_saved:'Изменение аккаунта или прав',password_changed:'Смена пароля',project_saved:'Сохранение проекта',package_uploaded:'Отправка архива'};
+  panel.querySelector('[data-admin-events]').innerHTML=data.recent.map(e=>`<p>${esc(dateText(e.at))} · ${esc(names.get(e.user_id)?.name||'Аккаунт')} · ${esc(actions[e.action]||'Действие')}</p>`).join('')||'<p>Действий пока нет</p>';
+}
+export function showAccount(trigger){
+  openDialog(false,'Мой аккаунт',trigger);
+  if(!account){loginForm(()=>location.reload());return;}
+  dialog.querySelector('[data-cloud-body]').innerHTML=`<p><strong>${esc(account.name)}</strong></p><p>${esc(account.login)} · ${esc(roles[account.role])}</p><div class="cloud-actions"><button data-password>Сменить пароль</button><button data-logout>Выйти</button></div>`;
+  dialog.querySelector('[data-password]').onclick=passwordForm;
+  dialog.querySelector('[data-logout]').onclick=async()=>{try{await post('/logout',{});saveAccount(null);location.reload();}catch{status('Для выхода подключитесь к интернету.');}};
+}

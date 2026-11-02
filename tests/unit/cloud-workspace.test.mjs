@@ -13,4 +13,27 @@ test('staff have an independent offline database and no money access',async()=>{
 test('viewer cannot modify photos or payment flags',async()=>{const m=await load({id:'view',role:'viewer'});assert.throws(()=>m.assertCloudWrite('students',{}));assert.throws(()=>m.assertCloudWrite('media',{}));});
 test('administrator retains the original local database',async()=>{const m=await load({id:'owner',role:'admin'});assert.equal(m.cloudDatabase(),'school-photo-flow');assert.equal(m.canSeeMoney(),true);});
 test('cached account opens offline without contacting identity provider successfully',async()=>{const m=await load({id:'staff',role:'photographer'});globalThis.fetch=async()=>{throw new TypeError('offline');};await m.initializeCloud();assert.equal(m.cloudAccount().id,'staff');assert.equal(document.documentElement.dataset.cloudRole,'photographer');});
-test('service worker never caches API responses and precaches versioned entrypoints',()=>{assert.match(sw,/url\.pathname\.startsWith\("\/api\/"\)/);for(const path of ['./styles.css?v=97','./js/core/app.js?v=97','./js/core/legacy-app.js?v=97','./js/services/cloud-workspace.js'])assert.ok(sw.includes(JSON.stringify(path)),path);});
+test('service worker never caches API responses and precaches versioned entrypoints',()=>{assert.match(sw,/url\.pathname\.startsWith\("\/api\/"\)/);for(const path of ['./styles.css?v=98','./js/core/app.js?v=98','./js/core/legacy-app.js?v=98','./js/services/cloud-workspace.js'])assert.ok(sw.includes(JSON.stringify(path)),path);});
+test('employee cannot open administration even by calling its exported action',async()=>{
+ const m=await load({id:'staff',role:'photographer'});let message='';
+ globalThis.window={addEventListener:()=>{}};Object.defineProperty(globalThis,'navigator',{configurable:true,value:{onLine:false}});
+ m.mountCloud({notify:v=>message=v});await m.showAdmin({});assert.match(message,/администратору/);
+});
+test('account dialog restores exact settings scroll and focus for Close and browser Back',async()=>{
+ const m=await load({id:'owner',role:'admin',name:'Owner',login:'owner'});
+ for(const method of ['close','browser']){
+  let panel,focused=false,position;const events={};
+  const origin={focus:options=>{assert.equal(options.preventScroll,true);focused=true;}};
+  globalThis.window={scrollX:4,scrollY:530,addEventListener:(k,fn)=>events[k]=fn,removeEventListener:k=>delete events[k],scrollTo:(...p)=>position=p};
+  globalThis.history={state:{settings:true},pushState(v){this.state=v;},back(){this.state={settings:true};events.popstate?.();}};
+  globalThis.document={activeElement:null,body:{append:()=>{}},createElement:()=>{
+   const handlers={},nodes=new Map();panel={open:false,setAttribute:()=>{},querySelector:s=>{if(!nodes.has(s))nodes.set(s,{});return nodes.get(s);},addEventListener:(k,fn)=>handlers[k]=fn,showModal(){this.open=true;},close(){this.open=false;handlers.close();},remove:()=>{}};
+   // Close uses addEventListener on its button.
+   panel.querySelector('[data-close]').addEventListener=(k,fn)=>panel.closeAction=fn;
+   return panel;
+  }};
+  m.showAccount(origin);assert.equal(panel.open,true);window.scrollY=0;
+  if(method==='close')panel.closeAction();else history.back();
+  assert.equal(panel.open,false);assert.equal(focused,true);assert.deepEqual(position,[4,530]);assert.equal(history.state.settings,true);
+ }
+});

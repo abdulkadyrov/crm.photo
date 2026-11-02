@@ -2,7 +2,7 @@ import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js"
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parseChildrenList, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
-import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud } from "../services/cloud-workspace.js";
+import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
 import { decodeCode128ImageData } from "../services/barcode-reader.js";
 import { printCodeLayout } from "../services/print-code-layout.js";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
@@ -3426,6 +3426,7 @@ function renderSettings() {
   view.innerHTML = `
     <section class="settings-list">
       ${settingsProfileCard()}
+      ${cloudRequired?`<button class="settings-row" data-cloud-account type="button"><span aria-hidden="true">◉</span><div><strong>Мой аккаунт</strong><small>Роль, пароль и выход</small></div><b>›</b></button>${cloudAccount()?.role==='admin'?'<button class="settings-row" data-admin-console type="button"><span aria-hidden="true">▦</span><div><strong>Суперадминка</strong><small>Сотрудники, права и статистика</small></div><b>›</b></button>':''}<button class="settings-row" data-cloud-archives type="button"><span aria-hidden="true">▤</span><div><strong>Архивы на сервере</strong><small>Резервные ZIP-копии проектов</small></div><b>›</b></button>`:''}
       <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>PDF статусы</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
@@ -4342,6 +4343,9 @@ function bindViewActions() {
     state.profileOperatorId = node.dataset.profileOperator;
     renderProfile();
   }));
+  view.querySelector('[data-admin-console]')?.addEventListener('click',e=>showAdmin(e.currentTarget));
+  view.querySelector('[data-cloud-account]')?.addEventListener('click',e=>showAccount(e.currentTarget));
+  view.querySelector('[data-cloud-archives]')?.addEventListener('click',e=>showCloud(e.currentTarget));
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
   view.querySelector("[data-back-settings]")?.addEventListener("click", () => navigate("settings"));
   view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);

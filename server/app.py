@@ -2,6 +2,7 @@
 from types import SimpleNamespace
 import parent_orders
 import sync_api
+import admin_api
 import hashlib, hmac, json, os, re, secrets, sqlite3, tempfile, time, zipfile
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
@@ -180,6 +181,9 @@ class Request:
                 return sync_api.route(self,c,u,path,SimpleNamespace(**globals()))
             if path.startswith('/parents/'):
                 return parent_orders.route(self,c,u,path,SimpleNamespace(**globals()))
+            if path=='/admin/overview' and self.method=='GET':
+                fail(u['role']!='admin',403,'Только администратор видит статистику сотрудников')
+                return admin_api.overview(c)
             if path=='/me' and self.method=='GET': return public_user(c,u)
             if path=='/logout' and self.method=='POST':
                 cookie=SimpleCookie(self.e.get('HTTP_COOKIE',''))[COOKIE].value
