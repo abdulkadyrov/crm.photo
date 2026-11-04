@@ -1,3 +1,4 @@
+import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
 import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parseChildrenList, parentUnitPrice } from "../services/parent-order-model.js";
@@ -798,6 +799,9 @@ async function seedCatalogIfNeeded() {
   for (const item of emptyCatalogItems) await del("catalog", item.id);
   if (emptyCatalogItems.length) catalog = await getAll("catalog");
   const existingById = new Map(catalog.map((item) => [item.id, item]));
+  if (!existingById.has(CLASS_PHOTO_SERVICE.id)) {
+    await put("catalog", { ...CLASS_PHOTO_SERVICE });
+  }
   for (const [index, item] of CHILD_PORTRAIT_TEMPLATES.entries()) {
     const seeded = childPortraitCatalogRecord(item, index);
     const existing = existingById.get(item.id);

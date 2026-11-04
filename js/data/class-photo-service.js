@@ -1,0 +1,20 @@
+export const CLASS_PHOTO_SERVICE = Object.freeze({
+  id: "school-class-photo-a4",
+  title: "Общее фото класса",
+  name: "Общее фото класса",
+  mediaKind: "photo",
+  price: "",
+  shortDescription: "Общая фотография класса с учителем. Печать А4.",
+  description: "Групповая фотография учеников и учителя в горизонтальном формате А4. Общее фото на память о школьных годах.",
+  gender: "unisex",
+  category: "Фото",
+  popular: false,
+  previewSrc: "./assets/class-photo/class-photo-a4.png",
+  parentPreviewMode: "print",
+  orderInfo: "Общее фото класса, печать в горизонтальном формате А4.",
+  requirements: "Групповая съёмка класса с учителем. Все лица должны быть хорошо видны.",
+  angles: [],
+  tags: ["школа", "класс", "групповое фото", "А4", "печать"],
+  orderIndex: 2100,
+  enabled: true
+});
