@@ -4652,7 +4652,7 @@ async function setClassColor(payload) {
 function showChildrenList(classId, trigger) {
   if (cloudRequired && !["admin", "manager"].includes(cloudAccount()?.role)) return notify("Список детей изменяет менеджер или администратор");
   const klass = classById(classId); if (!klass) return;
-  let original = structuredClone(studentsByClass(classId));
+  let original = structuredClone(state.data.students.filter(student => student.classId === classId));
   const restore = captureDialogReturn(document, window, trigger);
   const d = document.createElement("dialog"); d.className = "cloud-dialog"; d.setAttribute("aria-label", "Список детей класса");
   d.innerHTML = `<div class="cloud-head"><h2>Список детей · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div>
@@ -4715,7 +4715,7 @@ function showChildrenList(classId, trigger) {
       for (const student of plan.removed) operations.push({ store: 'students', id: student.id, value: null, expected: student });
       for (const op of operations) assertCloudWrite(op.store, op.value || op.expected);
       await recordSync.writeBatch(operations);
-      await refreshData(); original = structuredClone(studentsByClass(classId));
+      await refreshData(); original = structuredClone(state.data.students.filter(student => student.classId === classId));
       input.value = original.map(rosterName).join('\n'); plan = null;
       d.querySelector('[data-review]').replaceChildren(); result.textContent = 'Список сохранён. Карточки класса обновлены.';
       state.preserveScroll = true; renderClasses(); notify('Список класса сохранён');

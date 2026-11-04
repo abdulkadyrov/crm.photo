@@ -25,3 +25,11 @@ test('namesakes remain separate cards and blank roster explicitly lists all remo
  assert.deepEqual(planRoster(children,[]).removed,children);
  assert.throws(()=>planRoster(children,['Новый Один','Новый Два'],{0:'a',1:'a'}),/нескольких строк/);
 });
+
+test('class roster is independent of active payment and shooting filters',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../../js/core/legacy-app.js',import.meta.url),'utf8');
+ const dialog=source.slice(source.indexOf('function showChildrenList('),source.indexOf('function showStudentForm('));
+ assert.doesNotMatch(dialog,/studentsByClass\(classId\)/);
+ assert.match(dialog,/state.data.students.filter\(student => student.classId === classId\)/);
+});
