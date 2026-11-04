@@ -1,7 +1,8 @@
+import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
 import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js";
 import { captureDialogReturn } from "../services/dialog-return.js";
-import { incomingOrderState, parseChildrenList, parentUnitPrice } from "../services/parent-order-model.js";
+import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
 import { decodeCode128ImageData } from "../services/barcode-reader.js";
@@ -801,6 +802,8 @@ async function seedCatalogIfNeeded() {
   const existingById = new Map(catalog.map((item) => [item.id, item]));
   if (!existingById.has(CLASS_PHOTO_SERVICE.id)) {
     await put("catalog", { ...CLASS_PHOTO_SERVICE });
+  } else if (!existingById.get(CLASS_PHOTO_SERVICE.id).classPhotoPriceVersion) {
+    await put("catalog", { ...existingById.get(CLASS_PHOTO_SERVICE.id), price: "350", classPhotoPriceVersion: 1 });
   }
   for (const [index, item] of CHILD_PORTRAIT_TEMPLATES.entries()) {
     const seeded = childPortraitCatalogRecord(item, index);
@@ -1268,6 +1271,7 @@ function classStudentSection(classId) {
         <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
         <div class="row">
           <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
+          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список детей" : "Добавить полный класс детей"}</button>
           <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
         </div>
       </div>
@@ -1304,7 +1308,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
               <button data-open-class-action="${klass.id}" type="button">Открыть группу</button>
               <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
               <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
-              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button><button data-children-list="${klass.id}" type="button">Добавить детей списком</button><button data-parent-class="${klass.id}" type="button">Заказы родителей и ссылка</button>
+              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button><button data-children-list="${klass.id}" type="button">Список детей: добавить и изменить</button><button data-parent-class="${klass.id}" type="button">Заказы родителей и ссылка</button>
               <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button>
               <button data-mark-printed-class="${klass.id}" type="button">Отметить печать</button>
               <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
@@ -4645,21 +4649,79 @@ async function setClassColor(payload) {
   renderClasses();
 }
 
-function showChildrenList(classId,trigger) {
-  if(cloudRequired && !["admin","manager"].includes(cloudAccount()?.role))return notify("Список детей добавляет менеджер или администратор");
-  const klass=classById(classId);if(!klass)return;
-  const restore=captureDialogReturn(document,window,trigger);
-  const d=document.createElement("dialog");d.className="cloud-dialog";d.setAttribute("aria-label","Добавить детей списком");
-  d.innerHTML=`<div class="cloud-head"><h2>Добавить детей · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div><label>Фамилия и имя, каждый ребёнок с новой строки<textarea data-names rows="10" placeholder="Иванов Иван\nПетрова Анна"></textarea></label><p>Можно вставить текст после распознавания журнала или JSON-массив с полями firstName и lastName. Проверьте имена перед сохранением.</p><label>Загрузить TXT или JSON<input data-file type="file" accept=".txt,.json,text/plain,application/json"></label><button data-preview>Проверить список</button><p data-result role="status"></p><div data-review></div><button data-save disabled>Добавить проверенных детей</button>`;
-  document.body.append(d);d.showModal();history.pushState({...history.state,childrenListModal:true},'');
-  const back=()=>d.close();window.addEventListener('popstate',back,{once:true});
-  d.onclose=()=>{window.removeEventListener('popstate',back);d.remove();if(history.state?.childrenListModal)history.back();restore();};d.querySelector('[data-close]').onclick=()=>d.close();
-  let draft;
-  const input=d.querySelector('[data-names]'),save=d.querySelector('[data-save]'),result=d.querySelector('[data-result]');
-  input.oninput=()=>{draft=null;save.disabled=true;};
-  d.querySelector('[data-file]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>1024*1024)throw new Error('Файл должен быть меньше 1 МБ');input.value=await file.text();input.oninput();}catch(e){result.textContent=e.message;}};
-  d.querySelector('[data-preview]').onclick=()=>{try{draft=parseChildrenList(input.value,studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`));result.textContent=`Новых: ${draft.added.length}. Совпадений: ${draft.duplicates.length}. Нужна проверка: ${draft.invalid.length}. Совпадения не добавляются; однофамильцев с одинаковыми именами можно добавить отдельно.`;d.querySelector('[data-review]').innerHTML=`<ol>${draft.added.map(name=>`<li>${escapeHtml(name)}</li>`).join('')}</ol>${draft.invalid.length?`<p>Исправьте: ${escapeHtml(draft.invalid.join('; '))}</p>`:''}`;save.disabled=!draft.added.length||draft.invalid.length>0;}catch(e){draft=null;save.disabled=true;result.textContent=e.message;}};
-  save.onclick=async()=>{if(!draft)return;save.disabled=true;try{const existing=new Set(studentsByClass(classId).map(s=>`${s.lastName} ${s.firstName}`.trim().toLocaleLowerCase('ru')));const rows=draft.added.filter(fio=>!existing.has(fio.toLocaleLowerCase('ru'))).map(fio=>{const id=uid("student");const student=stampCreated({id,classId,...splitFullName(fio),qrId:id,catalogId:"",catalogIds:[],selectedServices:[],paymentStatus:"unpaid",orderStatus:"",status:""});const order=stampCreated({id:`order_${id}`,studentId:id,catalogId:"",catalogIds:[],status:"",items:[]});assertCloudWrite("students",student);assertCloudWrite("orders",order);return {student,order};});await recordSync.writeBatch(rows.flatMap(row=>[{store:"students",value:row.student},{store:"orders",value:row.order}]));await refreshData();result.textContent='Дети сохранены на устройстве. В «Заказы родителей и ссылка» обновите список для родителей.';draft=null;notify('Список детей добавлен');}catch(e){result.textContent=e.message;}};
+function showChildrenList(classId, trigger) {
+  if (cloudRequired && !["admin", "manager"].includes(cloudAccount()?.role)) return notify("Список детей изменяет менеджер или администратор");
+  const klass = classById(classId); if (!klass) return;
+  let original = structuredClone(studentsByClass(classId));
+  const restore = captureDialogReturn(document, window, trigger);
+  const d = document.createElement("dialog"); d.className = "cloud-dialog"; d.setAttribute("aria-label", "Список детей класса");
+  d.innerHTML = `<div class="cloud-head"><h2>Список детей · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div>
+    <label>Фамилия и имя, каждый ребёнок с новой строки<textarea class="input textarea" data-names rows="12" placeholder="Алиев Али\nМагомадова Раяна"></textarea></label>
+    <p>Вставьте весь класс или исправьте существующий список. Перед сохранением проверьте, какие карточки будут изменены, добавлены или удалены.</p>
+    <button class="secondary-button compact" data-copy>Скопировать список</button><button class="secondary-button compact" data-preview>Проверить изменения</button>
+    <p data-result role="status"></p><div data-review></div><button class="primary-button" data-save disabled>Подтвердить и сохранить</button>`;
+  const input = d.querySelector('[data-names]'), save = d.querySelector('[data-save]'), result = d.querySelector('[data-result]');
+  input.value = original.map(rosterName).join('\n');
+  let plan = null, busy = false;
+  document.body.append(d); d.showModal(); history.pushState({ ...history.state, childrenListModal: true }, '');
+  const back = () => { if (!busy) d.close(); };
+  window.addEventListener('popstate', back);
+  d.oncancel = event => { if (busy) event.preventDefault(); };
+  d.onclose = () => { window.removeEventListener('popstate', back); d.remove(); if (history.state?.childrenListModal) history.back(); restore(); };
+  d.querySelector('[data-close]').onclick = () => { if (!busy) d.close(); };
+  input.oninput = () => { plan = null; save.disabled = true; d.querySelector('[data-review]').replaceChildren(); result.textContent = ''; };
+  d.querySelector('[data-copy]').onclick = async () => {
+    try { await navigator.clipboard.writeText(input.value); result.textContent = 'Список скопирован'; }
+    catch { input.focus(); input.select(); result.textContent = 'Выделен весь список. Нажмите ⌘C или Ctrl+C.'; }
+  };
+  function preview(assignments = {}) {
+    try {
+      plan = planRoster(original, parseRoster(input.value), assignments);
+      const renamed = plan.rows.filter(row => row.student && rosterName(row.student) !== row.name);
+      result.textContent = `Добавить: ${plan.rows.filter(row => !row.student).length}. Изменить: ${renamed.length}. Удалить: ${plan.removed.length}.`;
+      d.querySelector('[data-review]').innerHTML = `<ol>${plan.rows.map(row => `<li>${escapeHtml(row.name)}${row.needsReview ? `<label>Карточка <select data-match="${row.index}"><option value="">Создать новую</option>${plan.candidates.map(student => `<option value="${escapeAttr(student.id)}" ${row.student?.id === student.id ? 'selected' : ''}>Изменить: ${escapeHtml(rosterName(student))}</option>`).join('')}</select></label>` : ' — сохранить карточку'}</li>`).join('')}</ol>${plan.removed.length ? `<p>Будут удалены вместе с заказами и файлами: ${plan.removed.map(student => escapeHtml(rosterName(student))).join(', ')}.</p>` : ''}`;
+      d.querySelectorAll('[data-match]').forEach(select => select.onchange = () => {
+        const selected = Object.fromEntries([...d.querySelectorAll('[data-match]')].map(node => [node.dataset.match, node.value]));
+        preview(selected);
+      });
+      save.disabled = !plan.removed.length && !renamed.length && !plan.rows.some(row => !row.student);
+    } catch (error) { plan = null; save.disabled = true; result.textContent = error.message; }
+  }
+  d.querySelector('[data-preview]').onclick = () => preview();
+  save.onclick = async () => {
+    if (!plan || busy) return;
+    const renamed = plan.rows.filter(row => row.student && rosterName(row.student) !== row.name);
+    const summary = [`Добавить: ${plan.rows.filter(row => !row.student).length}`, ...renamed.map(row => `${rosterName(row.student)} → ${row.name}`), ...plan.removed.map(student => `УДАЛИТЬ с заказами и файлами: ${rosterName(student)}`)].join('\n');
+    if (!confirm(`Сохранить изменения класса?\n${summary}`)) return;
+    busy = true; d.querySelectorAll('button,input,textarea,select').forEach(node => node.disabled = true);
+    try {
+      const current = (await getAll('students')).filter(student => student.classId === classId);
+      const fingerprint = rows => JSON.stringify([...rows].sort((a,b) => a.id.localeCompare(b.id)));
+      if (fingerprint(current) !== fingerprint(original)) throw new Error('Список изменился в другом окне. Закройте и откройте его заново.');
+      const operations = [];
+      for (const row of plan.rows) {
+        if (row.student) {
+          if (rosterName(row.student) !== row.name) operations.push({ store: 'students', value: stampUpdated({ ...row.student, ...splitFullName(row.name) }), expected: row.student });
+        } else {
+          const id = uid('student');
+          operations.push({ store: 'students', value: stampCreated({ id, classId, ...splitFullName(row.name), qrId: id, catalogId: '', catalogIds: [], selectedServices: [], paymentStatus: 'unpaid', orderStatus: '', status: '' }) });
+          operations.push({ store: 'orders', value: stampCreated({ id: `order_${id}`, studentId: id, catalogId: '', catalogIds: [], status: '', items: [] }) });
+        }
+      }
+      const removed = new Set(plan.removed.map(student => student.id));
+      for (const store of ['documents', 'finalWorks', 'orders', 'media']) {
+        for (const value of await getAll(store)) if (removed.has(value.studentId)) operations.push({ store, id: value.id, value: null, expected: value });
+      }
+      for (const student of plan.removed) operations.push({ store: 'students', id: student.id, value: null, expected: student });
+      for (const op of operations) assertCloudWrite(op.store, op.value || op.expected);
+      await recordSync.writeBatch(operations);
+      await refreshData(); original = structuredClone(studentsByClass(classId));
+      input.value = original.map(rosterName).join('\n'); plan = null;
+      d.querySelector('[data-review]').replaceChildren(); result.textContent = 'Список сохранён. Карточки класса обновлены.';
+      state.preserveScroll = true; renderClasses(); notify('Список класса сохранён');
+    } catch (error) { result.textContent = error.message; }
+    finally { busy = false; d.querySelectorAll('button,input,textarea,select').forEach(node => node.disabled = false); save.disabled = !plan; }
+  };
 }
 
 function showStudentForm(classId) {

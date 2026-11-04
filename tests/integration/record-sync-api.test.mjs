@@ -39,7 +39,7 @@ test('two real API clients reconcile offline payments, notes, photos and conflic
   const image=new Blob(['real-api-image-bytes'],{type:'image/jpeg'});await worker.sync.put('media',{id:'m',studentId:'s',blob:image});
   const oldOrder=await get(worker.db,'orders','o');await worker.sync.put('orders',{...oldOrder,items:[{type:'portrait',status:'done',fileIds:['m']}]},oldOrder);
   await owner.sync.put('students',{...student,comment:'Записано владельцем офлайн'},student);
-  navigator.onLine=true;cookie=workerCookie;drop=true;await worker.sync.sync();assert.ok((await all(worker.db,'syncQueue')).length>0);await worker.sync.sync();assert.equal((await all(worker.db,'syncQueue')).length,0);
+  navigator.onLine=true;cookie=workerCookie;drop=true;await worker.sync.sync();assert.ok((await all(worker.db,'syncQueue')).length>0);await worker.sync.sync();assert.deepEqual(await all(worker.db,'syncQueue'),[]);
   cookie=ownerCookie;await owner.sync.sync();assert.equal((await all(owner.db,'syncQueue')).length,0);
   const merged=await get(owner.db,'students','s');assert.equal(merged.comment,'Записано владельцем офлайн');assert.equal(merged.paymentStatus,'paid');assert.equal(merged.paidAmount,0);assert.equal(await(await get(owner.db,'media','m')).blob.text(),'real-api-image-bytes');
   const other=await client('admin',ownerCookie);const b=await get(other.db,'students','s');await owner.sync.put('students',{...merged,firstName:'Имя А'},merged);await owner.sync.sync();
