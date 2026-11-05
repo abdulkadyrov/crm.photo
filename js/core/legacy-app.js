@@ -1,5 +1,7 @@
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
 import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js";
@@ -4738,6 +4740,7 @@ function showChildrenList(classId, trigger) {
   const restore = captureDialogReturn(document, window, trigger);
   const d = document.createElement("dialog"); d.className = "cloud-dialog"; d.setAttribute("aria-label", "Список детей класса");
   d.innerHTML = `<div class="cloud-head"><h2>Список детей · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div>
+    <div data-photo-import></div>
     <label>Фамилия и имя, каждый ребёнок с новой строки<textarea class="input textarea" data-names rows="12" placeholder="Алиев Али\nМагомадова Раяна"></textarea></label>
     <p>Вставьте весь класс или исправьте существующий список. Перед сохранением проверьте, какие карточки будут изменены, добавлены или удалены.</p>
     <button class="secondary-button compact" data-copy>Скопировать список</button><button class="secondary-button compact" data-preview>Проверить изменения</button>
@@ -4749,9 +4752,14 @@ function showChildrenList(classId, trigger) {
   const back = () => { if (!busy) d.close(); };
   window.addEventListener('popstate', back);
   d.oncancel = event => { if (busy) event.preventDefault(); };
-  d.onclose = () => { window.removeEventListener('popstate', back); d.remove(); if (history.state?.childrenListModal) history.back(); restore(); };
+  d.onclose = () => { disposePhotoImport(); window.removeEventListener('popstate', back); d.remove(); if (history.state?.childrenListModal) history.back(); restore(); };
   d.querySelector('[data-close]').onclick = () => { if (!busy) d.close(); };
   input.oninput = () => { plan = null; save.disabled = true; d.querySelector('[data-review]').replaceChildren(); result.textContent = ''; };
+  const disposePhotoImport = mountRosterPhotoImport(d.querySelector('[data-photo-import]'), names => {
+    if (busy) return;
+    input.value = appendPhotoNames(parseRoster(input.value), names).join('\n');
+    input.oninput();
+  });
   d.querySelector('[data-copy]').onclick = async () => {
     try { await navigator.clipboard.writeText(input.value); result.textContent = 'Список скопирован'; }
     catch { input.focus(); input.select(); result.textContent = 'Выделен весь список. Нажмите ⌘C или Ctrl+C.'; }
@@ -4775,7 +4783,8 @@ function showChildrenList(classId, trigger) {
     const renamed = plan.rows.filter(row => row.student && rosterName(row.student) !== row.name);
     const summary = [`Добавить: ${plan.rows.filter(row => !row.student).length}`, ...renamed.map(row => `${rosterName(row.student)} → ${row.name}`), ...plan.removed.map(student => `УДАЛИТЬ с заказами и файлами: ${rosterName(student)}`)].join('\n');
     if (!confirm(`Сохранить изменения класса?\n${summary}`)) return;
-    busy = true; d.querySelectorAll('button,input,textarea,select').forEach(node => node.disabled = true);
+    const disabledBeforeSave = new Map([...d.querySelectorAll('button,input,textarea,select')].map(node => [node, node.disabled]));
+    busy = true; disabledBeforeSave.forEach((disabled, node) => node.disabled = true);
     try {
       const current = (await getAll('students')).filter(student => student.classId === classId);
       const fingerprint = rows => JSON.stringify([...rows].sort((a,b) => a.id.localeCompare(b.id)));
@@ -4802,7 +4811,7 @@ function showChildrenList(classId, trigger) {
       d.querySelector('[data-review]').replaceChildren(); result.textContent = 'Список сохранён. Карточки класса обновлены.';
       state.preserveScroll = true; renderClasses(); notify('Список класса сохранён');
     } catch (error) { result.textContent = error.message; }
-    finally { busy = false; d.querySelectorAll('button,input,textarea,select').forEach(node => node.disabled = false); save.disabled = !plan; }
+    finally { busy = false; disabledBeforeSave.forEach((disabled, node) => node.disabled = disabled); save.disabled = !plan; }
   };
 }
 

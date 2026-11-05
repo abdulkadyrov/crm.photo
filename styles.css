@@ -5678,3 +5678,19 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 [data-browse-swipe] { touch-action: pan-x; }
 
 .catalog-browser-navigation [role="status"] { white-space:nowrap; flex-shrink:0; }
+
+/* Photo roster drafts stay inside the existing class-list dialog. */
+.roster-photo-sources img { display: block; width: 100%; height: auto; margin-block: 12px; }
+.roster-photo-sources pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; }
+[data-photo-import] { margin-block: 16px; }
+[data-photo-import] summary { cursor: pointer; padding-block: 12px; }
+[data-photo-import] input[type="file"] { width: 100%; min-width: 0; }
+[data-photo-import] .row { flex-wrap: wrap; }
+[data-photo-import] [hidden] { display: none; }
+.roster-crop-stage { position: relative; touch-action: none; cursor: crosshair; }
+.roster-crop-stage img { display: block; width: 100%; height: auto; }
+.roster-crop-box { position: absolute; border: 2px solid var(--primary, #2563eb); background: rgb(37 99 235 / 10%); pointer-events: none; }
+.roster-crop-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.roster-crop-fields input { width: 100%; min-width: 0; }
+[data-photo-import] label.row { display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
+[data-photo-import] label.row input { flex-shrink: 0; margin-top: 3px; }
