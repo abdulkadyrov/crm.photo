@@ -5757,8 +5757,19 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
   flex-wrap: nowrap;
   overflow-x: auto;
   margin: 0;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
-.catalog-browser-toolbar .chip { flex: 0 0 auto; }
+.catalog-floating-filters .catalog-tabs::-webkit-scrollbar,
+.catalog-browser-toolbar .chip-row::-webkit-scrollbar { display: none; }
+.catalog-floating-filters .catalog-tabs .chip,
+.catalog-browser-toolbar .chip {
+  flex: 0 0 auto;
+  max-width: none;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
 .catalog-browser-navigation { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .catalog-browser-backdrop .catalog-modal { padding-top:0; }
 [data-browse-swipe] { touch-action: pan-x; }
