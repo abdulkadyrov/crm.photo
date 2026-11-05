@@ -5,9 +5,9 @@ test('WhatsApp phone and text are normalized and encoded without sending',()=>{
  assert.equal(teacherPhone('8 (999) 123-45-67'),'79991234567');
  assert.equal(teacherPhone('9991234567'),'79991234567');
  assert.equal(teacherPhone('123'),'');
- const text=teacherMessage('{учитель}, {школа}, {класс}, {ссылка}',{name:'Раяна',school:'Школа №1',className:'4 А',catalogUrl:'https://example.test/p/class'});
+ const text=teacherMessage('{учитель}, {школа}, {класс}, {ссылка}',{name:'Раяна',school:'Школа №1',className:'4 А',catalogUrl:'https://example.test/p/class-4a'});
  const url=new URL(teacherWhatsAppUrl('+79991234567',text));
- assert.equal(url.searchParams.get('text'),'Раяна, Школа №1, 4 А, https://example.test/p/class');
+ assert.equal(url.searchParams.get('text'),'Раяна, Школа №1, 4 А, https://example.test/p/class-4a');
  assert.equal(teacherWhatsAppUrl('123',text),'');
  assert.equal(teacherWhatsAppUrl('79991234567',' '),'');
 });

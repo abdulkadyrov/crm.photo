@@ -25,7 +25,9 @@ export function mergeTransferRecord(dataKey, existing, incoming) {
 
 export function mergeClassRecord(existing = {}, incoming = {}) {
   const next = { ...existing };
-  ["parentCatalogUrl", "parentCatalogToken", "parentCatalogUpdatedAt"].forEach((key) => { if (incoming[key]) next[key] = incoming[key]; });
+  ["parentCatalogUrl", "parentCatalogToken", "parentCatalogUpdatedAt"].forEach((key) => {
+    if (incoming[key]) next[key] = incoming[key];
+  });
   return next;
 }
 

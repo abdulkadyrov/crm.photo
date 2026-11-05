@@ -1,7 +1,8 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v111";
+const CACHE_VERSION = "v114";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
+  "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
   "child-boy-football-champion", "child-boy-chechen-dzhigit", "child-girl-fairytale-princess",
   "child-girl-long-haired-tower-princess", "child-girl-ice-queen",
@@ -82,13 +83,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=98",
+  "./styles.css?v=114",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=98",
+  "./js/core/app.js?v=114",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=98",
+  "./js/core/legacy-app.js?v=114",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -99,6 +100,7 @@ const APP_SHELL = [
   "./js/data/child-portrait-templates.js",
   "./js/data/child-portrait-a4-scenes.js",
   "./js/data/kindergarten-ai-video-services.js",
+  "./js/data/game-photo-services.js",
   "./js/data/class-photo-service.js",
   "./js/services/class-roster.js",
   "./js/services/roster-photo-parser.js",
@@ -109,7 +111,12 @@ const APP_SHELL = [
   "./js/services/transfer-asset-loader.js",
   "./js/services/catalog-themes.js",
   "./js/services/teacher-broadcast.js",
+  "./js/services/class-links-transfer.js",
   "./assets/class-photo/class-photo-a4.png",
+  "./assets/game-photo-services/free-fire.webp",
+  "./assets/game-photo-services/pubg.webp",
+  "./assets/game-photo-services/roblox-boy.webp",
+  "./assets/game-photo-services/roblox-girl.webp",
   "./js/data/migrations.js",
   "./js/data/repositories/base-repository.js",
   "./js/data/repositories/projects-repository.js",

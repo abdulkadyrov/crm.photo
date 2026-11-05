@@ -4,6 +4,7 @@ from pathlib import Path
 from socketserver import ThreadingMixIn
 from wsgiref.simple_server import make_server,WSGIServer,WSGIRequestHandler
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'server'))
+os.environ.setdefault('CRM_SYNC_BLOB_FREE_RESERVE','0')
 import app
 class Server(ThreadingMixIn,WSGIServer):daemon_threads=True
 class Quiet(WSGIRequestHandler):

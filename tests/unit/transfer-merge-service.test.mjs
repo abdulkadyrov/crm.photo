@@ -11,7 +11,11 @@ import {
   mergeTransferRecord
 } from "../../js/services/transfer-merge-service.js";
 
-test("safe class merge imports only the parent catalog link",()=>{const existing={id:"c1",name:"4А",teacher:{name:"Раяна"}};const incoming={id:"c1",name:"changed",parentCatalogUrl:"https://example.test/p/token",parentCatalogToken:"token"};assert.deepEqual(mergeClassRecord(existing,incoming),{...existing,parentCatalogUrl:incoming.parentCatalogUrl,parentCatalogToken:"token"});});
+test("safe class merge imports only the parent catalog link", () => {
+  const existing={id:"c1",name:"4А",teacher:{name:"Раяна"},localStatus:"shooting"};
+  const incoming={id:"c1",name:"changed",teacher:{name:"Other"},parentCatalogUrl:"https://example.test/p/token",parentCatalogToken:"token",parentCatalogUpdatedAt:"2026-11-05"};
+  assert.deepEqual(mergeClassRecord(existing,incoming),{...existing,parentCatalogUrl:incoming.parentCatalogUrl,parentCatalogToken:"token",parentCatalogUpdatedAt:"2026-11-05"});
+});
 
 test("repeat import updates service quantity and comment without duplicating the student", () => {
   const existing = {

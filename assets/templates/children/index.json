@@ -1227,6 +1227,166 @@
     "version": 2
   },
   {
+    "id": "child-boy-mma-tank",
+    "title": "Боец ММА в майке — UFC Чемпион",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "mma-tank",
+    "tags": [
+      "мма",
+      "боец",
+      "спорт",
+      "перчатки",
+      "майка"
+    ],
+    "description": "Юный боец ММА в майке и перчатках ММА на фоне тренировочного зала.",
+    "masterSrc": "./assets/templates/children/child-boy-mma-tank/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-mma-tank/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-mma-tank/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-mma-tank/metadata.json",
+    "faceGuide": {
+      "centerX": 0.495,
+      "centerY": 0.215,
+      "width": 0.25,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-mma-shirt",
+    "title": "Боец ММА в футболке — UFC Champion",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "mma-shirt",
+    "tags": [
+      "мма",
+      "боец",
+      "спорт",
+      "перчатки",
+      "футболка"
+    ],
+    "description": "Юный боец ММА в футболке и перчатках ММА на фоне тренировочного зала.",
+    "masterSrc": "./assets/templates/children/child-boy-mma-shirt/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-mma-shirt/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-mma-shirt/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-mma-shirt/metadata.json",
+    "faceGuide": {
+      "centerX": 0.495,
+      "centerY": 0.215,
+      "width": 0.25,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-boxing-tank",
+    "title": "Боксёр в майке — BOXING Чемпион",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "boxing-tank",
+    "tags": [
+      "бокс",
+      "боец",
+      "спорт",
+      "перчатки",
+      "майка"
+    ],
+    "description": "Юный боксёр в майке и боксёрских перчатках на ринге.",
+    "masterSrc": "./assets/templates/children/child-boy-boxing-tank/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-boxing-tank/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-boxing-tank/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-boxing-tank/metadata.json",
+    "faceGuide": {
+      "centerX": 0.495,
+      "centerY": 0.23,
+      "width": 0.25,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
+    "id": "child-boy-boxing-shirt",
+    "title": "Боксёр в футболке — BOXING Champion",
+    "grade": 3,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "boxing-shirt",
+    "tags": [
+      "бокс",
+      "боец",
+      "спорт",
+      "перчатки",
+      "футболка"
+    ],
+    "description": "Юный боксёр в футболке и боксёрских перчатках на ринге.",
+    "masterSrc": "./assets/templates/children/child-boy-boxing-shirt/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-boxing-shirt/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-boxing-shirt/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-boxing-shirt/metadata.json",
+    "faceGuide": {
+      "centerX": 0.495,
+      "centerY": 0.23,
+      "width": 0.25,
+      "height": 0.19,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 3
+  },
+  {
     "id": "child-boy-chechen-mosque-dawn",
     "title": "У мечети на рассвете",
     "grade": 3,

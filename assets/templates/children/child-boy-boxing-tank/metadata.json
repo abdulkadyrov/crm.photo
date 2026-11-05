@@ -1,0 +1,49 @@
+{
+  "id": "child-boy-boxing-tank",
+  "title": "Боксёр в майке — BOXING Чемпион",
+  "grade": 3,
+  "gender": "boy",
+  "theme": "boxing-tank",
+  "tags": [
+    "бокс",
+    "боец",
+    "спорт",
+    "перчатки",
+    "майка"
+  ],
+  "description": "Юный боксёр в майке и боксёрских перчатках на ринге.",
+  "faceGuide": {
+    "centerX": 0.495,
+    "centerY": 0.23,
+    "width": 0.25,
+    "height": 0.19,
+    "feather": 0.018
+  },
+  "generator": "built-in image_gen",
+  "prompt": "Generate one photorealistic premium children's sports portrait template, vertical A4 composition. A fictional boy age 9, boxer, red sleeveless athletic tank top, large red closed boxing gloves, boxing ring. Fully clothed, natural child proportions, friendly confident calm expression, no injuries or combat, standing alone facing camera, hands at chest below face so face entirely unobstructed. Waist-up to thighs portrait, face centered at x=50%, y=27%, face oval approx 18% image width and 16% height. Short dark hair, brown eyes. Dramatic tasteful sports studio lighting, detailed fabric, softly blurred training background. No text, brands, watermark or logos. Single finished photograph, no collage. Save output file for integration in CRM.",
+  "masterPreparation": "lanczos-upscale-and-a4-crop",
+  "sourceGenerationSize": {
+    "width": 1055,
+    "height": 1491
+  },
+  "promptLettering": "Edit this exact sports portrait. Preserve the boy, face, clothing, gloves, pose, lighting, background and portrait composition. Add professionally designed premium sports poster typography: exact headline \"BOXING\" and exact secondary line \"Чемпион\". Put both lines across the lower quarter over the shorts/lower torso, well below gloves, never over face or hands. Bold condensed white/ivory lettering, strong readable contrast, tasteful red accent for UFC, gold accent for BOXING, no extra words. Keep all edges of lettering within generous safe margins. Single full-bleed photograph.",
+  "headwear": "none",
+  "masterSrc": "./assets/templates/children/child-boy-boxing-tank/master.jpg",
+  "previewSrc": "./assets/templates/children/child-boy-boxing-tank/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-boxing-tank/face-mask.png",
+  "metadataSrc": "./assets/templates/children/child-boy-boxing-tank/metadata.json",
+  "canvas": {
+    "format": "A4",
+    "orientation": "portrait",
+    "width": 2480,
+    "height": 3508,
+    "previewWidth": 600,
+    "previewHeight": 849,
+    "dpi": 300,
+    "masterFile": "master.jpg"
+  },
+  "printFormat": "A4",
+  "enabled": true,
+  "version": 3,
+  "aiAdapter": "face-swap-v1"
+}

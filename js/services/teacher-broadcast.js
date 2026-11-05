@@ -68,12 +68,12 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
   const overrides = {...(draft.overrides || {})};
   let activeId = recipients.some((recipient) => recipient.id === draft.lastRecipientId) ? draft.lastRecipientId : recipients[0]?.id || '';
   template.value = draft.template ?? DEFAULT_TEACHER_MESSAGE;
-  dialog.querySelector('[data-ready-count]').textContent = String(recipients.filter((recipient) => teacherPhone(recipient.phone)).length);
+  dialog.querySelector('[data-ready-count]').textContent = String(recipients.filter((recipient) => teacherPhone(recipient.phone) && recipient.catalogUrl).length);
   dialog.querySelector('[data-total-count]').textContent = String(recipients.length);
   const current = () => recipients.find((recipient) => recipient.id === activeId);
 
   function updateLink() {
-    const url = teacherWhatsAppUrl(current()?.phone, message.value);
+    const url = current()?.catalogUrl ? teacherWhatsAppUrl(current()?.phone, message.value) : '';
     if (url) { link.href = url; link.removeAttribute('aria-disabled'); }
     else { link.removeAttribute('href'); link.setAttribute('aria-disabled', 'true'); }
   }
@@ -89,7 +89,8 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
       const copy = document.createElement('span'); copy.className = 'teacher-recipient-copy';
       const name = document.createElement('strong'); name.textContent = recipient.name || `Класс ${recipient.className}`;
       const context = document.createElement('small'); context.textContent = [recipient.school, recipient.className].filter(Boolean).join(' · '); copy.append(name, context);
-      const state = document.createElement('span'); state.className = `teacher-recipient-state ${phone ? 'is-ready' : 'is-missing'}`; state.textContent = phone ? 'WhatsApp' : 'Нет телефона';
+      const ready = phone && recipient.catalogUrl;
+      const state = document.createElement('span'); state.className = `teacher-recipient-state ${ready ? 'is-ready' : 'is-missing'}`; state.textContent = !phone ? 'Нет телефона' : !recipient.catalogUrl ? 'Нет ссылки' : 'Готово';
       button.append(avatar, copy, state); button.onclick = () => { activeId = recipient.id; renderRecipients(); renderMessage(); }; list.append(button);
     });
   }
@@ -99,7 +100,8 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
     dialog.querySelector('[data-recipient-name]').textContent = recipient?.name || (recipient ? `Класс ${recipient.className}` : 'Нет классов');
     dialog.querySelector('[data-recipient-context]').textContent = recipient ? [recipient.school, recipient.className].filter(Boolean).join(' · ') : 'Добавьте класс и контакты учителя.';
     const phone = teacherPhone(recipient?.phone), phoneState = dialog.querySelector('[data-phone-state]');
-    phoneState.className = `teacher-phone-state ${phone ? 'is-ready' : 'is-missing'}`; phoneState.textContent = phone ? `+${phone}` : 'Добавьте телефон в карточке класса'; updateLink();
+    const ready = phone && recipient?.catalogUrl;
+    phoneState.className = `teacher-phone-state ${ready ? 'is-ready' : 'is-missing'}`; phoneState.textContent = !phone ? 'Добавьте телефон в карточке класса' : !recipient?.catalogUrl ? 'Импортируйте ZIP проекта или JSON ссылок из Vakha Studio' : `+${phone} · ссылка готова`; updateLink();
   }
 
   search.oninput = renderRecipients; template.oninput = renderMessage;
@@ -108,7 +110,7 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
   const persist = async () => save({template: template.value, overrides, lastRecipientId: activeId});
   dialog.querySelector('[data-save]').onclick = async () => { try { await persist(); status.textContent = 'Черновик сохранён.'; } catch { status.textContent = 'Не удалось сохранить. Попробуйте ещё раз.'; } };
   dialog.querySelector('[data-copy]').onclick = async () => { try { await navigator.clipboard.writeText(message.value); status.textContent = 'Сообщение скопировано.'; } catch { status.textContent = 'Не удалось скопировать. Выделите текст вручную.'; } };
-  link.onclick = (event) => { if (!link.hasAttribute('href')) { event.preventDefault(); status.textContent = 'Сначала добавьте телефон учителя в карточке класса.'; return; } status.textContent = 'WhatsApp открыт. Отправку подтвердите в WhatsApp.'; void persist().catch(() => { status.textContent += ' Черновик не сохранён.'; }); };
+  link.onclick = (event) => { if (!link.hasAttribute('href')) { event.preventDefault(); status.textContent = current()?.catalogUrl ? 'Сначала добавьте телефон учителя в карточке класса.' : 'Сначала импортируйте ссылку класса из Vakha Studio.'; return; } status.textContent = 'WhatsApp открыт. Отправку подтвердите в WhatsApp.'; void persist().catch(() => { status.textContent += ' Черновик не сохранён.'; }); };
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.onclose = () => { dialog.remove(); restore(); };
   document.body.append(dialog); renderRecipients(); renderMessage(); dialog.showModal(); return dialog;
 }

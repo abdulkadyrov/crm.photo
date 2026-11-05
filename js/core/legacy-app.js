@@ -33,6 +33,7 @@ import {
   KINDERGARTEN_DEMO_CHILDREN,
   SCHOOL_INTERVIEW_SERVICES
 } from "../data/kindergarten-ai-video-services.js";
+import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
 import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=89";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
@@ -883,6 +884,26 @@ async function seedCatalogIfNeeded() {
       catalogPriceVersion: seeded.catalogPriceVersion,
       popular: existing.popular ?? seeded.popular,
       orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : 2000 + index
+    });
+  }
+  for (const [index, seeded] of GAME_PHOTO_SERVICES.entries()) {
+    const existing = existingById.get(seeded.id);
+    if (!existing) {
+      await put("catalog", { ...seeded, orderIndex: 3000 + index });
+      continue;
+    }
+    const needsSystemTemplateRepair = existing.systemTemplateVersion !== seeded.systemTemplateVersion
+      || existing.catalogPriceVersion !== seeded.catalogPriceVersion
+      || !existing.gamePhotoService
+      || !existing.previewSrc;
+    if (!existing.systemTemplate || !needsSystemTemplateRepair) continue;
+    await put("catalog", {
+      ...existing,
+      ...seeded,
+      price: seeded.price,
+      catalogPriceVersion: seeded.catalogPriceVersion,
+      popular: existing.popular ?? seeded.popular,
+      orderIndex: Number.isFinite(Number(existing.orderIndex)) ? existing.orderIndex : 3000 + index
     });
   }
 }
@@ -2848,7 +2869,7 @@ function renderServices() {
           <h3 class="card-title">Добавлено A4-услуг: ${a4Services.length}</h3>
           <p class="muted">20 для мальчиков и 20 для девочек. Их можно назначать ученикам и открывать в монтаже.</p>
         </div>
-        <button class="secondary-button compact" data-show-a4-services type="button">Показать 40 A4</button>
+        <button class="secondary-button compact" data-show-a4-services type="button">Показать 44 A4</button>
       </section>
     ` : ""}
     ${selectedCount ? serviceBulkPanel(selectedCount) : ""}
@@ -4108,12 +4129,16 @@ function templateEditorRow(item) {
 function bindViewActions() {
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
   view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
-    const recipients = state.data.classes.filter(klass => !node.dataset.teacherBroadcast || klass.projectId === node.dataset.teacherBroadcast).map(klass => ({id:klass.id,className:klass.name,school:projectById(klass.projectId)?.name||'',name:klass.teacher?.name||'',phone:klass.teacher?.phone||'',catalogUrl:klass.parentCatalogUrl||''}));
+    const recipients = state.data.classes.filter(klass => !node.dataset.teacherBroadcast || klass.projectId === node.dataset.teacherBroadcast).map(klass => ({id:klass.id, className:klass.name, school:projectById(klass.projectId)?.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || '', catalogUrl:klass.parentCatalogUrl || ''}));
     openTeacherBroadcast({recipients, draft:state.data.settings.find(item => item.id === 'teacher-broadcast-draft')?.value, restore:captureDialogReturn(document,window,node), save:async value => {await put('settings',stampUpdated({id:'teacher-broadcast-draft',value}));await refreshData();}});
   });
   view.querySelectorAll('[data-export-vakha]').forEach(node => node.onclick = () => exportProject(node.dataset.exportVakha, true));
   view.querySelectorAll("[data-class-teacher]").forEach(node => node.addEventListener("click", () => showClassTeacher(node.dataset.classTeacher, node)));
-  view.querySelectorAll("[data-copy-class-link]").forEach(node=>node.addEventListener("click",async()=>{const url=classById(node.dataset.copyClassLink)?.parentCatalogUrl||"";if(!url)return notify("Ссылка класса ещё не импортирована.");try{await navigator.clipboard.writeText(url);notify("Ссылка класса скопирована.");}catch{notify("Не удалось скопировать ссылку.");}}));
+  view.querySelectorAll("[data-copy-class-link]").forEach(node => node.addEventListener("click", async () => {
+    const url = classById(node.dataset.copyClassLink)?.parentCatalogUrl || "";
+    if (!url) return notify("Ссылка класса ещё не импортирована.");
+    try { await navigator.clipboard.writeText(url); notify("Ссылка класса скопирована."); } catch { notify("Не удалось скопировать ссылку."); }
+  }));
   view.querySelectorAll("[data-children-list]").forEach(b => b.addEventListener("click", () => showChildrenList(b.dataset.childrenList,b)));
   view.querySelectorAll("[data-parent-class]").forEach(b => b.addEventListener("click", () => showParentOrders(b.dataset.parentClass,b)));
   view.querySelectorAll("[data-cloud-class]").forEach(b => b.addEventListener("click", () => enqueueCloud("class", b.dataset.cloudClass)));
@@ -8867,7 +8892,31 @@ async function importProject(file) {
   return importTransferFile(file, "project");
 }
 
-function importClassLinksFile(){const input=document.createElement("input");input.type="file";input.accept=".json,application/json";input.onchange=async()=>{const file=input.files?.[0];if(!file)return;try{const transfer=parseClassLinksTransfer(await file.text()),plan=planClassLinksImport(transfer,state.data.projects,state.data.classes);if(!plan.matched.length)throw new Error("Ни один класс не совпал по ID.");const note=plan.unmatched.length?`\n\n${plan.unmatched.length} ссылок будут пропущены.`:"";if(!confirm(`Привязать ${plan.matched.length} ссылок к существующим классам?${note}`))return;for(const {klass,link} of plan.matched)await put("classes",stampUpdated({...klass,parentCatalogUrl:link.url,parentCatalogToken:link.token,parentCatalogUpdatedAt:transfer.exportedAt||now()}));await refreshData();notify(`Ссылки привязаны: ${plan.matched.length}.`);showSettingsDetail("transfer");}catch(error){notify(error?.message||"Не удалось импортировать ссылки.");}};input.click();}
+function importClassLinksFile() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json,application/json";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const transfer = parseClassLinksTransfer(await file.text());
+      const plan = planClassLinksImport(transfer, state.data.projects, state.data.classes);
+      if (!plan.matched.length) throw new Error("Ни один класс не совпал по ID. Импортируйте в Vakha Studio именно ZIP этого проекта CRM.");
+      const note = plan.unmatched.length ? `\n\n${plan.unmatched.length} ссылок не совпали и будут пропущены.` : "";
+      if (!confirm(`Привязать ${plan.matched.length} ссылок к существующим классам? Дети, учителя, заказы и проекты не изменятся.${note}`)) return;
+      for (const {klass, link} of plan.matched) {
+        await put("classes", stampUpdated({...klass, parentCatalogUrl:link.url, parentCatalogToken:link.token, parentCatalogUpdatedAt:transfer.exportedAt || now()}));
+      }
+      await refreshData();
+      notify(`Ссылки привязаны: ${plan.matched.length}.${plan.unmatched.length ? ` Пропущено: ${plan.unmatched.length}.` : ""}`);
+      showSettingsDetail("transfer");
+    } catch (error) {
+      notify(error?.message || "Не удалось импортировать ссылки.");
+    }
+  };
+  input.click();
+}
 
 async function exportClass(classId) {
   return withBusy("Экспорт группы...", async () => {
@@ -9017,16 +9066,24 @@ async function buildPublicCatalogExportFiles(sourceItems = publicOrderedServices
     const angleImageSource = (item.angles || []).map((angle) => angle.refDataUrl).find(Boolean) || "";
     const angleVideoSource = (item.angles || []).map((angle) => angle.videoRefDataUrl).find(Boolean) || "";
     const imageSource = servicePreviewImageDataUrl(item) || item.previewSrc || item.previewImage || angleImageSource;
+    const originalImageSource = item.masterSrc || item.originalSrc || imageSource;
     const videoSource = servicePreviewVideoDataUrl(item) || item.previewVideoSrc || item.previewVideo || angleVideoSource;
     const imageUrl = await catalogSourceToDataUrl(imageSource, "photo");
+    const originalImageUrl = await catalogSourceToDataUrl(originalImageSource, "photo", { optimizeImage: false });
     const videoUrl = await catalogSourceToDataUrl(videoSource, "video");
     let previewImage = "";
+    let originalImage = "";
     let previewVideo = "";
     const imageExportUrl = await applyCatalogWatermark(imageUrl, watermark);
     const image = dataUrlToBytes(imageExportUrl);
     if (image) {
       previewImage = `assets/images/${fileBase}.${dataUrlExtension(imageExportUrl)}`;
       files.push({ path: previewImage, data: image.bytes });
+    }
+    const original = dataUrlToBytes(originalImageUrl);
+    if (original) {
+      originalImage = `assets/originals/${fileBase}.${dataUrlExtension(originalImageUrl)}`;
+      files.push({ path: originalImage, data: original.bytes });
     }
     const video = dataUrlToBytes(videoUrl);
     if (video) {
@@ -9048,6 +9105,7 @@ async function buildPublicCatalogExportFiles(sourceItems = publicOrderedServices
         hasVideo: Boolean(previewVideo)
       }),
       ...(previewImage ? { previewImage } : {}),
+      ...(originalImage ? { originalImage } : {}),
       ...(previewVideo ? { previewVideo } : {})
     });
   }
@@ -9059,6 +9117,7 @@ async function buildPublicCatalogExportFiles(sourceItems = publicOrderedServices
   return [
     { path: "catalog.json", data: jsonBytes(catalogData) },
     { path: "assets/images/", data: new Uint8Array() },
+    { path: "assets/originals/", data: new Uint8Array() },
     { path: "assets/videos/", data: new Uint8Array() },
     ...files
   ];
@@ -9072,11 +9131,11 @@ function normalizeCatalogExportId(value, fallbackIndex = 1) {
   return normalized || `service-${fallbackIndex}`;
 }
 
-async function catalogSourceToDataUrl(source, fallbackType = "photo") {
+async function catalogSourceToDataUrl(source, fallbackType = "photo", { optimizeImage = true } = {}) {
   const value = String(source || "").trim();
   if (!value) return "";
   if (dataUrlToBytes(value)) {
-    return fallbackType === "photo" ? optimizeCatalogImageDataUrl(value) : value;
+    return fallbackType === "photo" && optimizeImage ? optimizeCatalogImageDataUrl(value) : value;
   }
   try {
     const response = await fetch(new URL(value, document.baseURI).href, { cache: "no-store" });
@@ -9086,7 +9145,7 @@ async function catalogSourceToDataUrl(source, fallbackType = "photo") {
     const contentType = response.headers.get("content-type")?.split(";")[0].trim()
       || mimeForPath(value, fallbackType);
     const dataUrl = bytesToDataUrl(contentType, bytes);
-    return fallbackType === "photo" ? optimizeCatalogImageDataUrl(dataUrl) : dataUrl;
+    return fallbackType === "photo" && optimizeImage ? optimizeCatalogImageDataUrl(dataUrl) : dataUrl;
   } catch (error) {
     console.warn("Не удалось добавить файл в публичный каталог", value, error);
     return "";

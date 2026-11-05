@@ -131,7 +131,7 @@ def route(r,c,u,path,a):
   a.fail(r.method!='POST',404,'Не найдено');a.fail(u['role']=='viewer' or scope=='global' and u['role']!='admin',403,'Нет права загрузки')
   if row and target.exists():return {'saved':True,'duplicate':True}
   size=int(r.e.get('CONTENT_LENGTH','0'));a.fail(size<0 or size>a.MAX_UPLOAD,413,'Файл больше 1 ГБ')
-  a.fail(shutil.disk_usage(a.ROOT).free<size+512*1024*1024,507,'На сервере недостаточно места. Файл остаётся на устройстве')
+  a.fail(shutil.disk_usage(a.ROOT).free<size+a.SYNC_BLOB_FREE_RESERVE,507,'На сервере недостаточно места. Файл остаётся на устройстве')
   fd,tmp=tempfile.mkstemp(dir=folder);digest_check=hashlib.sha256()
   try:
    with os.fdopen(fd,'wb') as f:
