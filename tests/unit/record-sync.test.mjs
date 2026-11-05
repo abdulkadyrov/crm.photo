@@ -78,3 +78,10 @@ test('bulk child creation resolves parent records from the same atomic batch',as
  const queue=await all(db,'syncQueue');assert.equal(queue.length,4);assert.ok(queue.every(q=>q.scope==='p'));
  assert.equal((await get(db,'orders','o')).studentId,'s');db.close();
 });
+test('sync engine can switch to a reopened database after the old connection closes',async()=>{
+ navigator.onLine=false;const first=await database(),name=first.name,client=engine(first);first.close();
+ await assert.rejects(client.put('projects',{id:'p',name:'Closed connection'}),error=>error?.name==='InvalidStateError');
+ const second=await req(indexedDB.open(name,7));client.setDatabase(second);
+ await client.put('projects',{id:'p',name:'Recovered'});
+ assert.equal((await get(second,'projects','p')).name,'Recovered');second.close();
+});

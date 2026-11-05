@@ -558,6 +558,12 @@ p {
   overflow: auto;
 }
 
+.inline-media-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
 .document-section {
   margin: 0 0 14px;
 }
@@ -3905,38 +3911,6 @@ button.mini-catalog-option {
   color: var(--muted);
 }
 
-.media-delete-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: inline-grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--error) 42%, var(--line));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--error) 14%, var(--card));
-  color: var(--error);
-  box-shadow: var(--shadow);
-}
-
-.media-delete-button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.media-tile-footer { display:grid;gap:8px;padding:9px; }
-.media-tile-footer > span { min-width:0;overflow:hidden;color:var(--muted);font-size:.7rem;font-weight:700;text-overflow:ellipsis;white-space:nowrap; }
-.media-actions-menu { position:relative; }
-.media-actions-menu summary { display:grid;min-height:44px;place-items:center;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);cursor:pointer;font-size:.74rem;font-weight:800;list-style:none; }
-.media-actions-menu summary::-webkit-details-marker { display:none; }
-.media-actions-menu[open] summary { border-color:var(--primary);color:var(--primary); }
-.media-actions-menu > div { display:grid;padding-top:7px; }
-.media-actions-menu .danger-button { min-height:44px;gap:6px; }
-.media-actions-menu .danger-button svg { width:17px;height:17px; }
-
 .final-results-panel {
   align-content: start;
 }
@@ -5310,8 +5284,8 @@ button.mini-catalog-option {
   }
 
   .student-detail-main { display: contents; }
-  .student-order-panel { order: 1; }
-  .student-overview-card { order: 2; }
+  .student-overview-card { order: 1; }
+  .student-order-panel { order: 2; }
   [data-student-detail-section="checklist"] { order: 3; }
   [data-student-detail-section="media"] { order: 4; }
   .student-detail-results { order: 5; }
@@ -5365,8 +5339,7 @@ button.mini-catalog-option {
 
   .project-button-row { grid-template-columns:minmax(0,1fr);gap:10px; }
   .project-button-row .equal-button { min-height:54px;padding:10px 14px;font-size:.9rem;line-height:1.25; }
-  .student-status-options { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .student-status-options button:first-child { grid-column:1/-1; }
+  .student-status-options button { padding:6px 3px;font-size:.68rem; }
   .student-order-panel { gap:16px; }
   .student-order-quick-actions { gap:8px; }
   .student-order-quick-actions > * { min-height:52px; }

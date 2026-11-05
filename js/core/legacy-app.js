@@ -48,6 +48,7 @@ import {
 let DB_NAME = "school-photo-flow";
 let cloudImportInProgress = false;
 let recordSync = null;
+let databaseReconnect = null;
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
 const DB_VERSION = 7;
@@ -467,12 +468,39 @@ function tx(storeName, mode = "readonly") {
   return state.db.transaction(storeName, mode).objectStore(storeName);
 }
 
+function isClosingDatabaseError(error) {
+  return error?.name === "InvalidStateError" || /database connection is closing/i.test(String(error?.message || error));
+}
+
+async function reconnectDatabase() {
+  if (!databaseReconnect) {
+    databaseReconnect = openDb().then((database) => {
+      state.db = database;
+      recordSync?.setDatabase?.(database);
+      return database;
+    }).finally(() => { databaseReconnect = null; });
+  }
+  return databaseReconnect;
+}
+
+async function withDatabaseReconnect(operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isClosingDatabaseError(error)) throw error;
+    await reconnectDatabase();
+    return operation();
+  }
+}
+
 function getAll(storeName) {
-  return new Promise((resolve, reject) => {
-    const request = tx(storeName).getAll();
+  return withDatabaseReconnect(() => new Promise((resolve, reject) => {
+    let request;
+    try { request = tx(storeName).getAll(); }
+    catch (error) { reject(error); return; }
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error);
-  });
+  }));
 }
 
 function put(storeName, value) {
@@ -486,12 +514,12 @@ function put(storeName, value) {
       }
     } catch (error) { notify(error.message); return Promise.reject(error); }
   }
-  return recordSync.put(storeName,value,state.data[storeName]?.find(row=>row.id===value.id));
+  return withDatabaseReconnect(() => recordSync.put(storeName,value,state.data[storeName]?.find(row=>row.id===value.id)));
 }
 
 function del(storeName, id) {
   try { assertCloudWrite(storeName, {id}, true); } catch(e) { notify(e.message); return Promise.reject(e); }
-  return recordSync.del(storeName,id,state.data[storeName]?.find(row=>row.id===id));
+  return withDatabaseReconnect(() => recordSync.del(storeName,id,state.data[storeName]?.find(row=>row.id===id)));
 }
 
 function clearStore(storeName) {
@@ -2094,18 +2122,11 @@ function queueList(order) {
 function mediaTile(item) {
   const url = URL.createObjectURL(item.blob);
   const node = item.type === "video"
-    ? `<video src="${url}" controls muted title="${escapeAttr(item.fileName)}"></video>`
-    : `<button class="media-tile-button" data-view-media="${item.id}" type="button" title="${escapeAttr(item.fileName)}"><img src="${url}" alt="${escapeAttr(item.fileName)}" loading="lazy" /></button>`;
+    ? `<video src="${url}" muted playsinline aria-hidden="true"></video>`
+    : `<img src="${url}" alt="${escapeAttr(item.fileName || "Фотография")}" loading="lazy" />`;
   return `
     <figure class="media-tile">
-      ${node}
-      <figcaption class="media-tile-footer">
-        <span>${escapeHtml(item.fileName || (item.type === "video" ? "Видео" : "Фотография"))}</span>
-        <details class="media-actions-menu">
-          <summary>Действия</summary>
-          <div><button class="danger-button compact" data-delete-media="${item.id}" type="button"><span data-icon="trash"></span>Удалить файл</button></div>
-        </details>
-      </figcaption>
+      <button class="media-tile-button" data-view-media="${item.id}" type="button" aria-label="Открыть ${item.type === "video" ? "видео" : "фотографию"}">${node}</button>
     </figure>
   `;
 }
@@ -5642,16 +5663,17 @@ function showMediaPreview(mediaId) {
   const url = URL.createObjectURL(media.blob);
   showInlineMediaPreview({
     url,
-    title: media.fileName || "Медиа",
+    title: media.type === "video" ? "Видео" : "Фотография",
     isVideo: media.type === "video",
-    revokeOnClose: true
+    revokeOnClose: true,
+    onDelete: () => deleteMedia(mediaId)
   });
 }
 
 async function deleteMedia(mediaId) {
   const media = mediaById(mediaId);
-  if (!media) return;
-  if (!confirm(`Удалить файл «${media.fileName || "медиа"}» без возможности восстановления?`)) return;
+  if (!media) return false;
+  if (!confirm(`Удалить файл «${media.fileName || "медиа"}» без возможности восстановления?`)) return false;
   for (const order of state.data.orders) {
     const nextItems = (order.items || []).map((item) => ({
       ...item,
@@ -5666,9 +5688,10 @@ async function deleteMedia(mediaId) {
   notify("Файл удален.");
   state.preserveScroll = true;
   render();
+  return true;
 }
 
-function showInlineMediaPreview({ url, title = "Просмотр", isVideo = false, revokeOnClose = false }) {
+function showInlineMediaPreview({ url, title = "Просмотр", isVideo = false, revokeOnClose = false, onDelete = null }) {
   if (!url) return;
   document.querySelector(".inline-media-backdrop")?.remove();
   const panel = document.createElement("div");
@@ -5682,6 +5705,7 @@ function showInlineMediaPreview({ url, title = "Просмотр", isVideo = fal
         <button class="icon-button" data-close-inline-media type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
       ${isVideo ? `<video class="reference-preview-media" src="${escapeAttr(url)}" controls playsinline></video>` : `<img class="reference-preview-media" src="${escapeAttr(url)}" alt="${escapeAttr(title)}" />`}
+      ${onDelete ? '<div class="inline-media-actions"><button class="danger-button" data-delete-inline-media type="button"><span data-icon="trash"></span>Удалить</button></div>' : ""}
     </section>
   `;
   const close = () => {
@@ -5689,6 +5713,18 @@ function showInlineMediaPreview({ url, title = "Просмотр", isVideo = fal
     panel.remove();
   };
   panel.querySelector("[data-close-inline-media]")?.addEventListener("click", close);
+  panel.querySelector("[data-delete-inline-media]")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      if (await onDelete?.()) close();
+      else button.disabled = false;
+    } catch (error) {
+      console.error("Не удалось удалить медиа", error);
+      notify("Не удалось удалить файл. Попробуйте ещё раз.");
+      button.disabled = false;
+    }
+  });
   panel.addEventListener("click", (event) => {
     if (event.target === panel) close();
   });
