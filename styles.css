@@ -5289,8 +5289,8 @@ button.mini-catalog-option {
 
   .student-detail-main,
   .student-order-column { display: contents; }
-  .student-overview-card { order: 1; }
-  .student-order-summary-panel { order: 2; }
+  .student-order-summary-panel { order: 1; }
+  .student-overview-card { order: 2; }
   [data-student-detail-section="checklist"] { order: 3; }
   [data-student-detail-section="media"] { order: 4; }
   .student-detail-results { order: 5; }

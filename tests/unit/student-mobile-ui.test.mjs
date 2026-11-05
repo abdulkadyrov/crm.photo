@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const root = new URL('../../', import.meta.url);
 
-test('mobile student UI keeps order setup near overview and moves controls below media', async()=>{
+test('mobile student UI puts service selection first and moves editing controls below media', async()=>{
   const [app, css] = await Promise.all([
     readFile(new URL('js/core/legacy-app.js', root), 'utf8'),
     readFile(new URL('styles.css', root), 'utf8')
@@ -14,11 +14,16 @@ test('mobile student UI keeps order setup near overview and moves controls below
   assert.match(app, /onDelete: \(\) => deleteMedia\(mediaId\)/);
   assert.match(app, /data-set-order-status=/);
   assert.match(css, /\.student-detail-main\s*,\s*\.student-order-column\s*\{\s*display:\s*contents/);
-  assert.match(css, /\.student-overview-card\s*\{\s*order:\s*1/);
-  assert.match(css, /\.student-order-summary-panel\s*\{\s*order:\s*2/);
+  assert.match(css, /\.student-order-summary-panel\s*\{\s*order:\s*1/);
+  assert.match(css, /\.student-overview-card\s*\{\s*order:\s*2/);
   assert.match(css, /\.student-order-controls-panel\s*\{\s*order:\s*6/);
   assert.match(app, /student-order-summary-panel[\s\S]*data-student-detail-section="overview"/);
   assert.match(app, /student-order-controls-panel[\s\S]*data-student-detail-section="order"/);
+  const orderSetup = app.match(/student-order-summary-panel[\s\S]*?<\/aside>/)?.[0] || '';
+  const orderControls = app.match(/student-order-controls-panel[\s\S]*?<\/aside>/)?.[0] || '';
+  assert.doesNotMatch(orderSetup, /data-open-montage|data-edit-student/);
+  assert.match(orderControls, /data-open-montage/);
+  assert.match(orderControls, /data-edit-student/);
   assert.doesNotMatch(css, /\.student-status-options\s*\{\s*grid-template-columns:repeat\(2/);
   assert.match(css, /\.project-button-row\s*\{\s*grid-template-columns:\s*minmax\(0,1fr\)/);
 });

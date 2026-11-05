@@ -1955,11 +1955,6 @@ function renderStudent() {
       <div class="grid student-order-column">
       <aside class="panel grid student-order-panel student-order-summary-panel student-detail-section ${activeStudentDetailTab === "overview" ? "is-active" : ""}" data-student-detail-section="overview">
         <h2 class="card-title">Заказ</h2>
-        <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
-        <div class="student-order-quick-actions">
-          <button class="primary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
-          <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать</button>
-        </div>
         <div class="field-label">
           <span>Услуги ученика</span>
           <div class="service-dropdown-picker">
@@ -1979,6 +1974,10 @@ function renderStudent() {
         </div>
       </aside>
       <aside class="panel grid student-order-panel student-order-controls-panel student-detail-section ${activeStudentDetailTab === "order" ? "is-active" : ""}" data-student-detail-section="order">
+        <div class="student-order-quick-actions">
+          <button class="primary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
+          <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать</button>
+        </div>
         <div class="student-status-control">
           <div><strong>Статус заказа</strong><small>Автоматический статус меняется по чеклисту</small></div>
           <div class="student-status-options" role="group" aria-label="Статус заказа">
