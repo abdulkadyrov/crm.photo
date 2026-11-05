@@ -1,3 +1,4 @@
+import { recognizeMonitorPhoto } from './monitor-roster.js';
 import { createPhotoCrop } from './roster-photo-crop.js';
 import { extractPhotoNames, mergePhotoNames } from './roster-photo-parser.js';
 import { parseRoster } from './class-roster.js';
@@ -37,6 +38,7 @@ export function mountRosterPhotoImport(host, onImport) {
   host.innerHTML = `<details><summary>Добавить по фотографиям</summary>
     <p>Выберите до 10 фото одного класса. Фотографии обрабатываются на устройстве. При первом использовании потребуется интернет для загрузки распознавания.</p>
     <label class="field-label">Фотографии списка<input class="input" type="file" data-photos accept="image/jpeg,image/png,image/webp" multiple></label>
+    <label class="row"><input type="checkbox" data-monitor-mode>Фото монитора: убрать полосы и выровнять строки</label>
     <div data-photo-crops></div>
     <div class="row"><button class="secondary-button" type="button" data-recognize>Распознать фото</button><button class="secondary-button" type="button" data-cancel hidden>Отменить распознавание</button></div>
     <p role="status" data-photo-status></p><div data-photo-sources class="roster-photo-sources"></div>
@@ -71,7 +73,7 @@ export function mountRosterPhotoImport(host, onImport) {
   async function stop() {
     run++; const active = worker; worker = null;
     if (active) await active.terminate();
-    if (!disposed) { start.disabled = false; input.disabled = false; cancel.hidden = true; status.textContent = 'Распознавание отменено. Список класса не изменён.'; }
+    if (!disposed) { start.disabled = false; input.disabled = false; q('[data-monitor-mode]').disabled = false; cancel.hidden = true; status.textContent = 'Распознавание отменено. Список класса не изменён.'; }
   }
   cancel.onclick = stop;
   start.onclick = async () => {
@@ -79,9 +81,10 @@ export function mountRosterPhotoImport(host, onImport) {
     const files = [...input.files];
     if (!files.length || files.length > 10) { status.textContent = 'Выберите от 1 до 10 фотографий одного класса.'; return; }
     if (files.some(file => !/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 20 * 1024 * 1024)) { status.textContent = 'Нужны JPG, PNG или WebP размером до 20 МБ каждый.'; return; }
+    const monitorMode = q('[data-monitor-mode]').checked;
     const selections = crops.map(item => ({...item.crop}));
     const token = ++run;
-    start.disabled = true; input.disabled = true; cancel.hidden = false; invalidate();
+    start.disabled = true; input.disabled = true; q('[data-monitor-mode]').disabled = true; cancel.hidden = false; invalidate();
     q('[data-photo-result]').hidden = true; clearURLs(); q('[data-photo-sources]').replaceChildren();
     status.textContent = 'Подготовка распознавания…';
     let active;
@@ -90,17 +93,29 @@ export function mountRosterPhotoImport(host, onImport) {
       const Tesseract = await loadLibrary();
       if (token !== run) return;
       active = await Tesseract.createWorker('rus', 1, {workerPath: asset('worker.min.js'), corePath: asset(''), langPath: asset('').replace(/\/$/, ''), workerBlobURL: false,
-        logger: event => { if (token === run && event.status === 'recognizing text') status.textContent = `Фото ${pages.length + 1} из ${files.length}: ${Math.round(event.progress * 100)}%`; }});
+        logger: event => { if (!monitorMode && token === run && event.status === 'recognizing text') status.textContent = `Фото ${pages.length + 1} из ${files.length}: ${Math.round(event.progress * 100)}%`; }});
       if (token !== run) return;
       worker = active;
       await active.setParameters({ tessedit_pageseg_mode: '6', thresholding_method: '2' });
       for (const [index, file] of files.entries()) {
         if (token !== run) return;
-        const canvas = await prepareImage(file, selections[index]);
-        const {data} = await active.recognize(canvas);
-        if (token !== run) return;
         const source = `Фото ${index + 1}`;
-        pages.push({source, rows: extractPhotoNames(data.text, source)});
+        let data, rows;
+        if (monitorMode) {
+          status.textContent = `${source}: убираем полосы и выравниваем строки…`;
+          const recognized = await recognizeMonitorPhoto(file, selections[index], active, {
+            source, isCancelled: () => token !== run,
+            onProgress: (line, count) => { if (token === run) status.textContent = `${source} из ${files.length}: строка ${line} из ${count}`; }
+          });
+          if (!recognized || token !== run) return;
+          data = {text: recognized.text}; rows = recognized.rows;
+        } else {
+          const canvas = await prepareImage(file, selections[index]);
+          ({data} = await active.recognize(canvas));
+          rows = extractPhotoNames(data.text, source);
+        }
+        if (token !== run) return;
+        pages.push({source, rows});
         const details = document.createElement('details'), summary = document.createElement('summary');
         summary.textContent = `${source} · ${file.name} · найдено строк: ${pages.at(-1).rows.length}`;
         const img = document.createElement('img');
@@ -109,6 +124,8 @@ export function mountRosterPhotoImport(host, onImport) {
         details.append(summary, img, raw); q('[data-photo-sources]').append(details);
       }
       const merged = mergePhotoNames(pages);
+      const inferred = pages.flatMap(page => page.rows.filter(row => row.numberInferred));
+      if (inferred.length) merged.warnings.push('Часть номеров восстановлена по порядку соседних строк. Проверьте номера и полноту списка.');
       names.value = merged.rows.map(row => row.name).join('\n');
       q('[data-photo-warnings]').replaceChildren(...merged.warnings.map(message => { const li = document.createElement('li'); li.textContent = message; return li; }));
       q('[data-photo-result]').hidden = false;
@@ -118,7 +135,7 @@ export function mountRosterPhotoImport(host, onImport) {
     } finally {
       if (active && worker === active) worker = null;
       if (active) await active.terminate();
-      if (token === run && !disposed) { start.disabled = false; input.disabled = false; cancel.hidden = true; }
+      if (token === run && !disposed) { start.disabled = false; input.disabled = false; q('[data-monitor-mode]').disabled = false; cancel.hidden = true; }
     }
   };
   return () => { disposed = true; void stop(); clearURLs(); crops.forEach(item => item.dispose()); };

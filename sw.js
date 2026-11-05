@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v117";
+const CACHE_VERSION = "v111";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -82,13 +82,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=117",
+  "./styles.css?v=98",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=117",
+  "./js/core/app.js?v=98",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=117",
+  "./js/core/legacy-app.js?v=98",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -104,10 +104,11 @@ const APP_SHELL = [
   "./js/services/roster-photo-parser.js",
   "./js/services/roster-photo-crop.js",
   "./js/services/roster-photo-import.js",
+  "./js/services/monitor-image.js",
+  "./js/services/monitor-roster.js",
   "./js/services/transfer-asset-loader.js",
   "./js/services/catalog-themes.js",
   "./js/services/teacher-broadcast.js",
-  "./js/services/class-links-transfer.js",
   "./assets/class-photo/class-photo-a4.png",
   "./js/data/migrations.js",
   "./js/data/repositories/base-repository.js",
