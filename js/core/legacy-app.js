@@ -1,3 +1,4 @@
+import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
@@ -2145,7 +2146,7 @@ function finalPrintA4Card(work) {
 function renderCatalog() {
   setShell({ heading: "Каталог услуг", context: "Витрина", summary: "Покажите детям и родителям доступные варианты" });
   const sections = catalogDisplaySections();
-  const categories = serviceCategoryOptions({ includeDefaults: false });
+  const categories = [...new Set([...CATALOG_THEMES, ...serviceCategoryOptions({ includeDefaults: false })])];
   const hasUncategorized = state.data.catalog.some((item) => !serviceCategory(item));
   view.innerHTML = `
     <section class="catalog-page">
@@ -2345,7 +2346,7 @@ function serviceMatchesCatalogAudience(item) {
 function serviceMatchesCatalogCategory(item) {
   if (state.catalogCategory === "all") return true;
   if (state.catalogCategory === SERVICE_UNCATEGORIZED) return !serviceCategory(item);
-  return serviceCategory(item) === state.catalogCategory;
+  return matchesCatalogTheme(item, state.catalogCategory) || serviceCategory(item) === state.catalogCategory;
 }
 
 function serviceMatchesCatalogQuery(item) {
@@ -2645,12 +2646,15 @@ function miniCatalogToggle(item, studentId, selected = false) {
 
 function showCatalogServiceViewer(itemId, browsing = null) {
   const context = browsing || {
-    audience: state.catalogAudience, category: state.catalogCategory,
+    audience: "all", category: "all",
     restore: captureDialogReturn(document, window)
   };
-  const candidates = publicOrderedServices(state.data.catalog).filter(service =>
+  const ordered = publicOrderedServices(state.data.catalog);
+  const selected = catalogItemById(itemId);
+  if (selected && !ordered.some(service => service.id === itemId)) ordered.push(selected);
+  const candidates = ordered.filter(service =>
     (context.audience === "all" || serviceGender(service) === "unisex" || serviceGender(service) === context.audience) &&
-    (context.category === "all" || (context.category === "Интервью" ? /интервью/i.test(serviceName(service)) || serviceCategory(service) === "Интервью" : context.category === SERVICE_UNCATEGORIZED ? !serviceCategory(service) : serviceCategory(service) === context.category)));
+    (context.category === "all" || matchesCatalogTheme(service, context.category) || (context.category === "Интервью" ? /интервью/i.test(serviceName(service)) || serviceCategory(service) === "Интервью" : context.category === SERVICE_UNCATEGORIZED ? !serviceCategory(service) : serviceCategory(service) === context.category)));
   const chosenId = candidates.some(service => service.id === itemId) ? itemId : candidates[0]?.id;
   if (!chosenId) { notify("В этой категории пока нет услуг."); return; }
   itemId = chosenId;
@@ -2676,18 +2680,19 @@ function showCatalogServiceViewer(itemId, browsing = null) {
       <div class="card-header">
         <div>
           <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
-          <p class="muted">${escapeHtml(formatPrice(item.price))}</p>
+          <p class="muted">${escapeHtml(formatPrice(item.price))}${context.studentId ? ` · ${studentServiceQuantity(studentById(context.studentId), item.id)} шт.` : ""}</p>
         </div>
         <button class="icon-button" data-close-catalog-modal type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
       <div class="chip-row" aria-label="Для кого">${[["all","Все"],["boys","Мальчики"],["girls","Девочки"]].map(([value,label]) => `<button class="chip ${context.audience === value ? "active" : ""}" data-browse-audience="${value}" aria-pressed="${context.audience === value}">${label}</button>`).join("")}</div>
-      <div class="chip-row" aria-label="Категории">${["all",...new Set([...serviceCategoryOptions({includeDefaults:false}),"Интервью"])].map(value => `<button class="chip ${context.category === value ? "active" : ""}" data-browse-category="${escapeAttr(value)}" aria-pressed="${context.category === value}">${escapeHtml(value === "all" ? "Все категории" : value)}</button>`).join("")}</div>
+      <div class="chip-row" aria-label="Категории">${["all",...new Set([...CATALOG_THEMES,...serviceCategoryOptions({includeDefaults:false}),"Интервью"])].map(value => `<button class="chip ${context.category === value ? "active" : ""}" data-browse-category="${escapeAttr(value)}" aria-pressed="${context.category === value}">${escapeHtml(value === "all" ? "Все категории" : value)}</button>`).join("")}</div>
       <div class="catalog-browser-navigation"><button class="secondary-button compact" data-browse-prev ${currentIndex === 0 ? "disabled" : ""}>↑ Назад</button><span role="status">${currentIndex + 1} / ${candidates.length}</span><button class="secondary-button compact" data-browse-next ${currentIndex === candidates.length - 1 ? "disabled" : ""}>Далее ↓</button></div>
       </div>
       <div data-browse-swipe aria-label="Свайп для следующей или предыдущей услуги">
       ${serviceParentResultMockup(item)}
       ${media}
       </div>
+      ${context.studentId ? studentServiceCommentPreview(context.studentId, item.id) : ""}
       <div class="catalog-modal-copy">
         <div class="catalog-card-badges">
           ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
@@ -2749,42 +2754,10 @@ function showCatalogServiceViewer(itemId, browsing = null) {
 }
 
 function showStudentServiceQuickPreview(itemId, studentId = "") {
-  const item = catalogItemById(itemId);
-  if (!item) return;
-  const student = studentId ? studentById(studentId) : null;
-  const quantity = student ? studentServiceQuantity(student, item.id) : 1;
-  document.querySelector(".student-service-preview-backdrop")?.remove();
-  const imageUrl = servicePreviewImageDataUrl(item);
-  const videoUrl = servicePreviewVideoDataUrl(item);
-  const category = serviceCategory(item);
-  const description = serviceShortDescription(item) || serviceDescription(item) || "Краткое описание можно добавить в услуге.";
-  const preview = imageUrl
-    ? `<img class="student-service-preview-image" src="${imageUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
-    : videoUrl
-      ? `<video class="student-service-preview-image" src="${videoUrl}" controls playsinline></video>`
-      : `<div class="student-service-preview-image empty">Нет preview</div>`;
-  const panel = document.createElement("div");
-  panel.className = "qr-panel-backdrop student-service-preview-backdrop";
-  panel.innerHTML = `
-    <section class="qr-panel student-service-preview-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(serviceName(item))}">
-      <div class="card-header">
-        <div>
-          <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
-          <p class="muted">${escapeHtml(category || formatPrice(item.price))}${student ? ` · ${quantity} шт. · ${escapeHtml(formatMoney(parseMoney(item.price) * quantity))}` : ""}</p>
-        </div>
-        <button class="icon-button" data-close-student-service-preview type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
-      </div>
-      ${preview}
-      ${studentId ? studentServiceCommentPreview(studentId, item.id) : ""}
-      <p class="student-service-preview-text">${escapeHtml(description)}</p>
-    </section>
-  `;
-  const close = () => panel.remove();
-  panel.addEventListener("click", (event) => {
-    if (event.target === panel || event.target.closest("[data-close-student-service-preview]")) close();
+  showCatalogServiceViewer(itemId, {
+    audience: "all", category: "all", studentId,
+    restore: captureDialogReturn(document, window)
   });
-  document.body.append(panel);
-  injectIcons();
 }
 
 function studentServiceCommentPreview(studentId, itemId) {
@@ -4537,8 +4510,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-upload-catalog-preview]").forEach((node) => node.addEventListener("click", () => uploadCatalogPreview(node.dataset.uploadCatalogPreview)));
   view.querySelectorAll("[data-preview-service-detail]").forEach((node) => node.addEventListener("click", () => {
     const item = catalogItemById(node.dataset.previewServiceDetail);
-    const url = servicePreviewImageDataUrl(item);
-    if (url) showInlineMediaPreview({ url, title: serviceName(item) });
+    if (item) showCatalogServiceViewer(item.id);
   }));
   view.querySelectorAll("[data-preview-url]").forEach((node) => node.addEventListener("click", () => {
     showInlineMediaPreview({
