@@ -5636,3 +5636,17 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .admin-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .admin-metrics dt { font-size:13px; }
 .admin-metrics dd { font-size:24px; font-weight:700; margin:4px 0; }
+
+.service-picker-actions {
+  position: sticky;
+  bottom: -16px;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px -16px -16px;
+  padding: 12px 16px;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}

@@ -2522,27 +2522,36 @@ function servicePickerCatalogCard(item, selected = false) {
 
 function showServicePickerPanel({ selectedIds = [], allowEmpty = false, onApply }) {
   document.querySelector(".service-picker-backdrop")?.remove();
+  const restore = captureDialogReturn(document, window);
   const selected = new Set(normalizeCatalogIds(selectedIds));
   let savingSelection = false;
   const panel = document.createElement("div");
   panel.className = "catalog-modal-backdrop service-picker-backdrop";
+  const close = () => {
+    document.removeEventListener("keydown", onKeydown);
+    panel.remove();
+    restore();
+  };
+  const onKeydown = (event) => {
+    if (event.key === "Escape" && !savingSelection) { event.preventDefault(); close(); }
+  };
   const saveAndClose = async () => {
     if (savingSelection) return;
     const ids = Array.from(selected);
     if (!ids.length && !allowEmpty) return notify("Выберите хотя бы одну услугу.");
     savingSelection = true;
-    panel.querySelectorAll("[data-save-service-picker]").forEach((node) => {
+    panel.querySelectorAll("[data-save-service-picker], [data-close-service-picker]").forEach((node) => {
       node.disabled = true;
       node.setAttribute("aria-busy", "true");
     });
     try {
       await onApply(ids);
-      panel.remove();
+      close();
     } catch (error) {
       console.error("Не удалось сохранить услуги ученика", error);
       notify("Не удалось сохранить выбор. Попробуйте ещё раз.");
       savingSelection = false;
-      panel.querySelectorAll("[data-save-service-picker]").forEach((node) => {
+      panel.querySelectorAll("[data-save-service-picker], [data-close-service-picker]").forEach((node) => {
         node.disabled = false;
         node.removeAttribute("aria-busy");
       });
@@ -2567,12 +2576,15 @@ function showServicePickerPanel({ selectedIds = [], allowEmpty = false, onApply 
           <h2 class="card-title">Выбрать из каталога</h2>
           <p class="muted" data-service-picker-count>${selected.size} выбрано</p>
         </div>
-        <button class="icon-button service-picker-close" data-save-service-picker type="button" aria-label="Сохранить выбор и закрыть" title="Сохранить выбор и закрыть"><span data-icon="close"></span></button>
+        <button class="icon-button service-picker-close" data-close-service-picker type="button" aria-label="Закрыть" title="Закрыть без изменений"><span data-icon="close"></span></button>
       </div>
       <div class="service-picker-grid" data-service-picker-grid></div>
+      <div class="service-picker-actions"><button class="secondary-button" data-close-service-picker type="button">Отмена</button><button class="primary-button" data-save-service-picker type="button">Сохранить выбор</button></div>
     </section>
   `;
   panel.querySelectorAll("[data-save-service-picker]").forEach((node) => node.addEventListener("click", saveAndClose));
+  panel.querySelectorAll("[data-close-service-picker]").forEach(node => node.addEventListener("click", () => { if (!savingSelection) close(); }));
+  document.addEventListener("keydown", onKeydown);
   document.body.append(panel);
   renderCards();
   injectIcons();
