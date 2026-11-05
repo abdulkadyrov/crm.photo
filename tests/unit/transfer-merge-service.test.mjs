@@ -6,8 +6,36 @@ import {
   defaultTransferResolution,
   detectTransferProjectIdentity,
   mergeOrderRecord,
+  mergeStudentRecord,
   mergeTransferRecord
 } from "../../js/services/transfer-merge-service.js";
+
+test("repeat import updates service quantity and comment without duplicating the student", () => {
+  const existing = {
+    id: "student-1",
+    firstName: "Адам",
+    paymentStatus: "paid",
+    catalogIds: ["service-photo"],
+    selectedServices: [{ serviceId: "service-photo", quantity: 1, comment: "старый комментарий" }]
+  };
+  const incoming = {
+    id: "student-1",
+    firstName: "Адам",
+    paymentStatus: "unpaid",
+    catalogIds: ["service-photo", "service-mma"],
+    selectedServices: [
+      { serviceId: "service-photo", quantity: 2, comment: "две фотографии" },
+      { serviceId: "service-mma", quantity: 3, comment: "UFC, перчатки" }
+    ]
+  };
+
+  const merged = mergeStudentRecord(existing, incoming);
+
+  assert.equal(merged.id, "student-1");
+  assert.equal(merged.paymentStatus, "paid");
+  assert.deepEqual(merged.catalogIds, ["service-photo", "service-mma"]);
+  assert.deepEqual(merged.selectedServices, incoming.selectedServices);
+});
 
 test("project and class re-imports default to safe merge", () => {
   const existing = { id: "project-bachiyurt" };
