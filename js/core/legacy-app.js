@@ -10069,6 +10069,7 @@ function normalizeTransferData(rawData, allowed) {
     data[key] = allowed.has(key) ? normalizeTransferRecords(key, rawData[key]) : [];
   });
   data.tasks = Array.isArray(rawData.tasks) ? rawData.tasks.map(clonePlainRecord) : [];
+  mergeTransferTasksIntoOrders(data.orders, data.tasks);
   data.statuses = Array.isArray(rawData.statuses) ? rawData.statuses.map(clonePlainRecord) : [];
   if (allowed.has("settings") && data.statuses.length) {
     const byId = new Map(data.settings.map((record) => [record.id, record]));
@@ -10076,6 +10077,26 @@ function normalizeTransferData(rawData, allowed) {
     data.settings = Array.from(byId.values());
   }
   return data;
+}
+
+function mergeTransferTasksIntoOrders(orders, tasks) {
+  if (!Array.isArray(orders) || !Array.isArray(tasks) || !tasks.length) return;
+  const ordersById = new Map(orders.map((order) => [order.id, order]));
+  const ordersByStudentId = new Map(orders.filter((order) => order.studentId).map((order) => [order.studentId, order]));
+  tasks.forEach((task) => {
+    const order = ordersById.get(task.orderId) || ordersByStudentId.get(task.studentId);
+    if (!order) return;
+    const item = clonePlainRecord(task);
+    delete item.orderId;
+    delete item.studentId;
+    const items = Array.isArray(order.items) ? order.items : [];
+    const identifiers = [item.id, item.taskId, item.type].filter(Boolean);
+    const duplicate = items.some((candidate) => identifiers.some((identifier) => (
+      candidate?.id === identifier || candidate?.taskId === identifier || candidate?.type === identifier
+    )));
+    if (!duplicate) items.push(item);
+    order.items = items;
+  });
 }
 
 function normalizeTransferRecords(dataKey, records) {

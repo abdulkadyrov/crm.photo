@@ -17,8 +17,28 @@ export function defaultBulkTransferResolution(mode = "auto") {
 
 export function mergeTransferRecord(dataKey, existing, incoming) {
   if (!existing) return incoming;
+  if (dataKey === "students") return mergeStudentRecord(existing, incoming);
   if (dataKey === "orders") return mergeOrderRecord(existing, incoming);
   return existing;
+}
+
+export function mergeStudentRecord(existing = {}, incoming = {}) {
+  const existingServices = normalizeSelectedServices(existing.selectedServices);
+  const incomingServices = normalizeSelectedServices(incoming.selectedServices);
+  const servicesById = new Map(existingServices.map((item) => [item.serviceId, item]));
+  incomingServices.forEach((item) => servicesById.set(item.serviceId, item));
+  const catalogIds = Array.from(new Set([
+    ...normalizeCatalogIds(existing),
+    ...normalizeCatalogIds(incoming),
+    ...servicesById.keys()
+  ]));
+  return {
+    ...incoming,
+    ...existing,
+    catalogId: existing.catalogId || incoming.catalogId || catalogIds[0] || "",
+    catalogIds,
+    selectedServices: Array.from(servicesById.values())
+  };
 }
 
 export function mergeOrderRecord(existing = {}, incoming = {}) {
@@ -89,6 +109,28 @@ export function normalizeProjectName(value) {
 
 function normalizeFileIds(fileIds) {
   return Array.isArray(fileIds) ? fileIds.filter(Boolean) : [];
+}
+
+function normalizeCatalogIds(student) {
+  return [student?.catalogId, ...(Array.isArray(student?.catalogIds) ? student.catalogIds : [])]
+    .map((id) => String(id || "").trim())
+    .filter(Boolean);
+}
+
+function normalizeSelectedServices(services) {
+  return (Array.isArray(services) ? services : [])
+    .map((item) => ({
+      ...item,
+      serviceId: String(item?.serviceId || item?.id || "").trim(),
+      quantity: normalizeQuantity(item?.quantity),
+      comment: String(item?.comment || "").trim()
+    }))
+    .filter((item) => item.serviceId);
+}
+
+function normalizeQuantity(value) {
+  const quantity = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 }
 
 function findMatchingOrderItemIndex(items, incoming) {
