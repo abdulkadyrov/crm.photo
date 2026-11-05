@@ -5656,3 +5656,25 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
   background: var(--card);
   border-top: 1px solid var(--line);
 }
+
+.catalog-floating-filters, .catalog-browser-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  background: var(--card);
+  border-radius: 16px;
+}
+.catalog-floating-filters .catalog-tabs, .catalog-browser-toolbar .chip-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin: 0;
+}
+.catalog-browser-toolbar .chip { flex: 0 0 auto; }
+.catalog-browser-navigation { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.catalog-browser-backdrop .catalog-modal { padding-top:0; }
+[data-browse-swipe] { touch-action: pan-x; }
+
+.catalog-browser-navigation [role="status"] { white-space:nowrap; flex-shrink:0; }

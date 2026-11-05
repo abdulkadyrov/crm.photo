@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v105";
+const CACHE_VERSION = "v106";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-pirate-captain", "child-boy-armored-tech-hero", "child-boy-medieval-knight",
@@ -101,6 +101,7 @@ const APP_SHELL = [
   "./js/data/kindergarten-ai-video-services.js",
   "./js/data/class-photo-service.js",
   "./js/services/class-roster.js",
+  "./js/services/transfer-asset-loader.js",
   "./assets/class-photo/class-photo-a4.png",
   "./js/data/migrations.js",
   "./js/data/repositories/base-repository.js",

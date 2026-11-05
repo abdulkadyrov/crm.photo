@@ -1,3 +1,4 @@
+import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
 import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js";
@@ -2161,6 +2162,7 @@ function renderCatalog() {
           <p class="muted catalog-pdf-progress" data-catalog-pdf-progress role="status" aria-live="polite" hidden></p>
         </div>
       </article>
+      <div class="catalog-floating-filters">
       <label class="search-box catalog-search">
         <span data-icon="search"></span>
         <input data-catalog-query placeholder="Найти услугу" value="${escapeAttr(state.catalogQuery)}" />
@@ -2178,6 +2180,7 @@ function renderCatalog() {
         </div>
       ` : ""}
       ${state.catalogCategory === CHILD_PORTRAIT_CATEGORY ? childPortraitCatalogFilters() : ""}
+      </div>
       <section class="catalog-feed">
         ${sections.map(catalogSection).join("") || empty("В каталоге пока нет услуг")}
       </section>
@@ -2640,7 +2643,18 @@ function miniCatalogToggle(item, studentId, selected = false) {
   `;
 }
 
-function showCatalogServiceViewer(itemId) {
+function showCatalogServiceViewer(itemId, browsing = null) {
+  const context = browsing || {
+    audience: state.catalogAudience, category: state.catalogCategory,
+    restore: captureDialogReturn(document, window)
+  };
+  const candidates = publicOrderedServices(state.data.catalog).filter(service =>
+    (context.audience === "all" || serviceGender(service) === "unisex" || serviceGender(service) === context.audience) &&
+    (context.category === "all" || (context.category === "Интервью" ? /интервью/i.test(serviceName(service)) || serviceCategory(service) === "Интервью" : context.category === SERVICE_UNCATEGORIZED ? !serviceCategory(service) : serviceCategory(service) === context.category)));
+  const chosenId = candidates.some(service => service.id === itemId) ? itemId : candidates[0]?.id;
+  if (!chosenId) { notify("В этой категории пока нет услуг."); return; }
+  itemId = chosenId;
+  const currentIndex = candidates.findIndex(service => service.id === itemId);
   const item = catalogItemById(itemId);
   if (!item) return;
   document.querySelector(".catalog-modal-backdrop")?.remove();
@@ -2655,9 +2669,10 @@ function showCatalogServiceViewer(itemId) {
   ].filter(Boolean).join("");
   const media = `<div class="catalog-modal-media">${mediaItems || `<div class="catalog-modal-image empty">Нет превью</div>`}</div>`;
   const panel = document.createElement("div");
-  panel.className = "catalog-modal-backdrop";
+  panel.className = "catalog-modal-backdrop catalog-browser-backdrop";
   panel.innerHTML = `
     <section class="catalog-modal" role="dialog" aria-modal="true" aria-label="${escapeAttr(serviceName(item))}">
+      <div class="catalog-browser-toolbar">
       <div class="card-header">
         <div>
           <h2 class="card-title">${escapeHtml(serviceName(item))}</h2>
@@ -2665,8 +2680,14 @@ function showCatalogServiceViewer(itemId) {
         </div>
         <button class="icon-button" data-close-catalog-modal type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
       </div>
+      <div class="chip-row" aria-label="Для кого">${[["all","Все"],["boys","Мальчики"],["girls","Девочки"]].map(([value,label]) => `<button class="chip ${context.audience === value ? "active" : ""}" data-browse-audience="${value}" aria-pressed="${context.audience === value}">${label}</button>`).join("")}</div>
+      <div class="chip-row" aria-label="Категории">${["all",...new Set([...serviceCategoryOptions({includeDefaults:false}),"Интервью"])].map(value => `<button class="chip ${context.category === value ? "active" : ""}" data-browse-category="${escapeAttr(value)}" aria-pressed="${context.category === value}">${escapeHtml(value === "all" ? "Все категории" : value)}</button>`).join("")}</div>
+      <div class="catalog-browser-navigation"><button class="secondary-button compact" data-browse-prev ${currentIndex === 0 ? "disabled" : ""}>↑ Назад</button><span role="status">${currentIndex + 1} / ${candidates.length}</span><button class="secondary-button compact" data-browse-next ${currentIndex === candidates.length - 1 ? "disabled" : ""}>Далее ↓</button></div>
+      </div>
+      <div data-browse-swipe aria-label="Свайп для следующей или предыдущей услуги">
       ${serviceParentResultMockup(item)}
       ${media}
+      </div>
       <div class="catalog-modal-copy">
         <div class="catalog-card-badges">
           ${isServicePopular(item) ? '<span class="catalog-card-badge popular">Популярное</span>' : ""}
@@ -2680,7 +2701,39 @@ function showCatalogServiceViewer(itemId) {
       <button class="secondary-button" data-close-catalog-modal type="button">Назад</button>
     </section>
   `;
-  const close = () => panel.remove();
+  const close = () => { panel.querySelectorAll('video').forEach(video => video.pause()); panel.remove(); context.restore(); };
+  const change = index => {
+    if (index < 0 || index >= candidates.length) return;
+    panel.querySelectorAll('video').forEach(video => video.pause());
+    showCatalogServiceViewer(candidates[index].id, context);
+  };
+  panel.querySelector('[data-browse-prev]').onclick = () => change(currentIndex - 1);
+  panel.querySelector('[data-browse-next]').onclick = () => change(currentIndex + 1);
+  for (const kind of ['audience','category']) panel.querySelectorAll(`[data-browse-${kind}]`).forEach(button => button.onclick = () => {
+    const next = {...context, [kind]:button.getAttribute(`data-browse-${kind}`)};
+    showCatalogServiceViewer(itemId, next);
+  });
+  let touch = null;
+  const swipe = panel.querySelector('[data-browse-swipe]');
+  swipe.addEventListener('touchstart', event => {
+    if (event.target.closest('video,button')) return;
+    const point = event.touches[0]; touch = {x:point.clientX,y:point.clientY};
+  }, {passive:true});
+  swipe.addEventListener('touchend', event => {
+    if (!touch) return;
+    const point = event.changedTouches[0], dx = point.clientX-touch.x, dy = point.clientY-touch.y;
+    touch = null;
+    const distance = Math.abs(dy) >= Math.abs(dx) ? dy : dx;
+    if (Math.abs(distance) > 60) change(currentIndex + (distance < 0 ? 1 : -1));
+  });
+  swipe.addEventListener('touchcancel', () => {touch = null;});
+  panel.addEventListener('keydown', event => {
+    if (event.target.closest('input,textarea,select,video')) return;
+    if (event.key === 'Escape') { event.preventDefault(); close(); }
+    if (['ArrowDown','ArrowRight','ArrowUp','ArrowLeft'].includes(event.key)) {
+      event.preventDefault(); change(currentIndex + (['ArrowDown','ArrowRight'].includes(event.key) ? 1 : -1));
+    }
+  });
   panel.querySelectorAll("[data-close-catalog-modal]").forEach((node) => node.addEventListener("click", close));
   panel.addEventListener("click", (event) => {
     if (event.target === panel) close();
@@ -2692,6 +2745,7 @@ function showCatalogServiceViewer(itemId) {
   });
   document.body.append(panel);
   injectIcons();
+  panel.querySelector("[data-close-catalog-modal]").focus({preventScroll:true});
 }
 
 function showStudentServiceQuickPreview(itemId, studentId = "") {
@@ -3795,6 +3849,8 @@ function showSettingsDetail(section) {
         </section>
         <section class="transfer-group">
           <h3 class="mini-heading">Все данные</h3>
+          <label class="checkbox-row"><input type="checkbox" data-backup-bundled />Включить встроенные шаблоны и видео CRM (большой архив)</label>
+          <p class="muted">Школы, классы, дети, учителя, заказы и ваши файлы сохраняются всегда. Без переключателя встроенные материалы каталога остаются ссылками на файлы приложения.</p>
           <div class="transfer-button-row">
             <button class="primary-button" data-action="export-all" type="button">Экспорт всех данных</button>
             <button class="secondary-button" data-import-zip type="button">Импорт всех данных</button>
@@ -8835,8 +8891,9 @@ async function importSettings(file) {
 }
 
 async function exportFullBackup() {
+  const includeBundled = Boolean(view.querySelector("[data-backup-bundled]")?.checked);
   return withBusy("Экспорт всех данных...", async () => {
-    const blob = createZip(await buildTransferExportFiles("full_backup"));
+    const blob = createZip(await buildTransferExportFiles("full_backup", {}, { includeBundled }));
     downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
     await updateStorageLocationSetting({ lastFullBackupAt: now(), filesAtLastBackup: currentBackupFileCount() });
     await recordOperatorEvent("export", { targetType: "full_backup" });
@@ -8875,9 +8932,9 @@ async function exportSettingsZip() {
   notify("Настройки экспортированы.");
 }
 
-async function buildTransferExportFiles(exportType, scope = {}) {
+async function buildTransferExportFiles(exportType, scope = {}, options = {}) {
   const data = buildTransferData(exportType, scope);
-  const mediaFiles = await collectTransferMediaFiles(data);
+  const mediaFiles = await collectTransferMediaFiles(data, options);
   const exportData = stripTransferMediaDataUrls(data);
   const manifest = {
     app: TRANSFER_APP_NAME,
@@ -8885,6 +8942,7 @@ async function buildTransferExportFiles(exportType, scope = {}) {
     exportType,
     exportedAt: now(),
     exportedBy: currentOperatorIdForAction({ warn: false }),
+    bundledAssetsIncluded: options.includeBundled !== false,
     containsMedia: mediaFiles.length > 0
   };
   return [
@@ -9792,22 +9850,32 @@ function transferTasksFromOrders(orders) {
   })));
 }
 
-async function collectTransferMediaFiles(data) {
+async function collectTransferMediaFiles(data, { includeBundled = true } = {}) {
+  const loadAsset = createTransferAssetLoader({ baseURI: document.baseURI, includeBundled });
+  let processed = 0;
+  const total = (data.services || []).length;
+  const progress = async message => {
+    const label = document.querySelector('.busy-card strong');
+    if (label) label.textContent = message;
+    await new Promise(resolve => setTimeout(resolve, 0));
+  };
   const files = [];
   const taken = new Set();
   for (const service of data.services || []) {
+    await progress(`Подготовка услуг: ${++processed} из ${total}. Детей: ${(data.students || []).length}`);
     const serviceId = safePath(service.id || uid("service"));
-    await addTransferAsset(files, taken, `media/services/${serviceId}/preview`, servicePreviewImageDataUrl(service));
-    await addTransferAsset(files, taken, `media/services/${serviceId}/preview_video`, servicePreviewVideoDataUrl(service));
+    await addTransferAsset(files, taken, `media/services/${serviceId}/preview`, servicePreviewImageDataUrl(service), loadAsset);
+    await addTransferAsset(files, taken, `media/services/${serviceId}/preview_video`, servicePreviewVideoDataUrl(service), loadAsset);
     for (const field of ["masterSrc", "previewSrc", "faceMaskSrc", "metadataSrc"]) {
-      await addTransferAsset(files, taken, `media/services/${serviceId}/asset_${field}`, service?.[field]);
+      await addTransferAsset(files, taken, `media/services/${serviceId}/asset_${field}`, service?.[field], loadAsset);
     }
     for (const angle of service.angles || []) {
       const angleId = safePath(angle.id || uid("angle"));
-      await addTransferAsset(files, taken, `media/services/${serviceId}/${angleId}`, angle.refDataUrl);
-      await addTransferAsset(files, taken, `media/services/${serviceId}/${angleId}_video`, angle.videoRefDataUrl);
+      await addTransferAsset(files, taken, `media/services/${serviceId}/${angleId}`, angle.refDataUrl, loadAsset);
+      await addTransferAsset(files, taken, `media/services/${serviceId}/${angleId}_video`, angle.videoRefDataUrl, loadAsset);
     }
   }
+  await progress("Подготовка фотографий, результатов и документов…");
   for (const item of data.media || []) {
     if (!item.blob) continue;
     const path = `media/student_files/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
@@ -9833,6 +9901,7 @@ async function collectTransferMediaFiles(data) {
     taken.add(path);
     files.push({ path, data: new Uint8Array(await blob.arrayBuffer()) });
   }
+  await progress(`Сборка ZIP: ${(data.students || []).length} детей, ${files.length} файлов…`);
   return files;
 }
 
@@ -9850,31 +9919,17 @@ function addDataUrlMediaFile(files, taken, basePath, dataUrl) {
   files.push({ path, data: parsed.bytes });
 }
 
-async function addTransferAsset(files, taken, basePath, source) {
+async function addTransferAsset(files, taken, basePath, source, loadAsset) {
   const value = String(source || "").trim();
   if (!value) return;
   const parsed = dataUrlToBytes(value);
-  if (parsed) {
-    addDataUrlMediaFile(files, taken, basePath, value);
-    return;
-  }
-  try {
-    const response = await fetch(new URL(value, document.baseURI).href, { cache: "no-store" });
-    if (!response.ok) return;
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (!bytes.length) return;
-    const extension = extensionForTransferAsset(value, response.headers.get("content-type"));
-    let path = `${basePath}.${extension}`;
-    let index = 2;
-    while (taken.has(path)) {
-      path = `${basePath}_${index}.${extension}`;
-      index += 1;
-    }
-    taken.add(path);
-    files.push({ path, data: bytes });
-  } catch (error) {
-    console.warn("Не удалось добавить медиа в экспорт услуг", value, error);
-  }
+  if (parsed) { addDataUrlMediaFile(files, taken, basePath, value); return; }
+  const asset = await loadAsset(value);
+  if (!asset) return;
+  const extension = extensionForTransferAsset(value, asset.contentType);
+  let path = `${basePath}.${extension}`, index = 2;
+  while (taken.has(path)) path = `${basePath}_${index++}.${extension}`;
+  taken.add(path); files.push({path, data: asset.bytes});
 }
 
 function extensionForTransferAsset(source, contentType = "") {
