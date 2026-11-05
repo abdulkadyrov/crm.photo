@@ -3352,6 +3352,10 @@ button.mini-catalog-option {
   gap: 14px;
 }
 
+.student-order-column {
+  align-content: start;
+}
+
 .student-order-panel > .muted {
   margin-top: -6px;
 }
@@ -5283,12 +5287,14 @@ button.mini-catalog-option {
     padding-bottom: 18px;
   }
 
-  .student-detail-main { display: contents; }
+  .student-detail-main,
+  .student-order-column { display: contents; }
   .student-overview-card { order: 1; }
-  .student-order-panel { order: 2; }
+  .student-order-summary-panel { order: 2; }
   [data-student-detail-section="checklist"] { order: 3; }
   [data-student-detail-section="media"] { order: 4; }
   .student-detail-results { order: 5; }
+  .student-order-controls-panel { order: 6; }
 
   .student-detail-section {
     scroll-margin-top: 12px;

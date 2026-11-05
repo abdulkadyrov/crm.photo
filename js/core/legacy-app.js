@@ -1952,7 +1952,8 @@ function renderStudent() {
           </article>
         </div>
       </div>
-      <aside class="panel grid student-order-panel student-detail-section ${activeStudentDetailTab === "order" ? "is-active" : ""}" data-student-detail-section="order">
+      <div class="grid student-order-column">
+      <aside class="panel grid student-order-panel student-order-summary-panel student-detail-section ${activeStudentDetailTab === "overview" ? "is-active" : ""}" data-student-detail-section="overview">
         <h2 class="card-title">Заказ</h2>
         <p class="muted">${escapeHtml(project?.name || "")}${project && klass ? " · " : ""}${escapeHtml(klass?.name || "")}</p>
         <div class="student-order-quick-actions">
@@ -1976,6 +1977,8 @@ function renderStudent() {
             </div>
           </div>
         </div>
+      </aside>
+      <aside class="panel grid student-order-panel student-order-controls-panel student-detail-section ${activeStudentDetailTab === "order" ? "is-active" : ""}" data-student-detail-section="order">
         <div class="student-status-control">
           <div><strong>Статус заказа</strong><small>Автоматический статус меняется по чеклисту</small></div>
           <div class="student-status-options" role="group" aria-label="Статус заказа">
@@ -2001,6 +2004,7 @@ function renderStudent() {
           <button class="danger-button" data-delete-student="${student.id}" type="button">Удалить ученика</button>
         </div>
       </aside>
+      </div>
     </section>
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
