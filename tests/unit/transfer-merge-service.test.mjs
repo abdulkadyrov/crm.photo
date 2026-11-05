@@ -5,10 +5,13 @@ import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
   detectTransferProjectIdentity,
+  mergeClassRecord,
   mergeOrderRecord,
   mergeStudentRecord,
   mergeTransferRecord
 } from "../../js/services/transfer-merge-service.js";
+
+test("safe class merge imports only the parent catalog link",()=>{const existing={id:"c1",name:"4А",teacher:{name:"Раяна"}};const incoming={id:"c1",name:"changed",parentCatalogUrl:"https://example.test/p/token",parentCatalogToken:"token"};assert.deepEqual(mergeClassRecord(existing,incoming),{...existing,parentCatalogUrl:incoming.parentCatalogUrl,parentCatalogToken:"token"});});
 
 test("repeat import updates service quantity and comment without duplicating the student", () => {
   const existing = {

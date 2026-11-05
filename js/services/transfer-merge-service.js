@@ -17,9 +17,16 @@ export function defaultBulkTransferResolution(mode = "auto") {
 
 export function mergeTransferRecord(dataKey, existing, incoming) {
   if (!existing) return incoming;
+  if (dataKey === "classes") return mergeClassRecord(existing, incoming);
   if (dataKey === "students") return mergeStudentRecord(existing, incoming);
   if (dataKey === "orders") return mergeOrderRecord(existing, incoming);
   return existing;
+}
+
+export function mergeClassRecord(existing = {}, incoming = {}) {
+  const next = { ...existing };
+  ["parentCatalogUrl", "parentCatalogToken", "parentCatalogUpdatedAt"].forEach((key) => { if (incoming[key]) next[key] = incoming[key]; });
+  return next;
 }
 
 export function mergeStudentRecord(existing = {}, incoming = {}) {

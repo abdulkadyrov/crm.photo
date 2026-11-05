@@ -1,4 +1,4 @@
-export const DEFAULT_TEACHER_MESSAGE = 'Здравствуйте, {учитель}!\nПишем по поводу фотосъёмки: {школа}, класс {класс}.\nПожалуйста, передайте родителям информацию о съёмке. Спасибо!';
+export const DEFAULT_TEACHER_MESSAGE = 'Здравствуйте, {учитель}!\nДля класса {класс}, {школа}, готова персональная ссылка на каталог:\n{ссылка}\nПожалуйста, отправьте её родителям этого класса. Спасибо!';
 
 export function teacherPhone(value) {
   let digits = String(value || '').replace(/\D/g, '');
@@ -8,8 +8,8 @@ export function teacherPhone(value) {
 }
 
 export function teacherMessage(template, recipient) {
-  const values = {учитель: recipient.name || 'уважаемый учитель', школа: recipient.school, класс: recipient.className};
-  return String(template).replace(/\{(учитель|школа|класс)\}/g, (_, key) => values[key] || '');
+  const values = {учитель: recipient.name || 'уважаемый учитель', школа: recipient.school, класс: recipient.className, ссылка: recipient.catalogUrl};
+  return String(template).replace(/\{(учитель|школа|класс|ссылка)\}/g, (_, key) => values[key] || '');
 }
 
 export function teacherWhatsAppUrl(phone, message) {
@@ -41,7 +41,7 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
       </header>
       <details class="teacher-template-panel">
         <summary><span><strong>Общий текст</strong><small>Шаблон для всех классов</small></span><span class="teacher-template-edit">Изменить</span></summary>
-        <div class="teacher-template-content"><textarea class="textarea" rows="5" data-template aria-label="Общий текст сообщения"></textarea><p>Можно использовать <code>{учитель}</code>, <code>{школа}</code> и <code>{класс}</code>.</p></div>
+        <div class="teacher-template-content"><textarea class="textarea" rows="7" data-template aria-label="Общий текст сообщения"></textarea><p>Можно использовать <code>{учитель}</code>, <code>{школа}</code>, <code>{класс}</code> и <code>{ссылка}</code>.</p></div>
       </details>
       <div class="teacher-broadcast-layout">
         <aside class="teacher-recipient-panel" aria-label="Учителя и классы">

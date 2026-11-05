@@ -1,4 +1,5 @@
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js";
+import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1311,6 +1312,7 @@ function classStudentSection(classId) {
           <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
         </div>
       </div>
+      ${klass.parentCatalogUrl ? `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted" style="overflow-wrap:anywhere">${escapeHtml(klass.parentCatalogUrl)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(klass.parentCatalogUrl)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div></article>` : `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted">Ссылка ещё не получена из Vakha Studio.</p></article>`}
       ${klass.teacher?.name ? `<article class="panel"><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</article>` : ""}
       ${documentsSection("group", klass.id)}
       <div class="student-list">
@@ -3839,6 +3841,7 @@ function showSettingsDetail(section) {
           <div class="transfer-button-row">
             <button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button>
             <button class="secondary-button" data-import-project type="button">Импорт проекта</button>
+            <button class="secondary-button" data-import-class-links type="button">Импорт только ссылок классов</button>
           </div>
         </section>
         <section class="transfer-group">
@@ -4105,11 +4108,12 @@ function templateEditorRow(item) {
 function bindViewActions() {
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
   view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
-    const recipients = state.data.classes.filter(klass => !node.dataset.teacherBroadcast || klass.projectId === node.dataset.teacherBroadcast).map(klass => ({id:klass.id, className:klass.name, school:projectById(klass.projectId)?.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || ''}));
+    const recipients = state.data.classes.filter(klass => !node.dataset.teacherBroadcast || klass.projectId === node.dataset.teacherBroadcast).map(klass => ({id:klass.id,className:klass.name,school:projectById(klass.projectId)?.name||'',name:klass.teacher?.name||'',phone:klass.teacher?.phone||'',catalogUrl:klass.parentCatalogUrl||''}));
     openTeacherBroadcast({recipients, draft:state.data.settings.find(item => item.id === 'teacher-broadcast-draft')?.value, restore:captureDialogReturn(document,window,node), save:async value => {await put('settings',stampUpdated({id:'teacher-broadcast-draft',value}));await refreshData();}});
   });
   view.querySelectorAll('[data-export-vakha]').forEach(node => node.onclick = () => exportProject(node.dataset.exportVakha, true));
   view.querySelectorAll("[data-class-teacher]").forEach(node => node.addEventListener("click", () => showClassTeacher(node.dataset.classTeacher, node)));
+  view.querySelectorAll("[data-copy-class-link]").forEach(node=>node.addEventListener("click",async()=>{const url=classById(node.dataset.copyClassLink)?.parentCatalogUrl||"";if(!url)return notify("Ссылка класса ещё не импортирована.");try{await navigator.clipboard.writeText(url);notify("Ссылка класса скопирована.");}catch{notify("Не удалось скопировать ссылку.");}}));
   view.querySelectorAll("[data-children-list]").forEach(b => b.addEventListener("click", () => showChildrenList(b.dataset.childrenList,b)));
   view.querySelectorAll("[data-parent-class]").forEach(b => b.addEventListener("click", () => showParentOrders(b.dataset.parentClass,b)));
   view.querySelectorAll("[data-cloud-class]").forEach(b => b.addEventListener("click", () => enqueueCloud("class", b.dataset.cloudClass)));
@@ -4329,6 +4333,7 @@ function bindViewActions() {
     state.zipImportMode = "project";
     zipInput.click();
   });
+  view.querySelector("[data-import-class-links]")?.addEventListener("click", importClassLinksFile);
   view.querySelector("[data-import-class]")?.addEventListener("click", () => {
     state.zipImportMode = "class";
     zipInput.click();
@@ -8861,6 +8866,8 @@ async function exportProject(projectId, forVakha = false) {
 async function importProject(file) {
   return importTransferFile(file, "project");
 }
+
+function importClassLinksFile(){const input=document.createElement("input");input.type="file";input.accept=".json,application/json";input.onchange=async()=>{const file=input.files?.[0];if(!file)return;try{const transfer=parseClassLinksTransfer(await file.text()),plan=planClassLinksImport(transfer,state.data.projects,state.data.classes);if(!plan.matched.length)throw new Error("Ни один класс не совпал по ID.");const note=plan.unmatched.length?`\n\n${plan.unmatched.length} ссылок будут пропущены.`:"";if(!confirm(`Привязать ${plan.matched.length} ссылок к существующим классам?${note}`))return;for(const {klass,link} of plan.matched)await put("classes",stampUpdated({...klass,parentCatalogUrl:link.url,parentCatalogToken:link.token,parentCatalogUpdatedAt:transfer.exportedAt||now()}));await refreshData();notify(`Ссылки привязаны: ${plan.matched.length}.`);showSettingsDetail("transfer");}catch(error){notify(error?.message||"Не удалось импортировать ссылки.");}};input.click();}
 
 async function exportClass(classId) {
   return withBusy("Экспорт группы...", async () => {
