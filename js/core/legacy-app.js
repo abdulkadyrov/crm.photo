@@ -1,3 +1,4 @@
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js";
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1234,6 +1235,8 @@ function renderClasses() {
         </select>
       </label>
       <div class="project-button-row">
+        <button class="secondary-button equal-button" data-teacher-broadcast="${activeProject}" type="button">Рассылка учителям</button>
+        <button class="secondary-button equal-button" data-export-vakha="${activeProject}" type="button">Экспорт в Vakha Studio</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
         <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button>
         <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
@@ -3479,6 +3482,7 @@ function renderSettings() {
       ${settingsProfileCard()}
       ${cloudRequired?`<button class="settings-row" data-cloud-account type="button"><span aria-hidden="true">◉</span><div><strong>Мой аккаунт</strong><small>Роль, пароль и выход</small></div><b>›</b></button>${cloudAccount()?.role==='admin'?'<button class="settings-row" data-admin-console type="button"><span aria-hidden="true">▦</span><div><strong>Суперадминка</strong><small>Сотрудники, права и статистика</small></div><b>›</b></button>':''}<button class="settings-row" data-cloud-archives type="button"><span aria-hidden="true">▤</span><div><strong>Архивы на сервере</strong><small>Резервные ZIP-копии проектов</small></div><b>›</b></button>`:''}
       <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>PDF статусы</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>
+      <button class="settings-row" data-teacher-broadcast="" type="button"><span>✉</span><div><strong>Рассылка учителям</strong><small>Текст сообщения и WhatsApp</small></div><b>›</b></button>
       <button class="settings-row" data-open-services type="button"><span>🎛</span><div><strong>Услуги</strong><small>Пакеты съемки и референсы</small></div><b>›</b></button>
       <button class="settings-row" data-open-public-catalog type="button"><span>🛍️</span><div><strong>Каталог</strong><small>Витрина услуг для детей и родителей</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button>
@@ -4068,6 +4072,11 @@ function templateEditorRow(item) {
 
 function bindViewActions() {
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
+  view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
+    const recipients = state.data.classes.filter(klass => !node.dataset.teacherBroadcast || klass.projectId === node.dataset.teacherBroadcast).map(klass => ({id:klass.id, className:klass.name, school:projectById(klass.projectId)?.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || ''}));
+    openTeacherBroadcast({recipients, draft:state.data.settings.find(item => item.id === 'teacher-broadcast-draft')?.value, restore:captureDialogReturn(document,window,node), save:async value => {await put('settings',stampUpdated({id:'teacher-broadcast-draft',value}));await refreshData();}});
+  });
+  view.querySelectorAll('[data-export-vakha]').forEach(node => node.onclick = () => exportProject(node.dataset.exportVakha, true));
   view.querySelectorAll("[data-class-teacher]").forEach(node => node.addEventListener("click", () => showClassTeacher(node.dataset.classTeacher, node)));
   view.querySelectorAll("[data-children-list]").forEach(b => b.addEventListener("click", () => showChildrenList(b.dataset.childrenList,b)));
   view.querySelectorAll("[data-parent-class]").forEach(b => b.addEventListener("click", () => showParentOrders(b.dataset.parentClass,b)));
@@ -8784,14 +8793,14 @@ async function exportZip(studentId = null) {
   });
 }
 
-async function exportProject(projectId) {
+async function exportProject(projectId, forVakha = false) {
   return withBusy("Экспорт проекта...", async () => {
     const project = projectById(projectId);
     if (!project) return notify("Выберите проект для экспорта.");
     await put("projects", stampExported(project));
     await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
     await refreshData();
-    const blob = createZip(await buildTransferExportFiles("project", { projectId }));
+    const blob = createZip(await buildTransferExportFiles("project", { projectId }, {includeBundled: !forVakha}));
     downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
     notify("Проект экспортирован.");
   });
