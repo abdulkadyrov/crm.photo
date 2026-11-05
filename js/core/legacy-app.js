@@ -1272,9 +1272,11 @@ function classStudentSection(classId) {
         <div class="row">
           <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
           <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список детей" : "Добавить полный класс детей"}</button>
+          <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
           <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
         </div>
       </div>
+      ${klass.teacher?.name ? `<article class="panel"><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</article>` : ""}
       ${documentsSection("group", klass.id)}
       <div class="student-list">
         ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в группу.</p>'}
@@ -4035,6 +4037,7 @@ function templateEditorRow(item) {
 
 function bindViewActions() {
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
+  view.querySelectorAll("[data-class-teacher]").forEach(node => node.addEventListener("click", () => showClassTeacher(node.dataset.classTeacher, node)));
   view.querySelectorAll("[data-children-list]").forEach(b => b.addEventListener("click", () => showChildrenList(b.dataset.childrenList,b)));
   view.querySelectorAll("[data-parent-class]").forEach(b => b.addEventListener("click", () => showParentOrders(b.dataset.parentClass,b)));
   view.querySelectorAll("[data-cloud-class]").forEach(b => b.addEventListener("click", () => enqueueCloud("class", b.dataset.cloudClass)));
@@ -4659,6 +4662,45 @@ async function setClassColor(payload) {
   await refreshData();
   state.preserveScroll = true;
   renderClasses();
+}
+
+function showClassTeacher(classId, trigger) {
+  if (cloudRequired && !["admin", "manager"].includes(cloudAccount()?.role)) return notify("Учителя добавляет менеджер или администратор");
+  const klass = classById(classId); if (!klass) return;
+  const restore = captureDialogReturn(document, window, trigger);
+  const dialog = document.createElement("dialog");
+  dialog.className = "cloud-dialog";
+  dialog.setAttribute("aria-label", "Учитель класса");
+  dialog.innerHTML = `<form class="grid" data-teacher-form>
+    <div class="card-header"><h2 class="card-title">Учитель · ${escapeHtml(klass.name)}</h2><button class="icon-button" type="button" data-close aria-label="Закрыть">×</button></div>
+    <label class="field-label">Имя учителя<input class="input" name="teacherName" required maxlength="200" autocomplete="name" value="${escapeAttr(klass.teacher?.name || "")}" placeholder="Фамилия, имя, отчество" /></label>
+    <label class="field-label">Телефон<input class="input" name="teacherPhone" type="tel" maxlength="100" autocomplete="tel" value="${escapeAttr(klass.teacher?.phone || "")}" placeholder="+7…" /></label>
+    <label class="field-label">Другие контакты<textarea class="input textarea" name="teacherContacts" aria-label="Другие контакты" rows="3" maxlength="2000" placeholder="Telegram, WhatsApp, электронная почта">${escapeHtml(klass.teacher?.contacts || "")}</textarea></label>
+    <p data-teacher-result role="status"></p>
+    <div class="row"><button class="secondary-button" type="button" data-close>Отмена</button><button class="primary-button" type="submit">Сохранить</button></div>
+  </form>`;
+  let saving = false;
+  dialog.querySelectorAll('[data-close]').forEach(node => node.onclick = () => { if (!saving) dialog.close(); });
+  dialog.oncancel = event => { if (saving) event.preventDefault(); };
+  dialog.onclose = () => { dialog.remove(); restore(); };
+  dialog.querySelector('form').onsubmit = async event => {
+    event.preventDefault(); if (saving) return;
+    const fields = event.currentTarget.elements;
+    const teacher = { name: fields.teacherName.value.trim(), phone: fields.teacherPhone.value.trim(), contacts: fields.teacherContacts.value.trim() };
+    if (!teacher.name) { dialog.querySelector('[data-teacher-result]').textContent = 'Укажите имя учителя.'; fields.teacherName.focus(); return; }
+    saving = true; dialog.querySelectorAll('button').forEach(node => node.disabled = true);
+    try {
+      const latest = (await getAll('classes')).find(item => item.id === classId);
+      if (!latest) throw new Error('Класс больше не существует.');
+      await put('classes', stampUpdated({ ...latest, teacher }));
+      await refreshData(); state.preserveScroll = true; renderClasses();
+      dialog.close(); notify('Учитель сохранён');
+    } catch (error) {
+      dialog.querySelector('[data-teacher-result]').textContent = error.message || 'Не удалось сохранить учителя.';
+      saving = false; dialog.querySelectorAll('button').forEach(node => node.disabled = false);
+    }
+  };
+  document.body.append(dialog); dialog.showModal();
 }
 
 function showChildrenList(classId, trigger) {
