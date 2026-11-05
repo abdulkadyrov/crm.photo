@@ -1948,13 +1948,15 @@ function renderStudent() {
             </div>
           </div>
         </div>
-        <label class="field-label">
-          <span>Ручной статус</span>
-          <select class="select" data-order-status="${student.id}">
-            <option value="auto" ${manualStudentStatus(student) ? "" : "selected"}>Автоматически: ${escapeHtml(orderStatusLabel(student))}</option>
-            ${STUDENT_MANUAL_STATUS_KEYS.map((value) => `<option value="${value}" ${value === manualStudentStatus(student) ? "selected" : ""}>${escapeHtml(ORDER_STATUSES[value])}</option>`).join("")}
-          </select>
-        </label>
+        <div class="student-status-control">
+          <div><strong>Статус заказа</strong><small>Автоматический статус меняется по чеклисту</small></div>
+          <div class="student-status-options" role="group" aria-label="Статус заказа">
+            ${[["auto", `Авто · ${orderStatusLabel(student)}`], ["printed", ORDER_STATUSES.printed], ["delivered", ORDER_STATUSES.delivered]].map(([value, label]) => {
+              const selected = value === "auto" ? !manualStudentStatus(student) : value === manualStudentStatus(student);
+              return `<button type="button" data-set-order-status="${student.id}:${value}" aria-pressed="${selected}">${escapeHtml(label)}</button>`;
+            }).join("")}
+          </div>
+        </div>
         <div class="student-action-group">
           <span>Статусы</span>
           <button class="${student.paymentStatus === "paid" ? "secondary-button" : "primary-button"}" data-toggle-payment="${student.id}" type="button">
@@ -2097,7 +2099,13 @@ function mediaTile(item) {
   return `
     <figure class="media-tile">
       ${node}
-      <button class="media-delete-button" data-delete-media="${item.id}" type="button" aria-label="Удалить ${escapeAttr(item.fileName || "медиа")}"><span data-icon="trash"></span></button>
+      <figcaption class="media-tile-footer">
+        <span>${escapeHtml(item.fileName || (item.type === "video" ? "Видео" : "Фотография"))}</span>
+        <details class="media-actions-menu">
+          <summary>Действия</summary>
+          <div><button class="danger-button compact" data-delete-media="${item.id}" type="button"><span data-icon="trash"></span>Удалить файл</button></div>
+        </details>
+      </figcaption>
     </figure>
   `;
 }
@@ -4275,6 +4283,10 @@ function bindViewActions() {
     updateStudentServices(studentId, selectedCatalogIdsForStudent(student).filter((id) => id !== catalogId));
   }));
   view.querySelector("[data-order-status]")?.addEventListener("change", (event) => updateOrderStatus(event.target.dataset.orderStatus, event.target.value));
+  view.querySelectorAll("[data-set-order-status]").forEach((node) => node.addEventListener("click", () => {
+    const [studentId, value] = node.dataset.setOrderStatus.split(":");
+    updateOrderStatus(studentId, value);
+  }));
   view.querySelector("[data-payment]")?.addEventListener("change", (event) => updatePayment(event.target.dataset.payment, event.target.value));
   view.querySelector("[data-manual-qr]")?.addEventListener("submit", handleManualQr);
   view.querySelector("[data-start-scan]")?.addEventListener("click", startQrScanner);
@@ -5639,7 +5651,7 @@ function showMediaPreview(mediaId) {
 async function deleteMedia(mediaId) {
   const media = mediaById(mediaId);
   if (!media) return;
-  if (!confirm(`Удалить файл "${media.fileName || "медиа"}"?`)) return;
+  if (!confirm(`Удалить файл «${media.fileName || "медиа"}» без возможности восстановления?`)) return;
   for (const order of state.data.orders) {
     const nextItems = (order.items || []).map((item) => ({
       ...item,
@@ -6628,6 +6640,7 @@ async function downloadFinalWorkA4Pdf(workId) {
 async function deleteFinalWork(workId) {
   const work = finalWorkById(workId);
   if (!work) return;
+  if (!confirm(`Удалить готовую работу «${finalWorkTitle(work)}» без возможности восстановления?`)) return;
   await del("finalWorks", workId);
   if (work.resultMediaId && mediaById(work.resultMediaId)?.type === "final_work") await del("media", work.resultMediaId);
   await refreshData();
