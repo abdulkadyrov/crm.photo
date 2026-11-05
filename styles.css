@@ -961,6 +961,12 @@ p {
   gap: 14px;
 }
 
+@media (min-width: 768px) {
+  .catalog-card-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .catalog-service-card {
   position: relative;
   overflow: hidden;
