@@ -12084,7 +12084,6 @@ function serviceParentResultMockup(item, { panel = false } = {}) {
   const print = presentation.printPhoto ? `
     <figure class="service-parent-paper is-laminated">
       <img class="service-parent-print-image" src="${imageUrl}" alt="Распечатанное фото A4: ${escapeAttr(serviceName(item))}" />
-      <span class="service-parent-lamination-magnifier" aria-hidden="true"><img src="${imageUrl}" alt="" /></span>
       <span class="service-parent-lamination-label">Ламинация · защита</span>
     </figure>
   ` : "";
@@ -12905,3 +12904,11 @@ function registerServiceWorker() {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
 }
+
+// Use decoded image dimensions for every service, including uploaded and cached previews.
+document.addEventListener("load", (event) => {
+  const image = event.target;
+  if (!image?.matches?.(".service-parent-print-image")) return;
+  if (!image.naturalWidth || !image.naturalHeight) return;
+  image.closest(".service-parent-paper")?.classList.toggle("is-landscape", image.naturalWidth > image.naturalHeight);
+}, true);
