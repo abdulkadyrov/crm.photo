@@ -5621,6 +5621,70 @@ button.mini-catalog-option {
 .cloud-dialog [data-user-list],.cloud-dialog [data-local],.cloud-dialog [data-versions] { display:grid;gap:8px; }
 .cloud-row { padding-block:12px;border-bottom:1px solid #b4bbc6; }
 .cloud-dialog [data-cloud-status] { padding:10px;background:#eef3ff;color:#172033;border-radius:10px; }
+
+.teacher-broadcast-dialog { width:min(940px,calc(100vw - 24px));max-height:min(92dvh,820px);padding:0;overflow:hidden;border:0;border-radius:22px;box-shadow:0 28px 80px rgba(15,23,42,.28); }
+.teacher-broadcast-shell { display:grid;max-height:min(92dvh,820px);overflow:hidden; }
+.teacher-broadcast-header { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px 16px;border-bottom:1px solid var(--line); }
+.teacher-broadcast-header h2,.teacher-broadcast-header p,.teacher-message-heading h3,.teacher-message-heading p { margin:0; }
+.teacher-broadcast-header h2 { font-size:1.35rem;letter-spacing:-.025em; }
+.teacher-broadcast-header p { margin-top:4px;color:var(--muted);font-size:.82rem; }
+.teacher-broadcast-header .icon-button { flex:0 0 auto;width:44px;min-height:44px;padding:11px; }
+.teacher-broadcast-header svg,.teacher-search svg { fill:none;stroke:currentColor;stroke-linecap:round;stroke-width:2; }
+.teacher-template-panel { margin:14px 22px 0;border:1px solid var(--line);border-radius:14px;background:var(--card-strong); }
+.teacher-template-panel summary { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;cursor:pointer;list-style:none; }
+.teacher-template-panel summary::-webkit-details-marker { display:none; }
+.teacher-template-panel summary span:first-child { display:grid;gap:2px; }
+.teacher-template-panel summary small { color:var(--muted);font-size:.75rem;font-weight:600; }
+.teacher-template-edit { color:var(--primary);font-size:.78rem;font-weight:800; }
+.teacher-template-content { display:grid;gap:8px;padding:0 14px 14px; }
+.teacher-template-content p { margin:0;color:var(--muted);font-size:.78rem;line-height:1.45; }
+.teacher-template-content code { color:var(--text);font-family:inherit;font-weight:800; }
+.teacher-broadcast-layout { display:grid;grid-template-columns:minmax(260px,.78fr) minmax(0,1.35fr);min-height:0;padding:14px 22px 22px;gap:16px;overflow:hidden; }
+.teacher-recipient-panel,.teacher-message-panel { min-width:0;min-height:0; }
+.teacher-recipient-panel { display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px; }
+.teacher-search { position:relative;display:block!important;margin:0!important; }
+.teacher-search svg { position:absolute;z-index:1;top:50%;left:13px;width:18px;height:18px;color:var(--muted);transform:translateY(-50%);pointer-events:none; }
+.cloud-dialog .teacher-search input { width:100%;padding-left:40px;border-color:var(--line);background:var(--card-strong); }
+.teacher-recipient-list { display:grid;align-content:start;gap:7px;overflow:auto;padding:2px;scrollbar-color:var(--line) transparent;scrollbar-width:thin; }
+.cloud-dialog .teacher-recipient { display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:66px;padding:9px 10px;border:1px solid transparent;border-radius:13px;background:transparent;color:var(--text);text-align:left; }
+.cloud-dialog .teacher-recipient:hover { background:var(--card-strong); }
+.cloud-dialog .teacher-recipient[aria-selected="true"] { border-color:color-mix(in srgb,var(--primary) 55%,var(--line));background:color-mix(in srgb,var(--primary) 9%,var(--card)); }
+.teacher-recipient-avatar { display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--primary) 13%,var(--card));color:var(--primary);font-size:.78rem;font-weight:900; }
+.teacher-recipient-copy { display:grid;gap:3px;min-width:0; }
+.teacher-recipient-copy strong,.teacher-recipient-copy small { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.teacher-recipient-copy strong { font-size:.86rem; }
+.teacher-recipient-copy small { color:var(--muted);font-size:.72rem;font-weight:650; }
+.teacher-recipient-state { font-size:.65rem;font-weight:850;white-space:nowrap; }
+.teacher-recipient-state.is-ready,.teacher-phone-state.is-ready { color:#15803d; }
+.teacher-recipient-state.is-missing,.teacher-phone-state.is-missing { color:#b45309; }
+.teacher-recipient-empty { margin:16px 4px;color:var(--muted);font-size:.82rem; }
+.teacher-message-panel { display:grid;grid-template-rows:auto minmax(0,1fr) auto auto auto;gap:12px;padding:16px;overflow:auto;border-radius:16px;background:var(--card-strong); }
+.teacher-message-heading { display:flex;align-items:flex-start;justify-content:space-between;gap:12px; }
+.teacher-message-heading h3 { font-size:1rem; }
+.teacher-message-heading p { margin-top:3px;color:var(--muted);font-size:.75rem; }
+.teacher-phone-state { max-width:48%;color:var(--muted);font-size:.7rem;font-weight:800;text-align:right; }
+.teacher-message-field { min-height:0;margin:0!important; }
+.teacher-message-field .textarea { height:100%;min-height:190px;line-height:1.5; }
+.teacher-message-tools,.teacher-message-actions { display:flex;gap:8px; }
+.teacher-message-tools>*,.teacher-message-actions>* { flex:1 1 0;justify-content:center; }
+.teacher-broadcast-status { min-height:1.2em;margin:0;color:var(--muted);font-size:.75rem;line-height:1.4; }
+.teacher-broadcast-dialog [aria-disabled="true"] { opacity:.48;pointer-events:none; }
+
+@media (max-width:640px) {
+  .teacher-broadcast-dialog { width:100vw;max-width:none;height:100dvh;max-height:100dvh;margin:0;border-radius:0; }
+  .teacher-broadcast-shell { height:100dvh;max-height:100dvh; }
+  .teacher-broadcast-header { padding:max(14px,env(safe-area-inset-top)) 16px 12px; }
+  .teacher-template-panel { margin:10px 16px 0; }
+  .teacher-broadcast-layout { grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);padding:10px 16px max(16px,env(safe-area-inset-bottom));gap:10px;overflow:auto; }
+  .teacher-recipient-panel { grid-template-rows:auto auto; }
+  .teacher-recipient-list { display:flex;max-width:100%;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity; }
+  .cloud-dialog .teacher-recipient { flex:0 0 min(82vw,300px);scroll-snap-align:start; }
+  .teacher-message-panel { grid-template-rows:auto;min-height:410px;overflow:visible;padding:14px; }
+  .teacher-message-field { min-height:174px; }
+  .teacher-message-field .textarea { height:150px;min-height:150px; }
+  .teacher-message-tools>* { padding-inline:8px;font-size:.78rem; }
+  .teacher-message-actions { padding-top:8px; }
+}
 html[data-cloud-role=photographer] [data-delete-project],html[data-cloud-role=photographer] [data-delete-class],html[data-cloud-role=photographer] [data-delete-student],html[data-cloud-role=viewer] [data-toggle-payment] { display:none!important; }
 
 html[data-cloud-role]:not([data-cloud-role="admin"]) [data-financial],html[data-cloud-role]:not([data-cloud-role="admin"]) .service-card-price,html[data-cloud-role]:not([data-cloud-role="admin"]) .student-service-quantity-total { display:none!important; }
