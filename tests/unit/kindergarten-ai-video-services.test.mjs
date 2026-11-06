@@ -101,26 +101,29 @@ test("every interview scenario has distinct exact Russian dialogue and off-camer
   }
 });
 
-test("school interview service includes printable photo and phone video result", async () => {
-  assert.equal(SCHOOL_INTERVIEW_SERVICES.length, 1);
-  const service = SCHOOL_INTERVIEW_SERVICES[0];
-  assert.equal(service.category, SCHOOL_INTERVIEW_CATEGORY);
-  assert.equal(service.mediaKind, "both");
-  assert.equal(service.parentPreviewMode, "auto");
-  assert.equal(service.durationSeconds, 15);
-  assert.equal(service.videoModel, "Seedance 2.0");
-  assert.equal(service.price, "800");
-  assert.equal(service.catalogPriceVersion, 7);
-  assert.equal(service.title, "Интервью ребёнка");
-  assert.equal(service.category, "Фото с видео");
-  assert.match(service.previewVideoUrl, /schoolboy-interview-15s\.mp4$/);
-  assert.equal(service.angles.length, 1);
-  assert.equal(service.angles[0].id, "interview-desk");
-  assert.match(service.angles[0].refDataUrl, /reference-poses\/boy-interview-desk\.jpg$/);
-  assert.ok((await stat(localAsset(service.previewSrc))).size > 100_000);
-  assert.ok((await stat(localAsset(service.previewVideoUrl))).size > 100_000);
-  assert.match(service.prompt, /Teacher, off-camera/);
-  assert.match(service.prompt, /инженером/);
+test("school interview services include separate boy and girl cards with horizontal full views", async () => {
+  assert.equal(SCHOOL_INTERVIEW_SERVICES.length, 2);
+  assert.deepEqual(SCHOOL_INTERVIEW_SERVICES.map((service) => service.gender), ["boys", "girls"]);
+  for (const service of SCHOOL_INTERVIEW_SERVICES) {
+    assert.equal(service.category, SCHOOL_INTERVIEW_CATEGORY);
+    assert.equal(service.parentPreviewMode, "auto");
+    assert.equal(service.printOrientation, "horizontal");
+    assert.equal(service.durationSeconds, 15);
+    assert.equal(service.price, "800");
+    assert.equal(service.angles.length, 1);
+    assert.equal(service.angles[0].id, "interview-desk");
+    assert.ok((await stat(localAsset(service.previewSrc))).size > 40_000);
+  }
+  const [boy, girl] = SCHOOL_INTERVIEW_SERVICES;
+  assert.equal(boy.mediaKind, "both");
+  assert.match(boy.title, /мальчик/);
+  assert.match(boy.previewSrc, /reference-poses\/boy-interview-desk\.jpg$/);
+  assert.match(boy.previewVideoUrl, /schoolboy-interview-15s\.mp4$/);
+  assert.ok((await stat(localAsset(boy.previewVideoUrl))).size > 100_000);
+  assert.match(boy.prompt, /Teacher, off-camera/);
+  assert.match(girl.title, /девочка/);
+  assert.match(girl.previewSrc, /reference-poses\/girl-interview-desk\.jpg$/);
+  assert.equal(girl.previewVideoUrl, "");
 });
 
 test("fairytale princess service includes the attached 15-second video result", async () => {
