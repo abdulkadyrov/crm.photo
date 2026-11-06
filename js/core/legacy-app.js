@@ -38,6 +38,7 @@ import { backupWarnings, calculateDataCounts } from "../services/backup-service.
 import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=89";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js";
 import {
   defaultBulkTransferResolution,
@@ -5343,8 +5344,15 @@ function showCatalogEditor(itemId = "") {
       <label class="field-label"><span>Полное описание</span><textarea class="input textarea" name="description" placeholder="Подробное описание для просмотра услуги">${escapeHtml(serviceDescription(item))}</textarea></label>
       <div class="service-editor-media-grid">
         <label class="field-label"><span>Превью фото</span><input class="input" name="preview" type="file" accept="image/*" /></label>
-        <label class="field-label"><span>Превью видео</span><input class="input" name="previewVideo" type="file" accept="video/*" /></label>
+        <label class="field-label"><span>Превью видео</span><input class="input" name="previewVideo" type="file" accept=".mp4,.webm,video/mp4,video/webm" /><small class="field-help">Для телефонов: MP4 (H.264), до 100 МБ. MOV не поддерживается.</small></label>
       </div>
+      <fieldset class="field-label service-orientation-field">
+        <legend>Формат печатного фото</legend>
+        <div class="service-orientation-options">
+          ${servicePrintOrientationOptions(servicePrintOrientation(item))}
+        </div>
+        <small class="field-help">«Авто» определит формат по загруженной готовой фотографии.</small>
+      </fieldset>
       <label class="field-label"><span>Как показать итог родителю</span><select class="select" name="parentPreviewMode">
         <option value="auto" ${serviceParentPreviewMode(item) === "auto" ? "selected" : ""}>Автоматически: A4, а видео — на телефоне поверх фото</option>
         <option value="print" ${serviceParentPreviewMode(item) === "print" ? "selected" : ""}>Только распечатанное фото A4</option>
@@ -5380,6 +5388,8 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
   if (!title) return notify("Введите название услуги.");
   const previewFile = fields.preview.files?.[0];
   const previewVideoFile = fields.previewVideo.files?.[0];
+  const videoFormat = previewVideoFile ? catalogVideoFormat({ type: previewVideoFile.type, name: previewVideoFile.name }) : { playable: true };
+  if (!videoFormat.playable) return notify(videoFormat.message);
   const id = item?.id || uid("catalog");
   const previewDataUrl = previewFile ? await fileToOptimizedImageDataUrl(previewFile, { maxSize: 1600, quality: 0.84 }) : servicePreviewImageDataUrl(item);
   const previewVideoDataUrl = previewVideoFile ? await fileToDataUrl(previewVideoFile) : servicePreviewVideoDataUrl(item);
@@ -5395,6 +5405,7 @@ async function saveCatalogEditor(form, item, allowOnlyTitle, close) {
     category: allowOnlyTitle ? serviceCategory(item) : normalizeServiceCategory(fields.category.value),
     popular: allowOnlyTitle ? isServicePopular(item) : Boolean(fields.popular.checked),
     parentPreviewMode: allowOnlyTitle ? serviceParentPreviewMode(item) : normalizeParentPreviewMode(fields.parentPreviewMode.value),
+    printOrientation: allowOnlyTitle ? servicePrintOrientation(item) : normalizeServicePrintOrientation(fields.printOrientation.value),
     previewDataUrl,
     previewImageId: previewDataUrl ? (item?.previewImageId || `${id}_preview_image`) : "",
     previewName: previewFile?.name || item?.previewName || "",
@@ -6475,7 +6486,7 @@ async function createFinalWorkRecord(input) {
   const a4Assets = await buildFinalWorkA4Assets({
     file: input.originalFile,
     studentId: input.studentId,
-    orientationMode: "auto",
+    orientationMode: servicePrintOrientation(catalogItemById(input.serviceId)),
     qrOverlayFile: input.animationQrFile
   });
   return stampCreated({
@@ -12301,9 +12312,28 @@ function serviceParentPreviewMode(item) {
   return normalizeParentPreviewMode(item?.parentPreviewMode);
 }
 
+function servicePrintOrientation(item) {
+  return normalizeServicePrintOrientation(item?.printOrientation || item?.a4OrientationMode);
+}
+
+function servicePrintOrientationOptions(selected) {
+  return [
+    { value: "auto", label: "Авто" },
+    { value: "vertical", label: "Вертикальное" },
+    { value: "horizontal", label: "Альбомное" }
+  ].map(({ value, label }) => `
+    <label class="service-orientation-option" data-orientation="${value}">
+      <input type="radio" name="printOrientation" value="${value}" ${selected === value ? "checked" : ""} />
+      <span>${label}</span>
+    </label>
+  `).join("");
+}
+
 function serviceParentResultMockup(item, { panel = false } = {}) {
   const imageUrl = servicePreviewImageDataUrl(item);
   const videoUrl = servicePreviewVideoDataUrl(item);
+  const printOrientation = servicePrintOrientation(item);
+  const videoFormat = catalogVideoFormat({ name: item?.previewVideoName, src: videoUrl });
   const presentation = buildCatalogPresentation({
     parentPreviewMode: serviceParentPreviewMode(item),
     hasPhoto: Boolean(imageUrl),
@@ -12314,13 +12344,15 @@ function serviceParentResultMockup(item, { panel = false } = {}) {
   const phone = presentation.phoneVideo ? `
     <figure class="service-parent-phone ${presentation.phoneOverlay ? "overlay" : "standalone"}">
       <div class="service-parent-phone-screen">
-        <video src="${videoUrl}" controls playsinline preload="metadata" aria-label="Видео услуги ${escapeAttr(serviceName(item))}"></video>
+        ${videoFormat.playable
+          ? `<video src="${videoUrl}" controls playsinline preload="metadata" aria-label="Видео услуги ${escapeAttr(serviceName(item))}"></video>`
+          : `<div class="service-video-error" role="status"><strong>Видео не откроется</strong><span>${escapeHtml(videoFormat.message)}</span></div>`}
       </div>
-      <figcaption>Видео открывается на телефоне</figcaption>
+      <figcaption>${videoFormat.playable ? "Нажмите ▶ для просмотра" : "Нужно заменить видео"}</figcaption>
     </figure>
   ` : "";
   const print = presentation.printPhoto ? `
-    <figure class="service-parent-paper is-laminated">
+    <figure class="service-parent-paper is-laminated ${printOrientation === "horizontal" ? "is-landscape" : printOrientation === "vertical" ? "is-portrait" : ""}" data-orientation="${printOrientation}">
       <img class="service-parent-print-image" src="${imageUrl}" alt="Распечатанное фото A4: ${escapeAttr(serviceName(item))}" />
       <span class="service-parent-lamination-label">Ламинация · защита</span>
     </figure>
@@ -13148,5 +13180,18 @@ document.addEventListener("load", (event) => {
   const image = event.target;
   if (!image?.matches?.(".service-parent-print-image")) return;
   if (!image.naturalWidth || !image.naturalHeight) return;
-  image.closest(".service-parent-paper")?.classList.toggle("is-landscape", image.naturalWidth > image.naturalHeight);
+  const paper = image.closest(".service-parent-paper");
+  if (!paper || paper.dataset.orientation !== "auto") return;
+  paper.classList.toggle("is-landscape", image.naturalWidth > image.naturalHeight);
+  paper.classList.toggle("is-portrait", image.naturalWidth <= image.naturalHeight);
+}, true);
+
+document.addEventListener("error", (event) => {
+  const video = event.target;
+  if (!video?.matches?.(".service-parent-phone-screen video")) return;
+  const screen = video.closest(".service-parent-phone-screen");
+  if (!screen || screen.querySelector(".service-video-error")) return;
+  screen.innerHTML = '<div class="service-video-error" role="status"><strong>Видео не удалось открыть</strong><span>Замените файл на MP4 (H.264).</span></div>';
+  const caption = screen.closest(".service-parent-phone")?.querySelector("figcaption");
+  if (caption) caption.textContent = "Нужно заменить видео";
 }, true);
