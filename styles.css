@@ -4123,7 +4123,101 @@ button.mini-catalog-option {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #050505;
+  cursor: zoom-in;
   object-fit: contain;
+}
+
+.final-work-viewer-image:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.image-zoom-backdrop {
+  position: fixed;
+  z-index: 2600;
+  inset: 0;
+  display: grid;
+  background: rgba(3, 6, 12, 0.96);
+}
+
+.image-zoom-panel {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  color: #fff;
+}
+
+.image-zoom-toolbar,
+.image-zoom-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-zoom-toolbar {
+  min-width: 0;
+  justify-content: space-between;
+}
+
+.image-zoom-toolbar > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-zoom-actions button {
+  display: inline-grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  background: #171b24;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.image-zoom-actions [data-zoom-reset] {
+  min-width: 68px;
+}
+
+.image-zoom-viewport {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  background: #000;
+  cursor: zoom-in;
+  touch-action: none;
+}
+
+.image-zoom-viewport.is-zoomed {
+  cursor: grab;
+}
+
+.image-zoom-viewport img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  transform-origin: center;
+  user-select: none;
+  will-change: transform;
+}
+
+.image-zoom-help {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .final-work-viewer-a4 {
@@ -5234,7 +5328,7 @@ button.mini-catalog-option {
   }
 
   .final-work-viewer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
@@ -5249,9 +5343,23 @@ button.mini-catalog-option {
   }
 
   .final-work-viewer-image {
-    height: min(48dvh, 340px);
+    height: min(55dvh, 420px);
     max-height: none;
     border-radius: 12px;
+  }
+
+  .image-zoom-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .image-zoom-actions {
+    width: 100%;
+  }
+
+  .image-zoom-actions button {
+    flex: 1;
+    padding: 0 8px;
   }
 
   .final-work-a4-details {

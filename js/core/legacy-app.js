@@ -39,6 +39,7 @@ import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
 import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js";
 import {
   defaultBulkTransferResolution,
@@ -2169,7 +2170,7 @@ function finalResultCard(work) {
   const titleText = finalWorkTitle(work);
   return `
     <article class="final-result-card">
-      <button class="final-result-preview" data-open-final-work="${work.id}" type="button" aria-label="Посмотреть ${escapeAttr(titleText)}">
+      <button class="final-result-preview" data-open-final-work="${work.id}" data-final-work-view="result" type="button" aria-label="Посмотреть ${escapeAttr(titleText)}">
         ${url ? `<img src="${url}" alt="${escapeAttr(titleText)}" loading="lazy" />` : '<span>Нет preview</span>'}
       </button>
       <div class="final-result-copy">
@@ -2177,7 +2178,7 @@ function finalResultCard(work) {
         <span class="status-pill ${finalWorkStatusClass(work.status)}">${escapeHtml(finalWorkStatusLabel(work.status))}</span>
       </div>
       <div class="final-result-actions">
-        <button class="secondary-button compact" data-open-final-work="${work.id}" type="button">Посмотреть</button>
+        <button class="secondary-button compact" data-open-final-work="${work.id}" data-final-work-view="result" type="button">Посмотреть</button>
         <button class="secondary-button compact" data-download-final-work="${work.id}" type="button">Скачать</button>
         <button class="danger-button compact" data-delete-final-work="${work.id}" type="button">Удалить</button>
       </div>
@@ -2189,19 +2190,20 @@ function finalPrintA4Card(work) {
   const blob = finalWorkA4ImageBlob(work);
   const url = blob ? URL.createObjectURL(blob) : "";
   const orientation = finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(work));
-  const created = formatActivityDate(work?.a4PreparedAt || work?.updatedAt || work?.createdAt);
+  const isPrepared = blob instanceof Blob;
+  const created = isPrepared ? formatActivityDate(work?.a4PreparedAt || work?.updatedAt || work?.createdAt) : "Макет не готов";
   return `
     <article class="final-result-card">
-      <button class="final-result-preview" data-open-final-work="${work.id}" type="button" aria-label="Посмотреть печать A4 ${escapeAttr(finalWorkTitle(work))}">
+      <button class="final-result-preview" data-open-final-work="${work.id}" data-final-work-view="a4" type="button" aria-label="Посмотреть печать A4 ${escapeAttr(finalWorkTitle(work))}">
         ${url ? `<img src="${url}" alt="${escapeAttr(finalWorkTitle(work))}" loading="lazy" />` : '<span>A4</span>'}
       </button>
       <div class="final-result-copy">
         <strong>${escapeHtml(finalWorkTitle(work))}</strong>
         <span class="status-pill in-progress">${escapeHtml(orientation)}</span>
-        <span class="muted">Создано: ${escapeHtml(created)}</span>
+        <span class="muted">${isPrepared ? `Создано: ${escapeHtml(created)}` : escapeHtml(created)}</span>
       </div>
       <div class="final-result-actions">
-        <button class="secondary-button compact" data-open-final-work="${work.id}" type="button">Превью</button>
+        <button class="secondary-button compact" data-open-final-work="${work.id}" data-final-work-view="a4" type="button">${isPrepared ? "Превью" : "Подготовить"}</button>
         <button class="secondary-button compact" data-download-final-a4-jpg="${work.id}" type="button">JPG</button>
         <button class="secondary-button compact" data-download-final-a4-pdf="${work.id}" type="button">PDF</button>
       </div>
@@ -4399,7 +4401,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-print-final-class]").forEach((node) => node.addEventListener("click", () => printClassFinalWorksWithQr(node.dataset.printFinalClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
-  view.querySelectorAll("[data-open-final-work]").forEach((node) => node.addEventListener("click", () => showFinalWorkViewer(node.dataset.openFinalWork)));
+  view.querySelectorAll("[data-open-final-work]").forEach((node) => node.addEventListener("click", () => showFinalWorkViewer(node.dataset.openFinalWork, { initialView: node.dataset.finalWorkView || "result", trigger: node })));
   view.querySelectorAll("[data-download-final-work]").forEach((node) => node.addEventListener("click", () => downloadFinalWork(node.dataset.downloadFinalWork)));
   view.querySelectorAll("[data-download-final-a4-jpg]").forEach((node) => node.addEventListener("click", () => downloadFinalWorkA4Jpg(node.dataset.downloadFinalA4Jpg)));
   view.querySelectorAll("[data-download-final-a4-pdf]").forEach((node) => node.addEventListener("click", () => downloadFinalWorkA4Pdf(node.dataset.downloadFinalA4Pdf)));
@@ -6562,6 +6564,31 @@ function finalWorkOriginalBlob(work) {
   return mediaById(work?.resultMediaId)?.blob || mediaById(work?.sourceMediaId)?.blob || null;
 }
 
+function finalWorkA4SourceCandidates(work) {
+  const embedded = finalWorkSourceHasEmbeddedQr(work);
+  return [
+    { blob: work?.originalFinalImage, sourceHasEmbeddedQr: embedded, kind: "original" },
+    { blob: work?.blob, sourceHasEmbeddedQr: embedded, kind: "legacy-original" },
+    { blob: work?.image, sourceHasEmbeddedQr: true, kind: "ready-result" },
+    { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: true, kind: "merged-result" },
+    { blob: mediaById(work?.resultMediaId)?.blob, sourceHasEmbeddedQr: true, kind: "result-media" },
+    { blob: mediaById(work?.sourceMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "source-media" }
+  ];
+}
+
+async function buildFinalWorkA4AssetsForWork(work, orientationMode = finalWorkA4Mode(work)) {
+  return runWithMediaFallback(finalWorkA4SourceCandidates(work), async (candidate) => ({
+    assets: await buildFinalWorkA4Assets({
+      file: candidate.blob,
+      studentId: work.studentId,
+      orientationMode,
+      qrOverlayFile: work.animationQrImage,
+      sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr
+    }),
+    candidate
+  }));
+}
+
 function finalWorkTitle(work) {
   return work?.title || serviceName(catalogItemById(work?.serviceId)) || "Готовый результат";
 }
@@ -6595,10 +6622,155 @@ function isFinalResultMedia(item) {
   return item?.type === "final_work" || item?.orderType === "final_work" || item?.isFinalResult;
 }
 
-async function showFinalWorkViewer(workId) {
+function captureFinalWorkDialogReturn(trigger, workId) {
+  const restore = captureDialogReturn(document, window, trigger);
+  const scrollY = window.scrollY;
+  return () => {
+    if (trigger?.isConnected) return restore();
+    window.scrollTo(0, scrollY);
+    const replacement = document.querySelector(`[data-open-final-work="${CSS.escape(workId)}"]`);
+    replacement?.focus?.({ preventScroll: true });
+  };
+}
+
+function mountDialogHistory({ id, restore }) {
+  let closed = false;
+  const finalize = () => {
+    if (closed) return;
+    closed = true;
+    window.removeEventListener("popstate", onPopState);
+    restore?.();
+  };
+  const onPopState = (event) => {
+    if (event.state?.crmDialog !== id) finalize();
+  };
+  history.pushState({ ...history.state, crmDialog: id }, "");
+  window.addEventListener("popstate", onPopState);
+  return {
+    close() {
+      if (closed) return;
+      if (history.state?.crmDialog === id) history.back();
+      else finalize();
+    }
+  };
+}
+
+function showImageZoom({ url, title = "Изображение", trigger = document.activeElement }) {
+  if (!url) return;
+  document.querySelector(".image-zoom-backdrop")?.remove();
+  const restore = captureDialogReturn(document, window, trigger);
+  const panel = document.createElement("div");
+  panel.className = "image-zoom-backdrop";
+  panel.innerHTML = `
+    <section class="image-zoom-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}">
+      <header class="image-zoom-toolbar">
+        <strong>${escapeHtml(title)}</strong>
+        <div class="image-zoom-actions">
+          <button type="button" data-zoom-out aria-label="Уменьшить">−</button>
+          <button type="button" data-zoom-reset aria-label="Сбросить масштаб"><span data-zoom-value>100%</span></button>
+          <button type="button" data-zoom-in aria-label="Увеличить">+</button>
+          <button type="button" data-close-image-zoom aria-label="Закрыть"><span data-icon="close"></span></button>
+        </div>
+      </header>
+      <div class="image-zoom-viewport" data-zoom-viewport>
+        <img src="${escapeAttr(url)}" alt="${escapeAttr(title)}" draggable="false" />
+      </div>
+      <p class="image-zoom-help">Двойное нажатие — увеличить · двумя пальцами — масштаб · одним пальцем — двигать</p>
+    </section>
+  `;
+  const viewport = panel.querySelector("[data-zoom-viewport]");
+  const image = viewport.querySelector("img");
+  const value = panel.querySelector("[data-zoom-value]");
+  const pointers = new Map();
+  let scale = 1;
+  let offsetX = 0;
+  let offsetY = 0;
+  let previousDistance = 0;
+  let dialogHistory = null;
+  const apply = () => {
+    if (scale <= 1) offsetX = offsetY = 0;
+    image.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) scale(${scale})`;
+    value.textContent = `${Math.round(scale * 100)}%`;
+    viewport.classList.toggle("is-zoomed", scale > 1);
+  };
+  const setScale = (nextScale) => {
+    scale = clampImageZoom(nextScale);
+    apply();
+  };
+  const removePanel = () => {
+    window.removeEventListener("keydown", onKeyDown);
+    panel.remove();
+    restore();
+  };
+  const close = () => {
+    if (dialogHistory) dialogHistory.close();
+    else removePanel();
+  };
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") close();
+    if (event.key === "+" || event.key === "=") setScale(scale + 0.5);
+    if (event.key === "-") setScale(scale - 0.5);
+    if (event.key === "0") setScale(1);
+  };
+  viewport.addEventListener("dblclick", () => setScale(scale > 1 ? 1 : 2.5));
+  viewport.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    setScale(scale + (event.deltaY < 0 ? 0.25 : -0.25));
+  }, { passive: false });
+  viewport.addEventListener("pointerdown", (event) => {
+    viewport.setPointerCapture?.(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      previousDistance = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+  });
+  viewport.addEventListener("pointermove", (event) => {
+    if (!pointers.has(event.pointerId)) return;
+    const before = pointers.get(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      if (previousDistance) setScale(scale * (distance / previousDistance));
+      previousDistance = distance;
+    } else if (scale > 1) {
+      offsetX += event.clientX - before.x;
+      offsetY += event.clientY - before.y;
+      apply();
+    }
+  });
+  const endPointer = (event) => {
+    pointers.delete(event.pointerId);
+    previousDistance = 0;
+  };
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((name) => viewport.addEventListener(name, endPointer));
+  panel.querySelector("[data-zoom-out]").addEventListener("click", () => setScale(scale - 0.5));
+  panel.querySelector("[data-zoom-reset]").addEventListener("click", () => setScale(1));
+  panel.querySelector("[data-zoom-in]").addEventListener("click", () => setScale(scale + 0.5));
+  panel.querySelector("[data-close-image-zoom]").addEventListener("click", close);
+  panel.addEventListener("click", (event) => {
+    if (event.target === panel) close();
+  });
+  window.addEventListener("keydown", onKeyDown);
+  document.body.append(panel);
+  dialogHistory = mountDialogHistory({ id: uid("image-zoom"), restore: removePanel });
+  injectIcons(panel);
+  apply();
+}
+
+async function showFinalWorkViewer(workId, { initialView = "result", trigger = document.activeElement } = {}) {
   const work = finalWorkById(workId);
   if (!work) return notify("Готовый результат не найден.");
-  const preparedWork = await ensureFinalWorkA4Assets(work.id);
+  const restore = captureFinalWorkDialogReturn(trigger, workId);
+  let preparedWork = null;
+  let a4Error = "";
+  try {
+    preparedWork = await ensureFinalWorkA4Assets(work.id);
+  } catch (error) {
+    console.error("Не удалось подготовить A4", error);
+    a4Error = "A4 не удалось подготовить автоматически. Готовую работу всё равно можно открыть и увеличить.";
+  }
   const actualWork = preparedWork || finalWorkById(work.id) || work;
   const sourceMediaBlob = mediaById(actualWork?.sourceMediaId)?.blob;
   const originalBlob = sourceMediaBlob instanceof Blob ? sourceMediaBlob : finalWorkOriginalBlob(actualWork);
@@ -6636,16 +6808,16 @@ async function showFinalWorkViewer(workId) {
           <div class="card-header">
             <h3 class="card-title">Исходное изображение</h3>
           </div>
-          ${originalUrl ? `<img class="final-work-viewer-image" src="${escapeAttr(originalUrl)}" alt="${escapeAttr(`${titleText} original`)}" />` : '<div class="empty">Оригинал не найден</div>'}
+          ${originalUrl ? `<img class="final-work-viewer-image" data-zoom-final-image data-zoom-title="Исходное изображение" src="${escapeAttr(originalUrl)}" alt="${escapeAttr(`${titleText} original`)}" tabindex="0" />` : '<div class="empty">Оригинал не найден</div>'}
         </article>
         <article class="panel grid">
           <div class="card-header">
             <h3 class="card-title">Готовая работа</h3>
           </div>
-          ${resultUrl ? `<img class="final-work-viewer-image" src="${escapeAttr(resultUrl)}" alt="${escapeAttr(titleText)}" />` : '<div class="empty">Preview не найден</div>'}
+          ${resultUrl ? `<img class="final-work-viewer-image" data-zoom-final-image data-zoom-title="Готовая работа" src="${escapeAttr(resultUrl)}" alt="${escapeAttr(titleText)}" tabindex="0" />` : '<div class="empty">Preview не найден</div>'}
         </article>
       </div>
-      <details class="panel grid final-work-a4-details">
+      <details class="panel grid final-work-a4-details" ${initialView === "a4" ? "open" : ""}>
         <summary class="card-header">
           <div>
             <h3 class="card-title">Печать A4</h3>
@@ -6653,7 +6825,7 @@ async function showFinalWorkViewer(workId) {
           </div>
           <span class="final-work-a4-chevron" aria-hidden="true"></span>
         </summary>
-        ${a4Url ? `<img class="final-work-viewer-image final-work-viewer-a4" src="${escapeAttr(a4Url)}" alt="${escapeAttr(`${titleText} A4`)}" />` : '<div class="empty">A4-макет ещё не создан</div>'}
+        ${a4Url ? `<img class="final-work-viewer-image final-work-viewer-a4" data-zoom-final-image data-zoom-title="Печать A4" src="${escapeAttr(a4Url)}" alt="${escapeAttr(`${titleText} A4`)}" tabindex="0" />` : `<div class="empty">${escapeHtml(a4Error || "A4-макет ещё не создан. Нажмите «Пересоздать макет».")}</div>`}
         <div class="toolbar final-work-a4-toolbar">
           <label class="field-label compact-field">
             <span>Ориентация</span>
@@ -6673,11 +6845,17 @@ async function showFinalWorkViewer(workId) {
       </div>
     </section>
   `;
-  const close = () => {
+  let disposeHistory = null;
+  const removePanel = () => {
     if (originalUrl) URL.revokeObjectURL(originalUrl);
     if (resultUrl) URL.revokeObjectURL(resultUrl);
     if (a4Url) URL.revokeObjectURL(a4Url);
     panel.remove();
+    restore();
+  };
+  const close = () => {
+    if (disposeHistory) disposeHistory.close();
+    else removePanel();
   };
   panel.addEventListener("click", (event) => {
     if (event.target === panel || event.target.closest("[data-close-final-work-viewer]")) close();
@@ -6686,6 +6864,16 @@ async function showFinalWorkViewer(workId) {
   panel.querySelector("[data-download-final-a4-jpg]")?.addEventListener("click", () => downloadFinalWorkA4Jpg(actualWork.id));
   panel.querySelector("[data-download-final-a4-pdf]")?.addEventListener("click", () => downloadFinalWorkA4Pdf(actualWork.id));
   panel.querySelector("[data-print-final-work]")?.addEventListener("click", () => printFinalWork(actualWork.id));
+  panel.querySelectorAll("[data-zoom-final-image]").forEach((image) => {
+    const openZoom = () => showImageZoom({ url: image.src, title: image.dataset.zoomTitle || image.alt || titleText, trigger: image });
+    image.addEventListener("click", openZoom);
+    image.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openZoom();
+      }
+    });
+  });
   panel.querySelector("[data-regenerate-final-a4]")?.addEventListener("click", async () => {
     const mode = panel.querySelector("[data-final-work-a4-mode]")?.value || "auto";
     close();
@@ -6697,7 +6885,9 @@ async function showFinalWorkViewer(workId) {
     close();
   });
   document.body.append(panel);
+  disposeHistory = mountDialogHistory({ id: `final-work-${actualWork.id}`, panel, restore: removePanel });
   injectIcons();
+  if (initialView === "a4") panel.querySelector(".final-work-a4-details")?.scrollIntoView({ block: "start" });
 }
 
 async function downloadFinalWork(workId) {
@@ -7253,17 +7443,12 @@ async function ensureFinalWorkA4Assets(workId) {
   const work = finalWorkById(workId);
   if (!work) return null;
   if (!finalWorkA4OrientationNeedsRefresh(work)) return work;
-  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
-  if (!(original instanceof Blob)) return work;
+  if (!finalWorkA4SourceCandidates(work).some((item) => item.blob instanceof Blob)) return work;
   state.finalWorkA4Queue.add(workId);
   try {
-    const assets = await buildFinalWorkA4Assets({
-      file: original,
-      studentId: work.studentId,
-      orientationMode: finalWorkA4Mode(work),
-      qrOverlayFile: work.animationQrImage,
-      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
-    });
+    const built = await buildFinalWorkA4AssetsForWork(work);
+    if (!built?.assets) return work;
+    const { assets } = built;
     const latestWork = finalWorkById(workId) || work;
     const next = stampUpdated({
       ...latestWork,
@@ -7290,23 +7475,18 @@ async function ensureFinalWorkA4Assets(workId) {
 async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
   const work = finalWorkById(workId);
   if (!work) return;
-  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
-  if (!(original instanceof Blob)) return notify("Оригинал для A4 не найден.");
+  if (!finalWorkA4SourceCandidates(work).some((item) => item.blob instanceof Blob)) return notify("Оригинал для A4 не найден.");
   await withBusy("Пересоздаю макет A4...", async () => {
-    const assets = await buildFinalWorkA4Assets({
-      file: original,
-      studentId: work.studentId,
-      orientationMode,
-      qrOverlayFile: work.animationQrImage,
-      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
-    });
+    const built = await buildFinalWorkA4AssetsForWork(work, orientationMode);
+    if (!built?.assets) throw new Error("Не найдено изображение для A4.");
+    const { assets, candidate } = built;
     const latestWork = finalWorkById(workId) || work;
     const qrPayload = finalWorkTextQrPayload(latestWork);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, latestWork.animationQrImage, finalWorkSourceHasEmbeddedQr(latestWork), latestWork.studentId);
+    const mergedAsset = await buildFinalWorkMergedAsset(candidate.blob, qrPayload, latestWork.animationQrImage, candidate.sourceHasEmbeddedQr, latestWork.studentId);
     await put("finalWorks", stampUpdated({
       ...latestWork,
       image: mergedAsset.blob,
-      originalFinalImage: latestWork.originalFinalImage || original,
+      originalFinalImage: latestWork.originalFinalImage || candidate.blob,
       sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(latestWork),
       mergedPrintImage: mergedAsset.blob,
       qrData: latestWork.qrData || finalWorkQrData(latestWork),
