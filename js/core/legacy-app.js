@@ -6573,10 +6573,10 @@ function finalWorkA4SourceCandidates(work) {
     && work.originalFinalImage.type === sourceMediaBlob.type;
   const originalCandidate = { blob: work?.originalFinalImage, sourceHasEmbeddedQr: embedded, kind: "original" };
   return [
+    { blob: work?.image, sourceHasEmbeddedQr: false, kind: "ready-result" },
+    { blob: mediaById(work?.resultMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "result-media" },
     ...(!originalMatchesShoot ? [originalCandidate] : []),
     { blob: work?.blob, sourceHasEmbeddedQr: embedded, kind: "legacy-original" },
-    { blob: mediaById(work?.resultMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "result-media" },
-    { blob: work?.image, sourceHasEmbeddedQr: false, kind: "ready-result" },
     { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: false, kind: "merged-result" },
     { blob: sourceMediaBlob, sourceHasEmbeddedQr: false, kind: "source-media" },
     ...(originalMatchesShoot ? [originalCandidate] : [])
@@ -7391,7 +7391,7 @@ function finalWorkA4ResolvedOrientation(work) {
 function finalWorkA4OrientationNeedsRefresh(work) {
   return !finalWorkA4ImageBlob(work)
     || !finalWorkA4PdfBlob(work)
-    || work?.a4QrVersion !== 5
+    || work?.a4QrVersion !== 6
     || work?.a4CodeSettingsKey !== JSON.stringify(finalWorkPrintSettings())
     || !["vertical", "horizontal"].includes(work?.a4OrientationResolved)
     || !["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode);
@@ -7494,7 +7494,7 @@ async function ensureFinalWorkA4Assets(workId) {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 5,
+      a4QrVersion: 6,
       a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       originalFinalImage: cleanOriginalForCandidate(latestWork, candidate),
       sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
@@ -7536,7 +7536,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 5,
+      a4QrVersion: 6,
       a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       a4PreparedAt: now()
     }));

@@ -21,6 +21,8 @@ test("A4 regeneration prefers a clean source before flattened legacy results", (
     source.indexOf("function finalWorkA4SourceCandidates("),
     source.indexOf("\nfunction cleanOriginalForCandidate(")
   );
+  const orderedCandidates = candidates.slice(candidates.indexOf("return ["));
+  assert.ok(orderedCandidates.indexOf('kind: "ready-result"') < orderedCandidates.indexOf("originalCandidate"));
   assert.ok(candidates.indexOf('kind: "ready-result"') < candidates.indexOf('kind: "source-media"'));
   assert.ok(candidates.indexOf('kind: "merged-result"') < candidates.indexOf('kind: "source-media"'));
   assert.match(source, /originalFinalImage: cleanOriginalForCandidate\(latestWork, candidate\)/);
