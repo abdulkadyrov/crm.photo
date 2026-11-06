@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseChildrenList,incomingOrderState,parentUnitPrice} from '../../js/services/parent-order-model.js';
+import {parseChildrenList,incomingOrderState,parentOrderItemLabel,parentUnitPrice} from '../../js/services/parent-order-model.js';
 test('roster import reviews duplicates and incomplete names, supports OCR numbers and JSON',()=>{
  assert.deepEqual(parseChildrenList('1. Иванов Иван\n2. Петрова Анна\nИванов   Иван\nАнна',['Петрова Анна']),{added:['Иванов Иван'],duplicates:['Петрова Анна','Иванов Иван'],invalid:['Анна']});
  assert.deepEqual(parseChildrenList('[{"firstName":"Иван","lastName":"Иванов"}]').added,['Иванов Иван']);
@@ -17,4 +17,9 @@ test('accepted price stays fixed when catalog changes, including free services',
  assert.equal(parentUnitPrice({parentPrices:{a:{price:750}}},'a',999),750);
  assert.equal(parentUnitPrice({parentPrices:{a:{price:0}}},'a',999),0);
  assert.equal(parentUnitPrice({},'a',999),999);
+});
+
+test('CRM order labels show the parent lamination choice',()=>{
+ assert.equal(parentOrderItemLabel({name:'Портрет',comment:'Без ламинации (защиты)'}),'Портрет · Без ламинации (защиты)');
+ assert.equal(parentOrderItemLabel({name:'Портрет'}),'Портрет');
 });

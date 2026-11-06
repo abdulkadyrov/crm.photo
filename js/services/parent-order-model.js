@@ -20,3 +20,6 @@ export function parentUnitPrice(student,serviceId,fallback) {
  const saved=student?.parentPrices?.[serviceId]?.price;
  return Number.isFinite(saved)&&saved>=0?saved:fallback;
 }
+export function parentOrderItemLabel(item) {
+ return [item?.name,item?.comment].filter(Boolean).join(' · ');
+}

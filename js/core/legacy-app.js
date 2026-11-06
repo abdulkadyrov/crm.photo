@@ -402,7 +402,7 @@ async function init() {
     apply: async incoming => {
       const student=studentById(incoming.child_id);
       if(!student||student.classId!==incoming.class_id)throw new Error("Сначала загрузите исходный класс на это устройство");
-      const prices=canSeeMoney()?Object.fromEntries(incoming.selected_items.filter(i=>Number.isFinite(i.price)).map(i=>[i.id,{price:i.price,orderId:incoming.id}])):{};
+      const prices=canSeeMoney()?Object.fromEntries(incoming.selected_items.filter(i=>Number.isFinite(i.price)).map(i=>[i.id,{price:i.price,comment:i.comment||'',orderId:incoming.id}])):{};
       if((student.parentOrderIds||[]).includes(incoming.id)){
         if(canSeeMoney()){await put("students",stampUpdated({...student,parentPrices:{...student.parentPrices,...prices}}));await refreshData();}
         return;
@@ -412,7 +412,7 @@ async function init() {
       const existing=selectedCatalogIdsForStudent(student);
       const order=orderByStudent(student.id);
       if(existing.length && (existing.length!==ids.length || existing.some(id=>!ids.includes(id)))) {
-        if(!confirm(`У ${student.lastName} ${student.firstName} уже выбраны другие услуги.\nСейчас: ${existing.map(id=>serviceName(catalogItemById(id))).join(", ")}\nЗаказ родителя: ${incoming.selected_items.map(i=>i.name).join(", ")}\nЗаменить выбор услуг заказом родителя? Отметка оплаты сохранится.`))return false;
+        if(!confirm(`У ${student.lastName} ${student.firstName} уже выбраны другие услуги.\nСейчас: ${existing.map(id=>serviceName(catalogItemById(id))).join(", ")}\nЗаказ родителя: ${incoming.selected_items.map(i=>`${i.name}${i.comment?` (${i.comment})`:''}`).join(", ")}\nЗаменить выбор услуг заказом родителя? Отметка оплаты сохранится.`))return false;
       }
       const nextStudent=stampUpdated({...student,catalogId:ids[0],catalogIds:ids,selectedServices:buildSelectedServices(ids,selectedServicesForStudent(student)),parentPrices:{...student.parentPrices,...prices},parentOrderIds:[...(student.parentOrderIds||[]),incoming.id]});
       const nextOrder=stampUpdated({...order,catalogId:ids[0],catalogIds:ids,items:orderItemsFromCatalogs(ids,order.items||[]),parentOrderId:incoming.id,parentOrderNumber:incoming.order_number});
@@ -11874,7 +11874,7 @@ function statusExportColumns() {
     { key: "student", label: "Ученик", value: (student) => `${student.lastName} ${student.firstName}`.trim() },
     { key: "class", label: "Группа", value: (student) => classById(student.classId)?.name || "" },
     { key: "payment", label: "Оплата", value: (student) => paymentLabel(student.paymentStatus) },
-    { key: "catalog", label: "Услуги", value: (student) => selectedCatalogIdsForStudent(student).map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Не выбраны" },
+    { key: "catalog", label: "Услуги", value: (student) => selectedCatalogIdsForStudent(student).map((id) => { const name=serviceName(catalogItemById(id)); const choice=student?.parentPrices?.[id]?.comment; return name ? `${name}${choice?` (${choice})`:''}` : ""; }).filter(Boolean).join(", ") || "Не выбраны" },
     { key: "orderStatus", label: "Статус заказа", value: (student) => orderStatusLabel(student) },
     { key: "progress", label: "Готовность", value: (student) => {
       const c = completion(student.id);

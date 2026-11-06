@@ -27,18 +27,20 @@ class ParentTest(unittest.TestCase):
         self.assertEqual(public['data']['children'],[{'id':'parent-child','public_name':'Иван Иванов'}])
         self.assertNotIn('orders',public['data'])
         origin='https://zakaz.khanzama.ru'
-        order={'childId':'parent-child','itemIds':['service-parent'],'requestKey':str(uuid.uuid4()),'price':1}
+        order={'childId':'parent-child','itemIds':['service-parent'],'withoutLaminationIds':['service-parent'],'requestKey':str(uuid.uuid4()),'price':1}
         self.assertEqual(request(url,'POST',order)['status'],403)
         self.assertEqual(request(url,'POST',{**order,'childId':'foreign'},origin=origin)['status'],400)
         result=request(url,'POST',order,origin=origin);self.assertEqual(result['status'],200,result)
-        self.assertEqual(result['data']['total_amount'],750)
+        self.assertEqual(result['data']['total_amount'],700)
+        self.assertEqual(result['data']['selected_items'][0]['comment'],'Без ламинации (защиты)')
         duplicate=request(url,'POST',order,origin=origin);self.assertTrue(duplicate['data']['duplicate'])
+        self.assertEqual(request(url,'POST',{**order,'withoutLaminationIds':[]},origin=origin)['status'],409)
         self.assertEqual(request(url,'POST',{**order,'requestKey':str(uuid.uuid4())},origin=origin)['status'],409)
         self.assertEqual(request('/parents/classes/parent-class','POST',payload,admin)['status'],409)
         self.assertEqual(request('/parents/orders/pp2',cookie=manager)['status'],403)
         staff=request('/parents/orders/pp1',cookie=manager)['data'];self.assertNotIn('total_amount',staff[0]);self.assertNotIn('price',staff[0]['selected_items'][0])
         item['price']=999;request('/parents/catalog','POST',{'items':[item]},admin)
-        saved=request('/public/orders/'+result['data']['public_token'])['data'];self.assertEqual(saved['total_amount'],750)
+        saved=request('/public/orders/'+result['data']['public_token'])['data'];self.assertEqual(saved['total_amount'],700)
         payload.update(revision=1,enabled=False)
         self.assertEqual(request('/parents/classes/parent-class','POST',payload,admin)['status'],200)
         self.assertEqual(request(url)['status'],404)
