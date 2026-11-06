@@ -21,9 +21,15 @@ test("A4 regeneration prefers a clean source before flattened legacy results", (
     source.indexOf("function finalWorkA4SourceCandidates("),
     source.indexOf("\nfunction cleanOriginalForCandidate(")
   );
-  assert.ok(candidates.indexOf('kind: "source-media"') < candidates.indexOf('kind: "ready-result"'));
-  assert.ok(candidates.indexOf('kind: "source-media"') < candidates.indexOf('kind: "merged-result"'));
+  assert.ok(candidates.indexOf('kind: "ready-result"') < candidates.indexOf('kind: "source-media"'));
+  assert.ok(candidates.indexOf('kind: "merged-result"') < candidates.indexOf('kind: "source-media"'));
   assert.match(source, /originalFinalImage: cleanOriginalForCandidate\(latestWork, candidate\)/);
+});
+
+test("A4 refresh replaces a previously embedded print code after settings change", () => {
+  assert.match(source, /forceCodeRefresh = Boolean\(work\?\.a4CodeSettingsKey\)/);
+  assert.match(source, /if \(!embeddedQr \|\| forceQr\) await drawFinalWorkA4QrOverlay/);
+  assert.match(source, /decodeCode128ImageData\(pixels, window\.ZXing\)/);
 });
 
 test("A4 viewer identifies the currently rendered code type", () => {

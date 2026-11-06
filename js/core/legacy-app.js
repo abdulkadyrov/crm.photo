@@ -6566,13 +6566,20 @@ function finalWorkOriginalBlob(work) {
 
 function finalWorkA4SourceCandidates(work) {
   const embedded = finalWorkSourceHasEmbeddedQr(work);
+  const sourceMediaBlob = mediaById(work?.sourceMediaId)?.blob;
+  const originalMatchesShoot = work?.originalFinalImage instanceof Blob
+    && sourceMediaBlob instanceof Blob
+    && work.originalFinalImage.size === sourceMediaBlob.size
+    && work.originalFinalImage.type === sourceMediaBlob.type;
+  const originalCandidate = { blob: work?.originalFinalImage, sourceHasEmbeddedQr: embedded, kind: "original" };
   return [
-    { blob: work?.originalFinalImage, sourceHasEmbeddedQr: embedded, kind: "original" },
+    ...(!originalMatchesShoot ? [originalCandidate] : []),
     { blob: work?.blob, sourceHasEmbeddedQr: embedded, kind: "legacy-original" },
-    { blob: mediaById(work?.sourceMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "source-media" },
     { blob: mediaById(work?.resultMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "result-media" },
-    { blob: work?.image, sourceHasEmbeddedQr: true, kind: "ready-result" },
-    { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: true, kind: "merged-result" }
+    { blob: work?.image, sourceHasEmbeddedQr: false, kind: "ready-result" },
+    { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: false, kind: "merged-result" },
+    { blob: sourceMediaBlob, sourceHasEmbeddedQr: false, kind: "source-media" },
+    ...(originalMatchesShoot ? [originalCandidate] : [])
   ];
 }
 
@@ -6591,13 +6598,16 @@ async function buildFinalWorkMergedAssetForWork(work) {
 }
 
 async function buildFinalWorkA4AssetsForWork(work, orientationMode = finalWorkA4Mode(work)) {
+  const forceCodeRefresh = Boolean(work?.a4CodeSettingsKey)
+    && work.a4CodeSettingsKey !== JSON.stringify(finalWorkPrintSettings());
   return runWithMediaFallback(finalWorkA4SourceCandidates(work), async (candidate) => ({
     assets: await buildFinalWorkA4Assets({
       file: candidate.blob,
       studentId: work.studentId,
       orientationMode,
       qrOverlayFile: work.animationQrImage,
-      sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr
+      sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
+      forceQr: forceCodeRefresh
     }),
     candidate
   }));
@@ -7381,7 +7391,7 @@ function finalWorkA4ResolvedOrientation(work) {
 function finalWorkA4OrientationNeedsRefresh(work) {
   return !finalWorkA4ImageBlob(work)
     || !finalWorkA4PdfBlob(work)
-    || work?.a4QrVersion !== 4
+    || work?.a4QrVersion !== 5
     || work?.a4CodeSettingsKey !== JSON.stringify(finalWorkPrintSettings())
     || !["vertical", "horizontal"].includes(work?.a4OrientationResolved)
     || !["auto", "vertical", "horizontal"].includes(work?.a4OrientationMode);
@@ -7484,7 +7494,7 @@ async function ensureFinalWorkA4Assets(workId) {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 4,
+      a4QrVersion: 5,
       a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       originalFinalImage: cleanOriginalForCandidate(latestWork, candidate),
       sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
@@ -7526,7 +7536,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       a4OrientationResolved: assets.orientation,
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
-      a4QrVersion: 4,
+      a4QrVersion: 5,
       a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       a4PreparedAt: now()
     }));
@@ -7551,7 +7561,7 @@ async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto
   const embeddedQr = findFinalWorkEmbeddedQr(image, sourceWidth, sourceHeight, sourceHasEmbeddedQr);
   drawCoverImage(context, image, page.width, page.height, sourceWidth, sourceHeight, embeddedQr?.position);
   if (typeof image.close === "function") image.close();
-  if (!embeddedQr) await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile, forceQr);
+  if (!embeddedQr || forceQr) await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile, forceQr);
   const jpgBlob = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
   const pdfBlob = jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
   return {
@@ -7589,7 +7599,9 @@ function findFinalWorkEmbeddedQr(image, width, height, knownEmbedded = false) {
     context.drawImage(image, x, y, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
     const qr = window.jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "attemptBoth" });
-    if (qr?.data) return { position, payload: qr.data };
+    if (qr?.data) return { position, payload: qr.data, type: "qr" };
+    const barcode = decodeCode128ImageData(pixels, window.ZXing);
+    if (barcode) return { position, payload: barcode, type: "barcode" };
   }
   return fallback;
 }
