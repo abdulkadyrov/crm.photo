@@ -12,6 +12,14 @@ test('QR and barcode layout applies exact size, corner, margin and opacity withi
     assert.equal(qrPosition.startsWith('top')?l.y:l.y+l.boxHeight,qrPosition.startsWith('top')?20:3488);
   }
 });
+test('tiny legacy code settings are upgraded to a scannable print size',()=>{
+  const qr=printCodeLayout(2480,3508,{codeType:'qr',qrPixelSize:48,qrMargin:10});
+  const barcode=printCodeLayout(2480,3508,{codeType:'barcode',qrPixelSize:72,qrMargin:10});
+  assert.equal(qr.codeWidth,160);
+  assert.equal(qr.codeHeight,160);
+  assert.equal(barcode.codeWidth,640);
+  assert.equal(barcode.codeHeight,160);
+});
 test('maximum barcode stays inside A4 even with large margins',()=>{
   const l=printCodeLayout(2480,3508,{codeType:'barcode',qrPixelSize:600,qrMargin:300});
   assert(l.x>=300); assert(l.x+l.boxWidth<=2180); assert(l.codeWidth>0);

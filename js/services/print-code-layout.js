@@ -1,5 +1,5 @@
 export function printCodeLayout(width, height, settings) {
-  const size = Math.max(48, Math.min(600, Number(settings.qrPixelSize) || 72));
+  const size = Math.max(160, Math.min(600, Number(settings.qrPixelSize) || 200));
   const barcode = settings.codeType === 'barcode';
   const margin = Math.max(0, Math.min(300, Number.parseFloat(settings.qrMargin) || 0));
   const padding = Math.max(12, Math.round(size * 0.12));

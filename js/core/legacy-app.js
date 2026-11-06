@@ -3839,15 +3839,15 @@ function showSettingsDetail(section) {
         <label class="field-label"><span>Положение кода</span><select class="select" data-final-print-qr-position>
           ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${({"bottom-right":"Справа снизу","bottom-left":"Слева снизу","top-right":"Справа сверху","top-left":"Слева сверху"})[value]}</option>`).join("")}
         </select></label>
-        <label class="field-label"><span>Размер кода в пикселях A4</span><input class="input" data-final-print-qr-px type="number" min="48" max="600" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
+        <label class="field-label"><span>Размер кода в пикселях A4</span><input class="input" data-final-print-qr-px type="number" min="160" max="600" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
         <label class="field-label"><span>Отступ, px</span><input class="input" data-final-print-qr-margin type="number" min="0" max="300" value="${Number.parseInt(finalPrint.qrMargin, 10)}" /></label>
         <label class="field-label"><span>Фон кода</span><select class="select" data-final-print-code-background><option value="white" ${finalPrint.codeBackground !== "transparent" ? "selected" : ""}>Белый фон</option><option value="transparent" ${finalPrint.codeBackground === "transparent" ? "selected" : ""}>Без фона</option></select></label>
         <label class="field-label"><span>Непрозрачность: <output data-print-opacity-label>${Math.round(finalPrint.codeOpacity * 100)}%</output></span><input data-final-print-opacity type="range" min="10" max="100" step="1" value="${Math.round(finalPrint.codeOpacity * 100)}" /></label>
-        </div><figure class="print-settings-preview"><canvas data-print-settings-preview width="2480" height="3508" aria-label="Живой пример фотографии A4 с кодом"></canvas><figcaption class="muted" data-print-preview-caption>Пример A4 · 2480 × 3508 px</figcaption></figure></div><p class="muted">Маленький размер и низкая непрозрачность могут мешать считыванию. Штрихкод содержит ID ученика.</p>
+        </div><figure class="print-settings-preview"><canvas data-print-settings-preview width="2480" height="3508" aria-label="Живой пример фотографии A4 с кодом"></canvas><figcaption class="muted" data-print-preview-caption>Пример A4 · 2480 × 3508 px</figcaption></figure></div><p class="muted">Для надёжного сканирования минимальный размер ограничен 160 px. Белый фон считывается стабильнее на фотографии. Штрихкод и QR содержат ID ученика.</p>
         <p class="muted">Лицо, мимика и эмоции ребёнка должны совпадать с оригиналом. Печать меняет только кадрирование и код.</p>
         <p class="muted">Если код уже впечатан в импортированную фотографию, для его изменения нужен чистый исходник. Второй код поверх него не добавляется.</p>
         <div class="transfer-button-row">
-          <button class="primary-button" data-save-final-print-settings type="button">Сохранить настройки</button>
+          <button class="primary-button" data-save-final-print-settings type="button">Сохранить и обновить A4</button>
         </div>
       </article>`,
     storage: storageSettingsTemplate(),
@@ -6569,11 +6569,25 @@ function finalWorkA4SourceCandidates(work) {
   return [
     { blob: work?.originalFinalImage, sourceHasEmbeddedQr: embedded, kind: "original" },
     { blob: work?.blob, sourceHasEmbeddedQr: embedded, kind: "legacy-original" },
+    { blob: mediaById(work?.sourceMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "source-media" },
+    { blob: mediaById(work?.resultMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "result-media" },
     { blob: work?.image, sourceHasEmbeddedQr: true, kind: "ready-result" },
-    { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: true, kind: "merged-result" },
-    { blob: mediaById(work?.resultMediaId)?.blob, sourceHasEmbeddedQr: true, kind: "result-media" },
-    { blob: mediaById(work?.sourceMediaId)?.blob, sourceHasEmbeddedQr: false, kind: "source-media" }
+    { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: true, kind: "merged-result" }
   ];
+}
+
+function cleanOriginalForCandidate(work, candidate) {
+  if (!candidate?.sourceHasEmbeddedQr) return candidate?.blob || work?.originalFinalImage || null;
+  return work?.originalFinalImage || candidate?.blob || null;
+}
+
+async function buildFinalWorkMergedAssetForWork(work) {
+  const qrPayload = finalWorkTextQrPayload(work);
+  return runWithMediaFallback(finalWorkA4SourceCandidates(work), async (candidate) => ({
+    mergedAsset: await buildFinalWorkMergedAsset(candidate.blob, qrPayload, work.animationQrImage, candidate.sourceHasEmbeddedQr, work.studentId),
+    candidate,
+    qrPayload
+  }));
 }
 
 async function buildFinalWorkA4AssetsForWork(work, orientationMode = finalWorkA4Mode(work)) {
@@ -6821,7 +6835,7 @@ async function showFinalWorkViewer(workId, { initialView = "result", trigger = d
         <summary class="card-header">
           <div>
             <h3 class="card-title">Печать A4</h3>
-            <p class="muted">${escapeHtml(finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(actualWork)))} · ${escapeHtml(formatActivityDate(actualWork?.a4PreparedAt || actualWork?.updatedAt || actualWork?.createdAt))}</p>
+            <p class="muted">${escapeHtml(finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(actualWork)))} · ${escapeHtml(finalWorkPrintSettings().codeType === "barcode" ? "Code 128" : "QR-код")} · ${escapeHtml(formatActivityDate(actualWork?.a4PreparedAt || actualWork?.updatedAt || actualWork?.createdAt))}</p>
           </div>
           <span class="final-work-a4-chevron" aria-hidden="true"></span>
         </summary>
@@ -7120,8 +7134,8 @@ function finalWorksPrintSheetHtml(title, pagesHtml) {
 
 function finalWorkPrintSettings() {
   const saved = state.data.settings.find((item) => item.id === SETTING_IDS.finalWorkPrint) || {};
-  const legacySize = { small: 72, medium: 96, large: 124 }[saved.qrSize] || 72;
-  const qrPixelSize = clampNumber(saved.qrPixelSize, 48, 600, legacySize);
+  const legacySize = { small: 160, medium: 200, large: 260 }[saved.qrSize] || 200;
+  const qrPixelSize = clampNumber(saved.qrPixelSize, 160, 600, legacySize);
   return {
     id: SETTING_IDS.finalWorkPrint,
     qrEnabled: saved.qrEnabled !== false,
@@ -7140,7 +7154,7 @@ function printSettingsFromView() {
     ...finalWorkPrintSettings(),
     qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
     qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
-    qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 48, 600, 72),
+    qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 160, 600, 200),
     qrMargin: `${clampNumber(view.querySelector("[data-final-print-qr-margin]")?.value, 0, 300, 10)}px`,
     codeType: view.querySelector("[data-final-print-code-type]")?.value === "barcode" ? "barcode" : "qr",
     codeBackground: view.querySelector("[data-final-print-code-background]")?.value === "transparent" ? "transparent" : "white",
@@ -7178,13 +7192,19 @@ async function mountPrintSettingsPreview() {
 
 async function saveFinalPrintSettingsFromView() {
   const settings = printSettingsFromView();
+  let rebuildSummary = { rebuilt: 0, skipped: 0 };
   await withBusy("Сохраняю настройки печати…", async () => {
     await put("settings", settings);
     await refreshData();
-    await rebuildStoredFinalWorkPrintImages();
-    for (const work of state.data.finalWorks) await ensureFinalWorkA4Assets(work.id);
+    rebuildSummary = await rebuildStoredFinalWorkPrintImages();
+    for (const work of state.data.finalWorks) {
+      try { await ensureFinalWorkA4Assets(work.id); }
+      catch (error) { console.error("Не удалось обновить A4", work.id, error); }
+    }
   });
-  notify("Настройки печати сохранены.");
+  notify(rebuildSummary.skipped
+    ? `Настройки сохранены. Обновлено: ${rebuildSummary.rebuilt}; без чистого исходника: ${rebuildSummary.skipped}.`
+    : `Настройки сохранены. Обновлено работ: ${rebuildSummary.rebuilt}.`);
   showSettingsDetail("finalPrint");
 }
 
@@ -7390,17 +7410,17 @@ async function ensureFinalWorkMergedImage(workId) {
   if (!workId || state.finalWorkMergeQueue.has(workId)) return;
   const work = finalWorkById(workId);
   if (!finalWorkNeedsMergedImage(work)) return;
-  const original = finalWorkOriginalBlob(work) || finalWorkImageBlob(work);
-  if (!original) return;
+  if (!finalWorkA4SourceCandidates(work).some((item) => item.blob instanceof Blob)) return;
   state.finalWorkMergeQueue.add(workId);
   try {
-    const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work), work.studentId);
+    const built = await buildFinalWorkMergedAssetForWork(work);
+    if (!built?.mergedAsset) return;
+    const { mergedAsset, candidate, qrPayload } = built;
     await put("finalWorks", stampUpdated({
       ...work,
       image: mergedAsset.blob,
-      originalFinalImage: work.originalFinalImage || original,
-      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work),
+      originalFinalImage: cleanOriginalForCandidate(work, candidate),
+      sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
       mergedPrintImage: mergedAsset.blob,
       qrData: work.qrData || finalWorkQrData(work),
       finalImageVersion: 5,
@@ -7419,23 +7439,31 @@ async function ensureFinalWorkMergedImage(workId) {
 }
 
 async function rebuildStoredFinalWorkPrintImages() {
+  let rebuilt = 0;
+  let skipped = 0;
   for (const work of state.data.finalWorks) {
-    const original = finalWorkOriginalBlob(work) || work.image;
-    if (!(original instanceof Blob)) continue;
-    const qrPayload = finalWorkTextQrPayload(work);
-    const mergedAsset = await buildFinalWorkMergedAsset(original, qrPayload, work.animationQrImage, finalWorkSourceHasEmbeddedQr(work), work.studentId);
-    await put("finalWorks", stampUpdated({
-      ...work,
-      image: mergedAsset.blob,
-      originalFinalImage: work.originalFinalImage || original,
-      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work),
-      mergedPrintImage: mergedAsset.blob,
-      qrData: work.qrData || finalWorkQrData(work),
-      finalImageVersion: 5,
-      printQrPayload: qrPayload
-    }, { warn: false }));
+    try {
+      const built = await buildFinalWorkMergedAssetForWork(work);
+      if (!built?.mergedAsset) { skipped += 1; continue; }
+      const { mergedAsset, candidate, qrPayload } = built;
+      await put("finalWorks", stampUpdated({
+        ...work,
+        image: mergedAsset.blob,
+        originalFinalImage: cleanOriginalForCandidate(work, candidate),
+        sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
+        mergedPrintImage: mergedAsset.blob,
+        qrData: work.qrData || finalWorkQrData(work),
+        finalImageVersion: 5,
+        printQrPayload: qrPayload
+      }, { warn: false }));
+      rebuilt += 1;
+    } catch (error) {
+      skipped += 1;
+      console.error("Не удалось обновить печатный код", work.id, error);
+    }
   }
   await refreshData();
+  return { rebuilt, skipped };
 }
 
 async function ensureFinalWorkA4Assets(workId) {
@@ -7448,7 +7476,7 @@ async function ensureFinalWorkA4Assets(workId) {
   try {
     const built = await buildFinalWorkA4AssetsForWork(work);
     if (!built?.assets) return work;
-    const { assets } = built;
+    const { assets, candidate } = built;
     const latestWork = finalWorkById(workId) || work;
     const next = stampUpdated({
       ...latestWork,
@@ -7457,7 +7485,9 @@ async function ensureFinalWorkA4Assets(workId) {
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
       a4QrVersion: 4,
-    a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
+      a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
+      originalFinalImage: cleanOriginalForCandidate(latestWork, candidate),
+      sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
       a4PreparedAt: now()
     });
     await put("finalWorks", next);
@@ -7486,8 +7516,8 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
     await put("finalWorks", stampUpdated({
       ...latestWork,
       image: mergedAsset.blob,
-      originalFinalImage: latestWork.originalFinalImage || candidate.blob,
-      sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(latestWork),
+      originalFinalImage: cleanOriginalForCandidate(latestWork, candidate),
+      sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
       mergedPrintImage: mergedAsset.blob,
       qrData: latestWork.qrData || finalWorkQrData(latestWork),
       finalImageVersion: 5,
@@ -7497,7 +7527,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       a4PrintImage: assets.jpgBlob,
       a4PrintPdf: assets.pdfBlob,
       a4QrVersion: 4,
-    a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
+      a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       a4PreparedAt: now()
     }));
   });

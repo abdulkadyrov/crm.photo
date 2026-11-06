@@ -15,3 +15,17 @@ test("result, source and A4 images open the full-screen zoom viewer", () => {
   assert.match(source, /showImageZoom\(\{ url: image\.src/);
   assert.match(source, /mountDialogHistory\(\{ id: uid\("image-zoom"\)/);
 });
+
+test("A4 regeneration prefers a clean source before flattened legacy results", () => {
+  const candidates = source.slice(
+    source.indexOf("function finalWorkA4SourceCandidates("),
+    source.indexOf("\nfunction cleanOriginalForCandidate(")
+  );
+  assert.ok(candidates.indexOf('kind: "source-media"') < candidates.indexOf('kind: "ready-result"'));
+  assert.ok(candidates.indexOf('kind: "source-media"') < candidates.indexOf('kind: "merged-result"'));
+  assert.match(source, /originalFinalImage: cleanOriginalForCandidate\(latestWork, candidate\)/);
+});
+
+test("A4 viewer identifies the currently rendered code type", () => {
+  assert.match(source, /finalWorkPrintSettings\(\)\.codeType === "barcode" \? "Code 128" : "QR-код"/);
+});
