@@ -836,6 +836,11 @@ async function seedCatalogIfNeeded() {
   for (const item of emptyCatalogItems) await del("catalog", item.id);
   if (emptyCatalogItems.length) catalog = await getAll("catalog");
   const existingById = new Map(catalog.map((item) => [item.id, item]));
+  const retiredInterviewReference = existingById.get("school-photo-interview-girl-seedance");
+  if (retiredInterviewReference?.systemTemplate && retiredInterviewReference.kindergartenAiVideo) {
+    await del("catalog", retiredInterviewReference.id);
+    existingById.delete(retiredInterviewReference.id);
+  }
   if (!existingById.has(CLASS_PHOTO_SERVICE.id)) {
     await put("catalog", { ...CLASS_PHOTO_SERVICE });
   } else if (!existingById.get(CLASS_PHOTO_SERVICE.id).classPhotoPriceVersion) {
