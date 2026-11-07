@@ -2059,6 +2059,7 @@ button.mini-catalog-option {
 
 .projects-actions {
   display: grid;
+  min-width: 0;
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -2070,11 +2071,15 @@ button.mini-catalog-option {
 }
 
 .project-button-row .equal-button {
+  width: 100%;
   min-width: 0;
   overflow: hidden;
   padding: 0 10px;
+  border-radius: 999px;
   font-size: 0.9rem;
   text-overflow: ellipsis;
+  white-space: normal;
+  text-wrap: balance;
 }
 
 .project-button-row [data-add-class] {
@@ -5553,8 +5558,8 @@ button.mini-catalog-option {
     left: auto;
   }
 
-  .project-button-row { grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
-  .project-button-row .equal-button { min-height:64px;padding:10px 8px;font-size:.78rem;line-height:1.2;text-overflow:clip; }
+  .project-button-row { width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+  .project-button-row .equal-button { min-height:72px;padding:10px 6px;font-size:.74rem;line-height:1.2;text-overflow:clip; }
   .project-button-row [data-add-class] { min-height:56px;font-size:.92rem; }
   .student-status-options button { padding:6px 3px;font-size:.68rem; }
   .student-order-panel { gap:16px; }
