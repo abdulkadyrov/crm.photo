@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildExportSelection } from "../../js/services/export-filter-service.js";
+import { buildExportSelection, buildSectionExportSelection } from "../../js/services/export-filter-service.js";
 
 const data = {
   projects: [{ id: "p1" }, { id: "p2" }],
@@ -55,5 +55,24 @@ test("buildExportSelection respects optional content switches", () => {
   assert.equal(selected.catalog.length, 0);
   assert.equal(selected.settings.length, 0);
   assert.equal(selected.operators.length, 0);
+});
+
+test("buildSectionExportSelection exports all project data without unrelated sections", () => {
+  const selected = buildSectionExportSelection(data, ["projects"]);
+  assert.deepEqual(selected.projects.map((item) => item.id), ["p1", "p2"]);
+  assert.deepEqual(selected.classes.map((item) => item.id), ["c1", "c2"]);
+  assert.deepEqual(selected.students.map((item) => item.id), ["s1", "s2"]);
+  assert.deepEqual(selected.media.map((item) => item.id), ["m1", "m2", "m3"]);
+  assert.equal(selected.catalog.length, 0);
+  assert.equal(selected.operators.length, 0);
+  assert.equal(selected.settings.length, 0);
+});
+
+test("buildSectionExportSelection combines catalog and employees without projects", () => {
+  const selected = buildSectionExportSelection(data, ["services", "operators"]);
+  assert.deepEqual(selected.catalog.map((item) => item.id), ["svc1", "svc2"]);
+  assert.deepEqual(selected.operators.map((item) => item.id), ["op1"]);
+  assert.equal(selected.projects.length, 0);
+  assert.equal(selected.students.length, 0);
 });
 

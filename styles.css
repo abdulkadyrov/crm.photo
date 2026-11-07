@@ -2816,6 +2816,21 @@ button.mini-catalog-option {
   gap: 8px;
 }
 
+.transfer-export-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0 16px;
+}
+
+.transfer-export-options .checkbox-row {
+  min-height: 44px;
+  padding-inline: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
 .transfer-group {
   display: grid;
   gap: 10px;

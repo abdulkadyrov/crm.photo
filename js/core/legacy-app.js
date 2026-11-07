@@ -2,6 +2,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=130";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
@@ -201,6 +202,7 @@ const TRANSFER_IMPORT_SCOPES = {
   services: ["services"],
   settings: ["operators", "settings", "checklistTemplates"],
   work_config: ["operators", "services", "settings", "checklistTemplates"],
+  selection: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"],
   full_backup: ["operators", "operatorEvents", "projects", "classes", "students", "orders", "media", "finalWorks", "documents", "services", "settings", "checklistTemplates"]
 };
 const CLASS_SORT_MODES = {
@@ -3865,10 +3867,10 @@ function showSettingsDetail(section) {
         </section>
         <section class="transfer-group">
           <h3 class="mini-heading">Проект</h3>
-          <p class="muted">При досъёмке открывайте тот же проект. Повторный импорт безопасно добавит новые фото и не заменит готовый монтаж на основном компьютере.</p>
           <label class="field-label"><span>Проект</span><select class="select" data-transfer-project>${state.data.projects.map((project) => `<option value="${project.id}" ${project.id === state.projectId ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}</select></label>
           <div class="transfer-button-row">
             <button class="secondary-button" data-export-selected-project type="button">Экспорт проекта</button>
+            <button class="secondary-button" data-export-all-projects type="button">Экспорт всех проектов</button>
             <button class="secondary-button" data-import-project type="button">Импорт проекта</button>
             <button class="secondary-button" data-import-class-links type="button">Импорт только ссылок классов</button>
           </div>
@@ -3891,7 +3893,18 @@ function showSettingsDetail(section) {
           </div>
         </section>
         <section class="transfer-group">
-          <h3 class="mini-heading">Все данные</h3>
+          <h3 class="mini-heading" id="selected-export-heading">Выборочный экспорт</h3>
+          <div class="transfer-export-options" role="group" aria-labelledby="selected-export-heading">
+            <label class="checkbox-row"><input type="checkbox" data-export-section value="projects" checked /><span>Проекты</span></label>
+            <label class="checkbox-row"><input type="checkbox" data-export-section value="services" /><span>Услуги (каталог)</span></label>
+            <label class="checkbox-row"><input type="checkbox" data-export-section value="operators" /><span>Сотрудники</span></label>
+          </div>
+          <div class="transfer-button-row">
+            <button class="secondary-button" data-export-selected-data type="button">Экспорт выбранного</button>
+          </div>
+        </section>
+        <section class="transfer-group">
+          <h3 class="mini-heading">Полная резервная копия</h3>
           <label class="checkbox-row"><input type="checkbox" data-backup-bundled />Включить встроенные шаблоны и видео CRM (большой архив)</label>
           <p class="muted">Школы, классы, дети, учителя, заказы и ваши файлы сохраняются всегда. Без переключателя встроенные материалы каталога остаются ссылками на файлы приложения.</p>
           <div class="transfer-button-row">
@@ -4401,8 +4414,17 @@ function bindViewActions() {
   view.querySelector("[data-export-work-config]")?.addEventListener("click", exportWorkConfig);
   view.querySelector("[data-export-services]")?.addEventListener("click", exportServices);
   view.querySelector("[data-export-selected-project]")?.addEventListener("click", () => exportProject(view.querySelector("[data-transfer-project]")?.value || state.projectId));
+  view.querySelector("[data-export-all-projects]")?.addEventListener("click", (event) => runTransferExport(event.currentTarget, "Собираем проекты…", exportAllProjects));
+  const selectedExportButton = view.querySelector("[data-export-selected-data]");
+  const updateSelectedExportButton = () => {
+    if (!selectedExportButton) return;
+    selectedExportButton.disabled = !view.querySelector("[data-export-section]:checked");
+  };
+  view.querySelectorAll("[data-export-section]").forEach((node) => node.addEventListener("change", updateSelectedExportButton));
+  selectedExportButton?.addEventListener("click", (event) => runTransferExport(event.currentTarget, "Собираем выбранные данные…", exportSelectedData));
+  updateSelectedExportButton();
   view.querySelector("[data-export-selected-class]")?.addEventListener("click", () => exportClass(view.querySelector("[data-transfer-class]")?.value || state.classId));
-  view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", () => exportFullBackup()));
+  view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", (event) => runTransferExport(event.currentTarget, "Собираем полную копию…", exportFullBackup)));
   view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", () => exportProject(node.dataset.exportProject)));
   view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
   view.querySelectorAll("[data-print-final-project]").forEach((node) => node.addEventListener("click", () => reviewFinalWorksForPrint({ projectId: node.dataset.printFinalProject })));
@@ -9241,8 +9263,46 @@ async function exportFullBackup() {
     downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
     await updateStorageLocationSetting({ lastFullBackupAt: now(), filesAtLastBackup: currentBackupFileCount() });
     await recordOperatorEvent("export", { targetType: "full_backup" });
-    notify("Полный ZIP экспортирован.");
+    notify(`Полный ZIP скачан · ${formatFileSize(blob.size)}.`);
   });
+}
+
+async function exportAllProjects() {
+  return exportSectionArchive(["projects"], "SPF_all_projects", "Все проекты экспортированы");
+}
+
+async function exportSelectedData() {
+  const sections = Array.from(view.querySelectorAll("[data-export-section]:checked"), (node) => node.value);
+  if (!sections.length) return notify("Выберите хотя бы один раздел.");
+  return exportSectionArchive(sections, "SPF_selected_data", "Выбранные данные экспортированы");
+}
+
+async function exportSectionArchive(sections, filePrefix, successMessage) {
+  return withBusy("Подготовка выбранных данных...", async () => {
+    const blob = createZip(await buildTransferExportFiles("selection", { sections }, { includeBundled: false }));
+    downloadBlob(blob, `${filePrefix}_${new Date().toISOString().slice(0, 10)}.zip`);
+    await recordOperatorEvent("export", { targetType: "selection", sections });
+    notify(`${successMessage} · ${formatFileSize(blob.size)}.`);
+  });
+}
+
+async function runTransferExport(button, pendingLabel, task) {
+  if (!button || button.disabled) return;
+  const initialLabel = button.textContent;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = pendingLabel;
+  try {
+    await task();
+  } catch (error) {
+    console.error("Transfer export failed", error);
+    const detail = String(error?.message || "").trim();
+    notify(detail ? `Не удалось создать ZIP: ${detail}` : "Не удалось создать ZIP. Освободите место и повторите экспорт.");
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.textContent = initialLabel;
+  }
 }
 
 async function exportWorkConfig() {
@@ -9284,6 +9344,7 @@ async function buildTransferExportFiles(exportType, scope = {}, options = {}) {
     app: TRANSFER_APP_NAME,
     schemaVersion: TRANSFER_SCHEMA_VERSION,
     exportType,
+    ...(exportType === "selection" ? { sections: [...(scope.sections || [])] } : {}),
     exportedAt: now(),
     exportedBy: currentOperatorIdForAction({ warn: false }),
     bundledAssetsIncluded: options.includeBundled !== false,
@@ -10057,6 +10118,23 @@ function buildPublicCatalogHtml(catalogData) {
 
 function buildTransferData(exportType, scope = {}) {
   const base = emptyTransferData();
+  if (exportType === "selection") {
+    const selected = buildSectionExportSelection(state.data, scope.sections);
+    return fillTransferData(base, {
+      operators: selected.operators,
+      operatorEvents: selected.operatorEvents,
+      projects: selected.projects,
+      classes: selected.classes,
+      students: selected.students,
+      services: selected.catalog,
+      orders: selected.orders,
+      media: selected.media,
+      finalWorks: selected.finalWorks,
+      documents: selected.documents,
+      settings: selected.settings,
+      checklistTemplates: selected.templates
+    });
+  }
   if (exportType === "project") {
     const project = projectById(scope.projectId);
     if (!project) return base;

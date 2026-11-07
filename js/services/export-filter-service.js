@@ -21,6 +21,43 @@ export function buildExportSelection(data = {}, options = {}) {
   };
 }
 
+export function buildSectionExportSelection(data = {}, sections = []) {
+  const selectedSections = new Set(sections);
+  const includeProjects = selectedSections.has("projects");
+  const projectData = includeProjects
+    ? buildExportSelection(data, {
+      includeCatalog: false,
+      includeOperators: false,
+      includeOperatorLogs: false,
+      includeSettings: false
+    })
+    : emptyExportSelection();
+
+  return {
+    ...projectData,
+    operators: selectedSections.has("operators") ? [...(data.operators || [])] : [],
+    catalog: selectedSections.has("services") ? [...(data.catalog || [])] : [],
+    templates: []
+  };
+}
+
+function emptyExportSelection() {
+  return {
+    projects: [],
+    classes: [],
+    students: [],
+    operators: [],
+    operatorEvents: [],
+    catalog: [],
+    orders: [],
+    media: [],
+    finalWorks: [],
+    documents: [],
+    settings: [],
+    templates: []
+  };
+}
+
 function selectProjectIds(data, options) {
   if (options.projectId) return new Set([options.projectId]);
   if (options.classId) {
