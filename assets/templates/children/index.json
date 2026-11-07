@@ -39,7 +39,7 @@
   },
   {
     "id": "child-boy-armored-tech-hero",
-    "title": "Бронированный техногерой",
+    "title": "Железный человек",
     "grade": 2,
     "gender": "boy",
     "headwear": "none",
@@ -459,7 +459,7 @@
   },
   {
     "id": "child-boy-rescue-puppy-team",
-    "title": "Щенки-спасатели",
+    "title": "Щенячий патруль",
     "grade": 0,
     "gender": "boy",
     "headwear": "none",
@@ -498,7 +498,7 @@
   },
   {
     "id": "child-boy-block-world-friend",
-    "title": "Друг из блочного мира",
+    "title": "Майнкрафт",
     "grade": 1,
     "gender": "boy",
     "headwear": "none",
@@ -537,7 +537,7 @@
   },
   {
     "id": "child-boy-speed-fox-team",
-    "title": "Скоростной лис",
+    "title": "Тейлз",
     "grade": 2,
     "gender": "boy",
     "headwear": "none",
@@ -691,7 +691,7 @@
   },
   {
     "id": "child-girl-long-haired-tower-princess",
-    "title": "Принцесса солнечной башни",
+    "title": "Рапунцель",
     "grade": 2,
     "gender": "girl",
     "headwear": "none",
@@ -729,7 +729,7 @@
   },
   {
     "id": "child-girl-ice-queen",
-    "title": "Ледяная королева",
+    "title": "Эльза",
     "grade": 4,
     "gender": "girl",
     "headwear": "none",
@@ -767,7 +767,7 @@
   },
   {
     "id": "child-girl-brave-highland-princess",
-    "title": "Смелая принцесса гор",
+    "title": "Мерида",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -843,17 +843,19 @@
   },
   {
     "id": "child-girl-magic-academy-hijab",
-    "title": "Академия магии",
+    "title": "Хогвартс — Гермиона",
     "grade": 2,
     "gender": "girl",
     "headwear": "hijab",
-    "theme": "magic-academy",
+    "theme": "hogwarts-hermione",
     "tags": [
+      "хогвартс",
+      "гермиона",
       "магия",
-      "академия",
+      "школа",
       "хиджаб"
     ],
-    "description": "Ученица доброй академии магии в аккуратном светлом хиджабе.",
+    "description": "Юная волшебница Гермиона в библиотеке Хогвартса, в аккуратном светлом хиджабе.",
     "masterSrc": "./assets/templates/children/child-girl-magic-academy-hijab/master.png",
     "previewSrc": "./assets/templates/children/child-girl-magic-academy-hijab/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-girl-magic-academy-hijab/face-mask.png",
@@ -877,7 +879,7 @@
     },
     "printFormat": "4:5",
     "enabled": true,
-    "version": 2
+    "version": 3
   },
   {
     "id": "child-girl-horse-rider-headscarf",
@@ -919,7 +921,7 @@
   },
   {
     "id": "child-girl-sea-princess",
-    "title": "Морская принцесса",
+    "title": "Ариэль",
     "grade": 2,
     "gender": "girl",
     "headwear": "none",
@@ -1033,7 +1035,7 @@
   },
   {
     "id": "child-girl-snowman-friend",
-    "title": "Друг-снеговик",
+    "title": "Олаф",
     "grade": 0,
     "gender": "girl",
     "headwear": "none",
@@ -1111,7 +1113,7 @@
   },
   {
     "id": "child-girl-electric-creature-friend",
-    "title": "Искристый зверёк",
+    "title": "Пикачу",
     "grade": 1,
     "gender": "girl",
     "headwear": "none",
@@ -1788,7 +1790,7 @@
   },
   {
     "id": "child-boy-solar-cape-guardian",
-    "title": "Солнечный страж",
+    "title": "Супермен",
     "grade": 2,
     "gender": "boy",
     "headwear": "none",
@@ -1828,7 +1830,7 @@
   },
   {
     "id": "child-boy-emerald-giant-friend",
-    "title": "Изумрудный великан",
+    "title": "Халк",
     "grade": 2,
     "gender": "boy",
     "headwear": "none",
@@ -1868,7 +1870,7 @@
   },
   {
     "id": "child-boy-iron-tech-guardian",
-    "title": "Железный техностраж",
+    "title": "Железный человек",
     "grade": 3,
     "gender": "boy",
     "headwear": "none",
@@ -1908,7 +1910,7 @@
   },
   {
     "id": "child-boy-thunder-guardian",
-    "title": "Громовой защитник",
+    "title": "Тор",
     "grade": 3,
     "gender": "boy",
     "headwear": "none",
@@ -1920,7 +1922,7 @@
       "горы",
       "a4"
     ],
-    "description": "Ребёнок в команде с оригинальным защитником небесной обсерватории.",
+    "description": "Ребёнок рядом с молодым защитником небесной обсерватории.",
     "masterSrc": "./assets/templates/children/child-boy-thunder-guardian/master.jpg",
     "previewSrc": "./assets/templates/children/child-boy-thunder-guardian/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-boy-thunder-guardian/face-mask.png",
@@ -1944,11 +1946,11 @@
     },
     "printFormat": "A4",
     "enabled": true,
-    "version": 3
+    "version": 4
   },
   {
     "id": "child-boy-speed-hedgehog-friend",
-    "title": "Скоростной синий друг",
+    "title": "Соник",
     "grade": 1,
     "gender": "boy",
     "headwear": "none",
@@ -1988,7 +1990,7 @@
   },
   {
     "id": "child-boy-night-wing-guardian",
-    "title": "Ночной крылатый страж",
+    "title": "Бэтмен",
     "grade": 3,
     "gender": "boy",
     "headwear": "none",
@@ -1998,9 +2000,10 @@
       "ночь",
       "крылья",
       "город",
+      "мультяшный",
       "a4"
     ],
-    "description": "Оригинальный крылатый защитник рядом с ребёнком в лунном саду.",
+    "description": "Мужественный мультяшный ночной защитник рядом с ребёнком в лунном саду.",
     "masterSrc": "./assets/templates/children/child-boy-night-wing-guardian/master.jpg",
     "previewSrc": "./assets/templates/children/child-boy-night-wing-guardian/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-boy-night-wing-guardian/face-mask.png",
@@ -2024,11 +2027,52 @@
     },
     "printFormat": "A4",
     "enabled": true,
-    "version": 3
+    "version": 4
+  },
+  {
+    "id": "child-boy-hogwarts-harry",
+    "title": "Хогвартс — Гарри Поттер",
+    "grade": 2,
+    "gender": "boy",
+    "headwear": "none",
+    "theme": "hogwarts-harry",
+    "tags": [
+      "хогвартс",
+      "гарри поттер",
+      "магия",
+      "школа",
+      "волшебник",
+      "a4"
+    ],
+    "description": "Юный волшебник Гарри Поттер в библиотеке Хогвартса.",
+    "masterSrc": "./assets/templates/children/child-boy-hogwarts-harry/master.jpg",
+    "previewSrc": "./assets/templates/children/child-boy-hogwarts-harry/preview.webp",
+    "faceMaskSrc": "./assets/templates/children/child-boy-hogwarts-harry/face-mask.png",
+    "metadataSrc": "./assets/templates/children/child-boy-hogwarts-harry/metadata.json",
+    "faceGuide": {
+      "centerX": 0.5,
+      "centerY": 0.205,
+      "width": 0.24,
+      "height": 0.18,
+      "feather": 0.018
+    },
+    "canvas": {
+      "format": "A4",
+      "orientation": "portrait",
+      "width": 2480,
+      "height": 3508,
+      "previewWidth": 600,
+      "previewHeight": 849,
+      "dpi": 300,
+      "masterFile": "master.jpg"
+    },
+    "printFormat": "A4",
+    "enabled": true,
+    "version": 4
   },
   {
     "id": "child-boy-ninja-turtle-friend",
-    "title": "Черепаха-исследователь",
+    "title": "Черепашки-ниндзя",
     "grade": 1,
     "gender": "boy",
     "headwear": "none",
@@ -2068,7 +2112,7 @@
   },
   {
     "id": "child-boy-robot-lion-pilot",
-    "title": "Белый робот-лев",
+    "title": "Вольтрон",
     "grade": 2,
     "gender": "boy",
     "headwear": "none",
@@ -2108,7 +2152,7 @@
   },
   {
     "id": "child-boy-cosmic-ranger-friend",
-    "title": "Космический рейнджер",
+    "title": "Базз Лайтер",
     "grade": 2,
     "gender": "boy",
     "headwear": "none",
@@ -2148,7 +2192,7 @@
   },
   {
     "id": "child-boy-city-hero-shield",
-    "title": "Герой энергетического щита",
+    "title": "Капитан Америка",
     "grade": 3,
     "gender": "boy",
     "headwear": "none",
@@ -2348,7 +2392,7 @@
   },
   {
     "id": "child-girl-sun-tower-princess",
-    "title": "Златовласка с фонарём",
+    "title": "Рапунцель",
     "grade": 1,
     "gender": "girl",
     "headwear": "none",
@@ -2388,7 +2432,7 @@
   },
   {
     "id": "child-girl-forest-apple-princess",
-    "title": "Принцесса леса и яблок",
+    "title": "Белоснежка",
     "grade": 1,
     "gender": "girl",
     "headwear": "none",
@@ -2428,7 +2472,7 @@
   },
   {
     "id": "child-girl-highland-archer-princess",
-    "title": "Рыжая принцесса гор",
+    "title": "Мерида",
     "grade": 2,
     "gender": "girl",
     "headwear": "none",
@@ -2468,7 +2512,7 @@
   },
   {
     "id": "child-girl-rose-princess-beast",
-    "title": "Красавица и добрый зверь",
+    "title": "Белль и Чудовище",
     "grade": 2,
     "gender": "girl",
     "headwear": "none",
@@ -2508,7 +2552,7 @@
   },
   {
     "id": "child-girl-glass-slipper-princess",
-    "title": "Принцесса хрустальной туфельки",
+    "title": "Золушка",
     "grade": 1,
     "gender": "girl",
     "headwear": "none",
@@ -2548,7 +2592,7 @@
   },
   {
     "id": "child-girl-coral-sea-princess",
-    "title": "Коралловая морская принцесса",
+    "title": "Ариэль",
     "grade": 2,
     "gender": "girl",
     "headwear": "none",
@@ -2588,7 +2632,7 @@
   },
   {
     "id": "child-girl-ocean-wayfinder",
-    "title": "Океанская путешественница",
+    "title": "Моана",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -2600,7 +2644,7 @@
       "лодка",
       "a4"
     ],
-    "description": "Отважная океанская путешественница встречает ребёнка на тропическом берегу.",
+    "description": "Молодая океанская путешественница встречает ребёнка на тропическом берегу.",
     "masterSrc": "./assets/templates/children/child-girl-ocean-wayfinder/master.jpg",
     "previewSrc": "./assets/templates/children/child-girl-ocean-wayfinder/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-girl-ocean-wayfinder/face-mask.png",
@@ -2624,11 +2668,11 @@
     },
     "printFormat": "A4",
     "enabled": true,
-    "version": 3
+    "version": 4
   },
   {
     "id": "child-girl-northern-crystal-queen",
-    "title": "Северная кристальная королева",
+    "title": "Эльза",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -2640,7 +2684,7 @@
       "сияние",
       "a4"
     ],
-    "description": "Добрая северная королева с кристальным фонарём под полярным сиянием.",
+    "description": "Молодая северная королева с кристальным фонарём под полярным сиянием.",
     "masterSrc": "./assets/templates/children/child-girl-northern-crystal-queen/master.jpg",
     "previewSrc": "./assets/templates/children/child-girl-northern-crystal-queen/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-girl-northern-crystal-queen/face-mask.png",
@@ -2664,7 +2708,7 @@
     },
     "printFormat": "A4",
     "enabled": true,
-    "version": 3
+    "version": 4
   },
   {
     "id": "child-girl-moon-warrior-princess",
@@ -2708,7 +2752,7 @@
   },
   {
     "id": "child-girl-desert-palace-princess",
-    "title": "Принцесса пустынного дворца",
+    "title": "Жасмин",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -2748,7 +2792,7 @@
   },
   {
     "id": "child-girl-star-cape-heroine",
-    "title": "Звёздная героиня",
+    "title": "Капитан Марвел",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -2788,7 +2832,7 @@
   },
   {
     "id": "child-girl-sun-shield-heroine",
-    "title": "Героиня солнечного щита",
+    "title": "Чудо-женщина",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -2828,7 +2872,7 @@
   },
   {
     "id": "child-girl-ladybird-heroine",
-    "title": "Героиня удачи",
+    "title": "Леди Баг и Супер-Кот",
     "grade": 2,
     "gender": "girl",
     "headwear": "none",
@@ -2836,11 +2880,13 @@
     "tags": [
       "супергероиня",
       "божья коровка",
+      "супер-кот",
+      "мультяшный",
       "город",
       "талисман",
       "a4"
     ],
-    "description": "Городская героиня с мотивом божьей коровки дарит ребёнку талисман удачи.",
+    "description": "Мультяшные Леди Баг и Супер-Кот дарят ребёнку талисман удачи.",
     "masterSrc": "./assets/templates/children/child-girl-ladybird-heroine/master.jpg",
     "previewSrc": "./assets/templates/children/child-girl-ladybird-heroine/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-girl-ladybird-heroine/face-mask.png",
@@ -2864,11 +2910,11 @@
     },
     "printFormat": "A4",
     "enabled": true,
-    "version": 3
+    "version": 4
   },
   {
     "id": "child-girl-bear-forest-friend",
-    "title": "Добрый лесной медведь",
+    "title": "Маша и Медведь",
     "grade": 1,
     "gender": "girl",
     "headwear": "none",
@@ -2908,7 +2954,7 @@
   },
   {
     "id": "child-girl-fashion-dream-friend",
-    "title": "Модная мечта",
+    "title": "Барби",
     "grade": 3,
     "gender": "girl",
     "headwear": "none",
@@ -2920,7 +2966,7 @@
       "наставница",
       "a4"
     ],
-    "description": "Модная наставница помогает ребёнку придумать праздничный образ в светлой студии.",
+    "description": "Молодая модная наставница помогает ребёнку придумать праздничный образ в светлой студии.",
     "masterSrc": "./assets/templates/children/child-girl-fashion-dream-friend/master.jpg",
     "previewSrc": "./assets/templates/children/child-girl-fashion-dream-friend/preview.webp",
     "faceMaskSrc": "./assets/templates/children/child-girl-fashion-dream-friend/face-mask.png",
@@ -2944,7 +2990,7 @@
     },
     "printFormat": "A4",
     "enabled": true,
-    "version": 3
+    "version": 4
   },
   {
     "id": "child-girl-butterfly-fairy-mentor",

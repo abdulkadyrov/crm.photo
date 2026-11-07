@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v132";
+const CACHE_VERSION = "v133";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -21,7 +21,7 @@ const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-rescue-helicopter-pilot", "child-boy-solar-cape-guardian",
   "child-boy-emerald-giant-friend", "child-boy-iron-tech-guardian",
   "child-boy-thunder-guardian", "child-boy-speed-hedgehog-friend",
-  "child-boy-night-wing-guardian", "child-boy-ninja-turtle-friend",
+  "child-boy-night-wing-guardian", "child-boy-hogwarts-harry", "child-boy-ninja-turtle-friend",
   "child-boy-robot-lion-pilot", "child-boy-cosmic-ranger-friend",
   "child-boy-city-hero-shield", "child-girl-chechen-mosque-garden",
   "child-girl-chechen-stone-tower", "child-girl-chechen-wolf-companion",
@@ -83,13 +83,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=132",
+  "./styles.css?v=133",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=132",
+  "./js/core/app.js?v=133",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=132",
+  "./js/core/legacy-app.js?v=133",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -111,7 +111,7 @@ const APP_SHELL = [
   "./js/services/transfer-asset-loader.js",
   "./js/services/catalog-themes.js",
   "./js/services/teacher-broadcast.js",
-  "./js/services/teacher-broadcast.js?v=132",
+  "./js/services/teacher-broadcast.js?v=133",
   "./js/services/class-links-transfer.js",
   "./assets/class-photo/class-photo-a4.png",
   "./assets/game-photo-services/free-fire.webp",
@@ -169,7 +169,7 @@ const APP_SHELL = [
   "./js/services/backup-service.js",
   "./js/services/conflict-service.js",
   "./js/services/export-filter-service.js",
-  "./js/services/export-filter-service.js?v=132",
+  "./js/services/export-filter-service.js?v=133",
   "./js/services/file-system-service.js",
   "./js/services/integrity-service.js",
   "./js/services/import-preflight-service.js",

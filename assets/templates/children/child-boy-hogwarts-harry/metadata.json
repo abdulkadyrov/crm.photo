@@ -1,0 +1,35 @@
+{
+  "id": "child-boy-hogwarts-harry",
+  "title": "Хогвартс — Гарри Поттер",
+  "gender": "boy",
+  "masterSrc": "./assets/templates/children/child-boy-hogwarts-harry/master.jpg",
+  "previewSrc": "./assets/templates/children/child-boy-hogwarts-harry/preview.webp",
+  "faceMaskSrc": "./assets/templates/children/child-boy-hogwarts-harry/face-mask.png",
+  "metadataSrc": "./assets/templates/children/child-boy-hogwarts-harry/metadata.json",
+  "faceGuide": {
+    "centerX": 0.5,
+    "centerY": 0.205,
+    "width": 0.24,
+    "height": 0.18,
+    "feather": 0.018
+  },
+  "canvas": {
+    "format": "A4",
+    "orientation": "portrait",
+    "width": 2480,
+    "height": 3508,
+    "previewWidth": 600,
+    "previewHeight": 849,
+    "dpi": 300,
+    "masterFile": "master.jpg"
+  },
+  "printFormat": "A4",
+  "enabled": true,
+  "version": 4,
+  "aiAdapter": "face-swap-v1",
+  "sourceGenerationSize": {
+    "width": 1024,
+    "height": 1536
+  },
+  "masterPreparation": "lanczos-upscale-and-a4-crop"
+}

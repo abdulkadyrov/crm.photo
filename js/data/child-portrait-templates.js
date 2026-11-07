@@ -193,9 +193,9 @@ export const CHILD_PORTRAIT_TEMPLATES = [
     faceGuide: { centerX: 0.5, centerY: 0.265, width: 0.21, height: 0.185 }
   }),
   template({
-    id: "child-girl-magic-academy-hijab", title: "Академия магии", grade: 2, gender: "girl", headwear: "hijab", theme: "magic-academy",
-    tags: ["магия", "академия", "хиджаб"], description: "Ученица доброй академии магии в аккуратном светлом хиджабе.",
-    faceGuide: { centerX: 0.5, centerY: 0.285, width: 0.205, height: 0.18 }
+    id: "child-girl-magic-academy-hijab", title: "Хогвартс — Гермиона", grade: 2, gender: "girl", headwear: "hijab", theme: "hogwarts-hermione",
+    tags: ["хогвартс", "гермиона", "магия", "школа", "хиджаб"], description: "Юная волшебница Гермиона в библиотеке Хогвартса, в аккуратном светлом хиджабе.",
+    faceGuide: { centerX: 0.5, centerY: 0.285, width: 0.205, height: 0.18 }, version: 3
   }),
   template({
     id: "child-girl-horse-rider-headscarf", title: "Юная наездница", grade: 4, gender: "girl", headwear: "headscarf", theme: "horse-rider",

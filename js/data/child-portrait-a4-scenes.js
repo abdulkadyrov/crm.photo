@@ -13,13 +13,13 @@ const centeredFace = Object.freeze({ centerX: 0.5, centerY: 0.275, width: 0.175,
 const centeredCadetFace = Object.freeze({ centerX: 0.5, centerY: 0.235, width: 0.17, height: 0.15 });
 const teamFace = Object.freeze({ centerX: 0.36, centerY: 0.27, width: 0.17, height: 0.15 });
 
-const scene = ({ headwear = "none", faceGuide = teamFace, ...item }) => ({
+const scene = ({ headwear = "none", faceGuide = teamFace, version = 3, ...item }) => ({
   ...item,
   headwear,
   faceGuide,
   canvas: A4_CHILD_PORTRAIT_CANVAS,
   enabled: true,
-  version: 3
+  version
 });
 
 export const A4_CHILD_PORTRAIT_SCENES = Object.freeze([
@@ -40,9 +40,10 @@ export const A4_CHILD_PORTRAIT_SCENES = Object.freeze([
   scene({ id: "child-boy-solar-cape-guardian", title: "Супермен", grade: 2, gender: "boy", theme: "solar-cape-guardian", tags: ["супергерой", "плащ", "город", "команда", "a4"], description: "Ребёнок рядом с оригинальным солнечным защитником в плаще." }),
   scene({ id: "child-boy-emerald-giant-friend", title: "Халк", grade: 2, gender: "boy", theme: "emerald-giant-friend", tags: ["супергерой", "великан", "наука", "дружба", "a4"], description: "Добрый изумрудный великан показывает большой палец рядом с ребёнком." }),
   scene({ id: "child-boy-iron-tech-guardian", title: "Железный человек", grade: 3, gender: "boy", theme: "iron-tech-guardian", tags: ["супергерой", "броня", "технологии", "команда", "a4"], description: "Оригинальный бронированный техностраж рядом с ребёнком в городе будущего." }),
-  scene({ id: "child-boy-thunder-guardian", title: "Тор", grade: 3, gender: "boy", theme: "thunder-guardian", tags: ["супергерой", "гром", "броня", "горы", "a4"], description: "Ребёнок в команде с оригинальным защитником небесной обсерватории." }),
+  scene({ id: "child-boy-thunder-guardian", title: "Тор", grade: 3, gender: "boy", theme: "thunder-guardian", tags: ["супергерой", "гром", "броня", "горы", "a4"], description: "Ребёнок рядом с молодым защитником небесной обсерватории.", version: 4 }),
   scene({ id: "child-boy-speed-hedgehog-friend", title: "Соник", grade: 1, gender: "boy", theme: "speed-hedgehog-friend", tags: ["мультфильм", "скорость", "синий зверёк", "дружба", "a4"], description: "Весёлый скоростной зверёк даёт ребёнку пять на яркой трассе." }),
-  scene({ id: "child-boy-night-wing-guardian", title: "Бэтмен", grade: 3, gender: "boy", theme: "night-wing-guardian", tags: ["супергерой", "ночь", "крылья", "город", "a4"], description: "Оригинальный крылатый защитник рядом с ребёнком в лунном саду." }),
+  scene({ id: "child-boy-night-wing-guardian", title: "Бэтмен", grade: 3, gender: "boy", theme: "night-wing-guardian", tags: ["супергерой", "ночь", "крылья", "город", "мультяшный", "a4"], description: "Мужественный мультяшный ночной защитник рядом с ребёнком в лунном саду.", version: 4 }),
+  scene({ id: "child-boy-hogwarts-harry", title: "Хогвартс — Гарри Поттер", grade: 2, gender: "boy", theme: "hogwarts-harry", tags: ["хогвартс", "гарри поттер", "магия", "школа", "волшебник", "a4"], description: "Юный волшебник Гарри Поттер в библиотеке Хогвартса.", faceGuide: { centerX: 0.5, centerY: 0.205, width: 0.24, height: 0.18 }, version: 4 }),
   scene({ id: "child-boy-ninja-turtle-friend", title: "Черепашки-ниндзя", grade: 1, gender: "boy", theme: "ninja-turtle-friend", tags: ["мультфильм", "черепаха", "исследователь", "дружба", "a4"], description: "Добрая черепаха-путешественник приветствует ребёнка в вечернем саду." }),
   scene({ id: "child-boy-robot-lion-pilot", title: "Вольтрон", grade: 2, gender: "boy", theme: "robot-lion-pilot", tags: ["робот", "лев", "космос", "дружба", "a4"], description: "Ребёнок рядом с благородным белым роботом-львом в космическом ангаре." }),
   scene({ id: "child-boy-cosmic-ranger-friend", title: "Базз Лайтер", grade: 2, gender: "boy", theme: "cosmic-ranger-friend", tags: ["космос", "рейнджер", "планета", "команда", "a4"], description: "Оригинальный космический исследователь показывает ребёнку карту далёкой планеты." }),
@@ -58,15 +59,15 @@ export const A4_CHILD_PORTRAIT_SCENES = Object.freeze([
   scene({ id: "child-girl-rose-princess-beast", title: "Белль и Чудовище", grade: 2, gender: "girl", theme: "rose-princess-beast", tags: ["принцесса", "зверь", "роза", "библиотека", "a4"], description: "Ребёнок, книжная красавица и добрый зверь в зачарованной библиотеке." }),
   scene({ id: "child-girl-glass-slipper-princess", title: "Золушка", grade: 1, gender: "girl", theme: "glass-slipper-princess", tags: ["принцесса", "туфелька", "дворец", "сказка", "a4"], description: "Принцесса бала показывает ребёнку хрустальную туфельку на дворцовой лестнице." }),
   scene({ id: "child-girl-coral-sea-princess", title: "Ариэль", grade: 2, gender: "girl", theme: "coral-sea-princess", tags: ["принцесса", "море", "кораллы", "сказка", "a4"], description: "Морская принцесса со светящейся раковиной рядом с ребёнком в подводном дворце." }),
-  scene({ id: "child-girl-ocean-wayfinder", title: "Моана", grade: 3, gender: "girl", theme: "ocean-wayfinder", tags: ["океан", "путешествие", "остров", "лодка", "a4"], description: "Отважная океанская путешественница встречает ребёнка на тропическом берегу." }),
-  scene({ id: "child-girl-northern-crystal-queen", title: "Эльза", grade: 3, gender: "girl", theme: "northern-crystal-queen", tags: ["королева", "север", "кристаллы", "сияние", "a4"], description: "Добрая северная королева с кристальным фонарём под полярным сиянием." }),
+  scene({ id: "child-girl-ocean-wayfinder", title: "Моана", grade: 3, gender: "girl", theme: "ocean-wayfinder", tags: ["океан", "путешествие", "остров", "лодка", "a4"], description: "Молодая океанская путешественница встречает ребёнка на тропическом берегу.", version: 4 }),
+  scene({ id: "child-girl-northern-crystal-queen", title: "Эльза", grade: 3, gender: "girl", theme: "northern-crystal-queen", tags: ["королева", "север", "кристаллы", "сияние", "a4"], description: "Молодая северная королева с кристальным фонарём под полярным сиянием.", version: 4 }),
   scene({ id: "child-girl-moon-warrior-princess", title: "Лунная принцесса-воительница", grade: 4, gender: "girl", theme: "moon-warrior-princess", tags: ["принцесса", "луна", "воительница", "дворец", "a4"], description: "Мирная лунная принцесса с веером рядом с ребёнком в цветущем дворе." }),
   scene({ id: "child-girl-desert-palace-princess", title: "Жасмин", grade: 3, gender: "girl", theme: "desert-palace-princess", tags: ["принцесса", "дворец", "пустыня", "фонарь", "a4"], description: "Восточная принцесса с фонарём на террасе над сказочным городом." }),
   scene({ id: "child-girl-star-cape-heroine", title: "Капитан Марвел", grade: 3, gender: "girl", theme: "star-cape-heroine", tags: ["супергероиня", "плащ", "город", "команда", "a4"], description: "Ребёнок рядом с оригинальной звёздной героиней на крыше города будущего." }),
   scene({ id: "child-girl-sun-shield-heroine", title: "Чудо-женщина", grade: 3, gender: "girl", theme: "sun-shield-heroine", tags: ["супергероиня", "щит", "храм", "команда", "a4"], description: "Оригинальная защитница с солнечным щитом стоит рядом с ребёнком." }),
-  scene({ id: "child-girl-ladybird-heroine", title: "Леди Баг", grade: 2, gender: "girl", theme: "ladybird-heroine", tags: ["супергероиня", "божья коровка", "город", "талисман", "a4"], description: "Городская героиня с мотивом божьей коровки дарит ребёнку талисман удачи." }),
+  scene({ id: "child-girl-ladybird-heroine", title: "Леди Баг и Супер-Кот", grade: 2, gender: "girl", theme: "ladybird-heroine", tags: ["супергероиня", "божья коровка", "супер-кот", "мультяшный", "город", "талисман", "a4"], description: "Мультяшные Леди Баг и Супер-Кот дарят ребёнку талисман удачи.", version: 4 }),
   scene({ id: "child-girl-bear-forest-friend", title: "Маша и Медведь", grade: 1, gender: "girl", theme: "bear-forest-friend", tags: ["медведь", "лес", "домик", "дружба", "a4"], description: "Ребёнок с добрым медведем на солнечной поляне у деревянного домика." }),
-  scene({ id: "child-girl-fashion-dream-friend", title: "Барби", grade: 3, gender: "girl", theme: "fashion-dream-friend", tags: ["мода", "розовый", "студия", "наставница", "a4"], description: "Модная наставница помогает ребёнку придумать праздничный образ в светлой студии." }),
+  scene({ id: "child-girl-fashion-dream-friend", title: "Барби", grade: 3, gender: "girl", theme: "fashion-dream-friend", tags: ["мода", "розовый", "студия", "наставница", "a4"], description: "Молодая модная наставница помогает ребёнку придумать праздничный образ в светлой студии.", version: 4 }),
   scene({ id: "child-girl-butterfly-fairy-mentor", title: "Фея-бабочка", grade: 1, gender: "girl", theme: "butterfly-fairy-mentor", tags: ["фея", "бабочка", "сад", "волшебство", "a4"], description: "Оригинальная фея-бабочка с цветочным фонарём рядом с ребёнком в волшебном саду." })
 ]);
 

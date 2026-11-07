@@ -1,6 +1,6 @@
 {
   "id": "child-girl-ladybird-heroine",
-  "title": "Леди Баг",
+  "title": "Леди Баг и Супер-Кот",
   "gender": "girl",
   "masterSrc": "./assets/templates/children/child-girl-ladybird-heroine/master.jpg",
   "previewSrc": "./assets/templates/children/child-girl-ladybird-heroine/preview.webp",
@@ -25,11 +25,11 @@
   },
   "printFormat": "A4",
   "enabled": true,
-  "version": 3,
+  "version": 4,
   "aiAdapter": "face-swap-v1",
   "sourceGenerationSize": {
-    "width": 1053,
-    "height": 1494
+    "width": 1024,
+    "height": 1536
   },
   "masterPreparation": "lanczos-upscale-and-a4-crop"
 }

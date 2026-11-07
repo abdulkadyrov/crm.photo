@@ -69,15 +69,15 @@ async function jpegSize(file) {
   assert.fail("JPEG dimensions not found");
 }
 
-test("child portrait registry adds 44 A4 templates and includes fighter services", () => {
-  assert.equal(CHILD_PORTRAIT_TEMPLATES.length, 76);
-  assert.equal(new Set(CHILD_PORTRAIT_TEMPLATES.map((item) => item.id)).size, 76);
-  assert.equal(CHILD_PORTRAIT_TEMPLATES.filter((item) => item.gender === "boy").length, 40);
+test("child portrait registry adds 45 A4 templates and includes fighter services", () => {
+  assert.equal(CHILD_PORTRAIT_TEMPLATES.length, 77);
+  assert.equal(new Set(CHILD_PORTRAIT_TEMPLATES.map((item) => item.id)).size, 77);
+  assert.equal(CHILD_PORTRAIT_TEMPLATES.filter((item) => item.gender === "boy").length, 41);
   assert.equal(CHILD_PORTRAIT_TEMPLATES.filter((item) => item.gender === "girl").length, 36);
-  assert.equal(SELECTED_CHILD_PORTRAIT_TEMPLATE_IDS.length, 68);
+  assert.equal(SELECTED_CHILD_PORTRAIT_TEMPLATE_IDS.length, 69);
   const a4 = CHILD_PORTRAIT_TEMPLATES.filter((item) => item.canvas.format === "A4");
-  assert.equal(a4.length, 44);
-  assert.equal(a4.filter((item) => item.gender === "boy").length, 24);
+  assert.equal(a4.length, 45);
+  assert.equal(a4.filter((item) => item.gender === "boy").length, 25);
   assert.equal(a4.filter((item) => item.gender === "girl").length, 20);
   assert.deepEqual(
     CHILD_PORTRAIT_TEMPLATES.filter((item) => item.enabled).map((item) => item.id).sort(),
@@ -138,13 +138,13 @@ test("child portrait templates map into the existing service catalog and montage
   });
 });
 
-test("all 44 A4 portraits are active assignable services", () => {
+test("all 45 A4 portraits are active assignable services", () => {
   const a4Services = CHILD_PORTRAIT_TEMPLATES
     .filter((item) => item.canvas.format === "A4")
     .map(childPortraitCatalogRecord);
 
-  assert.equal(a4Services.length, 44);
-  assert.equal(a4Services.filter((item) => item.gender === "boys").length, 24);
+  assert.equal(a4Services.length, 45);
+  assert.equal(a4Services.filter((item) => item.gender === "boys").length, 25);
   assert.equal(a4Services.filter((item) => item.gender === "girls").length, 20);
   for (const service of a4Services) {
     assert.equal(service.enabled, true);

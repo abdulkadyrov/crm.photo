@@ -25,11 +25,11 @@
   },
   "printFormat": "A4",
   "enabled": true,
-  "version": 3,
+  "version": 4,
   "aiAdapter": "face-swap-v1",
   "sourceGenerationSize": {
-    "width": 1055,
-    "height": 1491
+    "width": 1024,
+    "height": 1536
   },
   "masterPreparation": "lanczos-upscale-and-a4-crop"
 }
