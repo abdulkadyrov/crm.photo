@@ -24,6 +24,10 @@ test('mobile student UI puts service selection first and moves editing controls 
   assert.doesNotMatch(orderSetup, /data-open-montage|data-edit-student/);
   assert.match(orderControls, /data-open-montage/);
   assert.match(orderControls, /data-edit-student/);
+  assert.match(app, /const primaryCatalogId = selectedCatalogIds\[0\] \|\| ""/);
+  assert.match(app, /const nextItems = selectedCatalogIds\.length \? orderItemsFromCatalogs\([\s\S]*?\) : \[\]/);
+  assert.doesNotMatch(app, /if \(!selectedCatalogIds\.length\) return notify\("Выберите хотя бы одну услугу\."\)/);
+  assert.match(app, /await updateStudentServices\(studentId, selectedCatalogIdsForStudent\(student\)\.filter/);
   assert.doesNotMatch(css, /\.student-status-options\s*\{\s*grid-template-columns:repeat\(2/);
   assert.match(css, /\.project-button-row\s*\{\s*grid-template-columns:\s*minmax\(0,1fr\)/);
 });

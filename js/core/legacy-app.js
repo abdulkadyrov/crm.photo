@@ -4337,11 +4337,19 @@ function bindViewActions() {
     node.addEventListener("change", save);
     node.addEventListener("blur", save);
   });
-  view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", () => {
+  view.querySelectorAll("[data-remove-student-service]").forEach((node) => node.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    if (node.disabled) return;
     const [studentId, catalogId] = node.dataset.removeStudentService.split(":");
     const student = studentById(studentId);
     if (!student) return;
-    updateStudentServices(studentId, selectedCatalogIdsForStudent(student).filter((id) => id !== catalogId));
+    node.disabled = true;
+    try {
+      await updateStudentServices(studentId, selectedCatalogIdsForStudent(student).filter((id) => id !== catalogId));
+    } catch (error) {
+      node.disabled = false;
+      notify(error?.message || "Не удалось убрать услугу. Повторите ещё раз.");
+    }
   }));
   view.querySelector("[data-order-status]")?.addEventListener("change", (event) => updateOrderStatus(event.target.dataset.orderStatus, event.target.value));
   view.querySelectorAll("[data-set-order-status]").forEach((node) => node.addEventListener("click", () => {
@@ -5059,18 +5067,18 @@ async function updateStudentServices(studentId, catalogIds) {
   const student = studentById(studentId);
   if (!student) return;
   const selectedCatalogIds = normalizeCatalogIds(catalogIds);
-  if (!selectedCatalogIds.length) return notify("Выберите хотя бы одну услугу.");
   const order = orderByStudent(studentId);
-  const nextItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
+  const nextItems = selectedCatalogIds.length ? orderItemsFromCatalogs(selectedCatalogIds, order.items || []) : [];
+  const primaryCatalogId = selectedCatalogIds[0] || "";
   await put("students", stampUpdated({
     ...student,
-    catalogId: selectedCatalogIds[0],
+    catalogId: primaryCatalogId,
     catalogIds: selectedCatalogIds,
     selectedServices: buildSelectedServices(selectedCatalogIds, selectedServicesForStudent(student))
   }));
-  await put("orders", stampUpdated({ ...order, catalogId: selectedCatalogIds[0], catalogIds: selectedCatalogIds, items: nextItems }));
+  await put("orders", stampUpdated({ ...order, catalogId: primaryCatalogId, catalogIds: selectedCatalogIds, items: nextItems }));
   await refreshData();
-  notify("Услуги и чеклист ученика обновлены.");
+  notify(selectedCatalogIds.length ? "Услуги и чеклист ученика обновлены." : "Услуга убрана из заказа.");
   state.preserveScroll = true;
   renderStudent();
 }
