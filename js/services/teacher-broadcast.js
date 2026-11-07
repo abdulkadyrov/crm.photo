@@ -24,19 +24,37 @@ export function filterTeacherRecipients(recipients, query = '') {
     .some((value) => String(value || '').toLocaleLowerCase('ru-RU').includes(needle)));
 }
 
+export function sortTeacherRecipients(recipients = []) {
+  return [...recipients].sort((a, b) =>
+    String(a.school || '').localeCompare(String(b.school || ''), 'ru', {numeric: true, sensitivity: 'base'})
+    || String(a.className || '').localeCompare(String(b.className || ''), 'ru', {numeric: true, sensitivity: 'base'})
+    || String(a.name || '').localeCompare(String(b.name || ''), 'ru', {sensitivity: 'base'}));
+}
+
+export function teacherRecipientSchools(recipients = []) {
+  const schools = new Map();
+  sortTeacherRecipients(recipients).forEach((recipient) => {
+    const id = String(recipient.schoolId || recipient.school || '').trim();
+    if (id && !schools.has(id)) schools.set(id, {id, name: recipient.school || 'Без названия'});
+  });
+  return [...schools.values()];
+}
+
 function recipientInitials(recipient) {
   const source = recipient.name || recipient.className || recipient.school || 'У';
   return source.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('ru-RU');
 }
 
-export function openTeacherBroadcast({recipients, draft = {}, save, restore = () => {}}) {
+export function openTeacherBroadcast({recipients, draft = {}, save, setSent, selectedSchoolId = '', restore = () => {}}) {
+  recipients = sortTeacherRecipients(recipients);
+  const schools = teacherRecipientSchools(recipients);
   const dialog = document.createElement('dialog');
   dialog.className = 'cloud-dialog teacher-broadcast-dialog';
   dialog.setAttribute('aria-label', 'Рассылка учителям');
   dialog.innerHTML = `
     <div class="teacher-broadcast-shell">
       <header class="teacher-broadcast-header">
-        <div><h2>Рассылка учителям</h2><p><strong data-ready-count>0</strong> с телефоном · <span data-total-count>0</span> всего</p></div>
+        <div><h2>Рассылка учителям</h2><p><strong data-sent-count>0</strong> отправлено · <span data-ready-count>0</span> готовы · <span data-total-count>0</span> классов</p></div>
         <button type="button" class="icon-button" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </header>
       <details class="teacher-template-panel">
@@ -45,6 +63,7 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
       </details>
       <div class="teacher-broadcast-layout">
         <aside class="teacher-recipient-panel" aria-label="Учителя и классы">
+          <label class="teacher-school-filter"><span>Школа</span><select data-school aria-label="Школа для рассылки"></select></label>
           <label class="teacher-search"><span class="visually-hidden">Найти учителя или класс</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></svg><input type="search" placeholder="Учитель, школа или класс" data-search /></label>
           <div class="teacher-recipient-list" role="listbox" data-recipient-list></div><p class="teacher-recipient-empty" data-empty hidden>Ничего не найдено.</p>
         </aside>
@@ -59,6 +78,7 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
     </div>`;
 
   const template = dialog.querySelector('[data-template]');
+  const school = dialog.querySelector('[data-school]');
   const search = dialog.querySelector('[data-search]');
   const list = dialog.querySelector('[data-recipient-list]');
   const empty = dialog.querySelector('[data-empty]');
@@ -66,11 +86,22 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
   const link = dialog.querySelector('[data-whatsapp]');
   const status = dialog.querySelector('[data-status]');
   const overrides = {...(draft.overrides || {})};
-  let activeId = recipients.some((recipient) => recipient.id === draft.lastRecipientId) ? draft.lastRecipientId : recipients[0]?.id || '';
+  school.replaceChildren(...schools.map((item) => new Option(item.name, item.id)));
+  let activeSchoolId = schools.some((item) => item.id === selectedSchoolId) ? selectedSchoolId
+    : schools.some((item) => item.id === draft.lastSchoolId) ? draft.lastSchoolId
+      : schools[0]?.id || '';
+  school.value = activeSchoolId;
+  const schoolRecipients = () => recipients.filter((recipient) => String(recipient.schoolId || recipient.school || '') === activeSchoolId);
+  let activeId = schoolRecipients().some((recipient) => recipient.id === draft.lastRecipientId) ? draft.lastRecipientId : schoolRecipients()[0]?.id || '';
   template.value = draft.template ?? DEFAULT_TEACHER_MESSAGE;
-  dialog.querySelector('[data-ready-count]').textContent = String(recipients.filter((recipient) => teacherPhone(recipient.phone) && recipient.catalogUrl).length);
-  dialog.querySelector('[data-total-count]').textContent = String(recipients.length);
   const current = () => recipients.find((recipient) => recipient.id === activeId);
+
+  function updateCounts() {
+    const currentSchool = schoolRecipients();
+    dialog.querySelector('[data-sent-count]').textContent = String(currentSchool.filter((recipient) => recipient.sent).length);
+    dialog.querySelector('[data-ready-count]').textContent = String(currentSchool.filter((recipient) => teacherPhone(recipient.phone) && recipient.catalogUrl).length);
+    dialog.querySelector('[data-total-count]').textContent = String(currentSchool.length);
+  }
 
   function updateLink() {
     const url = current()?.catalogUrl ? teacherWhatsAppUrl(current()?.phone, message.value) : '';
@@ -79,20 +110,41 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
   }
 
   function renderRecipients() {
-    const visible = filterTeacherRecipients(recipients, search.value);
+    const visible = filterTeacherRecipients(schoolRecipients(), search.value);
     list.replaceChildren(); empty.hidden = visible.length > 0;
     visible.forEach((recipient) => {
       const phone = teacherPhone(recipient.phone);
+      const item = document.createElement('div'); item.className = 'teacher-recipient-item'; item.setAttribute('role', 'option'); item.setAttribute('aria-selected', String(recipient.id === activeId));
       const button = document.createElement('button');
-      button.type = 'button'; button.className = 'teacher-recipient'; button.setAttribute('role', 'option'); button.setAttribute('aria-selected', String(recipient.id === activeId));
+      button.type = 'button'; button.className = 'teacher-recipient';
       const avatar = document.createElement('span'); avatar.className = 'teacher-recipient-avatar'; avatar.textContent = recipientInitials(recipient);
       const copy = document.createElement('span'); copy.className = 'teacher-recipient-copy';
       const name = document.createElement('strong'); name.textContent = recipient.name || `Класс ${recipient.className}`;
       const context = document.createElement('small'); context.textContent = [recipient.school, recipient.className].filter(Boolean).join(' · '); copy.append(name, context);
       const ready = phone && recipient.catalogUrl;
-      const state = document.createElement('span'); state.className = `teacher-recipient-state ${ready ? 'is-ready' : 'is-missing'}`; state.textContent = !phone ? 'Нет телефона' : !recipient.catalogUrl ? 'Нет ссылки' : 'Готово';
-      button.append(avatar, copy, state); button.onclick = () => { activeId = recipient.id; renderRecipients(); renderMessage(); }; list.append(button);
+      const state = document.createElement('span'); state.className = `teacher-recipient-state ${recipient.sent ? 'is-sent' : ready ? 'is-ready' : 'is-missing'}`; state.textContent = recipient.sent ? 'Отправлено' : !phone ? 'Нет телефона' : !recipient.catalogUrl ? 'Нет ссылки' : 'Готово';
+      const sentLabel = document.createElement('label'); sentLabel.className = 'teacher-sent-toggle';
+      const sentInput = document.createElement('input'); sentInput.type = 'checkbox'; sentInput.checked = Boolean(recipient.sent); sentInput.setAttribute('aria-label', `Рассылка отправлена: ${recipient.name || `класс ${recipient.className}`}`);
+      const sentText = document.createElement('span'); sentText.textContent = 'Рассылка отправлена'; sentLabel.append(sentInput, sentText);
+      sentInput.onchange = async () => {
+        const next = sentInput.checked;
+        const previous = Boolean(recipient.sent);
+        const previousSentAt = recipient.sentAt || '';
+        recipient.sent = next; recipient.sentAt = next ? new Date().toISOString() : '';
+        renderRecipients(); updateCounts();
+        try {
+          await setSent?.(recipient.id, next);
+          status.textContent = next ? 'Отмечено: рассылка отправлена.' : 'Отметка отправки снята.';
+        } catch (error) {
+          recipient.sent = previous; recipient.sentAt = previousSentAt;
+          renderRecipients(); updateCounts();
+          status.textContent = error?.message || 'Не удалось сохранить отметку. Попробуйте ещё раз.';
+        }
+      };
+      button.append(avatar, copy, state); button.onclick = () => { activeId = recipient.id; renderRecipients(); renderMessage(); };
+      item.append(button, sentLabel); list.append(item);
     });
+    updateCounts();
   }
 
   function renderMessage() {
@@ -104,10 +156,11 @@ export function openTeacherBroadcast({recipients, draft = {}, save, restore = ()
     phoneState.className = `teacher-phone-state ${ready ? 'is-ready' : 'is-missing'}`; phoneState.textContent = !phone ? 'Добавьте телефон в карточке класса' : !recipient?.catalogUrl ? 'Импортируйте ZIP проекта или JSON ссылок из Vakha Studio' : `+${phone} · ссылка готова`; updateLink();
   }
 
+  school.onchange = () => { activeSchoolId = school.value; activeId = schoolRecipients()[0]?.id || ''; search.value = ''; renderRecipients(); renderMessage(); };
   search.oninput = renderRecipients; template.oninput = renderMessage;
   message.oninput = () => { if (current()) overrides[current().id] = message.value; updateLink(); };
   dialog.querySelector('[data-reset]').onclick = () => { if (current()) delete overrides[current().id]; renderMessage(); };
-  const persist = async () => save({template: template.value, overrides, lastRecipientId: activeId});
+  const persist = async () => save({template: template.value, overrides, lastRecipientId: activeId, lastSchoolId: activeSchoolId});
   dialog.querySelector('[data-save]').onclick = async () => { try { await persist(); status.textContent = 'Черновик сохранён.'; } catch { status.textContent = 'Не удалось сохранить. Попробуйте ещё раз.'; } };
   dialog.querySelector('[data-copy]').onclick = async () => { try { await navigator.clipboard.writeText(message.value); status.textContent = 'Сообщение скопировано.'; } catch { status.textContent = 'Не удалось скопировать. Выделите текст вручную.'; } };
   link.onclick = (event) => { if (!link.hasAttribute('href')) { event.preventDefault(); status.textContent = current()?.catalogUrl ? 'Сначала добавьте телефон учителя в карточке класса.' : 'Сначала импортируйте ссылку класса из Vakha Studio.'; return; } status.textContent = 'WhatsApp открыт. Отправку подтвердите в WhatsApp.'; void persist().catch(() => { status.textContent += ' Черновик не сохранён.'; }); };

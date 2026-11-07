@@ -1,8 +1,8 @@
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=131";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=130";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=131";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
@@ -1343,7 +1343,7 @@ function classStudentSection(classId) {
         </div>
       </div>
       ${klass.parentCatalogUrl ? `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted" style="overflow-wrap:anywhere">${escapeHtml(klass.parentCatalogUrl)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(klass.parentCatalogUrl)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div></article>` : `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted">Ссылка ещё не получена из Vakha Studio.</p></article>`}
-      ${klass.teacher?.name ? `<article class="panel"><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</article>` : ""}
+      ${klass.teacher?.name ? `<article class="panel teacher-contact-panel"><div><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</div><label class="teacher-broadcast-check"><input type="checkbox" data-class-broadcast-sent="${klass.id}" ${klass.teacherBroadcastSentAt ? "checked" : ""} /><span>Рассылка отправлена</span></label></article>` : ""}
       ${documentsSection("group", klass.id)}
       <div class="student-list">
         ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в группу.</p>'}
@@ -4150,11 +4150,24 @@ function templateEditorRow(item) {
 function bindViewActions() {
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
   view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
-    const recipients = state.data.classes.filter(klass => !node.dataset.teacherBroadcast || klass.projectId === node.dataset.teacherBroadcast).map(klass => ({id:klass.id, className:klass.name, school:projectById(klass.projectId)?.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || '', catalogUrl:klass.parentCatalogUrl || ''}));
-    openTeacherBroadcast({recipients, draft:state.data.settings.find(item => item.id === 'teacher-broadcast-draft')?.value, restore:captureDialogReturn(document,window,node), save:async value => {await put('settings',stampUpdated({id:'teacher-broadcast-draft',value}));await refreshData();}});
+    const recipients = state.data.projects.flatMap(project => classesByProject(project.id).map(klass => ({id:klass.id, schoolId:project.id, className:klass.name, school:project.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || '', catalogUrl:klass.parentCatalogUrl || '', sent:Boolean(klass.teacherBroadcastSentAt), sentAt:klass.teacherBroadcastSentAt || ''})));
+    openTeacherBroadcast({recipients, selectedSchoolId:node.dataset.teacherBroadcast, draft:state.data.settings.find(item => item.id === 'teacher-broadcast-draft')?.value, restore:captureDialogReturn(document,window,node), setSent:setClassTeacherBroadcastSent, save:async value => {await put('settings',stampUpdated({id:'teacher-broadcast-draft',value}));await refreshData();}});
   });
   view.querySelectorAll('[data-export-vakha]').forEach(node => node.onclick = () => exportProject(node.dataset.exportVakha, true));
   view.querySelectorAll("[data-class-teacher]").forEach(node => node.addEventListener("click", () => showClassTeacher(node.dataset.classTeacher, node)));
+  view.querySelectorAll("[data-class-broadcast-sent]").forEach(node => node.addEventListener("change", async () => {
+    const next = node.checked;
+    node.disabled = true;
+    try {
+      await setClassTeacherBroadcastSent(node.dataset.classBroadcastSent, next);
+      notify(next ? "Отмечено: рассылка отправлена." : "Отметка отправки снята.");
+    } catch (error) {
+      node.checked = !next;
+      notify(error?.message || "Не удалось сохранить отметку.");
+    } finally {
+      node.disabled = false;
+    }
+  }));
   view.querySelectorAll("[data-copy-class-link]").forEach(node => node.addEventListener("click", async () => {
     const url = classById(node.dataset.copyClassLink)?.parentCatalogUrl || "";
     if (!url) return notify("Ссылка класса ещё не импортирована.");
@@ -4844,6 +4857,17 @@ function showClassTeacher(classId, trigger) {
     }
   };
   document.body.append(dialog); dialog.showModal();
+}
+
+async function setClassTeacherBroadcastSent(classId, sent) {
+  const latest = (await getAll('classes')).find((item) => item.id === classId);
+  if (!latest) throw new Error('Класс больше не существует. Обновите список.');
+  await put('classes', stampUpdated({
+    ...latest,
+    teacherBroadcastSentAt: sent ? now() : '',
+    teacherBroadcastSentBy: sent ? currentOperatorIdForAction({warn: false}) : ''
+  }, {warn: false}));
+  await refreshData();
 }
 
 function showChildrenList(classId, trigger) {
