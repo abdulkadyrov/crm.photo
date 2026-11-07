@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v126";
+const CACHE_VERSION = "v127";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -83,13 +83,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=126",
+  "./styles.css?v=127",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=126",
+  "./js/core/app.js?v=127",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=126",
+  "./js/core/legacy-app.js?v=127",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",

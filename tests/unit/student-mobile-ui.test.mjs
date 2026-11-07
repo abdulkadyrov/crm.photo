@@ -29,5 +29,6 @@ test('mobile student UI puts service selection first and moves editing controls 
   assert.doesNotMatch(app, /if \(!selectedCatalogIds\.length\) return notify\("Выберите хотя бы одну услугу\."\)/);
   assert.match(app, /await updateStudentServices\(studentId, selectedCatalogIdsForStudent\(student\)\.filter/);
   assert.doesNotMatch(css, /\.student-status-options\s*\{\s*grid-template-columns:repeat\(2/);
-  assert.match(css, /\.project-button-row\s*\{\s*grid-template-columns:\s*minmax\(0,1fr\)/);
+  assert.match(css, /\.project-button-row\s*\{\s*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.project-button-row \[data-add-class\]\s*\{\s*min-height:56px/);
 });
