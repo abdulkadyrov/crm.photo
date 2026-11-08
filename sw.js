@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v133";
+const CACHE_VERSION = "v134";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -83,13 +83,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=133",
+  "./styles.css?v=134",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=133",
+  "./js/core/app.js?v=134",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=133",
+  "./js/core/legacy-app.js?v=134",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -111,7 +111,7 @@ const APP_SHELL = [
   "./js/services/transfer-asset-loader.js",
   "./js/services/catalog-themes.js",
   "./js/services/teacher-broadcast.js",
-  "./js/services/teacher-broadcast.js?v=133",
+  "./js/services/teacher-broadcast.js?v=134",
   "./js/services/class-links-transfer.js",
   "./assets/class-photo/class-photo-a4.png",
   "./assets/game-photo-services/free-fire.webp",
@@ -169,7 +169,7 @@ const APP_SHELL = [
   "./js/services/backup-service.js",
   "./js/services/conflict-service.js",
   "./js/services/export-filter-service.js",
-  "./js/services/export-filter-service.js?v=133",
+  "./js/services/export-filter-service.js?v=134",
   "./js/services/file-system-service.js",
   "./js/services/integrity-service.js",
   "./js/services/import-preflight-service.js",

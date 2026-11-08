@@ -81,6 +81,29 @@ test("safe order merge appends reshoot files without rolling local progress back
   assert.deepEqual(merged.items.find((item) => item.type === "video").fileIds, ["video-reshoot"]);
 });
 
+test("repeat import keeps an individual parent request and its screenshot reference", () => {
+  const incomingItem = {
+    id: "order_student-3_custom",
+    type: "custom-request",
+    title: "Индивидуальный образ",
+    comment: "Пожарный как на приложенном примере",
+    requestType: "custom",
+    referenceServiceId: "service-firefighter",
+    referenceServiceName: "Пожарный",
+    referenceMediaId: "parent_request_student-3_custom_1"
+  };
+  const first = mergeOrderRecord({ id: "order_student-3", studentId: "student-3", items: [] }, {
+    id: "order_student-3", studentId: "student-3", vakhaOrderNumber: "VS-42", items: [incomingItem]
+  });
+  const repeated = mergeOrderRecord(first, {
+    id: "order_student-3", studentId: "student-3", vakhaOrderNumber: "VS-42", items: [incomingItem]
+  });
+
+  assert.equal(repeated.items.length, 1);
+  assert.equal(repeated.items[0].referenceMediaId, "parent_request_student-3_custom_1");
+  assert.equal(repeated.items[0].comment, "Пожарный как на приложенном примере");
+});
+
 test("safe merge keeps the main-computer montage and existing source records", () => {
   const mainImage = new Blob(["main montage"], { type: "image/jpeg" });
   const photographerImage = new Blob(["old copy"], { type: "image/jpeg" });

@@ -34,3 +34,17 @@ test('mobile student UI puts service selection first and moves editing controls 
   assert.match(css, /\.project-button-row \.equal-button\s*\{[\s\S]*?border-radius:\s*999px;[\s\S]*?white-space:\s*normal/);
   assert.match(css, /\.project-button-row\s*\{\s*width:100%;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:8px/);
 });
+
+test('student order explains imported individual parent requests and opens their screenshot', async()=>{
+  const [app, css] = await Promise.all([
+    readFile(new URL('js/core/legacy-app.js', root), 'utf8'),
+    readFile(new URL('styles.css', root), 'utf8')
+  ]);
+  assert.match(app, /function renderParentRequest\(order\)/);
+  assert.match(app, /Индивидуальная заявка/);
+  assert.match(app, /Пример из каталога:/);
+  assert.match(app, /Открыть скрин/);
+  assert.match(app, /item\.referenceMediaId \? mediaById/);
+  assert.match(css, /\.parent-request-summary\s*\{/);
+  assert.match(css, /\.parent-request-item\s*\{[\s\S]*grid-template-columns:\s*74px minmax\(0, 1fr\)/);
+});

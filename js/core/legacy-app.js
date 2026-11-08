@@ -1902,6 +1902,7 @@ function renderStudent() {
   const selectedCatalogItems = selectedCatalogIds.map(catalogItemById).filter(Boolean);
   const orderedCatalogItems = orderedStudentCatalogItems(student);
   const selectedCatalogTitle = selectedCatalogIds.map((id) => serviceName(catalogItemById(id))).filter(Boolean).join(", ") || "Услуги не выбраны";
+  const parentRequestHtml = renderParentRequest(order);
   const orderPrice = studentTotalPrice(student);
   const c = completion(student.id);
   const price = studentTotalPrice(student);
@@ -2006,6 +2007,7 @@ function renderStudent() {
         </div>
       </aside>
       <aside class="panel grid student-order-panel student-order-controls-panel student-detail-section ${activeStudentDetailTab === "order" ? "is-active" : ""}" data-student-detail-section="order">
+        ${parentRequestHtml}
         <div class="student-order-quick-actions">
           <button class="primary-button" data-open-montage="${student.id}" type="button">Монтаж</button>
           <button class="secondary-button" data-edit-student="${student.id}" type="button">Редактировать</button>
@@ -2042,6 +2044,30 @@ function renderStudent() {
   bindViewActions();
   maybeBackfillStudentFinalWorks(student.id);
   maybeOpenPendingFinalWorkViewer(student.id);
+}
+
+function renderParentRequest(order) {
+  const items = (order?.items || []).filter((item) => item.requestType === "custom" || item.referenceServiceName || item.referenceMediaId);
+  if (!items.length) return "";
+  return `
+    <section class="parent-request-summary" aria-label="Индивидуальная заявка родителя">
+      <div class="parent-request-heading">
+        <div><strong>Индивидуальная заявка</strong><small>${escapeHtml(order.vakhaOrderNumber || "Из каталога родителей")}</small></div>
+        <span>От родителя</span>
+      </div>
+      ${items.map((item) => {
+        const media = item.referenceMediaId ? mediaById(item.referenceMediaId) : null;
+        const imageUrl = media?.blob?.size ? URL.createObjectURL(media.blob) : "";
+        return `<article class="parent-request-item">
+          ${imageUrl ? `<a class="parent-request-image" href="${escapeAttr(imageUrl)}" target="_blank" rel="noopener noreferrer"><img src="${escapeAttr(imageUrl)}" alt="Скрин индивидуальной заявки" loading="lazy"><span>Открыть скрин</span></a>` : ""}
+          <div class="parent-request-copy">
+            <strong>${escapeHtml(item.title || item.label || "Индивидуальный запрос")}</strong>
+            ${item.comment ? `<p>${escapeHtml(item.comment)}</p>` : ""}
+            ${item.referenceServiceName ? `<small>Пример из каталога: ${escapeHtml(item.referenceServiceName)}</small>` : ""}
+          </div>
+        </article>`;
+      }).join("")}
+    </section>`;
 }
 
 function studentDetailTabButton(tab, label, count, activeTab) {
@@ -10457,7 +10483,7 @@ function hydrateTransferMediaData(data, entries) {
       const normalized = String(entry.path || "").replace(/\\/g, "/");
       return normalized.endsWith(`media/student_files/${item.id}/${item.fileName}`) || normalized.endsWith(`/${item.fileName}`);
     });
-    item.blob = new Blob(entry ? [entry.data] : [], { type: item.type === "video" ? "video/mp4" : "image/jpeg" });
+    item.blob = new Blob(entry ? [entry.data] : [], { type: item.mimeType || (item.type === "video" ? "video/mp4" : "image/jpeg") });
   });
   (data.finalWorks || []).forEach((item) => {
     const entry = entries.find((entry) => {
@@ -12397,14 +12423,19 @@ function normalizeOrderForStudent(student, order) {
     return { ...order, items: [] };
   }
   const serviceItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
+  const parentRequestItems = (order.items || []).filter((item) => item.requestType === "custom" || item.referenceServiceName || item.referenceMediaId);
+  const normalizedItems = [...serviceItems];
+  parentRequestItems.forEach((item) => {
+    if (!normalizedItems.some((candidate) => candidate.id === item.id || candidate.taskId === item.taskId)) normalizedItems.push(item);
+  });
   const serviceTypes = new Set(serviceItems.map((item) => item.type));
-  const hasOnlyServiceItems = (order.items || []).length > 0 && (order.items || []).every((item) => serviceTypes.has(item.type));
-  if (hasOnlyServiceItems && serviceItems.length === order.items.length) return order;
+  const hasOnlyKnownItems = (order.items || []).length > 0 && (order.items || []).every((item) => serviceTypes.has(item.type) || parentRequestItems.includes(item));
+  if (hasOnlyKnownItems && normalizedItems.length === order.items.length) return order;
   return {
     ...order,
     catalogId: selectedCatalogIds[0],
     catalogIds: selectedCatalogIds,
-    items: serviceItems
+    items: normalizedItems
   };
 }
 
