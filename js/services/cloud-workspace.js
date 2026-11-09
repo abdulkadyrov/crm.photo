@@ -1,14 +1,15 @@
 const API = '/api/v1';
 const ACCOUNT = 'crm-server-account-v1';
-export const cloudRequired = location.hostname === 'crm.khanzama.ru';
+export const localDemoMode = new URLSearchParams(location.search).get('localDemo') === '1';
+export const cloudRequired = location.hostname === 'crm.khanzama.ru' && !localDemoMode;
 let account = null;
 try { account = JSON.parse(localStorage.getItem(ACCOUNT) || 'null'); } catch { localStorage.removeItem(ACCOUNT); }
 let hooks, dialog, busy = false, queueDB;
 const roles = { admin: 'Администратор', manager: 'Менеджер', photographer: 'Фотограф', viewer: 'Просмотр' };
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const saveAccount = u => { account=u; u ? localStorage.setItem(ACCOUNT,JSON.stringify(u)) : localStorage.removeItem(ACCOUNT); };
-export const cloudAccount = () => account;
-export const cloudDatabase = () => account && account.role !== 'admin' ? `school-photo-cloud-${account.id}` : 'school-photo-flow';
+export const cloudAccount = () => localDemoMode ? null : account;
+export const cloudDatabase = () => localDemoMode ? 'school-photo-demo-isolated-v1' : account && account.role !== 'admin' ? `school-photo-cloud-${account.id}` : 'school-photo-flow';
 export const canSeeMoney = () => !cloudRequired || account?.role === 'admin';
 export function assertCloudWrite(store, value, deleting=false) {
   if (!cloudRequired || !account || account.role==='admin') return;
@@ -98,6 +99,7 @@ async function drain() {
   } catch(e){status(`Очередь сохранена. ${e.message}`);} finally {busy=false;}
 }
 export function mountCloud(context) {
+  if (localDemoMode) return;
   hooks=context;
   window.addEventListener('online',()=>drain());
   // A previous manual submission may resume while this application is open.

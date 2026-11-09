@@ -1,3 +1,7 @@
+import { addSchoolDemo } from "../services/school-demo.js";
+import { localDemoMode } from "../services/cloud-workspace.js";
+import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=133";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
@@ -424,12 +428,16 @@ async function init() {
       await refreshData();
     }
   });
-  if (shouldShowOperatorGate()) {
+  if (shouldShowOperatorGate() && !localDemoMode) {
     renderOperatorGate();
     registerServiceWorker();
     return;
   }
-  navigateFromUrl() || navigate("home");
+  if (localDemoMode) {
+    const projectId = await addSchoolDemo(state.db, state.data.catalog);
+    await refreshData();
+    navigate('classes', {projectId, classId:null});
+  } else navigateFromUrl() || navigate("home");
   registerServiceWorker();
   recordSync.start().catch(error=>notify(`Синхронизация: ${error.message}. Локальные данные сохранены.`));
 }
@@ -1061,6 +1069,7 @@ function renderHome() {
           <h2 class="card-title">Проекты съемки</h2>
           <p class="muted">Проекты, группы, ученики и статусы заказов.</p>
         </div>
+        <button class="secondary-button" data-add-school-demo type="button">Добавить демопроект: 10 классов</button>
         <button class="primary-button" data-add-project="home" type="button"><span data-icon="plus"></span>Проект</button>
       </div>
       <div class="metric-grid">
@@ -1294,6 +1303,7 @@ function renderClasses() {
         </select>
       </label>
       <div class="project-button-row">
+        ${LOCAL_ONLY ? `<button class="secondary-button equal-button" data-prepare-school="${activeProject}" type="button">Подготовить работы школы</button>` : ""}
         <button class="secondary-button equal-button" data-teacher-broadcast="${activeProject}" type="button">Рассылка учителям</button>
         <button class="secondary-button equal-button" data-export-vakha="${activeProject}" type="button">Экспорт в Vakha Studio</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
@@ -1336,6 +1346,7 @@ function classStudentSection(classId) {
       <div class="toolbar">
         <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
         <div class="row">
+          ${LOCAL_ONLY ? `<button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы класса</button>` : ""}
           <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
           <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список детей" : "Добавить полный класс детей"}</button>
           <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
@@ -1923,6 +1934,7 @@ function renderStudent() {
           <div class="card-header">
             <div>
               <h2 class="card-title">${escapeHtml(student.firstName)} ${escapeHtml(student.lastName)}</h2>
+              ${Number.isInteger(student.age) ? `<p class="muted">Возраст: ${student.age} ${pluralizeRu(student.age, "год", "года", "лет")}</p>` : ""}
               <p class="muted student-order-summary">Заказ: ${escapeHtml(selectedCatalogTitle)}</p>
             </div>
             <div class="row status-row">
@@ -1940,6 +1952,7 @@ function renderStudent() {
             <div class="detail-stat"><span>Напечатано</span><strong>${finalStats.printed}</strong></div>
           </div>
           <div class="action-grid">
+            ${LOCAL_ONLY ? `<button class="action-button secondary" data-prepare-student="${student.id}" type="button">Подготовить работу</button>` : ""}
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
             <button class="action-button" data-capture="video" data-order-type="${activeTask?.type || "video"}" type="button"><span data-icon="video"></span>Видео</button>
             <button class="action-button secondary" data-import-media data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="catalog"></span>Из телефона</button>
@@ -3581,7 +3594,7 @@ function renderSettings() {
       <button class="settings-row" data-settings-detail="storage" type="button"><span>💾</span><div><strong>Хранилище и резервные копии</strong><small>Квота, выбранная папка и проверка доступа</small></div><b>›</b></button>
       <button class="settings-row" data-settings-detail="transfer" type="button"><span>📦</span><div><strong>Импорт / экспорт</strong><small>Данные и настройки</small></div><b>›</b></button>
       <button class="settings-row" data-refresh-app type="button"><span>🔄</span><div><strong>Обновление</strong><small>Обновить кэш PWA</small></div><b>›</b></button>
-      <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо данные</strong><small>Очистка и пересоздание примера</small></div><b>›</b></button>
+      <button class="settings-row" data-settings-detail="demo" type="button"><span>🧪</span><div><strong>Демо-данные</strong><small>Добавить школьный пример без очистки</small></div><b>›</b></button>
     </section>
   `;
   bindViewActions();
@@ -3940,7 +3953,7 @@ function showSettingsDetail(section) {
         </section>
       </article>`,
     demo: `
-      <article class="panel grid"><h2 class="card-title">Демо-данные</h2><button class="danger-button" data-clear-all type="button">Очистить все данные</button><button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button></article>`
+      <article class="panel grid"><h2 class="card-title">Демо-данные</h2><button class="secondary-button" data-add-school-demo type="button">Добавить демопроект: 10 классов</button><button class="danger-button" data-clear-all type="button">Очистить все данные</button><button class="secondary-button" data-reset-demo type="button">Очистить и создать демо</button></article>`
   }[section];
   if (!content) return;
   view.innerHTML = `<section class="grid">${content}</section><button class="fab-back" data-back-settings type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>`;
@@ -4515,7 +4528,21 @@ function bindViewActions() {
     node.closest(".template-item-row")?.remove();
   }));
   view.querySelector("[data-clear-all]")?.addEventListener("click", clearAllData);
+  view.querySelectorAll('[data-prepare-student]').forEach(n=>n.onclick=()=>localPortraitPanel().student(n.dataset.prepareStudent).catch(e=>notify(e.message)));
+  view.querySelectorAll('[data-prepare-class]').forEach(n=>n.onclick=()=>localPortraitPanel().batch(studentsByClass(n.dataset.prepareClass),'Подготовить работы класса').catch(e=>notify(e.message)));
+  view.querySelectorAll('[data-prepare-school]').forEach(n=>n.onclick=()=>localPortraitPanel().batch(classesByProject(n.dataset.prepareSchool).flatMap(c=>studentsByClass(c.id)),'Подготовить работы школы').catch(e=>notify(e.message)));
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
+  view.querySelector("[data-add-school-demo]")?.addEventListener("click", async () => {
+    if (cloudRequired) {
+      const url = new URL(location.href); url.searchParams.set('localDemo', '1'); url.hash = '';
+      location.assign(url.href); return;
+    }
+    try {
+      const projectId = await addSchoolDemo(state.db, state.data.catalog);
+      await refreshData();
+      navigate('classes', {projectId, classId:null, studentFormClassId:null});
+    } catch(error) { notify(error.message); }
+  });
   view.querySelector("[data-refresh-app]")?.addEventListener("click", refreshApp);
   view.querySelector("[data-reset-order]")?.addEventListener("click", () => resetOrder(state.studentId));
   view.querySelectorAll("[data-generate-qr]").forEach((node) => node.addEventListener("click", (event) => showQrPayload(event.currentTarget.dataset.generateQr || state.studentId)));
@@ -6507,6 +6534,25 @@ async function handleMontageQrInput(event) {
   document.querySelector(".montage-backdrop")?.remove();
   showMontagePanel(target.studentId, target.serviceId, target.sourceMediaId);
   notify("QR добавлен: он будет размещён в углу готового фото.");
+}
+
+function localPortraitPanel() {
+  if (!LOCAL_ONLY) throw new Error('Подготовка доступна только в локальной CRM');
+  const mutate = (...args) => mutatePortraitDraft(state.db, ...args);
+  return createPortraitPanel({data:()=>state.data,refresh:refreshData,serviceIds:selectedCatalogIdsForStudent,comment:studentServiceComment,
+    saveDraft:(job,draft)=>mutate(job.orderId,job.serviceId,()=>draft),
+    deleteDraft:(orderId,serviceId,draftId)=>mutate(orderId,serviceId,current=>{if(current?.id!==draftId)throw new Error('Черновик изменился');return null;}),
+    approve:async(orderId,serviceId,draftId)=>{
+      await refreshData();
+      const order=state.data.orders.find(o=>o.id===orderId),draft=order?.localPortraits?.[serviceId];
+      if(draft?.id!==draftId)throw new Error('Черновик изменился. Откройте его снова.');
+      const student=studentById(order.studentId),klass=classById(student?.classId);
+      if(!klass)throw new Error('Класс удалён');
+      const work=await createFinalWorkRecord({projectId:klass.projectId,groupId:klass.id,studentId:student.id,serviceId,title:serviceName(catalogItemById(serviceId)),originalFile:new File([draft.image],`${serviceId}.png`,{type:'image/png'}),sourceMediaId:draft.sourceMediaId});
+      await mutate(orderId,serviceId,current=>{if(current?.id!==draftId)throw new Error('Черновик изменился');return null;}, {...work,localPortraitDraftId:draftId,operatorReviewComment:draft.comment});
+      await refreshData();await markStudentOrderReadyAfterFinalWork(student.id);await refreshData();render();
+    }
+  });
 }
 
 async function handleFinalWorkInput(event) {
@@ -10358,6 +10404,11 @@ async function collectTransferMediaFiles(data, { includeBundled = true } = {}) {
     }
   }
   await progress("Подготовка фотографий, результатов и документов…");
+  for (const order of data.orders || []) {
+    for (const [serviceId, draft] of Object.entries(order.localPortraits || {})) {
+      if (draft.image instanceof Blob) files.push({path:`portrait_drafts/${safePath(order.id)}/${safePath(serviceId)}.png`, data:new Uint8Array(await draft.image.arrayBuffer())});
+    }
+  }
   for (const item of data.media || []) {
     if (!item.blob) continue;
     const path = `media/student_files/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
@@ -10477,6 +10528,14 @@ function hydrateTransferMediaData(data, entries) {
       if (refEntry) angle.refDataUrl = zipEntryToDataUrl(refEntry);
       if (videoRefEntry) angle.videoRefDataUrl = zipEntryToDataUrl(videoRefEntry);
     });
+  });
+  (data.orders || []).forEach(order => {
+    for (const [serviceId, draft] of Object.entries(order.localPortraits || {})) {
+      const path = `portrait_drafts/${safePath(order.id)}/${safePath(serviceId)}.png`;
+      const entry = entries.find(e => e.path.replace(/\\/g, "/").endsWith(path));
+      if (entry) draft.image = new Blob([entry.data], {type:'image/png'});
+      else delete order.localPortraits[serviceId];
+    }
   });
   (data.media || []).forEach((item) => {
     const entry = entries.find((entry) => {

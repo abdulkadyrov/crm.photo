@@ -10,7 +10,7 @@ function render(projects, projectId) {
   const state = { data: { projects, students: [] }, projectId, classId: null, studentFormClassId: null };
   const view = { innerHTML: "" };
   const renderClasses = vm.runInNewContext(`(${body})`, {
-    state, view,
+    state, view, LOCAL_ONLY: false,
     APP_NAME: "Vakha Studio",
     projectById: id => projects.find(project => project.id === id),
     classesByProject: () => [],
