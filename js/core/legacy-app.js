@@ -1303,7 +1303,7 @@ function renderClasses() {
         </select>
       </label>
       <div class="project-button-row">
-        ${LOCAL_ONLY ? `<button class="secondary-button equal-button" data-prepare-school="${activeProject}" type="button">Подготовить работы школы</button>` : ""}
+        <button class="secondary-button equal-button" data-prepare-school="${activeProject}" type="button">Подготовить работы школы</button>
         <button class="secondary-button equal-button" data-teacher-broadcast="${activeProject}" type="button">Рассылка учителям</button>
         <button class="secondary-button equal-button" data-export-vakha="${activeProject}" type="button">Экспорт в Vakha Studio</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
@@ -1346,7 +1346,7 @@ function classStudentSection(classId) {
       <div class="toolbar">
         <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
         <div class="row">
-          ${LOCAL_ONLY ? `<button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы класса</button>` : ""}
+          <button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы класса</button>
           <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
           <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список детей" : "Добавить полный класс детей"}</button>
           <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
@@ -1952,7 +1952,7 @@ function renderStudent() {
             <div class="detail-stat"><span>Напечатано</span><strong>${finalStats.printed}</strong></div>
           </div>
           <div class="action-grid">
-            ${LOCAL_ONLY ? `<button class="action-button secondary" data-prepare-student="${student.id}" type="button">Подготовить работу</button>` : ""}
+            <button class="action-button secondary" data-prepare-student="${student.id}" type="button">Подготовить работу</button>
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
             <button class="action-button" data-capture="video" data-order-type="${activeTask?.type || "video"}" type="button"><span data-icon="video"></span>Видео</button>
             <button class="action-button secondary" data-import-media data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="catalog"></span>Из телефона</button>
@@ -6537,7 +6537,7 @@ async function handleMontageQrInput(event) {
 }
 
 function localPortraitPanel() {
-  if (!LOCAL_ONLY) throw new Error('Подготовка доступна только в локальной CRM');
+  if (!LOCAL_ONLY) throw new Error('Обработка запускается на рабочем ПК. Откройте локальную CRM по адресу http://127.0.0.1:4175.');
   const mutate = (...args) => mutatePortraitDraft(state.db, ...args);
   return createPortraitPanel({data:()=>state.data,refresh:refreshData,serviceIds:selectedCatalogIdsForStudent,comment:studentServiceComment,
     saveDraft:(job,draft)=>mutate(job.orderId,job.serviceId,()=>draft),
