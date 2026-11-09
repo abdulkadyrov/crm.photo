@@ -4528,9 +4528,9 @@ function bindViewActions() {
     node.closest(".template-item-row")?.remove();
   }));
   view.querySelector("[data-clear-all]")?.addEventListener("click", clearAllData);
-  view.querySelectorAll('[data-prepare-student]').forEach(n=>n.onclick=()=>localPortraitPanel().student(n.dataset.prepareStudent).catch(e=>notify(e.message)));
-  view.querySelectorAll('[data-prepare-class]').forEach(n=>n.onclick=()=>localPortraitPanel().batch(studentsByClass(n.dataset.prepareClass),'Подготовить работы класса').catch(e=>notify(e.message)));
-  view.querySelectorAll('[data-prepare-school]').forEach(n=>n.onclick=()=>localPortraitPanel().batch(classesByProject(n.dataset.prepareSchool).flatMap(c=>studentsByClass(c.id)),'Подготовить работы школы').catch(e=>notify(e.message)));
+  view.querySelectorAll('[data-prepare-student]').forEach(n=>n.onclick=()=>runLocalPortraitAction(panel=>panel.student(n.dataset.prepareStudent)));
+  view.querySelectorAll('[data-prepare-class]').forEach(n=>n.onclick=()=>runLocalPortraitAction(panel=>panel.batch(studentsByClass(n.dataset.prepareClass),'Подготовить работы класса')));
+  view.querySelectorAll('[data-prepare-school]').forEach(n=>n.onclick=()=>runLocalPortraitAction(panel=>panel.batch(classesByProject(n.dataset.prepareSchool).flatMap(c=>studentsByClass(c.id)),'Подготовить работы школы')));
   view.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemo);
   view.querySelector("[data-add-school-demo]")?.addEventListener("click", async () => {
     if (cloudRequired) {
@@ -6553,6 +6553,14 @@ function localPortraitPanel() {
       await refreshData();await markStudentOrderReadyAfterFinalWork(student.id);await refreshData();render();
     }
   });
+}
+
+async function runLocalPortraitAction(action) {
+  try {
+    await action(localPortraitPanel());
+  } catch (error) {
+    notify(error.message);
+  }
 }
 
 async function handleFinalWorkInput(event) {
