@@ -1387,7 +1387,11 @@ function renderShootingRoster(students) {
   if (!students.length) return '<p class="muted class-empty">Добавьте учеников в группу.</p>';
   const labels = { boys: "Мальчики", girls: "Девочки", unknown: "Не определено" };
   const groups = shootingRoster(students, student => selectedCatalogIdsForStudent(student)
-    .map(id => serviceGender(catalogItemById(id))));
+    .map(id => serviceGender(catalogItemById(id))))
+    .map(({ group, letters }) => ({
+      group,
+      letters: letters.map(([letter, rows]) => ({ letter, rows, id: `roster-${group}-${encodeURIComponent(letter)}` }))
+    }));
   return `
     <div class="class-roster">
       ${groups.length > 1 ? `<nav class="class-roster-groups" aria-label="Разделы списка">${groups.map(({ group }) =>
@@ -1397,11 +1401,11 @@ function renderShootingRoster(students) {
         <section class="class-roster-group" id="roster-${group}" aria-labelledby="roster-${group}-title">
           <h3 class="class-roster-heading" id="roster-${group}-title">${labels[group]}</h3>
           <nav class="class-roster-index" aria-label="${labels[group]} по фамилии">
-            ${letters.map(([letter], index) => `<button type="button" data-roster-jump="roster-${group}-${index}" aria-label="Фамилии на ${escapeAttr(letter)}">${escapeHtml(letter)}</button>`).join("")}
+            ${letters.map(({ letter, id }) => `<button type="button" data-roster-jump="${id}" aria-label="Фамилии на ${escapeAttr(letter)}">${escapeHtml(letter)}</button>`).join("")}
           </nav>
           <div class="student-list">
-            ${letters.map(([letter, rows], index) => `
-              <div class="student-list class-roster-letter" id="roster-${group}-${index}">
+            ${letters.map(({ letter, rows, id }) => `
+              <div class="student-list class-roster-letter" id="${id}">
                 <h4>${escapeHtml(letter)}</h4>
                 ${rows.map(studentCard).join("")}
               </div>
@@ -1423,7 +1427,7 @@ function bindShootingRoster() {
     const inset = index ? parseFloat(getComputedStyle(index).top) : 8;
     const top = target.getBoundingClientRect().top + window.scrollY - inset;
     window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
-    index?.querySelector("[aria-current]")?.removeAttribute("aria-current");
+    roster.querySelector("[aria-current]")?.removeAttribute("aria-current");
     if (index) button.setAttribute("aria-current", "true");
   };
   roster.addEventListener("click", event => {
