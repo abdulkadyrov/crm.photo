@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../../js/services/shooting-roster.js";
-import { matchesCatalogTheme } from "../../js/services/catalog-themes.js";
+import { groupPickerServices, matchesCatalogTheme } from "../../js/services/catalog-themes.js";
 
 test("shooting roster groups by service audience and surname, then indexes surnames", () => {
   const students = [
@@ -43,4 +43,23 @@ test("picker themes recognize existing Disney, game and profession entries", () 
   assert.equal(matchesCatalogTheme({ category: "Игровые фотомонтажи" }, "Игры"), true);
   assert.equal(matchesCatalogTheme({ tags: ["космонавт"] }, "Профессии"), true);
   assert.equal(matchesCatalogTheme({ title: "Эльза" }, "Бойцы"), false);
+});
+
+test("picker groups each service once and keeps specific catalog categories", () => {
+  const services = [
+    { id: "portrait", title: "Школьный портрет", category: "Фото" },
+    { id: "disney", title: "Рапунцель", category: "Детские образы" },
+    { id: "game", title: "Герой игры", category: "Игровые фотомонтажи" },
+    { id: "video", title: "Путешествие с Эльзой", category: "ИИ-видео" },
+    { id: "hero", title: "Железный человек", category: "Детские образы" },
+    { id: "other", title: "Без категории" }
+  ];
+  assert.deepEqual(groupPickerServices(services).map(group => [group.title, group.items.map(item => item.id)]), [
+    ["Супергерои", ["hero"]],
+    ["Дисней", ["disney"]],
+    ["Игры", ["game"]],
+    ["Фото", ["portrait"]],
+    ["ИИ-видео", ["video"]],
+    ["Другие услуги", ["other"]]
+  ]);
 });

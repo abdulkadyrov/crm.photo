@@ -3936,12 +3936,18 @@ body:has(.class-roster) {
   display: flex;
   flex-direction: column;
   width: min(1600px, 100%);
+  height: 760px;
   overflow: hidden;
   padding: 0;
 }
 
+.catalog-demo-shell .bottom-nav {
+  display: none;
+}
+
 .service-picker-sticky-header {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 12px;
   border-bottom: 1px solid var(--line);
@@ -3982,13 +3988,44 @@ body:has(.class-roster) {
   color: var(--primary);
 }
 
-.service-picker-sticky-header .select {
-  width: 100%;
-  min-width: 0;
-  min-height: 40px;
-  padding-block: 6px;
-  border-radius: 10px;
-  font-size: 1rem;
+.service-picker-category-nav {
+  display: flex;
+  gap: 6px;
+  overflow: auto hidden;
+  padding: 2px 1px;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  scrollbar-width: thin;
+}
+
+.service-picker-category-nav button {
+  flex: none;
+  min-height: 34px;
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card-strong);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.service-picker-category-nav button[aria-current] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.service-picker-category-nav button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .service-picker-category-nav {
+    scrollbar-width: none;
+  }
 }
 
 .service-picker-close {
@@ -4013,6 +4050,8 @@ body:has(.class-roster) {
 }
 
 .service-picker-scroll {
+  position: relative;
+  flex: 1;
   min-width: 0;
   min-height: 0;
   padding: 12px;
@@ -4021,10 +4060,23 @@ body:has(.class-roster) {
   touch-action: pan-y;
 }
 
+.service-picker-section {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.service-picker-section + .service-picker-section {
+  margin-top: 18px;
+}
+
+.service-picker-section:last-child {
+  min-height: calc(var(--picker-scroll-height, 24px) - 24px);
+}
+
 .service-picker-group-title {
-  grid-column: 1 / -1;
   margin: 0;
-  font-size: 0.87rem;
+  font-size: 1rem;
 }
 
 .service-picker-card:not(.selected) .service-picker-selected-mark {
@@ -4090,6 +4142,37 @@ body:has(.class-roster) {
   font-size: clamp(0.76rem, 1.8vw, 0.94rem);
   line-height: 1.15;
   opacity: 0.9;
+}
+
+.service-picker-card.no-preview .service-picker-card-preview {
+  background: var(--card-strong);
+}
+
+.service-picker-card.no-preview .service-picker-card-preview::after {
+  display: none;
+}
+
+.service-picker-card.no-preview .service-picker-card-caption {
+  color: var(--text);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+
+.service-picker-card.no-preview .service-picker-card-caption strong {
+  color: var(--muted);
+}
+
+.service-picker-placeholder {
+  position: absolute;
+  top: 31%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--muted);
+}
+
+.service-picker-placeholder svg {
+  width: 26px;
+  height: 26px;
 }
 
 .service-picker-selected-mark {

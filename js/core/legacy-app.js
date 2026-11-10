@@ -4,7 +4,7 @@ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js"
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
-import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
+import { CATALOG_THEMES, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
 import { openPhotoCamera } from "../ui/photo-camera.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
@@ -342,6 +342,10 @@ async function init() {
   injectIcons();
   lockGestures();
   document.documentElement.dataset.theme = localStorage.getItem("spf-theme") || "light";
+  if (new URLSearchParams(location.search).get("catalogDemo") === "1") {
+    renderServicePickerDemo();
+    return;
+  }
   await initializeCloud();
   DB_NAME = cloudDatabase();
   state.db = await openDb();
@@ -2737,10 +2741,10 @@ function selectedServiceSettingsCard(item, studentId) {
 function servicePickerCatalogCard(item, selected = false) {
   const previewUrl = servicePreviewImageDataUrl(item);
   const preview = previewUrl
-    ? `<img src="${previewUrl}" alt="${escapeAttr(serviceName(item))}" loading="lazy" />`
-    : `<div class="catalog-card-empty">${escapeHtml(serviceName(item).slice(0, 1) || "У")}</div>`;
+    ? `<img src="${escapeAttr(previewUrl)}" alt="" loading="lazy" />`
+    : '<span class="service-picker-placeholder" data-icon="camera" aria-hidden="true"></span>';
   return `
-    <button class="service-picker-card ${selected ? "selected" : ""}" data-service-picker-option="${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
+    <button class="service-picker-card ${previewUrl ? "" : "no-preview"} ${selected ? "selected" : ""}" data-service-picker-option="${escapeAttr(item.id)}" type="button" aria-pressed="${selected ? "true" : "false"}">
       <div class="catalog-card-preview service-picker-card-preview ${item.childTemplate ? "portrait" : ""}">
         ${preview}
         <span class="service-picker-selected-mark" aria-hidden="true"><span data-icon="check"></span></span>
@@ -2753,15 +2757,52 @@ function servicePickerCatalogCard(item, selected = false) {
   `;
 }
 
-function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false, trigger, onApply }) {
+function renderServicePickerDemo() {
+  const samples = [
+    ["Супергерои", "Железный человек", "Защитница города"],
+    ["Дисней", "Рапунцель", "Ледяная королева"],
+    ["Вайнах", "Кавказский джигит", "У горной башни"],
+    ["Бойцы", "Юный боксёр", "Борец на татами"],
+    ["Игры", "Блочный мир", "Приключение в пиксельном городе"],
+    ["Профессии", "Пилот вертолёта", "Спасатель поискового отряда"],
+    ["Принцессы", "Принцесса леса", "Принцесса в саду"],
+    ["Детские образы", "Капитан пиратов", "Волшебный бал"],
+    ["Фото", "Школьный портрет", "Общее фото класса"],
+    ["Фото с видео", "Школьное интервью", "Рассказ о себе"]
+  ];
+  const services = samples.flatMap(([category, first, second], index) => [first, second].map((title, slot) => ({
+    id: `picker-demo-${index * 2 + slot + 1}`,
+    title,
+    category,
+    gender: index === 1 || index === 6 ? "girls" : index >= 8 ? "unisex" : slot === 0 ? "boys" : "girls",
+    price: index === 9 ? 800 : 350
+  })));
+  let selectedIds = [];
+  document.querySelector("#app").classList.add("catalog-demo-shell");
+  setShell({ heading: "Демо каталога", summary: "20 тестовых услуг" });
+  view.innerHTML = `
+    <section class="panel grid">
+      <h2 class="card-title">Демо каталога услуг</h2>
+      <p class="muted">20 карточек без фотографий. Выбор действует до обновления страницы.</p>
+      <button class="primary-button" type="button" data-open-catalog-demo>Открыть каталог</button>
+    </section>
+  `;
+  const trigger = view.querySelector("[data-open-catalog-demo]");
+  trigger.onclick = () => showServicePickerPanel({
+    selectedIds, services, allowEmpty: true, trigger,
+    onApply: ids => { selectedIds = ids; }
+  });
+  trigger.click();
+}
+
+function showServicePickerPanel({ selectedIds = [], classId, services, allowEmpty = false, trigger, onApply }) {
   if (document.querySelector(".service-picker-backdrop")) return;
   const restore = captureDialogReturn(document, window, trigger);
   const counts = classServiceCounts(state.data.students, classId, selectedCatalogIdsForStudent);
-  const available = manualOrderedServices(state.data.catalog.filter(item => serviceIsCatalogVisible(item) || selectedIds.includes(item.id)));
-  const themes = ["Супергерои", "Дисней", "Вайнах", "Бойцы", "Игры", "Профессии"];
-  const categories = [...new Set([...themes, ...CATALOG_THEMES, ...available.map(serviceCategory).filter(Boolean)])];
-  const selected = new Set(normalizeCatalogIds(selectedIds));
+  const available = services || manualOrderedServices(state.data.catalog.filter(item => serviceIsCatalogVisible(item) || selectedIds.includes(item.id)));
+  const selected = new Set(services ? selectedIds : normalizeCatalogIds(selectedIds));
   let audience = "all";
+  let activeCategory = "";
   let savingSelection = false;
   const panel = document.createElement("dialog");
   panel.className = "catalog-modal-backdrop service-picker-backdrop";
@@ -2769,6 +2810,7 @@ function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false,
   const dialogHistory = mountDialogHistory({
     id: uid("service_picker"),
     restore: () => {
+      resizeObserver.disconnect();
       panel.close();
       panel.remove();
       restore();
@@ -2800,22 +2842,6 @@ function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false,
       });
     }
   };
-  const renderCards = () => {
-    const category = panel.querySelector("[data-picker-category]").value;
-    const matches = available.filter(item =>
-      (audience === "all" || serviceGender(item) === audience) &&
-      (category === "all" || serviceCategory(item) === category || matchesCatalogTheme(item, category))
-    );
-    const { popular, others } = splitPopularServices(matches, counts);
-    const cards = items => items.map(item => servicePickerCatalogCard(item, selected.has(item.id))).join("");
-    panel.querySelector("[data-service-picker-grid]").innerHTML = matches.length ? `
-      ${popular.length ? `<h3 class="service-picker-group-title">Популярные в этом классе</h3>${cards(popular)}` : ""}
-      ${popular.length && others.length ? '<h3 class="service-picker-group-title">Остальные услуги</h3>' : ""}
-      ${cards(others)}
-    ` : '<p class="muted service-picker-group-title">По этим фильтрам услуг нет.</p>';
-    panel.querySelector(".service-picker-scroll").scrollTop = 0;
-    injectIcons();
-  };
   panel.innerHTML = `
     <section class="catalog-modal service-picker-panel">
       <div class="service-picker-sticky-header">
@@ -2831,18 +2857,63 @@ function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false,
             `<button type="button" data-picker-audience="${value}" aria-pressed="${value === audience}">${label}</button>`
           ).join("")}
         </div>
-        <select class="select" data-picker-category aria-label="Категория услуг">
-          <option value="all">Все категории</option>
-          ${categories.map(category => `<option value="${escapeAttr(category)}">${escapeHtml(category)}</option>`).join("")}
-        </select>
+        <nav class="service-picker-category-nav" aria-label="Переход по категориям"></nav>
       </div>
-      <div class="service-picker-scroll">
-        <div class="service-picker-grid" data-service-picker-grid></div>
-      </div>
+      <div class="service-picker-scroll"></div>
       <div class="service-picker-actions"><button class="secondary-button" data-close-service-picker type="button">Отмена</button><button class="primary-button" data-save-service-picker type="button">Сохранить выбор</button></div>
     </section>
   `;
-  panel.querySelector("[data-picker-category]").addEventListener("change", renderCards);
+  const categoryNav = panel.querySelector(".service-picker-category-nav");
+  const scroll = panel.querySelector(".service-picker-scroll");
+  let categorySections = [];
+  const resizeObserver = new ResizeObserver(() => {
+    scroll.style.setProperty("--picker-scroll-height", `${scroll.clientHeight}px`);
+  });
+  const markCategory = (key) => {
+    activeCategory = key;
+    categoryNav.querySelector("[aria-current]")?.removeAttribute("aria-current");
+    const button = [...categoryNav.children].find(node => node.dataset.pickerCategory === key);
+    if (!button) return;
+    button.setAttribute("aria-current", "true");
+    const bounds = categoryNav.getBoundingClientRect();
+    const chip = button.getBoundingClientRect();
+    if (chip.right > bounds.right) categoryNav.scrollLeft += chip.right - bounds.right;
+    else if (chip.left < bounds.left) categoryNav.scrollLeft += chip.left - bounds.left;
+  };
+  const jumpToCategory = (key) => {
+    const section = categorySections.find(node => node.dataset.pickerSection === key);
+    scroll.scrollTop = section ? Math.max(1, section.offsetTop - 12) : 0;
+    markCategory(section ? key : "");
+  };
+  const renderCards = () => {
+    const matches = available.filter(item => audience === "all" || serviceGender(item) === audience);
+    const { popular } = splitPopularServices(matches, counts);
+    const groups = groupPickerServices(matches);
+    const chip = (title, key) => `<button type="button" data-picker-category="${escapeAttr(key)}">${escapeHtml(title)}</button>`;
+    const section = (title, items, key = "") => `
+      <section class="service-picker-section" ${key ? `data-picker-section="${escapeAttr(key)}"` : ""}>
+        <h3 class="service-picker-group-title">${escapeHtml(title)}</h3>
+        <div class="service-picker-grid">${items.map(item => servicePickerCatalogCard(item, selected.has(item.id))).join("")}</div>
+      </section>
+    `;
+    categoryNav.innerHTML = chip("Все категории", "") + groups.map(group => chip(group.title, group.title)).join("");
+    scroll.innerHTML = matches.length ? `
+      ${popular.length ? section("Популярные в этом классе", popular) : ""}
+      ${groups.map(group => section(group.title, group.items, group.title)).join("")}
+    ` : '<p class="muted service-picker-group-title">По этим фильтрам услуг нет.</p>';
+    categorySections = [...scroll.querySelectorAll("[data-picker-section]")];
+    jumpToCategory(activeCategory);
+    injectIcons();
+  };
+  categoryNav.addEventListener("click", event => {
+    const button = event.target.closest("[data-picker-category]");
+    if (button) jumpToCategory(button.dataset.pickerCategory);
+  });
+  scroll.addEventListener("scroll", () => {
+    const section = scroll.scrollTop > 0 && categorySections.findLast(node => node.offsetTop <= scroll.scrollTop + 13);
+    const key = section?.dataset.pickerSection || "";
+    if (key !== activeCategory) markCategory(key);
+  }, { passive: true });
   panel.querySelectorAll("[data-picker-audience]").forEach(button => button.addEventListener("click", () => {
     audience = button.dataset.pickerAudience;
     panel.querySelectorAll("[data-picker-audience]").forEach(control =>
@@ -2850,14 +2921,16 @@ function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false,
     );
     renderCards();
   }));
-  panel.querySelector("[data-service-picker-grid]").addEventListener("click", event => {
+  scroll.addEventListener("click", event => {
     const button = event.target.closest("[data-service-picker-option]");
     if (!button || savingSelection) return;
     const id = button.dataset.servicePickerOption;
     if (selected.has(id)) selected.delete(id);
     else selected.add(id);
-    button.classList.toggle("selected", selected.has(id));
-    button.setAttribute("aria-pressed", String(selected.has(id)));
+    scroll.querySelectorAll(`[data-service-picker-option="${CSS.escape(id)}"]`).forEach(card => {
+      card.classList.toggle("selected", selected.has(id));
+      card.setAttribute("aria-pressed", String(selected.has(id)));
+    });
     panel.querySelector("[data-service-picker-count]").textContent = `${selected.size} выбрано`;
   });
   panel.querySelectorAll("[data-save-service-picker]").forEach((node) => node.addEventListener("click", saveAndClose));
@@ -2868,6 +2941,8 @@ function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false,
   });
   document.body.append(panel);
   panel.showModal();
+  resizeObserver.observe(scroll);
+  scroll.style.setProperty("--picker-scroll-height", `${scroll.clientHeight}px`);
   renderCards();
 }
 
