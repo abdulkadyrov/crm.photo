@@ -2224,7 +2224,7 @@ body:has(.class-roster) {
 
 .class-roster-group {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: start;
   gap: 4px;
 }
@@ -2245,14 +2245,17 @@ body:has(.class-roster) {
   z-index: 4;
   top: 50%;
   left: calc(max(0px, (100% - 1180px) / 2) + clamp(16px, 4vw, 40px));
-  width: 32px;
+  width: 42px;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - var(--nav-h) - 76px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow: hidden;
-  border-radius: 12px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
   background: var(--card);
+  box-shadow: 0 4px 14px rgb(15 23 42 / 8%);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -2263,13 +2266,14 @@ body:has(.class-roster) {
 }
 
 .class-roster-index button {
-  flex: 0 1 26px;
+  flex: 0 1 32px;
   min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--primary);
-  font-size: 0.75rem;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
   font-weight: 750;
   line-height: 1;
 }
@@ -2277,6 +2281,7 @@ body:has(.class-roster) {
 .class-roster-index button[aria-current],
 .class-roster-index button:focus-visible {
   background: var(--primary-soft);
+  color: var(--primary);
   outline-offset: -2px;
 }
 
@@ -2298,14 +2303,42 @@ body:has(.class-roster) {
 }
 
 .class-roster .student-card .student-copy h3 {
+  font-size: 0.94rem;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 400px) {
-  .class-roster .student-card {
-    padding-inline: 8px;
-  }
+.class-roster .student-card {
+  padding: 6px 8px;
+  border-radius: 12px;
+}
+
+.class-roster .student-card .student-card-grid {
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.class-roster .student-card .student-card-grid:has(.student-thumb.empty) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.class-roster .student-card .student-thumb {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+}
+
+.class-roster .student-thumb.empty,
+.class-roster .student-copy > .muted {
+  display: none;
+}
+
+.class-roster .student-card .item-menu > summary {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
 }
 
 .list-card,
