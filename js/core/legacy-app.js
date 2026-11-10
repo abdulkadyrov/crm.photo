@@ -5,6 +5,8 @@ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=133";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, matchesCatalogTheme } from "../services/catalog-themes.js";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
+import { openPhotoCamera } from "../ui/photo-camera.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=133";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -27,7 +29,7 @@ import {
   supportsDirectoryPicker,
   testDirectoryWrite
 } from "../features/transfer/index.js";
-import { openVakhaDb } from "../data/db.js";
+import { getRecord, openVakhaDb } from "../data/db.js";
 import {
   CHILD_PORTRAIT_CATEGORY,
   CHILD_PORTRAIT_TEMPLATES,
@@ -58,6 +60,8 @@ let DB_NAME = "school-photo-flow";
 let cloudImportInProgress = false;
 let recordSync = null;
 let databaseReconnect = null;
+let rosterStudentHistory = null;
+const studentMediaPreviewUrls = new Set();
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
 const DB_VERSION = 7;
@@ -954,6 +958,10 @@ function bindShell() {
 
 function navigate(route, params = {}) {
   if (cloudRequired && cloudAccount()?.role !== "admin" && ["profile", "services", "serviceDetail"].includes(route)) return notify("Этот раздел доступен администратору");
+  if (rosterStudentHistory && (route !== "student" || (params.studentId && params.studentId !== state.studentId))) {
+    rosterStudentHistory.forget();
+    rosterStudentHistory = null;
+  }
   stopQrStream();
   const prevRoute = state.route;
   const prevScrollY = window.scrollY;
@@ -974,17 +982,31 @@ function navigate(route, params = {}) {
 }
 
 function routeSnapshot() {
+  const roster = state.route === "classes" && view.querySelector(".class-roster");
+  const source = roster && document.activeElement?.closest("[data-open-student]");
   return {
     route: state.route,
     projectId: state.projectId,
     classId: state.classId,
     studentFormClassId: state.studentFormClassId,
     query: state.query,
-    filter: state.filter
+    filter: state.filter,
+    scrollY: window.scrollY,
+    rosterFocus: source ? {
+      id: source.dataset.openStudent,
+      menu: Boolean(document.activeElement.closest("[data-open-student-action]"))
+    } : null,
+    rosterDetails: roster ? Array.from(roster.querySelectorAll("[data-open-student]")).flatMap(card =>
+      Array.from(card.querySelectorAll("details")).flatMap((details, index) =>
+        details.open ? [[card.dataset.openStudent, index]] : []
+      )
+    ) : [],
+    rosterLetter: roster?.querySelector?.("[aria-current]")?.dataset.rosterJump
   };
 }
 
 function render() {
+  if (state.route !== "student") releaseStudentMediaPreviews();
   const prevScrollY = window.scrollY;
   const prevRoute = state.lastRenderedRoute;
   const renderers = {
@@ -1356,11 +1378,96 @@ function classStudentSection(classId) {
       ${klass.parentCatalogUrl ? `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted" style="overflow-wrap:anywhere">${escapeHtml(klass.parentCatalogUrl)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(klass.parentCatalogUrl)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div></article>` : `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted">Ссылка ещё не получена из Vakha Studio.</p></article>`}
       ${klass.teacher?.name ? `<article class="panel teacher-contact-panel"><div><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</div><label class="teacher-broadcast-check"><input type="checkbox" data-class-broadcast-sent="${klass.id}" ${klass.teacherBroadcastSentAt ? "checked" : ""} /><span>Рассылка отправлена</span></label></article>` : ""}
       ${documentsSection("group", klass.id)}
-      <div class="student-list">
-        ${students.map(studentCard).join("") || '<p class="muted class-empty">Добавьте учеников в группу.</p>'}
-      </div>
+      ${renderShootingRoster(students)}
     </section>
   `;
+}
+
+function renderShootingRoster(students) {
+  if (!students.length) return '<p class="muted class-empty">Добавьте учеников в группу.</p>';
+  const labels = { boys: "Мальчики", girls: "Девочки", unknown: "Не определено" };
+  const groups = shootingRoster(students, student => selectedCatalogIdsForStudent(student)
+    .map(id => serviceGender(catalogItemById(id))));
+  return `
+    <div class="class-roster">
+      ${groups.length > 1 ? `<nav class="class-roster-groups" aria-label="Разделы списка">${groups.map(({ group }) =>
+        `<button class="chip" type="button" data-roster-jump="roster-${group}">${labels[group]}</button>`
+      ).join("")}</nav>` : ""}
+      ${groups.map(({ group, letters }) => `
+        <section class="class-roster-group" id="roster-${group}" aria-labelledby="roster-${group}-title">
+          <h3 class="class-roster-heading" id="roster-${group}-title">${labels[group]}</h3>
+          <nav class="class-roster-index" aria-label="${labels[group]} по фамилии">
+            ${letters.map(([letter], index) => `<button type="button" data-roster-jump="roster-${group}-${index}" aria-label="Фамилии на ${escapeAttr(letter)}">${escapeHtml(letter)}</button>`).join("")}
+          </nav>
+          <div class="student-list">
+            ${letters.map(([letter, rows], index) => `
+              <div class="student-list class-roster-letter" id="roster-${group}-${index}">
+                <h4>${escapeHtml(letter)}</h4>
+                ${rows.map(studentCard).join("")}
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function bindShootingRoster() {
+  const roster = view.querySelector(".class-roster");
+  if (!roster) return;
+  const jump = button => {
+    const target = document.getElementById(button.dataset.rosterJump);
+    if (!target) return;
+    const index = button.closest(".class-roster-index");
+    const inset = index ? parseFloat(getComputedStyle(index).top) : 8;
+    const top = target.getBoundingClientRect().top + window.scrollY - inset;
+    window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+    index?.querySelector("[aria-current]")?.removeAttribute("aria-current");
+    if (index) button.setAttribute("aria-current", "true");
+  };
+  roster.addEventListener("click", event => {
+    const button = event.target.closest("[data-roster-jump]");
+    if (button) jump(button);
+  });
+  roster.querySelectorAll(".class-roster-index").forEach(index => {
+    let pointer = null;
+    let previous = null;
+    const slide = event => {
+      if (pointer !== event.pointerId) return;
+      const { top, bottom, left } = index.getBoundingClientRect();
+      const y = Math.min(bottom - 1, Math.max(top, event.clientY));
+      const button = document.elementFromPoint(left + index.clientWidth / 2, y)?.closest("[data-roster-jump]");
+      if (button?.parentElement === index && button !== previous) {
+        previous = button;
+        jump(button);
+      }
+    };
+    index.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || pointer !== null || !event.target.closest("button")) return;
+      event.preventDefault();
+      pointer = event.pointerId;
+      index.setPointerCapture(pointer);
+      slide(event);
+    });
+    index.addEventListener("pointermove", slide);
+    index.addEventListener("lostpointercapture", () => { pointer = previous = null; });
+  });
+}
+
+function openStudentCard(studentId, trigger) {
+  if (!trigger.closest(".class-roster")) return navigate("student", { studentId });
+  trigger.focus({ preventScroll: true });
+  const routeHistory = mountDialogHistory({
+    id: uid("roster_student"),
+    restore: () => {
+      rosterStudentHistory = null;
+      if (state.route === "student" && state.studentId === studentId) navigateBackFromStudent();
+    }
+  });
+  navigate("student", { studentId });
+  if (state.route === "student") rosterStudentHistory = routeHistory;
+  else routeHistory.forget();
 }
 
 function classCard(klass, index = 0, total = 0, sortMode = "manual") {
@@ -1896,6 +2003,7 @@ function studentQuickForm(classId) {
 }
 
 function renderStudent() {
+  releaseStudentMediaPreviews();
   const student = studentById(state.studentId);
   if (!student) {
     navigate("search");
@@ -2195,6 +2303,7 @@ function queueList(order) {
 
 function mediaTile(item) {
   const url = URL.createObjectURL(item.blob);
+  studentMediaPreviewUrls.add(url);
   const node = item.type === "video"
     ? `<video src="${url}" muted playsinline aria-hidden="true"></video>`
     : `<img src="${url}" alt="${escapeAttr(item.fileName || "Фотография")}" loading="lazy" />`;
@@ -2203,6 +2312,11 @@ function mediaTile(item) {
       <button class="media-tile-button" data-view-media="${item.id}" type="button" aria-label="Открыть ${item.type === "video" ? "видео" : "фотографию"}">${node}</button>
     </figure>
   `;
+}
+
+function releaseStudentMediaPreviews() {
+  studentMediaPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+  studentMediaPreviewUrls.clear();
 }
 
 function finalResultCard(work) {
@@ -2625,7 +2739,7 @@ function servicePickerCatalogCard(item, selected = false) {
     <button class="service-picker-card ${selected ? "selected" : ""}" data-service-picker-option="${item.id}" type="button" aria-pressed="${selected ? "true" : "false"}">
       <div class="catalog-card-preview service-picker-card-preview ${item.childTemplate ? "portrait" : ""}">
         ${preview}
-        ${selected ? '<span class="service-picker-selected-mark" aria-hidden="true"><span data-icon="check"></span></span>' : ""}
+        <span class="service-picker-selected-mark" aria-hidden="true"><span data-icon="check"></span></span>
         <div class="service-picker-card-caption">
           <h3>${escapeHtml(serviceName(item))}</h3>
           <strong>${escapeHtml(formatPrice(item.price))}</strong>
@@ -2635,21 +2749,31 @@ function servicePickerCatalogCard(item, selected = false) {
   `;
 }
 
-function showServicePickerPanel({ selectedIds = [], allowEmpty = false, onApply }) {
-  document.querySelector(".service-picker-backdrop")?.remove();
-  const restore = captureDialogReturn(document, window);
+function showServicePickerPanel({ selectedIds = [], classId, allowEmpty = false, trigger, onApply }) {
+  if (document.querySelector(".service-picker-backdrop")) return;
+  const restore = captureDialogReturn(document, window, trigger);
+  const counts = classServiceCounts(state.data.students, classId, selectedCatalogIdsForStudent);
+  const available = manualOrderedServices(state.data.catalog.filter(item => serviceIsCatalogVisible(item) || selectedIds.includes(item.id)));
+  const themes = ["Супергерои", "Дисней", "Вайнах", "Бойцы", "Игры", "Профессии"];
+  const categories = [...new Set([...themes, ...CATALOG_THEMES, ...available.map(serviceCategory).filter(Boolean)])];
   const selected = new Set(normalizeCatalogIds(selectedIds));
+  let audience = "all";
   let savingSelection = false;
-  const panel = document.createElement("div");
+  const panel = document.createElement("dialog");
   panel.className = "catalog-modal-backdrop service-picker-backdrop";
-  const close = () => {
-    document.removeEventListener("keydown", onKeydown);
-    panel.remove();
-    restore();
-  };
-  const onKeydown = (event) => {
-    if (event.key === "Escape" && !savingSelection) { event.preventDefault(); close(); }
-  };
+  panel.setAttribute("aria-label", "Выбор услуг");
+  const dialogHistory = mountDialogHistory({
+    id: uid("service_picker"),
+    restore: () => {
+      panel.close();
+      panel.remove();
+      restore();
+      if (trigger && !trigger.isConnected && trigger.dataset.openServicePickerStudent) {
+        view.querySelector(`[data-open-service-picker-student="${CSS.escape(trigger.dataset.openServicePickerStudent)}"]`)?.focus({ preventScroll: true });
+      }
+    }
+  });
+  const close = () => dialogHistory.close();
   const saveAndClose = async () => {
     if (savingSelection) return;
     const ids = Array.from(selected);
@@ -2673,36 +2797,74 @@ function showServicePickerPanel({ selectedIds = [], allowEmpty = false, onApply 
     }
   };
   const renderCards = () => {
-    const available = manualOrderedServices(state.data.catalog.filter((item) => serviceIsCatalogVisible(item) || selected.has(item.id)));
-    panel.querySelector("[data-service-picker-grid]").innerHTML = available.map((item) => servicePickerCatalogCard(item, selected.has(item.id))).join("") || '<p class="muted">Добавьте услуги в каталоге.</p>';
-    panel.querySelector("[data-service-picker-count]").textContent = `${selected.size} выбрано`;
-    panel.querySelectorAll("[data-service-picker-option]").forEach((node) => node.addEventListener("click", () => {
-      const id = node.dataset.servicePickerOption;
-      if (selected.has(id)) selected.delete(id);
-      else selected.add(id);
-      renderCards();
-      injectIcons();
-    }));
+    const category = panel.querySelector("[data-picker-category]").value;
+    const matches = available.filter(item =>
+      (audience === "all" || serviceGender(item) === audience) &&
+      (category === "all" || serviceCategory(item) === category || matchesCatalogTheme(item, category))
+    );
+    const { popular, others } = splitPopularServices(matches, counts);
+    const cards = items => items.map(item => servicePickerCatalogCard(item, selected.has(item.id))).join("");
+    panel.querySelector("[data-service-picker-grid]").innerHTML = matches.length ? `
+      ${popular.length ? `<h3 class="service-picker-group-title">Популярные в этом классе</h3>${cards(popular)}` : ""}
+      ${popular.length && others.length ? '<h3 class="service-picker-group-title">Остальные услуги</h3>' : ""}
+      ${cards(others)}
+    ` : '<p class="muted service-picker-group-title">По этим фильтрам услуг нет.</p>';
+    panel.querySelector(".service-picker-scroll").scrollTop = 0;
+    injectIcons();
   };
   panel.innerHTML = `
-    <section class="catalog-modal service-picker-panel" role="dialog" aria-modal="true" aria-label="Выбор услуг">
-      <div class="card-header service-picker-sticky-header">
+    <section class="catalog-modal service-picker-panel">
+      <div class="service-picker-sticky-header">
+        <div class="card-header">
         <div>
           <h2 class="card-title">Выбрать из каталога</h2>
-          <p class="muted" data-service-picker-count>${selected.size} выбрано</p>
+          <p class="muted" data-service-picker-count aria-live="polite">${selected.size} выбрано</p>
         </div>
-        <button class="icon-button service-picker-close" data-close-service-picker type="button" aria-label="Закрыть" title="Закрыть без изменений"><span data-icon="close"></span></button>
+        <button class="icon-button service-picker-close" data-close-service-picker type="button" aria-label="Закрыть" title="Закрыть без изменений" autofocus><span data-icon="close"></span></button>
+        </div>
+        <div class="service-picker-audience" role="group" aria-label="Для кого">
+          ${[["all", "Все"], ["boys", "Мальчики"], ["girls", "Девочки"]].map(([value, label]) =>
+            `<button type="button" data-picker-audience="${value}" aria-pressed="${value === audience}">${label}</button>`
+          ).join("")}
+        </div>
+        <select class="select" data-picker-category aria-label="Категория услуг">
+          <option value="all">Все категории</option>
+          ${categories.map(category => `<option value="${escapeAttr(category)}">${escapeHtml(category)}</option>`).join("")}
+        </select>
       </div>
-      <div class="service-picker-grid" data-service-picker-grid></div>
+      <div class="service-picker-scroll">
+        <div class="service-picker-grid" data-service-picker-grid></div>
+      </div>
       <div class="service-picker-actions"><button class="secondary-button" data-close-service-picker type="button">Отмена</button><button class="primary-button" data-save-service-picker type="button">Сохранить выбор</button></div>
     </section>
   `;
+  panel.querySelector("[data-picker-category]").addEventListener("change", renderCards);
+  panel.querySelectorAll("[data-picker-audience]").forEach(button => button.addEventListener("click", () => {
+    audience = button.dataset.pickerAudience;
+    panel.querySelectorAll("[data-picker-audience]").forEach(control =>
+      control.setAttribute("aria-pressed", String(control === button))
+    );
+    renderCards();
+  }));
+  panel.querySelector("[data-service-picker-grid]").addEventListener("click", event => {
+    const button = event.target.closest("[data-service-picker-option]");
+    if (!button || savingSelection) return;
+    const id = button.dataset.servicePickerOption;
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+    button.classList.toggle("selected", selected.has(id));
+    button.setAttribute("aria-pressed", String(selected.has(id)));
+    panel.querySelector("[data-service-picker-count]").textContent = `${selected.size} выбрано`;
+  });
   panel.querySelectorAll("[data-save-service-picker]").forEach((node) => node.addEventListener("click", saveAndClose));
   panel.querySelectorAll("[data-close-service-picker]").forEach(node => node.addEventListener("click", () => { if (!savingSelection) close(); }));
-  document.addEventListener("keydown", onKeydown);
+  panel.addEventListener("cancel", event => {
+    event.preventDefault();
+    if (!savingSelection) close();
+  });
   document.body.append(panel);
+  panel.showModal();
   renderCards();
-  injectIcons();
 }
 
 function updateFormServicePicker(form, catalogIds) {
@@ -4187,6 +4349,7 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  bindShootingRoster();
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
   view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
     const recipients = state.data.projects.flatMap(project => classesByProject(project.id).map(klass => ({id:klass.id, schoolId:project.id, className:klass.name, school:project.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || '', catalogUrl:klass.parentCatalogUrl || '', sent:Boolean(klass.teacherBroadcastSentAt), sentAt:klass.teacherBroadcastSentAt || ''})));
@@ -4292,23 +4455,26 @@ function bindViewActions() {
     node.addEventListener("click", (event) => {
       if (event.target.closest("button")) return;
       if (event.target.closest("details")) return;
-      navigate("student", { studentId: node.dataset.openStudent });
+      openStudentCard(node.dataset.openStudent, node);
     });
     node.addEventListener("keydown", (event) => {
       if (event.target.closest("button")) return;
       if (event.target.closest("details")) return;
-      if (event.key === "Enter" || event.key === " ") navigate("student", { studentId: node.dataset.openStudent });
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openStudentCard(node.dataset.openStudent, node);
+      }
     });
   });
   view.querySelectorAll("[data-open-student-action]").forEach((node) => {
-    node.addEventListener("click", () => navigate("student", { studentId: node.dataset.openStudentAction }));
+    node.addEventListener("click", () => openStudentCard(node.dataset.openStudentAction, node));
   });
   view.querySelectorAll("[data-filter]").forEach((node) => node.addEventListener("click", () => {
     state.filter = node.dataset.filter;
     render();
   }));
   view.querySelector("[data-project-select]")?.addEventListener("change", (event) => navigate("classes", { projectId: event.target.value }));
-  view.querySelectorAll("[data-capture]").forEach((node) => node.addEventListener("click", () => captureMedia(node.dataset.capture, node.dataset.orderType)));
+  view.querySelectorAll("[data-capture]").forEach((node) => node.addEventListener("click", () => captureMedia(node.dataset.capture, node.dataset.orderType, node)));
   view.querySelectorAll("[data-import-media]").forEach((node) => node.addEventListener("click", () => importMediaFromDevice(node.dataset.orderType)));
   view.querySelectorAll("[data-done-task]").forEach((node) => node.addEventListener("click", () => markTaskDone(state.studentId, node.dataset.doneTask)));
   view.querySelectorAll("[data-toggle-task]").forEach((node) => node.addEventListener("click", () => {
@@ -4331,6 +4497,8 @@ function bindViewActions() {
     const selectedIds = new FormData(form).getAll("catalogIds");
     showServicePickerPanel({
       selectedIds,
+      classId: form.dataset.studentForm,
+      trigger: node,
       allowEmpty: true,
       onApply: (ids) => updateFormServicePicker(form, ids)
     });
@@ -4341,6 +4509,8 @@ function bindViewActions() {
     if (!student) return;
     showServicePickerPanel({
       selectedIds: selectedCatalogIdsForStudent(student),
+      classId: student.classId,
+      trigger: node,
       onApply: (ids) => updateStudentServices(studentId, ids)
     });
   }));
@@ -4492,7 +4662,7 @@ function bindViewActions() {
   view.querySelectorAll("[data-mark-printed-class]").forEach((node) => node.addEventListener("click", () => markFinalWorksPrintedForClass(node.dataset.markPrintedClass)));
   view.querySelectorAll("[data-view-media]").forEach((node) => node.addEventListener("click", (event) => {
     event.stopPropagation();
-    showMediaPreview(node.dataset.viewMedia);
+    showMediaPreview(node.dataset.viewMedia, node);
   }));
   view.querySelectorAll("[data-delete-media]").forEach((node) => node.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -4697,7 +4867,8 @@ function bindViewActions() {
     showInlineMediaPreview({
       url: node.dataset.previewUrl,
       title: node.dataset.previewTitle || "Просмотр",
-      isVideo: node.dataset.previewVideo === "true"
+      isVideo: node.dataset.previewVideo === "true",
+      trigger: node
     });
   }));
   view.querySelectorAll("[data-generate-references]").forEach((node) => node.addEventListener("click", () => generateReferenceSet(node.dataset.generateReferences)));
@@ -5815,78 +5986,191 @@ function showAngleReferencePreview(itemId, angleId) {
   injectIcons();
 }
 
-function showMediaPreview(mediaId) {
+function showMediaPreview(mediaId, trigger) {
   const media = mediaById(mediaId);
   if (!media?.blob) return notify("Файл не найден.");
-  const url = URL.createObjectURL(media.blob);
-  showInlineMediaPreview({
-    url,
-    title: media.type === "video" ? "Видео" : "Фотография",
-    isVideo: media.type === "video",
-    revokeOnClose: true,
-    onDelete: () => deleteMedia(mediaId)
-  });
+  const items = mediaByStudent(media.studentId)
+    .filter(item => item.blob && !isFinalResultMedia(item))
+    .map(item => ({
+      id: item.id,
+      blob: item.blob,
+      title: item.type === "video" ? "Видео" : "Фотография",
+      isVideo: item.type === "video",
+      onDelete: () => deleteMedia(item.id)
+    }));
+  showInlineMediaGallery(items, items.findIndex(item => item.id === mediaId), trigger);
 }
 
 async function deleteMedia(mediaId) {
   const media = mediaById(mediaId);
   if (!media) return false;
+  assertCloudWrite("media", media, true);
   if (!confirm(`Удалить файл «${media.fileName || "медиа"}» без возможности восстановления?`)) return false;
-  for (const order of state.data.orders) {
-    const nextItems = (order.items || []).map((item) => ({
-      ...item,
-      fileIds: (item.fileIds || []).filter((id) => id !== mediaId)
-    }));
-    if (JSON.stringify(nextItems) !== JSON.stringify(order.items || [])) {
-      await put("orders", stampUpdated({ ...order, items: nextItems }));
+  await withStudentMediaLock(media.studentId, async () => {
+    const operations = [];
+    for (const order of await getAll("orders")) {
+      if (!(order.items || []).some(item => item.fileIds?.includes(mediaId))) continue;
+      const nextItems = (order.items || []).map(item => ({
+        ...item,
+        fileIds: (item.fileIds || []).filter(id => id !== mediaId)
+      }));
+      const value = stampUpdated({ ...order, items: nextItems });
+      assertCloudWrite("orders", value);
+      operations.push({ store: "orders", value, expected: order });
     }
-  }
-  await del("media", mediaId);
-  await refreshData();
+    operations.push({ store: "media", id: mediaId, value: null, expected: media });
+    await withDatabaseReconnect(() => recordSync.writeBatch(operations));
+    await refreshData();
+  });
   notify("Файл удален.");
   state.preserveScroll = true;
   render();
   return true;
 }
 
-function showInlineMediaPreview({ url, title = "Просмотр", isVideo = false, revokeOnClose = false, onDelete = null }) {
+function showInlineMediaPreview({ url, title = "Просмотр", isVideo = false, trigger }) {
   if (!url) return;
-  document.querySelector(".inline-media-backdrop")?.remove();
-  const panel = document.createElement("div");
+  showInlineMediaGallery([{ url, title, isVideo }], 0, trigger);
+}
+
+function showInlineMediaGallery(items, index = 0, trigger = document.activeElement) {
+  if (!items[index] || document.querySelector(".inline-media-backdrop")) return;
+  const restore = captureDialogReturn(document, window, trigger);
+  const originId = items[index].id;
+  const panel = document.createElement("dialog");
   panel.className = "qr-panel-backdrop inline-media-backdrop";
+  panel.setAttribute("aria-label", "Просмотр медиа");
   panel.innerHTML = `
-    <section class="qr-panel service-reference-panel inline-media-panel" role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}">
+    <section class="qr-panel service-reference-panel inline-media-panel">
       <div class="card-header">
-        <div>
-          <h2 class="card-title">${escapeHtml(title)}</h2>
-        </div>
-        <button class="icon-button" data-close-inline-media type="button" aria-label="Закрыть"><span data-icon="close"></span></button>
+        <h2 class="card-title" data-inline-media-title></h2>
+        <button class="icon-button" data-close-inline-media type="button" aria-label="Закрыть" autofocus><span data-icon="close"></span></button>
       </div>
-      ${isVideo ? `<video class="reference-preview-media" src="${escapeAttr(url)}" controls playsinline></video>` : `<img class="reference-preview-media" src="${escapeAttr(url)}" alt="${escapeAttr(title)}" />`}
-      ${onDelete ? '<div class="inline-media-actions"><button class="danger-button" data-delete-inline-media type="button"><span data-icon="trash"></span>Удалить</button></div>' : ""}
+      <div class="inline-media-stage">
+        <div data-inline-media-content></div>
+        <button class="icon-button inline-media-delete" data-delete-inline-media type="button" aria-label="Удалить файл" title="Удалить файл"><span data-icon="trash"></span></button>
+      </div>
+      <div class="inline-media-navigation">
+        <button class="icon-button" data-inline-media-prev type="button" aria-label="Предыдущий файл"><span data-icon="back"></span></button>
+        <span data-inline-media-count role="status"></span>
+        <button class="icon-button" data-inline-media-next type="button" aria-label="Следующий файл"><span data-icon="back"></span></button>
+      </div>
     </section>
   `;
-  const close = () => {
-    if (revokeOnClose) URL.revokeObjectURL(url);
-    panel.remove();
+  const find = selector => panel.querySelector(selector);
+  const stage = find(".inline-media-stage");
+  const content = find("[data-inline-media-content]");
+  const removeButton = find("[data-delete-inline-media]");
+  const previous = find("[data-inline-media-prev]");
+  const next = find("[data-inline-media-next]");
+  const closeButton = find("[data-close-inline-media]");
+  let objectUrl = "";
+  let deleting = false;
+  const releaseMedia = () => {
+    content.querySelector("video")?.pause();
+    content.replaceChildren();
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = "";
   };
-  panel.querySelector("[data-close-inline-media]")?.addEventListener("click", close);
-  panel.querySelector("[data-delete-inline-media]")?.addEventListener("click", async (event) => {
-    const button = event.currentTarget;
-    button.disabled = true;
-    try {
-      if (await onDelete?.()) close();
-      else button.disabled = false;
-    } catch (error) {
-      console.error("Не удалось удалить медиа", error);
-      notify("Не удалось удалить файл. Попробуйте ещё раз.");
-      button.disabled = false;
+  const history = mountDialogHistory({
+    id: uid("media_gallery"),
+    restore: () => {
+      releaseMedia();
+      panel.close();
+      panel.remove();
+      restore();
+      if (originId && !trigger?.isConnected) {
+        const replacement = items.find(item => item.id === originId) || items[index];
+        if (replacement) view.querySelector(`[data-view-media="${CSS.escape(replacement.id)}"]`)?.focus({ preventScroll: true });
+      }
     }
   });
-  panel.addEventListener("click", (event) => {
-    if (event.target === panel) close();
+  const updateNavigation = () => {
+    previous.disabled = deleting || index === 0;
+    next.disabled = deleting || index >= items.length - 1;
+    closeButton.disabled = deleting;
+    removeButton.disabled = deleting;
+  };
+  const display = () => {
+    const item = items[index];
+    releaseMedia();
+    find("[data-inline-media-title]").textContent = item.title;
+    find("[data-inline-media-count]").textContent = `${index + 1} / ${items.length}`;
+    find(".inline-media-navigation").hidden = items.length < 2;
+    const element = document.createElement(item.isVideo ? "video" : "img");
+    element.className = "reference-preview-media";
+    if (item.blob) objectUrl = URL.createObjectURL(item.blob);
+    element.src = objectUrl || item.url;
+    if (item.isVideo) {
+      element.controls = element.playsInline = true;
+      element.preload = "metadata";
+    } else {
+      element.alt = item.title;
+      element.draggable = false;
+    }
+    content.append(element);
+    removeButton.hidden = !item.onDelete || (cloudRequired && ["viewer", "photographer"].includes(cloudAccount()?.role));
+    updateNavigation();
+  };
+  const step = direction => {
+    if (deleting || !items[index + direction]) return;
+    index += direction;
+    display();
+  };
+  closeButton.onclick = () => history.close();
+  previous.onclick = () => step(-1);
+  next.onclick = () => step(1);
+  removeButton.onclick = async () => {
+    if (deleting) return;
+    deleting = true;
+    updateNavigation();
+    try {
+      if (!await items[index].onDelete()) return;
+      items.splice(index, 1);
+      index = Math.min(index, items.length - 1);
+      if (!panel.isConnected) return;
+      if (!items.length) history.close();
+      else {
+        display();
+        closeButton.disabled = false;
+        closeButton.focus();
+      }
+    } catch (error) {
+      console.error("Не удалось удалить медиа", error);
+      notify(error?.message || "Не удалось удалить файл. Попробуйте ещё раз.");
+    } finally {
+      deleting = false;
+      updateNavigation();
+    }
+  };
+  panel.addEventListener("cancel", event => {
+    event.preventDefault();
+    if (!deleting) history.close();
   });
+  panel.addEventListener("click", event => {
+    if (event.target === panel && !deleting) history.close();
+  });
+  panel.addEventListener("keydown", event => {
+    if (event.target.closest("video") || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    step(event.key === "ArrowLeft" ? -1 : 1);
+  });
+  let swipe = null;
+  stage.addEventListener("touchstart", event => {
+    swipe = event.touches.length === 1 && !event.target.closest("button, video") ? event.touches[0] : null;
+  }, { passive: true });
+  stage.addEventListener("touchend", event => {
+    if (!swipe) return;
+    const point = event.changedTouches[0];
+    const dx = point.clientX - swipe.clientX;
+    const dy = point.clientY - swipe.clientY;
+    swipe = null;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.25) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  stage.addEventListener("touchcancel", () => { swipe = null; });
+  display();
   document.body.append(panel);
+  panel.showModal();
   injectIcons();
 }
 
@@ -6367,9 +6651,42 @@ function escapeSvg(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[char]));
 }
 
-function captureMedia(type, orderType) {
-  state.currentCapture = { studentId: state.studentId, type, orderType, source: "capture" };
-  mediaInput.accept = type === "video" ? "video/*" : "image/*";
+function captureMedia(type, orderType, trigger) {
+  const student = studentById(state.studentId);
+  if (!student) return;
+  const target = { studentId: student.id, type, orderType, source: "capture" };
+  if (type !== "photo") return openCaptureInput(target);
+  const restore = captureDialogReturn(document, window, trigger);
+  const isSameStudent = () => state.route === "student" && state.studentId === student.id;
+  let saved = false;
+  let closed = false;
+  const updateStudentView = () => {
+    if (!isSameStudent()) return;
+    render();
+    restore();
+    view.querySelector('[data-capture="photo"]')?.focus({ preventScroll: true });
+  };
+  openPhotoCamera({
+    studentName: `${student.lastName} ${student.firstName}`,
+    mountHistory: close => mountDialogHistory({ id: uid("photo_camera"), restore: close }),
+    onSave: async shot => {
+      shot.id ||= uid("media");
+      await persistStudentMedia(shot.file, target, shot.id);
+      saved = true;
+      if (closed) updateStudentView();
+    },
+    onClose: () => {
+      closed = true;
+      if (saved) updateStudentView();
+      else restore();
+    },
+    openSystemCamera: () => openCaptureInput(target)
+  });
+}
+
+function openCaptureInput(target) {
+  state.currentCapture = target;
+  mediaInput.accept = target.type === "video" ? "video/*" : "image/*";
   mediaInput.capture = "environment";
   mediaInput.value = "";
   mediaInput.click();
@@ -6513,7 +6830,8 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     showInlineMediaPreview({
       url: node.dataset.previewUrl,
       title: node.dataset.previewTitle || "Просмотр",
-      isVideo: node.dataset.previewVideo === "true"
+      isVideo: node.dataset.previewVideo === "true",
+      trigger: node
     });
   }));
   panel.querySelectorAll("[data-download-media]").forEach((node) => node.addEventListener("click", () => downloadMediaRecord(node.dataset.downloadMedia)));
@@ -6793,6 +7111,7 @@ function captureFinalWorkDialogReturn(trigger, workId) {
 
 function mountDialogHistory({ id, restore }) {
   let closed = false;
+  let returning = false;
   const finalize = () => {
     if (closed) return;
     closed = true;
@@ -6806,9 +7125,20 @@ function mountDialogHistory({ id, restore }) {
   window.addEventListener("popstate", onPopState);
   return {
     close() {
-      if (closed) return;
+      if (closed || returning) return;
+      returning = true;
       if (history.state?.crmDialog === id) history.back();
       else finalize();
+    },
+    forget() {
+      if (closed) return;
+      closed = true;
+      window.removeEventListener("popstate", onPopState);
+      if (history.state?.crmDialog === id) {
+        const next = { ...history.state };
+        delete next.crmDialog;
+        history.replaceState(next, "");
+      }
     }
   };
 }
@@ -8004,32 +8334,69 @@ function canvasToBlob(canvas, type = "image/png", quality) {
 
 async function handleMediaInput(event) {
   const file = event.target.files?.[0];
-  if (!file || !state.currentCapture) return;
-  const student = studentById(state.currentCapture.studentId);
-  const klass = classById(student.classId);
-  const type = fileLooksVideo(file) ? "video" : state.currentCapture.type;
-  const ext = extensionFor(file, type);
-  const fileName = safeFileName(`${klass.name}_${student.lastName}_${student.firstName}_${state.currentCapture.orderType}.${ext}`);
-  const id = uid("media");
-  const operatorId = currentOperatorIdForAction();
-  const mediaRecord = {
-    id,
-    studentId: student.id,
-    type,
-    fileName,
-    orderType: state.currentCapture.orderType,
-    createdBy: operatorId,
-    importedBy: state.currentCapture.source === "device_import" ? operatorId : undefined,
-    capturedBy: state.currentCapture.source === "capture" ? operatorId : undefined,
-    createdAt: now(),
-    blob: file
-  };
-  if (mediaRecord.importedBy) mediaRecord.importedAt = mediaRecord.createdAt;
-  await put("media", mediaRecord);
-  await attachFileToOrder(student.id, state.currentCapture.orderType, id);
-  await refreshData();
-  notify(`${fileName} привязан к ученику.`);
-  navigate("student", { studentId: student.id });
+  const target = state.currentCapture;
+  state.currentCapture = null;
+  event.target.value = "";
+  if (!file || !target) return;
+  try {
+    const record = await persistStudentMedia(file, target, uid("media"));
+    notify(`${record.fileName} привязан к ученику.`);
+    if (state.route === "student" && state.studentId === target.studentId) render();
+  } catch (error) {
+    notify(error?.message || "Не удалось сохранить файл.");
+  }
+}
+
+async function persistStudentMedia(file, target, id) {
+  return withStudentMediaLock(target.studentId, async () => {
+    const [student, orders] = await Promise.all([
+      withDatabaseReconnect(() => getRecord(state.db, "students", target.studentId)),
+      getAll("orders")
+    ]);
+    if (!student) throw new Error("Карточка ученика недоступна.");
+    const klass = classById(student.classId);
+    const type = fileLooksVideo(file) ? "video" : target.type;
+    const ext = extensionFor(file, type);
+    const seriesSuffix = type === "photo" && target.source === "capture" ? `_${id.slice(6, 14)}` : "";
+    const fileName = safeFileName(`${klass?.name || "class"}_${student.lastName}_${student.firstName}_${target.orderType}${seriesSuffix}.${ext}`);
+    const operatorId = currentOperatorIdForAction();
+    const mediaRecord = {
+      id,
+      studentId: student.id,
+      type,
+      fileName,
+      orderType: target.orderType,
+      createdBy: operatorId,
+      importedBy: target.source === "device_import" ? operatorId : undefined,
+      capturedBy: target.source === "capture" ? operatorId : undefined,
+      createdAt: now(),
+      blob: file
+    };
+    if (mediaRecord.importedBy) mediaRecord.importedAt = mediaRecord.createdAt;
+    const previous = orders.find(order => order.studentId === student.id);
+    const order = normalizeOrderForStudent(student, previous || { id: `order_${student.id}`, studentId: student.id, items: [] });
+    const priorTask = previous?.items?.find(item => item.type === target.orderType);
+    if (!order.items.length && priorTask) order.items = [priorTask];
+    const status = manualStudentStatus(student);
+    const nextOrder = stampUpdated({ ...orderWithAttachedFile(order, target.orderType, id, operatorId), status });
+    const operations = [
+      { store: "media", value: mediaRecord },
+      { store: "orders", value: nextOrder, expected: previous }
+    ];
+    if ((student.orderStatus !== status || student.status !== status) && !(cloudRequired && cloudAccount()?.role === "photographer")) {
+      operations.push({ store: "students", value: stampUpdated({ ...student, orderStatus: status, status }), expected: student });
+    }
+    for (const operation of operations) assertCloudWrite(operation.store, operation.value);
+    await withDatabaseReconnect(() => recordSync.writeBatch(operations));
+    await refreshData();
+    return mediaRecord;
+  });
+}
+
+function withStudentMediaLock(studentId, operation) {
+  return navigator.locks?.request
+    ? navigator.locks.request(`crm-media:${DB_NAME}:${studentId}`, operation)
+    : operation();
 }
 
 async function handleAlbumMediaInput(event) {
@@ -8150,18 +8517,23 @@ async function handlePreviewInput(event) {
 
 async function attachFileToOrder(studentId, type, fileId) {
   const order = orderByStudent(studentId);
-  let item = order.items.find((entry) => entry.type === type) || order.items[0];
-  if (!item) {
-    item = { type, status: "pending", fileIds: [] };
-    order.items = [item];
-  }
   const operatorId = currentOperatorIdForAction();
-  item.fileIds = Array.from(new Set([...item.fileIds, fileId]));
-  item.status = "done";
-  item.updatedBy = operatorId;
-  item.completedBy = operatorId;
-  item.completedAt = now();
-  await saveOrderWithAutoStatus(studentId, order);
+  await saveOrderWithAutoStatus(studentId, orderWithAttachedFile(order, type, fileId, operatorId));
+}
+
+function orderWithAttachedFile(order, type, fileId, operatorId) {
+  const items = [...(order.items || [])];
+  const index = Math.max(0, items.findIndex(entry => entry.type === type));
+  const item = items[index] || { type };
+  items[index] = {
+    ...item,
+    fileIds: Array.from(new Set([...(item.fileIds || []), fileId])),
+    status: "done",
+    updatedBy: operatorId,
+    completedBy: operatorId,
+    completedAt: now()
+  };
+  return { ...order, items };
 }
 
 async function markTaskDone(studentId, type) {
@@ -8912,6 +9284,7 @@ function stopQrStream() {
 }
 
 function navigateBackFromStudent() {
+  if (rosterStudentHistory) return rosterStudentHistory.close();
   const target = state.returnTarget;
   if (target?.route && target.route !== "student") {
     navigate(target.route, {
@@ -8921,6 +9294,18 @@ function navigateBackFromStudent() {
       query: target.query,
       filter: target.filter
     });
+    for (const [id, index] of target.rosterDetails || []) {
+      const card = view.querySelector(`[data-open-student="${CSS.escape(id)}"]`);
+      const details = card?.querySelectorAll("details")[index];
+      if (details) details.open = true;
+    }
+    if (target.rosterLetter) view.querySelector(`[data-roster-jump="${CSS.escape(target.rosterLetter)}"]`)?.setAttribute("aria-current", "true");
+    if (target.rosterFocus) {
+      const card = view.querySelector(`[data-open-student="${CSS.escape(target.rosterFocus.id)}"]`);
+      const control = target.rosterFocus.menu ? card?.querySelector("[data-open-student-action]") : card;
+      control?.focus({ preventScroll: true });
+    }
+    window.scrollTo(0, target.scrollY || 0);
     return;
   }
   const student = studentById(state.studentId);

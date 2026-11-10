@@ -11,7 +11,7 @@ test('mobile student UI puts service selection first and moves editing controls 
   ]);
   assert.doesNotMatch(app, /class="media-actions-menu"/);
   assert.match(app, /data-delete-inline-media/);
-  assert.match(app, /onDelete: \(\) => deleteMedia\(mediaId\)/);
+  assert.match(app, /onDelete: \(\) => deleteMedia\(item\.id\)/);
   assert.match(app, /data-set-order-status=/);
   assert.match(css, /\.student-detail-main\s*,\s*\.student-order-column\s*\{\s*display:\s*contents/);
   assert.match(css, /\.student-order-summary-panel\s*\{\s*order:\s*1/);
