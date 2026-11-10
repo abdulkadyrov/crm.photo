@@ -2286,20 +2286,7 @@ body:has(.class-roster) {
 }
 
 .student-list.class-roster-letter {
-  grid-template-columns: 14px minmax(0, 1fr);
   gap: 4px;
-}
-
-.class-roster-letter > .student-card {
-  grid-column: 2;
-}
-
-.class-roster-letter h4 {
-  margin: 0;
-  grid-row: 1;
-  align-self: center;
-  color: var(--muted);
-  font-size: 0.78rem;
 }
 
 .class-roster .student-card .student-copy h3 {

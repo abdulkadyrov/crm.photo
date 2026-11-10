@@ -1437,9 +1437,8 @@ function renderShootingRoster(students, { readOnly = false } = {}) {
             ${letters.map(({ letter, id }) => `<button type="button" data-roster-jump="${id}" aria-label="Фамилии на ${escapeAttr(letter)}">${escapeHtml(letter)}</button>`).join("")}
           </nav>
           <div class="student-list">
-            ${letters.map(({ letter, rows, id }) => `
+            ${letters.map(({ rows, id }) => `
               <div class="student-list class-roster-letter" id="${id}">
-                <h4>${escapeHtml(letter)}</h4>
                 ${rows.map(student => studentCard(student, { readOnly })).join("")}
               </div>
             `).join("")}
