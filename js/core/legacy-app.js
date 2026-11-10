@@ -342,7 +342,12 @@ async function init() {
   injectIcons();
   lockGestures();
   document.documentElement.dataset.theme = localStorage.getItem("spf-theme") || "light";
-  if (new URLSearchParams(location.search).get("catalogDemo") === "1") {
+  const demoParams = new URLSearchParams(location.search);
+  if (demoParams.get("rosterDemo") === "1") {
+    renderShootingRosterDemo();
+    return;
+  }
+  if (demoParams.get("catalogDemo") === "1") {
     renderServicePickerDemo();
     return;
   }
@@ -1387,7 +1392,30 @@ function classStudentSection(classId) {
   `;
 }
 
-function renderShootingRoster(students) {
+function renderShootingRosterDemo() {
+  const classId = "roster-demo";
+  const names = [
+    ["Алиев", "Адам", "Амина"], ["Борисов", "Марк", "Вера"],
+    ["Дадаев", "Тимур", "Милана"], ["Иванов", "Иван", "София"],
+    ["Кузнецов", "Лев", "Полина"], ["Морозов", "Илья", "Ева"],
+    ["Петров", "Артём", "Алина"], ["Соколов", "Матвей", "Анна"],
+    ["Умаров", "Руслан", "Зара"], ["Яковлев", "Максим", "Дарья"]
+  ];
+  state.data.projects = [{ id: classId, name: "Школьная съёмка" }];
+  state.data.classes = [{ id: classId, projectId: classId, name: "4Б" }];
+  const students = names.flatMap(([surname, boy, girl], index) => [
+    { id: `demo-boy-${index}`, classId, lastName: surname, firstName: boy },
+    { id: `demo-girl-${index}`, classId, lastName: `${surname}а`, firstName: girl }
+  ]);
+  state.data.students = students;
+  document.querySelector("#app").classList.add("catalog-demo-shell");
+  setShell({ heading: "Класс 4Б", context: "Демо списка", summary: "20 учеников · 10 мальчиков · 10 девочек" });
+  view.innerHTML = renderShootingRoster(students, { readOnly: true });
+  bindShootingRoster();
+  injectIcons();
+}
+
+function renderShootingRoster(students, { readOnly = false } = {}) {
   if (!students.length) return '<p class="muted class-empty">Добавьте учеников в группу.</p>';
   const labels = { boys: "Мальчики", girls: "Девочки", unknown: "Не определено" };
   const groups = shootingRoster(students, student => selectedCatalogIdsForStudent(student)
@@ -1411,7 +1439,7 @@ function renderShootingRoster(students) {
             ${letters.map(({ letter, rows, id }) => `
               <div class="student-list class-roster-letter" id="${id}">
                 <h4>${escapeHtml(letter)}</h4>
-                ${rows.map(studentCard).join("")}
+                ${rows.map(student => studentCard(student, { readOnly })).join("")}
               </div>
             `).join("")}
           </div>
@@ -1436,27 +1464,30 @@ function bindShootingRoster() {
   };
   roster.addEventListener("click", event => {
     const button = event.target.closest("[data-roster-jump]");
-    if (button) jump(button);
+    if (button && (!button.closest(".class-roster-index") || event.detail === 0)) jump(button);
   });
   roster.querySelectorAll(".class-roster-index").forEach(index => {
     let pointer = null;
     let previous = null;
+    let targets = [];
     const slide = event => {
       if (pointer !== event.pointerId) return;
-      const { top, bottom, left } = index.getBoundingClientRect();
-      const y = Math.min(bottom - 1, Math.max(top, event.clientY));
-      const button = document.elementFromPoint(left + index.clientWidth / 2, y)?.closest("[data-roster-jump]");
-      if (button?.parentElement === index && button !== previous) {
+      const target = targets.find(({ bottom }) => event.clientY < bottom) || targets.at(-1);
+      const button = target?.button;
+      if (button && button !== previous) {
         previous = button;
         jump(button);
       }
     };
     index.addEventListener("pointerdown", event => {
-      if (event.button !== 0 || pointer !== null || !event.target.closest("button")) return;
+      const button = event.target.closest("button");
+      if (event.button !== 0 || pointer !== null || !button) return;
       event.preventDefault();
       pointer = event.pointerId;
+      targets = [...index.querySelectorAll("button")].map(button => ({ button, bottom: button.getBoundingClientRect().bottom }));
       index.setPointerCapture(pointer);
-      slide(event);
+      previous = button;
+      jump(button);
     });
     index.addEventListener("pointermove", slide);
     index.addEventListener("lostpointercapture", () => { pointer = previous = null; });
@@ -4365,7 +4396,7 @@ function assignOperatorFields(record, operatorId, media = false) {
   return next;
 }
 
-function studentCard(student) {
+function studentCard(student, { readOnly = false } = {}) {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
   const c = completion(student.id);
@@ -4377,7 +4408,7 @@ function studentCard(student) {
     : '<div class="student-thumb empty" aria-label="Фото не добавлено"><span></span><small>Нет фото</small></div>';
   const finalStats = finalWorkStatsForStudent(student.id);
   return `
-    <article class="student-card card-button" data-open-student="${student.id}" tabindex="0">
+    <article class="student-card card-button" ${readOnly ? "data-demo-student" : `data-open-student="${student.id}" tabindex="0"`}>
       <div class="student-card-grid">
         ${preview}
         <div class="student-identity">
@@ -4401,7 +4432,7 @@ function studentCard(student) {
             </div>
           </details>
         </div>
-        <details class="item-menu student-menu">
+        ${readOnly ? "" : `<details class="item-menu student-menu">
           <summary aria-label="Меню ученика">...</summary>
           <div class="menu-panel">
             <button data-open-student-action="${student.id}" type="button">Открыть</button>
@@ -4412,7 +4443,7 @@ function studentCard(student) {
             <button data-export-student="${student.id}" type="button">Экспорт</button>
             <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
           </div>
-        </details>
+        </details>`}
       </div>
     </article>
   `;
