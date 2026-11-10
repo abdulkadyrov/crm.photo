@@ -2197,6 +2197,46 @@ button.mini-catalog-option {
   gap: 8px;
 }
 
+.class-student-toolbar {
+  display: grid;
+  gap: 6px;
+}
+
+.class-student-toolbar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.class-student-toolbar-heading .icon-button {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+}
+
+.class-student-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.class-student-actions button {
+  min-height: 36px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  white-space: normal;
+}
+
+@media (max-width: 480px) {
+  .class-student-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 html:has(.class-roster),
 body:has(.class-roster) {
   overflow-x: clip;
@@ -3025,6 +3065,20 @@ body:has(.class-roster) {
 
 .transfer-group .mini-heading {
   margin: 0;
+}
+
+.student-detail-stats > summary {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.student-detail-stats[open] > summary {
+  margin-bottom: 8px;
 }
 
 .detail-stats {
@@ -6524,15 +6578,70 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
   background: #000;
 }
 
-.photo-camera-stage :is(video, img) {
+.photo-camera-stage > :is(video, img) {
   position: absolute;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.photo-camera.is-reviewing video {
+.photo-camera.is-reviewing .photo-camera-stage > video {
   visibility: hidden;
+}
+
+.photo-camera-reference {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  right: 8px;
+  width: min(230px, 72%);
+}
+
+.photo-camera-reference > summary {
+  display: flex;
+  width: fit-content;
+  max-width: min(144px, 100%);
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid #4a4e57;
+  border-radius: 10px;
+  background: #22242a;
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.photo-camera-reference > summary::-webkit-details-marker {
+  display: none;
+}
+
+.photo-camera-reference > summary img {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 6px;
+  background: #000;
+  object-fit: contain;
+}
+
+.photo-camera-reference > summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-camera-reference[open] > :is(img, video) {
+  display: block;
+  width: 100%;
+  max-height: min(260px, 42dvh);
+  margin-top: 4px;
+  border: 1px solid #4a4e57;
+  border-radius: 10px;
+  background: #000;
+  object-fit: contain;
 }
 
 .photo-camera-guide {

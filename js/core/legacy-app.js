@@ -1375,14 +1375,16 @@ function classStudentSection(classId) {
   const students = studentsForClassView(klass.id);
   return `
     <section class="class-section">
-      <div class="toolbar">
-        <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
-        <div class="row">
-          <button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы класса</button>
+      <div class="class-student-toolbar">
+        <div class="class-student-toolbar-heading">
+          <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
+          <button class="icon-button" data-close-class-students type="button" aria-label="Свернуть список учеников" title="Свернуть"><span data-icon="close"></span></button>
+        </div>
+        <div class="class-student-actions">
+          <button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы</button>
           <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
           <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список детей" : "Добавить полный класс детей"}</button>
           <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
-          <button class="secondary-button compact" data-close-class-students type="button">Свернуть</button>
         </div>
       </div>
       ${klass.parentCatalogUrl ? `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted" style="overflow-wrap:anywhere">${escapeHtml(klass.parentCatalogUrl)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(klass.parentCatalogUrl)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div></article>` : `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted">Ссылка ещё не получена из Vakha Studio.</p></article>`}
@@ -2106,15 +2108,18 @@ function renderStudent() {
               <span class="status-pill ${student.paymentStatus}">${paymentLabel(student.paymentStatus)}</span>
             </div>
           </div>
-          <div class="detail-stats">
-            <div class="detail-stat"><span>Статус</span><strong>${orderStatusLabel(student)}</strong></div>
-            <div class="detail-stat"><span>Оплата</span><strong>${paymentLabel(student.paymentStatus)}</strong></div>
-            <div class="detail-stat" data-financial><span>Сумма</span><strong>${escapeHtml(formatMoney(orderPrice))}</strong></div>
-            <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(selectedCatalogTitle)}</strong></div>
-            <div class="detail-stat"><span>Прогресс</span><strong>${c.percent}%</strong></div>
-            <div class="detail-stat"><span>Готовые работы</span><strong>${finalStats.total}</strong></div>
-            <div class="detail-stat"><span>Напечатано</span><strong>${finalStats.printed}</strong></div>
-          </div>
+          <details class="student-detail-stats">
+            <summary>Сводка по заказу</summary>
+            <div class="detail-stats">
+              <div class="detail-stat"><span>Статус</span><strong>${orderStatusLabel(student)}</strong></div>
+              <div class="detail-stat"><span>Оплата</span><strong>${paymentLabel(student.paymentStatus)}</strong></div>
+              <div class="detail-stat" data-financial><span>Сумма</span><strong>${escapeHtml(formatMoney(orderPrice))}</strong></div>
+              <div class="detail-stat"><span>Услуга</span><strong>${escapeHtml(selectedCatalogTitle)}</strong></div>
+              <div class="detail-stat"><span>Прогресс</span><strong>${c.percent}%</strong></div>
+              <div class="detail-stat"><span>Готовые работы</span><strong>${finalStats.total}</strong></div>
+              <div class="detail-stat"><span>Напечатано</span><strong>${finalStats.printed}</strong></div>
+            </div>
+          </details>
           <div class="action-grid">
             <button class="action-button secondary" data-prepare-student="${student.id}" type="button">Подготовить работу</button>
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
@@ -6783,18 +6788,22 @@ function captureMedia(type, orderType, trigger) {
   if (!student) return;
   const target = { studentId: student.id, type, orderType, source: "capture" };
   if (type !== "photo") return openCaptureInput(target);
+  const angle = catalogAngleForStudent(student.id, orderType, { fallback: false });
   const restore = captureDialogReturn(document, window, trigger);
   const isSameStudent = () => state.route === "student" && state.studentId === student.id;
   let saved = false;
   let closed = false;
   const updateStudentView = () => {
     if (!isSameStudent()) return;
+    const statsOpen = view.querySelector(".student-detail-stats")?.open;
     render();
+    if (statsOpen) view.querySelector(".student-detail-stats").open = true;
     restore();
     view.querySelector('[data-capture="photo"]')?.focus({ preventScroll: true });
   };
   openPhotoCamera({
     studentName: `${student.lastName} ${student.firstName}`,
+    reference: angle && { name: angle.name, imageUrl: angle.refDataUrl, videoUrl: angle.videoRefDataUrl },
     mountHistory: close => mountDialogHistory({ id: uid("photo_camera"), restore: close }),
     onSave: async shot => {
       shot.id ||= uid("media");
@@ -13339,14 +13348,14 @@ function catalogAngleByType(type) {
   return null;
 }
 
-function catalogAngleForStudent(studentId, type) {
+function catalogAngleForStudent(studentId, type, { fallback = true } = {}) {
   const parsed = parseServiceTaskType(type);
   if (parsed) return catalogItemById(parsed.catalogId)?.angles?.find((entry) => entry.id === parsed.angleId) || null;
   const student = studentById(studentId);
   const order = orderByStudent(studentId);
   const catalog = catalogItemById(student?.catalogId || order.catalogId);
   const angle = (catalog?.angles || []).find((entry) => entry.id === type);
-  return angle || catalogAngleByType(type);
+  return angle || (fallback ? catalogAngleByType(type) : null);
 }
 
 function catalogAngleTypes(catalog) {

@@ -47,7 +47,7 @@ async function takeStill(video, track) {
   return blob;
 }
 
-export function openPhotoCamera({ studentName, mountHistory, onSave, onClose, openSystemCamera }) {
+export function openPhotoCamera({ studentName, reference, mountHistory, onSave, onClose, openSystemCamera }) {
   if (document.querySelector(".photo-camera")) return;
   const panel = document.createElement("dialog");
   panel.className = "photo-camera";
@@ -93,6 +93,39 @@ export function openPhotoCamera({ studentName, mountHistory, onSave, onClose, op
   const modes = [...panel.querySelectorAll("[data-camera-mode]")];
   const status = find(".photo-camera-status");
   find("[data-camera-student]").textContent = studentName;
+  let referenceVideo;
+  if (reference?.imageUrl || reference?.videoUrl) {
+    const details = document.createElement("details");
+    details.className = "photo-camera-reference";
+    details.dataset.cameraLive = "";
+    const summary = document.createElement("summary");
+    summary.setAttribute("aria-label", `Референс ракурса: ${reference.name || "текущий ракурс"}`);
+    const label = document.createElement("span");
+    label.textContent = reference.name || "Ракурс";
+    if (reference.imageUrl) {
+      const thumbnail = document.createElement("img");
+      thumbnail.src = reference.imageUrl;
+      thumbnail.alt = "";
+      summary.append(thumbnail);
+    }
+    summary.append(label);
+    details.append(summary);
+    if (reference.imageUrl) {
+      const enlarged = document.createElement("img");
+      enlarged.src = reference.imageUrl;
+      enlarged.alt = reference.name || "Референс ракурса";
+      details.append(enlarged);
+    } else {
+      referenceVideo = document.createElement("video");
+      referenceVideo.src = reference.videoUrl;
+      referenceVideo.controls = true;
+      referenceVideo.playsInline = true;
+      referenceVideo.preload = "none";
+      details.append(referenceVideo);
+      details.addEventListener("toggle", () => { if (!details.open) referenceVideo.pause(); });
+    }
+    find(".photo-camera-stage").append(details);
+  }
 
   let stream;
   let track;
@@ -152,6 +185,7 @@ export function openPhotoCamera({ studentName, mountHistory, onSave, onClose, op
     }
   };
   const setReview = reviewing => {
+    if (reviewing) referenceVideo?.pause();
     panel.classList.toggle("is-reviewing", reviewing);
     image.hidden = !reviewing;
     panel.querySelectorAll("[data-camera-live]").forEach(control => { control.hidden = reviewing; });
