@@ -2224,9 +2224,14 @@ body:has(.class-roster) {
 
 .class-roster-group {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-columns: 32px minmax(0, 1fr);
   align-items: start;
-  gap: 8px;
+  gap: 4px;
+}
+
+.class-roster-group > .student-list {
+  grid-column: 2;
+  gap: 4px;
 }
 
 .class-roster-heading {
@@ -2236,8 +2241,12 @@ body:has(.class-roster) {
 }
 
 .class-roster-index {
-  position: sticky;
-  top: max(8px, env(safe-area-inset-top));
+  position: fixed;
+  z-index: 4;
+  top: 50%;
+  left: calc(max(0px, (100% - 1180px) / 2) + clamp(16px, 4vw, 40px));
+  width: 32px;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - var(--nav-h) - 76px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -2247,6 +2256,10 @@ body:has(.class-roster) {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.class-roster-index[hidden] {
+  display: none;
 }
 
 .class-roster-index button {
@@ -2267,9 +2280,19 @@ body:has(.class-roster) {
   outline-offset: -2px;
 }
 
+.student-list.class-roster-letter {
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 4px;
+}
+
+.class-roster-letter > .student-card {
+  grid-column: 2;
+}
+
 .class-roster-letter h4 {
   margin: 0;
-  padding-inline-start: 4px;
+  grid-row: 1;
+  align-self: center;
   color: var(--muted);
   font-size: 0.78rem;
 }
@@ -2280,11 +2303,6 @@ body:has(.class-roster) {
 }
 
 @media (max-width: 400px) {
-  .class-roster-group {
-    grid-template-columns: 32px minmax(0, 1fr);
-    gap: 6px;
-  }
-
   .class-roster .student-card {
     padding-inline: 8px;
   }

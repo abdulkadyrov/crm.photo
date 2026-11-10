@@ -61,6 +61,7 @@ let cloudImportInProgress = false;
 let recordSync = null;
 let databaseReconnect = null;
 let rosterStudentHistory = null;
+let rosterScroll = null;
 const studentMediaPreviewUrls = new Set();
 const APP_NAME = "Vakha Studio";
 const APP_LOGO_SRC = "./icons/vakha-studio-logo.png";
@@ -1450,14 +1451,25 @@ function renderShootingRoster(students, { readOnly = false } = {}) {
 }
 
 function bindShootingRoster() {
+  rosterScroll?.abort();
+  rosterScroll = null;
   const roster = view.querySelector(".class-roster");
   if (!roster) return;
+  const indexes = [...roster.querySelectorAll(".class-roster-index")];
+  const updateIndex = () => {
+    const active = indexes.findLast(index => index.parentElement.getBoundingClientRect().top <= 9) || indexes[0];
+    const visible = roster.getBoundingClientRect().top < window.innerHeight / 2;
+    indexes.forEach(index => { index.hidden = !visible || index !== active; });
+  };
+  rosterScroll = new AbortController();
+  window.addEventListener("scroll", updateIndex, { passive: true, signal: rosterScroll.signal });
+  window.addEventListener("resize", updateIndex, { signal: rosterScroll.signal });
+  updateIndex();
   const jump = button => {
     const target = document.getElementById(button.dataset.rosterJump);
     if (!target) return;
     const index = button.closest(".class-roster-index");
-    const inset = index ? parseFloat(getComputedStyle(index).top) : 8;
-    const top = target.getBoundingClientRect().top + window.scrollY - inset;
+    const top = target.getBoundingClientRect().top + window.scrollY - 8;
     window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
     roster.querySelector("[aria-current]")?.removeAttribute("aria-current");
     if (index) button.setAttribute("aria-current", "true");
