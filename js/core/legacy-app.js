@@ -1433,7 +1433,7 @@ function renderShootingRoster(students, { readOnly = false } = {}) {
       ${groups.map(({ group, letters }) => `
         <section class="class-roster-group" id="roster-${group}" aria-labelledby="roster-${group}-title">
           <h3 class="class-roster-heading" id="roster-${group}-title">${labels[group]}</h3>
-          <nav class="class-roster-index" aria-label="${labels[group]} по фамилии">
+          <nav class="class-roster-index" style="--roster-letter-count:${letters.length}" aria-label="${labels[group]} по фамилии" hidden>
             ${letters.map(({ letter, id }) => `<button type="button" data-roster-jump="${id}" aria-label="Фамилии на ${escapeAttr(letter)}">${escapeHtml(letter)}</button>`).join("")}
           </nav>
           <div class="student-list">
@@ -1454,11 +1454,17 @@ function bindShootingRoster() {
   rosterScroll = null;
   const roster = view.querySelector(".class-roster");
   if (!roster) return;
-  const indexes = [...roster.querySelectorAll(".class-roster-index")];
+  const indexes = [...roster.querySelectorAll(".class-roster-index")].map(index => ({
+    index,
+    cards: index.nextElementSibling
+  }));
   const updateIndex = () => {
-    const active = indexes.findLast(index => index.parentElement.getBoundingClientRect().top <= 9) || indexes[0];
-    const visible = roster.getBoundingClientRect().top < window.innerHeight / 2;
-    indexes.forEach(index => { index.hidden = !visible || index !== active; });
+    const visible = indexes.filter(({ cards }) => {
+      const { top, bottom } = cards.getBoundingClientRect();
+      return top < window.innerHeight && bottom > 0;
+    });
+    const active = visible.findLast(({ cards }) => cards.parentElement.getBoundingClientRect().top <= 9) || visible[0];
+    indexes.forEach(entry => { entry.index.hidden = entry !== active; });
   };
   rosterScroll = new AbortController();
   window.addEventListener("scroll", updateIndex, { passive: true, signal: rosterScroll.signal });
