@@ -1,3 +1,4 @@
+import { describeCamera, chooseCameraRecordingType, recordedCameraBlob } from "../services/camera-options.js";
 import { cameraCrop } from "../services/camera-framing.js";
 const preferredVideo = {
   width: { ideal: 3840 },
@@ -210,6 +211,20 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   let torchOn = false;
   let gridOn = true;
   const recordedPreview = find('.camera-recorded-preview');
+  function showRecordedVideo(url) {
+    recordedPreview.pause();
+    recordedPreview.srcObject = null;
+    recordedPreview.hidden = false;
+    recordedPreview.controls = true;
+    recordedPreview.playsInline = true;
+    recordedPreview.preload = 'auto';
+    recordedPreview.src = url;
+    recordedPreview.load();
+  }
+  recordedPreview.onerror = () => {
+    if (closed || !recordedPreview.getAttribute('src')) return;
+    status.textContent = 'Не удалось воспроизвести видео. Его можно сохранить. Для новой записи попробуйте основную заднюю камеру.';
+  };
   function refreshCaptureMode() {
     panel.classList.toggle('is-video', captureType === 'video');
     panel.querySelectorAll('[data-capture-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.captureMode === captureType)));
@@ -419,7 +434,8 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     zoomPanel.hidden = true;
     zoomPresets.hidden = reviewing;
     find('.camera-photo-zoom').hidden = !reviewing;
-    if (reviewing) referenceVideo?.pause();
+    if (reviewing) { referenceVideo?.pause(); video.pause(); }
+    else if (video.srcObject) video.play().catch(() => { if (!closed) play.hidden = false; });
     if (!reviewing && torchOn && capabilities.torch === true && track?.readyState === 'live') {
       applyCameraSettings({torch: true}).catch(() => { if (!closed) status.textContent = 'Не удалось восстановить постоянный свет'; });
     }
@@ -456,7 +472,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
         reviewingSaved = photo;
         image.src = photo.url;
         setReview(true);
-        if (photo.kind === 'video') { find('.camera-photo-zoom').hidden = true; image.hidden = true; recordedPreview.src = photo.url; recordedPreview.hidden = false; }
+        if (photo.kind === 'video') { find('.camera-photo-zoom').hidden = true; image.hidden = true; showRecordedVideo(photo.url); }
         retake.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
         retake.setAttribute('aria-label', 'К камере');
         retake.title = 'К камере';
@@ -552,11 +568,25 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
       const label = document.createElement("label");
       label.textContent = "Камера";
       const select = document.createElement("select");
-      devices.forEach((device, index) => select.add(new Option(device.label || `Камера ${index + 1}`, device.deviceId)));
+      devices.forEach((device, index) => select.add(new Option(describeCamera(device.label, index).name, device.deviceId)));
       select.value = defaults.deviceId || select.options[0].value;
       select.onchange = () => run(() => startCamera(select.value), "Не удалось переключить камеру.");
       label.append(select);
       manual.append(label);
+      const device = devices.find(item => item.deviceId === select.value);
+      const explanation = document.createElement('small');
+      explanation.textContent = describeCamera(device?.label).hint;
+      manual.append(explanation);
+      const details = document.createElement('details');
+      details.className = 'camera-device-help';
+      const summary = document.createElement('summary'); summary.textContent = 'Подробнее о камерах'; details.append(summary);
+      devices.forEach((device, index) => {
+        const info = describeCamera(device.label, index);
+        const paragraph = document.createElement('p');
+        paragraph.textContent = `${info.name}: ${info.hint} Название устройства: ${device.label || 'не указано'}`;
+        details.append(paragraph);
+      });
+      manual.append(details);
     }
     const controls = manualControls.filter(([key, , metering]) =>
       rangeOf(capabilities, key) && (!metering || capabilities[metering]?.includes("manual"))
@@ -625,7 +655,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
       if (!window.MediaRecorder) throw new Error('Запись видео не поддерживается');
       audioStream = await navigator.mediaDevices.getUserMedia({audio: true});
       if (closed) { audioStream.getTracks().forEach(item => item.stop()); return; }
-      const mimeType = ['video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type));
+      const mimeType = chooseCameraRecordingType(type => MediaRecorder.isTypeSupported(type), type => !!recordedPreview.canPlayType(type));
       recorder = new MediaRecorder(new MediaStream([...stream.getVideoTracks(), ...audioStream.getAudioTracks()]), mimeType ? {mimeType} : {});
       const chunks = [];
       recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
@@ -634,20 +664,21 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
         audioStream?.getTracks().forEach(item => item.stop());
         panel.classList.remove('is-recording');
         if (closed) return;
-        const blob = new Blob(chunks, {type: recorder.mimeType});
+        let blob;
+        try { blob = recordedCameraBlob(chunks, recorder.mimeType || mimeType); }
+        catch { status.textContent = 'Камера не вернула видео. Повторите запись'; updateControls(); return; }
         if (!blob.size) { status.textContent = 'Не удалось записать видео'; updateControls(); return; }
         shotUrl = URL.createObjectURL(blob);
-        shot = {file: new File([blob], recorder.mimeType.includes('mp4') ? 'video.mp4' : 'video.webm', {type: recorder.mimeType}), kind: 'video'};
+        shot = {file: new File([blob], blob.type.includes('mp4') ? 'video.mp4' : 'video.webm', {type: blob.type}), kind: 'video'};
         setReview(true);
         image.hidden = true;
         find('.camera-photo-zoom').hidden = true;
-        recordedPreview.src = shotUrl;
-        recordedPreview.hidden = false;
+        showRecordedVideo(shotUrl);
         status.textContent = 'Видео готово. Проверьте и сохраните';
         updateControls();
       };
       recorder.onerror = () => { status.textContent = 'Ошибка записи. Остановите запись и попробуйте снова'; };
-      recorder.start(1000);
+      recorder.start();
       panel.classList.add('is-recording');
       shutter.setAttribute('aria-label', 'Остановить запись');
       const started = Date.now();
