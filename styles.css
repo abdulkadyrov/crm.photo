@@ -6927,3 +6927,8 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .photo-camera-review.is-saved-review .photo-camera-filmstrip:not([hidden]) { display: flex !important; flex: 1; min-width: 0; max-height: 48px; gap: 5px; }
 .photo-camera-review.is-saved-review .photo-camera-thumbnail { flex: 0 0 38px; width: 38px; height: 44px; min-height: 44px; padding: 0; border-radius: 6px; }
 .photo-camera-thumbnail img, .photo-camera-thumbnail video { width: 100%; height: 100%; object-fit: cover; }
+
+.photo-camera-review.is-saved-review .photo-camera-filmstrip:not([hidden]) { max-height: 64px; padding: 9px 5px 3px; gap: 8px; align-items: flex-end; }
+.photo-camera-thumbnail { transition: transform 160ms cubic-bezier(.2,.8,.2,1); }
+.photo-camera-thumbnail[aria-pressed="true"] { transform: translateY(-4px) scale(1.08); border-color: #fff; box-shadow: 0 0 0 1px #fff; }
+@media (prefers-reduced-motion: reduce) { .photo-camera-thumbnail { transition: none; } }

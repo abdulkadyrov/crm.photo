@@ -464,6 +464,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       button.type = 'button';
       button.className = 'photo-camera-thumbnail';
       button.setAttribute('aria-label', `Открыть снимок ${index + 1}`);
+      button.setAttribute('aria-pressed', String(reviewingSaved?.id === photo.id));
       const thumb = document.createElement(photo.kind === 'video' ? 'video' : 'img');
       thumb.muted = true;
       thumb.playsInline = true;
@@ -473,6 +474,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       button.onclick = () => {
         if (busy || shot) return;
         reviewingSaved = photo;
+        strip.querySelectorAll('.photo-camera-thumbnail').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
         image.src = photo.url;
         setReview(true);
         if (photo.kind === 'video') { find('.camera-photo-zoom').hidden = true; image.hidden = true; showRecordedVideo(photo.url); }
