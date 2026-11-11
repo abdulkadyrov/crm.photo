@@ -1,6 +1,6 @@
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=168";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=168";
+import { nextInSequence } from "../services/sequence-navigation.js?v=169";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=169";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,7 +12,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=168";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=169";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1452,8 +1452,8 @@ function classStudentSection(classId) {
   const previousGroup = nextInSequence(orderedGroups, klass.id, -1);
   return `
     <section class="class-section">
-      <div class="class-student-actions">
-          <button class="primary-button compact" data-add-student="${klass.id}" type="button">Учащийся</button>
+      <div class="class-student-actions class-quick-actions">
+          <button class="primary-button compact" data-add-student="${klass.id}" type="button">+ Учащийся</button>
           <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список учащихся" : "Добавить список учащихся"}</button>
       </div>
       <details class="scope-tools group-tools" data-scope-fold="group-${escapeAttr(klass.id)}">
@@ -5353,10 +5353,10 @@ function showChildrenList(classId, trigger) {
   const klass = classById(classId); if (!klass) return;
   let original = structuredClone(state.data.students.filter(student => student.classId === classId));
   const restore = captureDialogReturn(document, window, trigger);
-  const d = document.createElement("dialog"); d.className = "cloud-dialog"; d.setAttribute("aria-label", "Список детей класса");
-  d.innerHTML = `<div class="cloud-head"><h2>Список детей · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div>
+  const d = document.createElement("dialog"); d.className = "cloud-dialog roster-list-dialog"; d.setAttribute("aria-label", "Список учащихся группы");
+  d.innerHTML = `<div class="cloud-head"><h2>Список учащихся · ${escapeHtml(klass.name)}</h2><button data-close>Закрыть</button></div>
     <div data-photo-import></div>
-    <label>Фамилия и имя, каждый ребёнок с новой строки<textarea class="input textarea" data-names rows="12" placeholder="Алиев Али\nМагомадова Раяна"></textarea></label>
+    <label>Фамилия и имя, каждый учащийся с новой строки<textarea class="input textarea" data-names rows="6" placeholder="Алиев Али\nМагомадова Раяна"></textarea></label>
     <p>Вставьте весь класс или исправьте существующий список. Перед сохранением проверьте, какие карточки будут изменены, добавлены или удалены.</p>
     <button class="secondary-button compact" data-copy>Скопировать список</button><button class="secondary-button compact" data-preview>Проверить изменения</button>
     <p data-result role="status"></p><div data-review></div><button class="primary-button" data-save disabled>Подтвердить и сохранить</button>`;

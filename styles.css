@@ -6914,3 +6914,12 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 /* Compact pill for the next student shortcut. */
 .student-step-navigation { padding: 0; border-radius: 999px; }
 .student-step-navigation button { border-radius: 999px; padding: 10px 14px; }
+
+.class-quick-actions { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 12px; }
+.class-quick-actions button.compact { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; font-size: 12px; white-space: nowrap; }
+.roster-list-dialog { padding: 16px; max-height: 85dvh; overflow-y: auto; }
+.roster-list-dialog .cloud-head { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.roster-list-dialog .cloud-head h2 { margin: 0; font-size: 18px; line-height: 1.25; }
+.roster-list-dialog .cloud-head button { margin-left: auto; padding: 6px 8px; font-size: 12px; }
+.roster-list-dialog label, .roster-list-dialog p, .roster-list-dialog summary { font-size: 13px; line-height: 1.4; }
+.roster-list-dialog textarea.input { min-height: 120px; height: 150px; padding: 10px; font-size: 14px; }
