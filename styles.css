@@ -6854,3 +6854,10 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .transfer-download-ready::backdrop { background: #0008; }
 .transfer-download-ready p { overflow-wrap: anywhere; }
 .transfer-download-ready .primary-button { display: flex; justify-content: center; margin: 16px 0; }
+.card-counts { display: flex; flex-wrap: wrap; gap: 3px 10px; margin: 4px 0; font-size: 12px; line-height: 1.35; color: var(--muted); }
+.card-counts span { white-space: nowrap; }
+.student-service-choice { display: block; margin-top: 3px; font-size: 11px; line-height: 1.3; color: var(--muted); }
+.student-card.has-selected-services { background: #eff8f0; border: 1px solid #99cba2; }
+.student-card.has-selected-services .student-service-choice { color: #245d31; font-weight: 600; }
+[data-theme="dark"] .student-card.has-selected-services { background: #152b1c; border-color: #427a4e; }
+[data-theme="dark"] .student-card.has-selected-services .student-service-choice { color: #a8d9b1; }

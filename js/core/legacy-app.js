@@ -1,3 +1,4 @@
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -9,7 +10,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=157";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=158";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1260,6 +1261,10 @@ function dashboardBar(label, value, total, percent) {
   `;
 }
 
+function renderCardCounts(counts) {
+  return `<p class="card-counts"><span>Фото: <strong>${counts.photos}</strong></span><span title="Дети с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Выбранные услуги с учётом количества экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
+}
+
 function projectCard(project) {
   const classes = classesByProject(project.id);
   const students = classes.flatMap((klass) => state.data.students.filter((student) => student.classId === klass.id)).filter(matchesFilter).filter(matchesSearch);
@@ -1267,6 +1272,8 @@ function projectCard(project) {
   const pct = students.length ? Math.round((done / students.length) * 100) : 0;
   const finance = projectFinancialStats(project.id);
   const docsCount = documentsForOwner("project", project.id).length;
+  const summaryStudents = state.data.students.filter(student => classes.some(group => group.id === student.classId));
+  const cardCounts = cardSummary(summaryStudents, state.data.media, state.data.orders);
   return `
     <article class="list-card project-summary-card card-button" data-open-project="${project.id}">
       <div class="list-card-main">
@@ -1274,6 +1281,7 @@ function projectCard(project) {
         <div class="list-copy">
           <h2 class="card-title">${escapeHtml(project.name)}</h2>
           <p class="muted">${classes.length} ${pluralizeRu(classes.length, "группа", "группы", "групп")} · ${students.length} ${pluralizeRu(students.length, "ученик", "ученика", "учеников")}</p>
+          ${renderCardCounts(cardCounts)}
           <details class="compact-card-details">
             <summary>${pct}% готово</summary>
             <div class="compact-card-extra">
@@ -1584,6 +1592,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
   const color = classColorOption(klass.color, klass.name);
   const manualMoveDisabled = sortMode !== "manual";
   const docsCount = documentsForOwner("group", klass.id).length;
+  const cardCounts = cardSummary(allStudents, state.data.media, state.data.orders);
   return `
     <article class="class-card group-card card-button" data-open-class="${klass.id}" tabindex="0" style="--class-accent:${escapeAttr(color.accent)};">
       <div class="class-cover" style="background:${escapeAttr(color.gradient)};">
@@ -1615,6 +1624,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
             </div>
           </details>
         </div>
+        ${renderCardCounts(cardCounts)}
         <details class="compact-card-details">
           <summary>${pct}% готово</summary>
           <div class="compact-card-extra">
@@ -4476,10 +4486,12 @@ function studentCard(student, { readOnly = false } = {}) {
   const price = studentTotalPrice(student);
   const previewUrl = studentAvatarUrl(student);
   const fullName = `${student.lastName} ${student.firstName}`.trim();
+  const chosenServices = selectedServiceEntries(student);
+  const cardCounts = cardSummary([student], state.data.media, state.data.orders);
   const preview = `<img class="student-thumb" src="${escapeAttr(previewUrl || './assets/ui/student-avatar.svg')}" alt="${escapeAttr(previewUrl ? fullName : 'Фото не добавлено')}" loading="lazy" />`;
   const finalStats = finalWorkStatsForStudent(student.id);
   return `
-    <article class="student-card card-button" ${readOnly ? "data-demo-student" : `data-open-student="${student.id}" tabindex="0"`}>
+    <article class="student-card card-button ${chosenServices.length ? "has-selected-services" : "no-selected-services"}" ${readOnly ? "data-demo-student" : `data-open-student="${student.id}" tabindex="0"`}>
       <div class="student-card-grid">
         ${preview}
         <div class="student-identity">
@@ -4487,6 +4499,8 @@ function studentCard(student, { readOnly = false } = {}) {
             <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
             <p class="muted">${escapeHtml(project?.name || "")} • ${escapeHtml(klass?.name || "")}</p>
           </div>
+          <span class="student-service-choice">${chosenServices.length ? `Услуги выбраны: ${chosenServices.length}` : "Услуги не выбраны"}</span>
+          ${renderCardCounts(cardCounts)}
           <details class="compact-card-details">
             <summary>${c.doneCount}/${c.total} задач · ${c.percent}%</summary>
             <div class="compact-card-extra">
@@ -9825,7 +9839,7 @@ async function exportProject(projectId, forVakha = false) {
     await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
     await refreshData();
     const blob = await createTransferZip(await buildTransferExportFiles("project", { projectId }, {includeBundled: forVakha, includeServices: forVakha}));
-    offerTransferDownload(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+    offerTransferDownload(blob, projectArchiveName(project.name, new URL(import.meta.url).searchParams.get("v") || "158"));
     notify(forVakha ? "Архив для Vakha готов." : "Проект готов без каталога услуг. Нажмите «Скачать ZIP».");
   });
 }
