@@ -1,5 +1,5 @@
-import { nextInSequence } from "../services/sequence-navigation.js";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=161";
+import { nextInSequence } from "../services/sequence-navigation.js?v=162";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=162";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -11,7 +11,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=161";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=162";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1263,7 +1263,7 @@ function dashboardBar(label, value, total, percent) {
 }
 
 function renderCardCounts(counts, { includePhotos = true } = {}) {
-  return `<p class="card-counts">${includePhotos ? `<span>Фото: <strong>${counts.photos}</strong></span>` : ""}<span title="Дети с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Одна выбранная услуга для одного ребёнка — один заказ, независимо от экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
+  return `<p class="card-counts">${includePhotos ? `<span>Фото: <strong>${counts.photos}</strong></span>` : ""}<span title="Учащиеся с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Одна выбранная услуга для одного ребёнка — один заказ, независимо от экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
 }
 
 function projectCard(project) {
@@ -1322,7 +1322,7 @@ function matchesSearch(student) {
 function studentDirectorySearchMarkup(projectId, classId) {
   const key = `${projectId}:${classId || ''}`;
   return `<section class="scoped-student-search" data-directory-key="${escapeAttr(key)}">
-    <label class="field-label"><span>${classId ? 'Найти ребёнка в группе' : 'Найти ребёнка в проекте'}</span>
+    <label class="field-label"><span>${classId ? 'Найти учащегося в группе' : 'Найти учащегося в проекте'}</span>
     <input class="input" type="search" data-directory-query autocomplete="off" placeholder="Имя или фамилия" value="${escapeAttr(studentDirectoryQueries.get(key) || '')}" aria-controls="student-directory-results" /></label>
     <div data-directory-results id="student-directory-results"></div>
   </section>`;
@@ -1430,7 +1430,9 @@ function classStudentSection(classId) {
   const klass = classById(classId);
   if (!klass) return "";
   const students = studentsForClassView(klass.id);
-  const nextGroup = nextInSequence(classesByProject(klass.projectId), klass.id);
+  const orderedGroups = classesByProject(klass.projectId);
+  const nextGroup = nextInSequence(orderedGroups, klass.id);
+  const previousGroup = nextInSequence(orderedGroups, klass.id, -1);
   return `
     <section class="class-section">
       <div class="class-student-toolbar">
@@ -1449,7 +1451,10 @@ function classStudentSection(classId) {
       ${klass.teacher?.name ? `<article class="panel teacher-contact-panel"><div><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</div><label class="teacher-broadcast-check"><input type="checkbox" data-class-broadcast-sent="${klass.id}" ${klass.teacherBroadcastSentAt ? "checked" : ""} /><span>Рассылка отправлена</span></label></article>` : ""}
       ${documentsSection("group", klass.id)}
       ${renderShootingRoster(students)}
-      <div class="class-next-navigation"><button class="primary-button" type="button" data-next-group="${escapeAttr(nextGroup?.id || '')}" ${nextGroup ? '' : 'disabled'}>${nextGroup ? `Следующая группа: ${escapeHtml(nextGroup.name)} →` : 'Последняя группа'}</button></div>
+      <nav class="class-next-navigation" aria-label="Переход между группами">
+        <button class="secondary-button compact" type="button" data-previous-group="${escapeAttr(previousGroup?.id || '')}" aria-label="Предыдущая группа" title="${escapeAttr(previousGroup?.name || 'Первая группа')}" ${previousGroup ? '' : 'disabled'}>Предыдущая</button>
+        <button class="secondary-button compact" type="button" data-next-group="${escapeAttr(nextGroup?.id || '')}" aria-label="Следующая группа" title="${escapeAttr(nextGroup?.name || 'Последняя группа')}" ${nextGroup ? '' : 'disabled'}>Следующая</button>
+      </nav>
     </section>
   `;
 }
@@ -2124,9 +2129,9 @@ function studentQuickForm(classId) {
   `;
 }
 
-function nextRosterStudent(student) {
+function nextRosterStudent(student, direction = 1) {
   const groups = shootingRoster(studentsForClassView(student.classId), child => selectedCatalogIdsForStudent(child).map(id => serviceGender(catalogItemById(id))));
-  return nextInSequence(groups.flatMap(group => group.letters.flatMap(([, rows]) => rows)), student.id);
+  return nextInSequence(groups.flatMap(group => group.letters.flatMap(([, rows]) => rows)), student.id, direction);
 }
 
 function renderStudent() {
@@ -2140,6 +2145,7 @@ function renderStudent() {
   const project = projectById(klass?.projectId);
   const order = orderByStudent(student.id);
   const nextChild = nextRosterStudent(student);
+  const previousChild = nextRosterStudent(student, -1);
   const media = mediaByStudent(student.id).filter((item) => !isFinalResultMedia(item));
   const finalWorks = finalWorksForStudent(student.id);
   const a4Works = finalWorks.filter((work) => finalWorkA4ImageBlob(work));
@@ -2290,7 +2296,10 @@ function renderStudent() {
       </aside>
       </div>
     </section>
-    <button class="fab-next-student" type="button" data-next-student="${escapeAttr(nextChild?.id || '')}" ${nextChild ? `title="${escapeAttr(`${nextChild.lastName} ${nextChild.firstName}`)}"` : 'disabled'}>${nextChild ? 'Следующий ребёнок →' : 'Последний ребёнок'}</button>
+    <div class="student-step-navigation" role="group" aria-label="Переход между учащимися">
+      <button type="button" data-previous-student aria-label="Предыдущий учащийся" title="${escapeAttr(previousChild ? `${previousChild.lastName} ${previousChild.firstName}` : 'Первый учащийся')}" ${previousChild ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" data-next-student aria-label="Следующий учащийся" title="${escapeAttr(nextChild ? `${nextChild.lastName} ${nextChild.firstName}` : 'Последний учащийся')}" ${nextChild ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
   bindViewActions();
@@ -4553,6 +4562,14 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  view.querySelector('[data-previous-group]')?.addEventListener('click', event => {
+    if (event.currentTarget.dataset.previousGroup) openClassStudents(event.currentTarget.dataset.previousGroup);
+  });
+  view.querySelector('[data-previous-student]')?.addEventListener('click', () => {
+    const student = studentById(state.studentId);
+    const previous = student && nextRosterStudent(student, -1);
+    if (previous) navigate('student', {studentId: previous.id});
+  });
   view.querySelector('[data-next-group]')?.addEventListener('click', event => {
     if (event.currentTarget.dataset.nextGroup) openClassStudents(event.currentTarget.dataset.nextGroup);
   });
