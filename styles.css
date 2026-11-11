@@ -6910,3 +6910,7 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .student-detail-shell ~ .fab-back { bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom)); }
 .student-detail-shell { padding-bottom: 140px; }
 @media (min-width: 900px) { .student-step-navigation { left: auto; width: 112px; } }
+
+/* Compact pill for the next student shortcut. */
+.student-step-navigation { padding: 0; border-radius: 999px; }
+.student-step-navigation button { border-radius: 999px; padding: 10px 14px; }
