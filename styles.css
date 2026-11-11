@@ -6845,3 +6845,7 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .photo-camera:not(.is-reviewing) .photo-camera-status:empty { display: none; }
 .camera-capture-modes button { padding: 5px 8px; }
 .camera-shutter-row { min-height: 78px; }
+.scoped-student-search { margin-bottom: 16px; }
+.student-directory-matches { display: grid; gap: 6px; max-height: 40dvh; overflow-y: auto; }
+.student-directory-result { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; padding: 12px; min-height: 44px; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); }
+.student-directory-result strong { overflow-wrap: anywhere; }

@@ -1,3 +1,5 @@
+import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+const studentDirectoryQueries = new Map();
 import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
@@ -6,7 +8,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=154";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=155";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -940,6 +942,7 @@ async function seedCatalogIfNeeded() {
 }
 
 function bindShell() {
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   document.querySelectorAll("[data-route]").forEach((button) => {
     button.addEventListener("click", () => {
       const route = button.dataset.route;
@@ -987,8 +990,7 @@ function navigate(route, params = {}) {
     item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")) || (itemRoute === "settings" && ["settings", "profile", "services", "serviceDetail", "catalog"].includes(route)));
   });
   render();
-  if (prevRoute !== route) window.scrollTo(0, 0);
-  else window.scrollTo(0, prevScrollY);
+  resetDirectoryScroll();
 }
 
 function routeSnapshot() {
@@ -1059,9 +1061,7 @@ function addContextBackButton() {
 
 function navigateContextBack() {
   if (state.route === "classes" && state.classId) {
-    state.classId = null;
-    state.studentFormClassId = null;
-    return renderClasses();
+    return navigate("classes", { classId: null, studentFormClassId: null });
   }
   if (state.route === "student") return navigateBackFromStudent();
   if (state.route === "services") return navigate("settings");
@@ -1295,6 +1295,38 @@ function matchesSearch(student) {
   return [student.firstName, student.lastName, student.qrId, klass?.name, project?.name].join(" ").toLowerCase().includes(query);
 }
 
+function studentDirectorySearchMarkup(projectId, classId) {
+  const key = `${projectId}:${classId || ''}`;
+  return `<section class="scoped-student-search" data-directory-key="${escapeAttr(key)}">
+    <label class="field-label"><span>${classId ? 'Найти ребёнка в группе' : 'Найти ребёнка в проекте'}</span>
+    <input class="input" type="search" data-directory-query autocomplete="off" placeholder="Имя или фамилия" value="${escapeAttr(studentDirectoryQueries.get(key) || '')}" aria-controls="student-directory-results" /></label>
+    <div data-directory-results id="student-directory-results"></div>
+  </section>`;
+}
+function bindStudentDirectorySearch() {
+  const section = view.querySelector('.scoped-student-search');
+  if (!section) return;
+  const input = section.querySelector('[data-directory-query]');
+  const output = section.querySelector('[data-directory-results]');
+  function update() {
+    studentDirectoryQueries.set(section.dataset.directoryKey, input.value);
+    const matches = searchStudentDirectory(state.data.students, state.data.classes, {projectId: state.projectId, classId: state.classId, query: input.value});
+    output.innerHTML = !input.value.trim() ? '' : `<p class="muted" role="status">${matches.length ? `Найдено: ${matches.length}` : 'Никого не найдено'}</p><div class="student-directory-matches">${matches.map(student => `<button class="student-directory-result" type="button" data-directory-student="${escapeAttr(student.id)}"><strong>${escapeHtml(`${student.lastName} ${student.firstName}`)}</strong><span class="muted">${escapeHtml(classById(student.classId)?.name || '')}</span></button>`).join('')}</div>`;
+  }
+  input.addEventListener('input', update);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      const buttons = output.querySelectorAll('[data-directory-student]');
+      if (buttons.length === 1) { event.preventDefault(); openStudentCard(buttons[0].dataset.directoryStudent, buttons[0]); }
+    }
+  });
+  output.addEventListener('click', event => {
+    const button = event.target.closest('[data-directory-student]');
+    if (button) openStudentCard(button.dataset.directoryStudent, button);
+  });
+  update();
+}
+
 function renderClasses() {
   const projects = state.data.projects;
   const activeProject = projects.find(project => project.id === state.projectId)?.id || projects[0]?.id || "";
@@ -1327,6 +1359,7 @@ function renderClasses() {
     summary: `${classes.length} групп · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
+    ${studentDirectorySearchMarkup(activeProject, state.classId)}
     ${isClassOpen ? "" : `<section class="projects-actions">
       <label class="field-label project-picker">
         <span>Проект</span>
@@ -1514,7 +1547,7 @@ function bindShootingRoster() {
 }
 
 function openStudentCard(studentId, trigger) {
-  if (!trigger.closest(".class-roster")) return navigate("student", { studentId });
+  if (!trigger.closest(".class-roster, .scoped-student-search")) return navigate("student", { studentId });
   trigger.focus({ preventScroll: true });
   const routeHistory = mountDialogHistory({
     id: uid("roster_student"),
@@ -4479,6 +4512,7 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  bindStudentDirectorySearch();
   bindShootingRoster();
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
   view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
@@ -4557,8 +4591,8 @@ function bindViewActions() {
   view.querySelector("[data-close-class-students]")?.addEventListener("click", () => {
     state.classId = null;
     state.studentFormClassId = null;
-    state.preserveScroll = true;
     renderClasses();
+    resetDirectoryScroll();
   });
   view.querySelectorAll("[data-show-class-stats]").forEach((node) => node.addEventListener("click", () => showClassStatsPanel(node.dataset.showClassStats)));
   view.querySelectorAll("[data-class-sort-project]").forEach(node => node.addEventListener("click", () => updateProjectClassSort(node.dataset.classSortProject, node.dataset.classSortMode)));
@@ -5090,11 +5124,7 @@ function bindDetailsMenus() {
 function openClassStudents(classId) {
   const klass = classById(classId);
   if (!klass) return notify("Группа не найдена.");
-  state.projectId = klass.projectId;
-  state.classId = klass.id;
-  state.studentFormClassId = null;
-  state.preserveScroll = true;
-  renderClasses();
+  navigate("classes", {projectId: klass.projectId, classId: klass.id, studentFormClassId: null});
 }
 
 function positionMenuPanel(menu, panel, summaryRect, navReserve) {
@@ -9442,7 +9472,7 @@ function navigateBackFromStudent() {
       const control = target.rosterFocus.menu ? card?.querySelector("[data-open-student-action]") : card;
       control?.focus({ preventScroll: true });
     }
-    window.scrollTo(0, target.scrollY || 0);
+    resetDirectoryScroll();
     return;
   }
   const student = studentById(state.studentId);

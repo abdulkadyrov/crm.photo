@@ -14,6 +14,7 @@ function render(projects, projectId) {
     APP_NAME: "Vakha Studio",
     projectById: id => projects.find(project => project.id === id),
     classesByProject: () => [],
+    studentDirectorySearchMarkup: () => "",
     classSortMode: () => "manual",
     financialStatsForStudents: () => ({}),
     setShell() {},
