@@ -1,4 +1,4 @@
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=159";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -10,7 +10,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=158";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=159";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1262,7 +1262,7 @@ function dashboardBar(label, value, total, percent) {
 }
 
 function renderCardCounts(counts) {
-  return `<p class="card-counts"><span>Фото: <strong>${counts.photos}</strong></span><span title="Дети с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Выбранные услуги с учётом количества экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
+  return `<p class="card-counts"><span>Фото: <strong>${counts.photos}</strong></span><span title="Дети с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Одна выбранная услуга для одного ребёнка — один заказ, независимо от экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
 }
 
 function projectCard(project) {
