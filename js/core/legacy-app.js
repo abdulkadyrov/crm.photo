@@ -1,6 +1,7 @@
+import { normalizeStudentName } from "../services/shooting-roster.js?v=173";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=172";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=172";
+import { nextInSequence } from "../services/sequence-navigation.js?v=173";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=173";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -11,8 +12,8 @@ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=172";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=173";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=173";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -13763,7 +13764,7 @@ function splitFullName(value) {
   if (parts.length === 1) return { firstName: parts[0], lastName: "" };
   const lastName = parts[0];
   const firstName = parts.slice(1).join(" ");
-  return { firstName, lastName };
+  return normalizeStudentName({ firstName, lastName });
 }
 
 function filterChip(filter, label) {

@@ -2,6 +2,13 @@ const surnameEndings = {
   boys: /(?:ов|ев|ёв|ин|ын|ский|цкий|ой)$/iu,
   girls: /(?:ова|ева|ёва|ина|ына|ская|цкая|ая)$/iu
 };
+export function normalizeStudentName(student) {
+  const last = student.lastName?.trim() || "";
+  const first = student.firstName?.trim() || "";
+  const surname = word => Object.values(surnameEndings).some(pattern => pattern.test(word));
+  if (!surname(last) && first && !first.includes(" ") && surname(first)) return { ...student, lastName: first, firstName: last };
+  return student;
+}
 const russian = new Intl.Collator("ru");
 
 function studentGroup(student, serviceAudiences) {
@@ -13,7 +20,7 @@ function studentGroup(student, serviceAudiences) {
 
 export function shootingRoster(students, audiencesForStudent) {
   const groups = { boys: new Map(), girls: new Map(), unknown: new Map() };
-  const ordered = [...students].sort((a, b) =>
+  const ordered = students.map(normalizeStudentName).sort((a, b) =>
     russian.compare(a.lastName, b.lastName) || russian.compare(a.firstName, b.firstName)
   );
   for (const student of ordered) {
