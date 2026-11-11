@@ -66,7 +66,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     <div class="photo-camera-stage">
       <div class="photo-camera-frame"><video autoplay muted playsinline></video><button class="photo-camera-button camera-round camera-zoom" data-camera-live data-camera-zoom type="button" aria-label="Масштаб камеры">1×</button></div>
       <video class="camera-recorded-preview" controls playsinline hidden></video>
-      <img alt="Снятая фотография" hidden />
+      <img alt="Снятая фотография" hidden draggable="false" /><div class="camera-photo-zoom" hidden><button type="button" data-photo-less aria-label="Уменьшить фото">−</button><button type="button" data-photo-reset>1×</button><button type="button" data-photo-more aria-label="Увеличить фото">+</button></div>
       <div class="photo-camera-guide" aria-hidden="true" hidden></div>
     </div>
     <footer class="photo-camera-controls">
@@ -143,6 +143,35 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   const frame = find('.photo-camera-frame');
   const stage = find('.photo-camera-stage');
   frame.append(find('.photo-camera-guide'));
+  const zoomPanel = document.createElement('div');
+  zoomPanel.className = 'camera-zoom-dial';
+  zoomPanel.hidden = true;
+  zoomPanel.innerHTML = '<output>1×</output><input type="range" aria-label="Масштаб камеры" /><div class="camera-zoom-presets"></div>';
+  frame.append(zoomPanel);
+  const zoomSlider = zoomPanel.querySelector('input');
+  let pendingZoom = null, zoomApplying = false;
+  async function drainZoom() {
+    if (zoomApplying) return;
+    zoomApplying = true;
+    try {
+      while (pendingZoom !== null && !closed) {
+        const value = pendingZoom; pendingZoom = null;
+        await applyCameraSettings({zoom: value});
+      }
+    } catch { if (!closed) status.textContent = 'Не удалось изменить масштаб'; }
+    finally { zoomApplying = false; }
+  }
+  function requestZoom(value) {
+    const range = rangeOf(capabilities, 'zoom');
+    if (!range || busy || closed) return;
+    pendingZoom = inRange(Number(value), range);
+    const label = `${Number(pendingZoom.toFixed(1))}×`;
+    zoomSlider.value = pendingZoom;
+    zoomPanel.querySelector('output').textContent = label;
+    find('[data-camera-zoom]').textContent = label;
+    void drainZoom();
+  }
+  zoomSlider.oninput = () => requestZoom(zoomSlider.value);
   const aspectToggle = find('[data-camera-aspect-toggle]');
   function updateFrame() {
     const width = stage.clientWidth, height = stage.clientHeight;
@@ -209,14 +238,24 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     captureType = button.dataset.captureMode;
     refreshCaptureMode();
   });
-  find('[data-camera-zoom]').onclick = () => run(async () => {
+  find('[data-camera-zoom]').onclick = () => {
     const range = rangeOf(capabilities, 'zoom');
     if (!range) { status.textContent = 'Зум недоступен этой камере в браузере'; return; }
-    const current = track.getSettings?.().zoom || 1;
-    const next = current >= Math.min(3, range.max) ? range.min : inRange(current + 1, range);
-    await applyCameraSettings({zoom: next});
-    find('[data-camera-zoom]').textContent = `${Number(next.toFixed(1))}×`;
-  }, 'Не удалось изменить масштаб');
+    zoomPanel.hidden = !zoomPanel.hidden;
+    zoomSlider.min = range.min;
+    zoomSlider.max = range.max;
+    zoomSlider.step = range.step || 0.01;
+    zoomSlider.value = track.getSettings?.().zoom || range.min;
+    zoomPanel.querySelector('output').textContent = `${Number(Number(zoomSlider.value).toFixed(1))}×`;
+    const presets = zoomPanel.querySelector('.camera-zoom-presets');
+    presets.replaceChildren();
+    for (const value of [...new Set([range.min, 1, 2, 3, 5, range.max])].filter(value => value >= range.min && value <= range.max).sort((a,b) => a-b)) {
+      const button = document.createElement('button'); button.type = 'button';
+      button.textContent = `${Number(value.toFixed(1))}×`;
+      button.onclick = () => requestZoom(value);
+      presets.append(button);
+    }
+  };
   find('[data-latest]').onclick = () => find('.photo-camera-thumbnail:last-child')?.click();
   let stream;
   let track;
@@ -288,8 +327,47 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
       if (!closed) updateControls();
     }
   };
+  let photoScale = 1, photoX = 0, photoY = 0;
+  const photoPointers = new Map();
+  let photoGesture;
+  function paintPhoto() {
+    const bounds = stage.getBoundingClientRect();
+    photoX = Math.max(-bounds.width * (photoScale - 1) / 2, Math.min(bounds.width * (photoScale - 1) / 2, photoX));
+    photoY = Math.max(-bounds.height * (photoScale - 1) / 2, Math.min(bounds.height * (photoScale - 1) / 2, photoY));
+    image.style.transform = `translate(${photoX}px, ${photoY}px) scale(${photoScale})`;
+    find('[data-photo-reset]').textContent = `${Number(photoScale.toFixed(1))}×`;
+  }
+  function resetPhotoZoom() { photoScale = 1; photoX = photoY = 0; photoPointers.clear(); photoGesture = null; paintPhoto(); }
+  function changePhotoScale(value) { photoScale = Math.max(1, Math.min(6, value)); paintPhoto(); }
+  find('[data-photo-more]').onclick = () => changePhotoScale(photoScale + .5);
+  find('[data-photo-less]').onclick = () => changePhotoScale(photoScale - .5);
+  find('[data-photo-reset]').onclick = resetPhotoZoom;
+  image.ondblclick = () => changePhotoScale(photoScale > 1 ? 1 : 2);
+  image.onwheel = event => { event.preventDefault(); changePhotoScale(photoScale * (event.deltaY < 0 ? 1.1 : 1/1.1)); };
+  function beginPhotoGesture() {
+    const points = [...photoPointers.values()];
+    photoGesture = points.length === 2 ? {distance: Math.hypot(points[1].x-points[0].x, points[1].y-points[0].y), scale: photoScale} : points.length ? {x: points[0].x, y: points[0].y, offsetX: photoX, offsetY: photoY} : null;
+  }
+  image.onpointerdown = event => {
+    image.setPointerCapture(event.pointerId);
+    photoPointers.set(event.pointerId, {x:event.clientX,y:event.clientY}); beginPhotoGesture();
+  };
+  image.onpointermove = event => {
+    if (!photoPointers.has(event.pointerId)) return;
+    photoPointers.set(event.pointerId, {x:event.clientX,y:event.clientY});
+    const points = [...photoPointers.values()];
+    if (points.length === 2 && photoGesture?.distance) changePhotoScale(photoGesture.scale * Math.hypot(points[1].x-points[0].x,points[1].y-points[0].y) / photoGesture.distance);
+    else if (points.length === 1 && photoGesture) { photoX = photoGesture.offsetX + points[0].x-photoGesture.x; photoY = photoGesture.offsetY + points[0].y-photoGesture.y; paintPhoto(); }
+  };
+  image.onpointerup = image.onpointercancel = event => { photoPointers.delete(event.pointerId); beginPhotoGesture(); };
   const setReview = reviewing => {
+    resetPhotoZoom();
+    zoomPanel.hidden = true;
+    find('.camera-photo-zoom').hidden = !reviewing;
     if (reviewing) referenceVideo?.pause();
+    if (!reviewing && torchOn && capabilities.torch === true && track?.readyState === 'live') {
+      applyCameraSettings({torch: true}).catch(() => { if (!closed) status.textContent = 'Не удалось восстановить постоянный свет'; });
+    }
     panel.classList.toggle("is-reviewing", reviewing);
     image.hidden = !reviewing;
     panel.querySelectorAll("[data-camera-live]").forEach(control => { control.hidden = reviewing; });
@@ -301,7 +379,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   function renderFilmstrip() {
     const strip = find('.photo-camera-filmstrip');
     strip.replaceChildren();
-    strip.hidden = !sessionPhotos.length;
+    strip.hidden = true;
     find('[data-latest]').disabled = !sessionPhotos.length;
     const latest = sessionPhotos.at(-1);
     find('[data-latest]').style.backgroundImage = latest && latest.kind !== 'video' ? `url("${latest.url}")` : '';
@@ -322,7 +400,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
         reviewingSaved = photo;
         image.src = photo.url;
         setReview(true);
-        if (photo.kind === 'video') { image.hidden = true; recordedPreview.src = photo.url; recordedPreview.hidden = false; }
+        if (photo.kind === 'video') { find('.camera-photo-zoom').hidden = true; image.hidden = true; recordedPreview.src = photo.url; recordedPreview.hidden = false; }
         retake.textContent = 'К камере';
         save.textContent = 'Удалить снимок';
         status.textContent = `Снимок ${index + 1} из ${sessionPhotos.length}`;
@@ -390,7 +468,8 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
 
   async function applyCameraSettings(values) {
     if (!Object.keys(values).length) return;
-    await track.applyConstraints({ ...baseConstraints, advanced: [values] });
+    const settings = capabilities.torch === true ? {torch: torchOn, ...values} : values;
+    await track.applyConstraints({ ...baseConstraints, advanced: [settings] });
     const current = track.getSettings?.() || {};
     for (const [key, value] of Object.entries(values)) {
       if (!(key in current)) continue;
@@ -468,7 +547,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     // The dedicated light button owns the torch independently of exposure presets.
     const exposure = rangeOf(capabilities, "exposureCompensation");
     if (exposure && next === "low") values.exposureCompensation = inRange(1, exposure);
-    // Turn the torch off separately so another unsupported parameter cannot keep it on.
+
 
     await applyCameraSettings(values);
     mode = next;
@@ -499,6 +578,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
         shot = {file: new File([blob], recorder.mimeType.includes('mp4') ? 'video.mp4' : 'video.webm', {type: recorder.mimeType}), kind: 'video'};
         setReview(true);
         image.hidden = true;
+        find('.camera-photo-zoom').hidden = true;
         recordedPreview.src = shotUrl;
         recordedPreview.hidden = false;
         status.textContent = 'Видео готово. Проверьте и сохраните';
@@ -514,6 +594,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     }
     status.textContent = "Получаем снимок…";
     const original = await takeStill(video, track);
+    if (torchOn && capabilities.torch === true) await applyCameraSettings({torch: true});
     const bitmap = await createImageBitmap(original);
     let blob;
     try {
