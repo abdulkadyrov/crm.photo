@@ -1,4 +1,4 @@
-import { describeCamera, chooseCameraRecordingType, recordedCameraBlob } from "../services/camera-options.js";
+import { describeCamera, chooseCameraRecordingType, recordedCameraBlob, snapCameraZoom, CAMERA_ZOOM_STOPS } from "../services/camera-options.js?v=154";
 import { cameraCrop } from "../services/camera-framing.js";
 const preferredVideo = {
   width: { ideal: 3840 },
@@ -153,7 +153,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   frame.append(zoomPresets);
   frame.append(zoomPanel);
   const zoomSlider = zoomPanel.querySelector('input');
-  let pendingZoom = null, zoomApplying = false;
+  let pendingZoom = null, zoomApplying = false, zoomAnchor = null;
   async function drainZoom() {
     if (zoomApplying) return;
     zoomApplying = true;
@@ -169,7 +169,9 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   function requestZoom(value) {
     const range = rangeOf(capabilities, 'zoom');
     if (!range || busy || closed) return;
-    pendingZoom = inRange(Number(value), range);
+    const snapped = snapCameraZoom(Number(value), range, zoomAnchor);
+    zoomAnchor = snapped.anchor;
+    pendingZoom = inRange(snapped.value, range);
     const label = `${Number(pendingZoom.toFixed(1))}×`;
     zoomSlider.value = pendingZoom;
     zoomPresets.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(Math.abs(parseFloat(button.textContent)-pendingZoom)<0.05)));
@@ -263,6 +265,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   function configureZoom() {
     const range = rangeOf(capabilities, 'zoom');
     zoomPresets.replaceChildren();
+    zoomAnchor = null;
     find('[data-camera-zoom]').hidden = !!range;
     if (!range) return;
     zoomSlider.min = range.min; zoomSlider.max = range.max;
@@ -280,7 +283,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
       line.setAttribute('stroke', major ? '#fff' : '#ffffff66');
       line.setAttribute('stroke-width', major ? '1.5' : '1'); ticks.append(line);
     }
-    const values = [...new Set([range.min, 1, 2, 5])].filter(value => value >= range.min && value <= range.max).sort((a,b)=>a-b);
+    const values = [...new Set([range.min, ...CAMERA_ZOOM_STOPS])].filter(value => value >= range.min && value <= range.max).sort((a,b)=>a-b);
     for (const value of values) {
       const angle = (-70 + Math.log(value/range.min)/Math.log(range.max/range.min)*140) * Math.PI/180;
       const label = document.createElementNS(ns,'text');

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v153";
+const CACHE_VERSION = "v154";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -75,6 +75,7 @@ const REFERENCE_POSE_ASSETS = [
 ];
 const APP_SHELL = [
   "./js/services/camera-options.js",
+  "./js/services/camera-options.js?v=154",
   "./assets/ui/student-avatar.svg",
   "./js/services/school-demo.js",
   "./js/services/local-portraits.js",
@@ -88,13 +89,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=153",
+  "./styles.css?v=154",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=153",
+  "./js/core/app.js?v=154",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=153",
+  "./js/core/legacy-app.js?v=154",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -117,7 +118,7 @@ const APP_SHELL = [
   "./js/services/catalog-themes.js",
   "./js/services/shooting-roster.js",
   "./js/ui/photo-camera.js",
-  "./js/ui/photo-camera.js?v=153",
+  "./js/ui/photo-camera.js?v=154",
   "./js/services/camera-framing.js",
   "./js/services/teacher-broadcast.js",
   "./js/services/teacher-broadcast.js?v=134",

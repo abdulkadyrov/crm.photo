@@ -19,3 +19,16 @@ export function recordedCameraBlob(chunks, fallbackType) {
   const type = nonempty.find(chunk => chunk.type)?.type || fallbackType || 'video/mp4';
   return new Blob(nonempty, {type});
 }
+
+export const CAMERA_ZOOM_STOPS = Object.freeze([0.5, 1, 2, 3, 5]);
+// Relative distances keep the detent equally usable at wide and telephoto zoom.
+// A wider release zone prevents flicker when a finger jitters at an anchor.
+export function snapCameraZoom(value, range, anchor = null) {
+  const clamped = Math.max(range.min, Math.min(range.max, value));
+  const stops = CAMERA_ZOOM_STOPS.filter(stop => stop >= range.min && stop <= range.max);
+  if (stops.includes(anchor) && Math.abs(Math.log(clamped / anchor)) <= Math.log(1.075)) {
+    return {value: anchor, anchor};
+  }
+  const nearest = stops.find(stop => Math.abs(Math.log(clamped / stop)) <= Math.log(1.04));
+  return nearest === undefined ? {value: clamped, anchor: null} : {value: nearest, anchor: nearest};
+}
