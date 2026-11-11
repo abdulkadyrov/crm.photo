@@ -56,7 +56,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   panel.innerHTML = `
     <header class="photo-camera-header">
       <div><h2>Камера</h2><p data-camera-student></p></div>
-      <button class="photo-camera-button" data-camera-close type="button" autofocus>Выйти</button>
+      <button class="photo-camera-button" data-camera-close type="button" autofocus aria-label="Закрыть камеру" title="Закрыть камеру"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </header>
     <div class="camera-top-tools" data-camera-live>
       <button class="photo-camera-button camera-round" data-torch type="button" aria-label="Постоянный свет" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7z" fill="currentColor"/></svg></button>
@@ -401,8 +401,13 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
         image.src = photo.url;
         setReview(true);
         if (photo.kind === 'video') { find('.camera-photo-zoom').hidden = true; image.hidden = true; recordedPreview.src = photo.url; recordedPreview.hidden = false; }
-        retake.textContent = 'К камере';
-        save.textContent = 'Удалить снимок';
+        retake.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+        retake.setAttribute('aria-label', 'К камере');
+        retake.title = 'К камере';
+        save.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        save.setAttribute('aria-label', 'Удалить снимок');
+        save.title = 'Удалить снимок';
+        find('.photo-camera-review').classList.add('is-saved-review');
         status.textContent = `Снимок ${index + 1} из ${sessionPhotos.length}`;
       };
       strip.append(button);
@@ -625,6 +630,11 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
 
   retake.onclick = () => {
     reviewingSaved = null;
+    find(".photo-camera-review").classList.remove("is-saved-review");
+    retake.removeAttribute("aria-label");
+    save.removeAttribute("aria-label");
+    retake.removeAttribute("title");
+    save.removeAttribute("title");
     retake.textContent = "Переснять";
     save.textContent = "Сохранить и продолжить";
     discardShot();

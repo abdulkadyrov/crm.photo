@@ -2120,11 +2120,10 @@ function renderStudent() {
               <div class="detail-stat"><span>Напечатано</span><strong>${finalStats.printed}</strong></div>
             </div>
           </details>
-          <div class="action-grid">
+          <div class="action-grid student-capture-actions">
+            <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Камера</button>
+            <button class="action-button secondary" data-import-media data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="catalog"></span>Галерея</button>
             <button class="action-button secondary" data-prepare-student="${student.id}" type="button">Подготовить работу</button>
-            <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Фото</button>
-            <button class="action-button" data-capture="video" data-order-type="${activeTask?.type || "video"}" type="button"><span data-icon="video"></span>Видео</button>
-            <button class="action-button secondary" data-import-media data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="catalog"></span>Из телефона</button>
             <button class="action-button secondary" data-done-task="${activeTask?.type || ""}" type="button"><span data-icon="check"></span>Готово</button>
           </div>
         </article>
