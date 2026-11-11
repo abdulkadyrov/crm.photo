@@ -146,7 +146,10 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   const zoomPanel = document.createElement('div');
   zoomPanel.className = 'camera-zoom-dial';
   zoomPanel.hidden = true;
-  zoomPanel.innerHTML = '<output>1×</output><input type="range" aria-label="Масштаб камеры" /><div class="camera-zoom-presets"></div>';
+  zoomPanel.innerHTML = '<svg class="camera-zoom-wheel" viewBox="0 0 400 210" aria-hidden="true"><g data-zoom-ticks></g></svg><span class="camera-zoom-pointer" aria-hidden="true"></span><output>1×</output><input type="range" aria-label="Масштаб камеры" />';
+  const zoomPresets = document.createElement('div');
+  zoomPresets.className = 'camera-zoom-presets camera-zoom-quick';
+  frame.append(zoomPresets);
   frame.append(zoomPanel);
   const zoomSlider = zoomPanel.querySelector('input');
   let pendingZoom = null, zoomApplying = false;
@@ -156,7 +159,8 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     try {
       while (pendingZoom !== null && !closed) {
         const value = pendingZoom; pendingZoom = null;
-        await applyCameraSettings({zoom: value});
+        // Zoom alone: resending resolution/facing mode can restart camera negotiation.
+        await track.applyConstraints({advanced: [{zoom: value, ...(torchOn ? {torch: true} : {})}]});
       }
     } catch { if (!closed) status.textContent = 'Не удалось изменить масштаб'; }
     finally { zoomApplying = false; }
@@ -167,8 +171,11 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     pendingZoom = inRange(Number(value), range);
     const label = `${Number(pendingZoom.toFixed(1))}×`;
     zoomSlider.value = pendingZoom;
+    zoomPresets.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(Math.abs(parseFloat(button.textContent)-pendingZoom)<0.05)));
     zoomPanel.querySelector('output').textContent = label;
     find('[data-camera-zoom]').textContent = label;
+    const ratio = Math.log(pendingZoom / range.min) / Math.log(range.max / range.min);
+    zoomPanel.querySelector('[data-zoom-ticks]').style.transform = `rotate(${70 - ratio * 140}deg)`;
     void drainZoom();
   }
   zoomSlider.oninput = () => requestZoom(zoomSlider.value);
@@ -238,24 +245,71 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     captureType = button.dataset.captureMode;
     refreshCaptureMode();
   });
-  find('[data-camera-zoom]').onclick = () => {
+  function configureZoom() {
     const range = rangeOf(capabilities, 'zoom');
-    if (!range) { status.textContent = 'Зум недоступен этой камере в браузере'; return; }
-    zoomPanel.hidden = !zoomPanel.hidden;
-    zoomSlider.min = range.min;
-    zoomSlider.max = range.max;
+    zoomPresets.replaceChildren();
+    find('[data-camera-zoom]').hidden = !!range;
+    if (!range) return;
+    zoomSlider.min = range.min; zoomSlider.max = range.max;
     zoomSlider.step = range.step || 0.01;
     zoomSlider.value = track.getSettings?.().zoom || range.min;
-    zoomPanel.querySelector('output').textContent = `${Number(Number(zoomSlider.value).toFixed(1))}×`;
-    const presets = zoomPanel.querySelector('.camera-zoom-presets');
-    presets.replaceChildren();
-    for (const value of [...new Set([range.min, 1, 2, 3, 5, range.max])].filter(value => value >= range.min && value <= range.max).sort((a,b) => a-b)) {
-      const button = document.createElement('button'); button.type = 'button';
-      button.textContent = `${Number(value.toFixed(1))}×`;
-      button.onclick = () => requestZoom(value);
-      presets.append(button);
+    const ticks = zoomPanel.querySelector('[data-zoom-ticks]');
+    ticks.replaceChildren();
+    const ns = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i <= 70; i++) {
+      const angle = (-70 + i * 2) * Math.PI / 180;
+      const major = i % 5 === 0;
+      const line = document.createElementNS(ns, 'line');
+      const r = major ? 155 : 168;
+      for (const [name, value] of Object.entries({x1:200+Math.sin(angle)*r, y1:200-Math.cos(angle)*r, x2:200+Math.sin(angle)*185, y2:200-Math.cos(angle)*185})) line.setAttribute(name,value);
+      line.setAttribute('stroke', major ? '#fff' : '#ffffff66');
+      line.setAttribute('stroke-width', major ? '1.5' : '1'); ticks.append(line);
     }
+    const values = [...new Set([range.min, 1, 2, 5])].filter(value => value >= range.min && value <= range.max).sort((a,b)=>a-b);
+    for (const value of values) {
+      const angle = (-70 + Math.log(value/range.min)/Math.log(range.max/range.min)*140) * Math.PI/180;
+      const label = document.createElementNS(ns,'text');
+      label.setAttribute('x',200+Math.sin(angle)*137); label.setAttribute('y',200-Math.cos(angle)*137);
+      label.setAttribute('text-anchor','middle'); label.setAttribute('fill','#fff'); label.setAttribute('font-size','13'); label.textContent = value;
+      ticks.append(label);
+      const button = document.createElement('button'); button.type='button'; button.textContent=`${value}×`;
+      button.setAttribute('aria-label', `Масштаб ${value}`);
+      button.onclick = () => { requestZoom(value); };
+      button.onpointerdown = event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        button.setPointerCapture(event.pointerId);
+        dialDrag = {x:event.clientX, value};
+      };
+      button.onpointermove = event => {
+        if (!dialDrag || Math.abs(event.clientX-dialDrag.x)<6) return;
+        zoomPanel.hidden = false;
+        requestZoom(dialDrag.value * Math.pow(range.max/range.min, (dialDrag.x-event.clientX)/360));
+      };
+      button.onpointerup = button.onpointercancel = () => { dialDrag=null; };
+      zoomPresets.append(button);
+    }
+    const expand = document.createElement('button'); expand.type='button'; expand.textContent='⌃'; expand.setAttribute('aria-label','Плавный зум');
+    expand.onclick = () => { zoomPanel.hidden = !zoomPanel.hidden; };
+    zoomPresets.append(expand);
+    const current = Number(zoomSlider.value);
+    const angle = 70-Math.log(current/range.min)/Math.log(range.max/range.min)*140;
+    ticks.style.transform = `rotate(${angle}deg)`;
+    zoomPanel.querySelector('output').textContent = `${Number(current.toFixed(1))}×`;
+  }
+  let dialDrag;
+  zoomPanel.onpointerdown = event => {
+    if (!rangeOf(capabilities, 'zoom')) return;
+    zoomPanel.setPointerCapture(event.pointerId);
+    dialDrag = {x:event.clientX, value:Number(zoomSlider.value)};
   };
+  zoomPanel.onpointermove = event => {
+    if (!dialDrag) return;
+    const range = rangeOf(capabilities,'zoom');
+    requestZoom(dialDrag.value * Math.pow(range.max/range.min, (dialDrag.x-event.clientX)/360));
+  };
+  zoomPanel.onpointerup = event => { if (dialDrag && Math.abs(event.clientX-dialDrag.x)<4) zoomPanel.hidden=true; dialDrag=null; };
+  zoomPanel.onpointercancel = () => { dialDrag=null; };
+  find('[data-camera-zoom]').onclick = () => { status.textContent = 'Зум недоступен этой камере в браузере'; };
   find('[data-latest]').onclick = () => find('.photo-camera-thumbnail:last-child')?.click();
   let stream;
   let track;
@@ -363,6 +417,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   const setReview = reviewing => {
     resetPhotoZoom();
     zoomPanel.hidden = true;
+    zoomPresets.hidden = reviewing;
     find('.camera-photo-zoom').hidden = !reviewing;
     if (reviewing) referenceVideo?.pause();
     if (!reviewing && torchOn && capabilities.torch === true && track?.readyState === 'live') {
@@ -371,6 +426,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     panel.classList.toggle("is-reviewing", reviewing);
     image.hidden = !reviewing;
     panel.querySelectorAll("[data-camera-live]").forEach(control => { control.hidden = reviewing; });
+    if (!reviewing && rangeOf(capabilities, 'zoom')) find('[data-camera-zoom]').hidden = true;
     find(".photo-camera-review").hidden = !reviewing;
     manual.hidden = reviewing || mode !== "pro";
     find(".photo-camera-guide").hidden = reviewing || !gridOn;
@@ -438,6 +494,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
       if (closed) return;
       capabilities = track.getCapabilities?.() || {};
       defaults = track.getSettings?.() || {};
+      configureZoom();
       find("[data-camera-zoom]").textContent = `${defaults.zoom || 1}×`;
       devices = (await navigator.mediaDevices.enumerateDevices?.().catch(() => []) || []).filter(device => device.kind === "videoinput");
       if (closed) return;

@@ -6829,3 +6829,13 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .photo-camera-review.is-saved-review [data-camera-save] { color: #ff827b; }
 .student-capture-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .student-capture-actions .action-button { min-width: 0; min-height: 48px; padding: 10px 8px; gap: 6px; font-size: 14px; line-height: 1.25; overflow-wrap: normal; word-break: normal; }
+.camera-zoom-dial { bottom: 0; left: 0; width: 100%; height: min(42vw, 180px); padding: 0; border-radius: 50% 50% 0 0; overflow: hidden; touch-action: none; user-select: none; background: #1717179c; }
+.camera-zoom-wheel { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+[data-zoom-ticks] { transform-origin: 200px 200px; }
+.camera-zoom-pointer { position: absolute; top: 5%; left: calc(50% - 3px); width: 6px; height: 13px; background: #ffda26; clip-path: polygon(0 0,100% 0,50% 100%); }
+.camera-zoom-dial output { position: absolute; top: 32%; left: 0; width: 100%; pointer-events: none; }
+.camera-zoom-dial input { position: absolute; width: 1px; height: 1px; min-height: 1px; opacity: 0; }
+.camera-zoom-dial:focus-within { outline: 2px solid #ffda26; outline-offset: -2px; }
+.camera-zoom-quick { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); justify-content: center; gap: 6px; }
+.camera-zoom-quick button { min-width: 34px; min-height: 34px; border-radius: 50%; background: #171717a6; font-size: 12px; }
+.photo-camera-frame:has(.camera-zoom-dial:not([hidden])) .camera-zoom-quick { display: none; }
