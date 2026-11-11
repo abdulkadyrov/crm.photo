@@ -115,6 +115,7 @@ const APP_SHELL = [
   "./js/services/catalog-themes.js",
   "./js/services/shooting-roster.js",
   "./js/ui/photo-camera.js",
+  "./js/services/camera-framing.js",
   "./js/services/teacher-broadcast.js",
   "./js/services/teacher-broadcast.js?v=134",
   "./js/services/class-links-transfer.js",
@@ -237,6 +238,27 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
+  if (!url.pathname.startsWith('/api/')) {
+    event.respondWith((async () => {
+      const media = await caches.open('vakha-catalog-media-v1');
+      const cached = await media.match(event.request.url);
+      if (cached) {
+        const range = event.request.headers.get('range');
+        if (!range) return cached;
+        const bytes = await cached.arrayBuffer();
+        const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+        if (match) {
+          const start = match[1] ? Number(match[1]) : Math.max(0, bytes.byteLength - Number(match[2]));
+          const end = match[1] && match[2] ? Math.min(Number(match[2]), bytes.byteLength - 1) : bytes.byteLength - 1;
+          if (start > end || start >= bytes.byteLength) return new Response(null, {status: 416, headers: {'Content-Range': `bytes */${bytes.byteLength}`}});
+          return new Response(bytes.slice(start, end + 1), {status: 206, headers: {'Content-Type': cached.headers.get('Content-Type') || 'application/octet-stream', 'Content-Range': `bytes ${start}-${end}/${bytes.byteLength}`, 'Content-Length': String(end-start+1), 'Accept-Ranges': 'bytes'}});
+        }
+        return cached;
+      }
+      return fetch(event.request).then(async response => { if (url.origin === location.origin && response.ok && response.status !== 206 && !url.pathname.startsWith('/local-portraits/')) { const cache = await caches.open(CACHE_NAME); await cache.put(event.request, response.clone()); } return response; }).catch(async () => (await caches.match(event.request)) || (event.request.mode === 'navigate' ? caches.match('./index.html') : Response.error()));
+    })());
+    return;
+  }
   if (url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/local-portraits/")) return;
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {

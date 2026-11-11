@@ -4,7 +4,7 @@ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js"
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
-import { CATALOG_THEMES, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
 import { openPhotoCamera } from "../ui/photo-camera.js";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
@@ -2441,6 +2441,7 @@ function renderCatalog() {
         </div>
         <div class="catalog-hero-actions">
           <button class="primary-button" data-export-photo-pdf type="button" ${state.catalogPdfExporting ? 'disabled aria-busy="true"' : ""}><span data-icon="download"></span>Скачать PDF A4</button>
+          <button class="secondary-button" data-save-catalog-offline type="button">Сохранить для офлайн</button>
           <button class="secondary-button" data-export-parent-video-catalog type="button">Фото + видео (ZIP)</button>
           <button class="secondary-button" data-export-catalog type="button">Весь каталог (ZIP)</button>
           <p class="muted catalog-print-hint">По одному фото на лист, без полей. Учитывает фильтры.</p>
@@ -4883,6 +4884,7 @@ function bindViewActions() {
   view.querySelector('[data-cloud-archives]')?.addEventListener('click',e=>showCloud(e.currentTarget));
   view.querySelectorAll("[data-settings-detail]").forEach((node) => node.addEventListener("click", () => showSettingsDetail(node.dataset.settingsDetail)));
   view.querySelector("[data-back-settings]")?.addEventListener("click", () => navigate("settings"));
+  view.querySelector("[data-save-catalog-offline]")?.addEventListener("click", saveCatalogOffline);
   view.querySelector("[data-export-catalog]")?.addEventListener("click", exportPublicCatalog);
   view.querySelector("[data-export-photo-pdf]")?.addEventListener("click", exportCatalogPhotoPdf);
   view.querySelector("[data-export-parent-video-catalog]")?.addEventListener("click", exportParentVideoCatalog);
@@ -6133,7 +6135,7 @@ function showMediaPreview(mediaId, trigger) {
   showInlineMediaGallery(items, items.findIndex(item => item.id === mediaId), trigger);
 }
 
-async function deleteMedia(mediaId) {
+async function deleteMedia(mediaId, { rerender = true } = {}) {
   const media = mediaById(mediaId);
   if (!media) return false;
   assertCloudWrite("media", media, true);
@@ -6156,7 +6158,7 @@ async function deleteMedia(mediaId) {
   });
   notify("Файл удален.");
   state.preserveScroll = true;
-  render();
+  if (rerender) render();
   return true;
 }
 
@@ -6787,7 +6789,7 @@ function captureMedia(type, orderType, trigger) {
   const student = studentById(state.studentId);
   if (!student) return;
   const target = { studentId: student.id, type, orderType, source: "capture" };
-  if (type !== "photo") return openCaptureInput(target);
+
   const angle = catalogAngleForStudent(student.id, orderType, { fallback: false });
   const restore = captureDialogReturn(document, window, trigger);
   const isSameStudent = () => state.route === "student" && state.studentId === student.id;
@@ -6803,20 +6805,22 @@ function captureMedia(type, orderType, trigger) {
   };
   openPhotoCamera({
     studentName: `${student.lastName} ${student.firstName}`,
+    initialType: type,
     reference: angle && { name: angle.name, imageUrl: angle.refDataUrl, videoUrl: angle.videoRefDataUrl },
     mountHistory: close => mountDialogHistory({ id: uid("photo_camera"), restore: close }),
     onSave: async shot => {
       shot.id ||= uid("media");
-      await persistStudentMedia(shot.file, target, shot.id);
+      await persistStudentMedia(shot.file, { ...target, type: shot.kind || "photo" }, shot.id);
       saved = true;
       if (closed) updateStudentView();
     },
+    onDelete: id => deleteMedia(id, { rerender: false }),
     onClose: () => {
       closed = true;
       if (saved) updateStudentView();
       else restore();
     },
-    openSystemCamera: () => openCaptureInput(target)
+    openSystemCamera: captureType => openCaptureInput({ ...target, type: captureType })
   });
 }
 
@@ -13230,8 +13234,7 @@ function serviceMatchesCategoryFilter(item) {
 }
 
 function serviceGender(item) {
-  const value = String(item?.gender || "unisex").trim().toLowerCase();
-  return ["boys", "girls", "unisex"].includes(value) ? value : "unisex";
+  return catalogServiceGender(item);
 }
 
 function normalizeServiceGender(value) {
@@ -14151,3 +14154,25 @@ document.addEventListener("error", (event) => {
   const caption = screen.closest(".service-parent-phone")?.querySelector("figcaption");
   if (caption) caption.textContent = "Нужно заменить видео";
 }, true);
+
+async function saveCatalogOffline(event) {
+  const button = event.currentTarget;
+  button.disabled = true;
+  let saved = 0, failed = 0;
+  try {
+    await navigator.storage?.persist?.();
+    const cache = await caches.open('vakha-catalog-media-v1');
+    const urls = [...new Set(state.data.catalog.flatMap(item => [servicePreviewImageDataUrl(item), servicePreviewVideoDataUrl(item)]).filter(url => url && !/^(data:|blob:)/.test(url)))];
+    for (const url of urls) {
+      button.textContent = `Загрузка ${saved + failed + 1} из ${urls.length}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok || response.status === 206) throw new Error('Неполный файл');
+        await cache.put(url, response);
+        saved++;
+      } catch { failed++; }
+    }
+    notify(failed ? `Сохранено: ${saved}. Не удалось: ${failed}. Повторите при наличии интернета.` : 'Материалы сохранены для офлайн на этом устройстве');
+  } catch (error) { notify(`Не удалось сохранить: ${error.message}`); }
+  finally { button.disabled = false; button.textContent = failed ? 'Повторить загрузку для офлайн' : 'Сохранить для офлайн'; }
+}

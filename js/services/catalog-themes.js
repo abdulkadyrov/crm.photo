@@ -12,7 +12,7 @@ const patterns = {
 };
 export function matchesCatalogTheme(service, theme) {
   if (!Object.hasOwn(patterns, theme)) return false;
-  const text = [service.name, service.title, service.category, service.theme, ...(service.tags || [])].filter(Boolean).join(' ');
+  const text = [service.name, service.title, service.category, service.theme, service.id, service.templateId, ...(service.tags || [])].filter(Boolean).join(' ');
   return patterns[theme].test(text);
 }
 
@@ -27,4 +27,14 @@ export function groupPickerServices(services) {
   }
   const order = new Set([...PICKER_THEMES, ...groups.keys()]);
   return [...order].filter(title => groups.has(title)).map(title => ({ title, items: groups.get(title) }));
+}
+
+export function catalogServiceGender(item) {
+  const identity = [item?.id, item?.templateId, item?.childTemplateId, item?.previewSrc].filter(Boolean).join(' ');
+  if (/child-girl-|roblox-girl/.test(identity)) return 'girls';
+  if (/child-boy-|roblox-boy/.test(identity)) return 'boys';
+  const value = String(item?.gender || '').trim().toLowerCase();
+  if (['boys', 'boy', 'male', 'мальчики', 'для мальчиков'].includes(value)) return 'boys';
+  if (['girls', 'girl', 'female', 'девочки', 'для девочек'].includes(value)) return 'girls';
+  return 'unisex';
 }

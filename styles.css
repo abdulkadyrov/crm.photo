@@ -6751,3 +6751,60 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .photo-camera-manual small {
   color: #c7cad2;
 }
+
+.photo-camera-filmstrip { display: flex; gap: 8px; overflow-x: auto; padding: 2px; flex-shrink: 0; }
+.photo-camera-thumbnail { flex: 0 0 52px; height: 56px; padding: 0; border: 1px solid #939aa5; border-radius: 8px; overflow: hidden; background: #22252c; }
+.photo-camera-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+.photo-camera-thumbnail:focus-visible { outline: 2px solid #a9c7ff; outline-offset: 2px; }
+.photo-camera-controls { max-height: 55dvh; overflow-y: auto; }
+.photo-camera-stage { display: grid; place-items: center; }
+.photo-camera-frame { overflow: hidden; }
+.photo-camera-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.photo-camera.is-reviewing .photo-camera-frame { display: none; }
+.photo-camera-aspect, [data-camera-aspects] { display: flex; justify-content: center; gap: 6px; }
+.photo-camera-aspect .photo-camera-button { min-height: 36px; padding: 4px 12px; font-size: 14px; }
+.photo-camera-aspect [aria-pressed="true"] { color: #ffd76a; border-color: #ffd76a; }
+.photo-camera-frame { position: relative; }
+.photo-camera-frame .photo-camera-guide { width: 100%; height: 100%; border-radius: 0; }
+/* Camera controls follow the supplied iPhone references. */
+.photo-camera[open] { background: #000; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.photo-camera-header { padding: 6px 14px; }
+.photo-camera-header h2 { font-size: 15px; }
+.photo-camera-header p { font-size: 12px; }
+.photo-camera-header [data-camera-close] { min-height: 36px; padding: 4px 10px; font-size: 14px; background: transparent; }
+.camera-top-tools { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; }
+.photo-camera .camera-round { width: 40px; height: 40px; min-height: 40px; padding: 9px; border: 0; border-radius: 50%; background: #202020; }
+.camera-round svg { width: 100%; height: 100%; }
+.photo-camera [aria-pressed="true"] { color: #ffda26; }
+.photo-camera [data-torch][aria-pressed="true"] { background: #ffda26; color: #000; }
+[data-tools-toggle] svg { transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+[data-tools-toggle][aria-expanded="true"] svg { transform: rotate(180deg); }
+.photo-camera-controls { max-height: 52dvh; padding: 8px 16px max(12px, env(safe-area-inset-bottom)); background: #000; gap: 8px; }
+.photo-camera-status { font-size: 11px; margin: 0; color: #c2c2c7; }
+.camera-capture-modes { display: flex; justify-content: center; gap: 28px; }
+.camera-capture-modes button { background: none; border: 0; color: #fff; padding: 8px; font-size: 13px; letter-spacing: .05em; }
+.camera-shutter-row { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; justify-items: center; min-height: 82px; }
+.photo-camera [data-camera-shutter] { width: 72px; height: 72px; min-height: 72px; padding: 5px; border: 3px solid #fff; border-radius: 50%; background: transparent; }
+[data-camera-shutter] span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #fff; transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.is-video [data-camera-shutter] span { background: #ff3b30; }
+.is-recording [data-camera-shutter] span { border-radius: 6px; transform: scale(.5); }
+.photo-camera .camera-latest { width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 6px; background: #202020 center/cover; font-size: 10px; }
+.camera-settings { display: grid; gap: 8px; }
+.camera-settings .photo-camera-aspect { align-items: center; }
+.camera-settings [data-camera-aspects] { border-radius: 24px; background: #202020; padding: 3px; }
+.camera-settings [data-aspect] { border: 0; background: transparent; padding: 6px; }
+.camera-settings .photo-camera-modes { justify-content: center; }
+.camera-settings .photo-camera-modes button { min-height: 34px; font-size: 12px; padding: 5px 10px; }
+.photo-camera-manual { max-height: 100px; }
+.photo-camera-filmstrip { max-height: 44px; }
+.photo-camera-thumbnail { flex-basis: 38px; height: 40px; }
+.photo-camera-thumbnail video { width: 100%; height: 100%; object-fit: cover; }
+.photo-camera-stage > .camera-recorded-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.photo-camera-frame .photo-camera-guide { border: 1px solid #ffffff66; background: linear-gradient(to right, transparent calc(33.333% - .5px), #ffffff66 33.333%, transparent calc(33.333% + .5px), transparent calc(66.666% - .5px), #ffffff66 66.666%, transparent calc(66.666% + .5px)), linear-gradient(to bottom, transparent calc(33.333% - .5px), #ffffff66 33.333%, transparent calc(33.333% + .5px), transparent calc(66.666% - .5px), #ffffff66 66.666%, transparent calc(66.666% + .5px)); }
+.photo-camera-guide::before, .photo-camera-guide::after { display: none; }
+@media (prefers-reduced-motion: reduce) { [data-tools-toggle] svg, [data-camera-shutter] span { transition: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .camera-settings:not([hidden]) { animation: camera-tools-in 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes camera-tools-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
+.photo-camera .camera-zoom { position: absolute; left: calc(50% - 20px); bottom: 12px; z-index: 2; padding: 4px; font-size: 14px; background: #202020b8; }

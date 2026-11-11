@@ -1,3 +1,4 @@
+import { cameraCrop } from "../services/camera-framing.js";
 const preferredVideo = {
   width: { ideal: 3840 },
   height: { ideal: 2880 },
@@ -47,22 +48,31 @@ async function takeStill(video, track) {
   return blob;
 }
 
-export function openPhotoCamera({ studentName, reference, mountHistory, onSave, onClose, openSystemCamera }) {
+export function openPhotoCamera({ studentName, initialType = "photo", reference, mountHistory, onSave, onDelete, onClose, openSystemCamera }) {
   if (document.querySelector(".photo-camera")) return;
   const panel = document.createElement("dialog");
   panel.className = "photo-camera";
   panel.setAttribute("aria-label", "Фотосъёмка");
   panel.innerHTML = `
     <header class="photo-camera-header">
-      <div><h2>Фотосъёмка</h2><p data-camera-student></p></div>
+      <div><h2>Камера</h2><p data-camera-student></p></div>
       <button class="photo-camera-button" data-camera-close type="button" autofocus>Выйти</button>
     </header>
+    <div class="camera-top-tools" data-camera-live>
+      <button class="photo-camera-button camera-round" data-torch type="button" aria-label="Постоянный свет" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-13h-7z" fill="currentColor"/></svg></button>
+      <button class="photo-camera-button camera-round" data-tools-toggle type="button" aria-expanded="false" aria-label="Настройки камеры"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      <button class="photo-camera-button camera-round" data-grid type="button" aria-label="Сетка" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v18M16 3v18M3 8h18M3 16h18" fill="none" stroke="currentColor"/></svg></button>
+    </div>
     <div class="photo-camera-stage">
-      <video autoplay muted playsinline></video>
+      <div class="photo-camera-frame"><video autoplay muted playsinline></video><button class="photo-camera-button camera-round camera-zoom" data-camera-live data-camera-zoom type="button" aria-label="Масштаб камеры">1×</button></div>
+      <video class="camera-recorded-preview" controls playsinline hidden></video>
       <img alt="Снятая фотография" hidden />
       <div class="photo-camera-guide" aria-hidden="true" hidden></div>
     </div>
     <footer class="photo-camera-controls">
+      <div class="camera-settings" hidden><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
+      </div><div class="camera-capture-modes" data-camera-live><button type="button" data-capture-mode="video">ВИДЕО</button><button type="button" data-capture-mode="photo">ФОТО</button></div>
+      <div class="photo-camera-filmstrip" aria-label="Снимки за сеанс" hidden></div>
       <p class="photo-camera-status" role="status"></p>
       <div class="photo-camera-modes" data-camera-live>
         <button class="photo-camera-button" type="button" data-camera-mode="auto" aria-pressed="true">Авто</button>
@@ -70,7 +80,7 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
         <button class="photo-camera-button" type="button" data-camera-mode="pro" aria-pressed="false">Профи</button>
       </div>
       <div class="photo-camera-manual" data-camera-manual hidden></div>
-      <button class="photo-camera-button photo-camera-primary" data-camera-shutter data-camera-live type="button" disabled>Сфотографировать</button>
+      <div class="camera-shutter-row" data-camera-live><button class="photo-camera-button camera-latest" data-latest type="button" aria-label="Последний снимок" disabled></button><button class="photo-camera-button photo-camera-primary" data-camera-shutter data-camera-live type="button" disabled aria-label="Сфотографировать"><span></span></button><button class="photo-camera-button camera-round" data-flip type="button" aria-label="Переключить камеру"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 0 0-14-2L3 9m0-6v6h6M4 16a8 8 0 0 0 14 2l3-3m0 6v-6h-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
       <button class="photo-camera-button" data-camera-play type="button" hidden>Включить предпросмотр</button>
       <div class="photo-camera-review" hidden>
         <button class="photo-camera-button" data-camera-retake type="button">Переснять</button>
@@ -88,6 +98,7 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
   const retake = find("[data-camera-retake]");
   const save = find("[data-camera-save]");
   const manual = find("[data-camera-manual]");
+  find('.camera-settings').append(find('.photo-camera-modes'), manual);
   const system = find("[data-camera-system]");
   const play = find("[data-camera-play]");
   const modes = [...panel.querySelectorAll("[data-camera-mode]")];
@@ -127,6 +138,86 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
     find(".photo-camera-stage").append(details);
   }
 
+  let aspect = 4 / 3;
+  let photoAspect = aspect;
+  const frame = find('.photo-camera-frame');
+  const stage = find('.photo-camera-stage');
+  frame.append(find('.photo-camera-guide'));
+  const aspectToggle = find('[data-camera-aspect-toggle]');
+  function updateFrame() {
+    const width = stage.clientWidth, height = stage.clientHeight;
+    const ratio = video.videoWidth > video.videoHeight ? aspect : 1 / aspect;
+    frame.style.width = `${Math.min(width, height * ratio)}px`;
+    frame.style.height = `${Math.min(height, width / ratio)}px`;
+  }
+  const observer = new ResizeObserver(updateFrame);
+  observer.observe(stage);
+  aspectToggle.onclick = () => {
+    const options = find('[data-camera-aspects]');
+    options.hidden = !options.hidden;
+    aspectToggle.setAttribute('aria-expanded', String(!options.hidden));
+  };
+  panel.querySelectorAll('[data-aspect]').forEach(button => {
+    button.onclick = () => {
+      if (busy) return;
+      if (captureType === "video") { status.textContent = "Формат видео определяется выбранной камерой"; return; }
+      aspect = photoAspect = Number(button.dataset.aspect);
+      aspectToggle.textContent = button.textContent;
+      panel.querySelectorAll('[data-aspect]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      find('[data-camera-aspects]').hidden = true;
+      aspectToggle.setAttribute('aria-expanded', 'false');
+      updateFrame();
+    };
+  });
+  let captureType = initialType;
+  let recorder, audioStream, recordingTimer;
+  let torchOn = false;
+  let gridOn = true;
+  const recordedPreview = find('.camera-recorded-preview');
+  function refreshCaptureMode() {
+    panel.classList.toggle('is-video', captureType === 'video');
+    panel.querySelectorAll('[data-capture-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.captureMode === captureType)));
+    shutter.setAttribute('aria-label', captureType === 'video' ? 'Начать запись' : 'Сфотографировать');
+    if (captureType === 'photo') aspect = photoAspect;
+    if (captureType === 'video' && video.videoWidth) aspect = Math.max(video.videoWidth, video.videoHeight) / Math.min(video.videoWidth, video.videoHeight);
+    updateFrame();
+  }
+  find('[data-tools-toggle]').onclick = event => {
+    const settings = find('.camera-settings');
+    settings.hidden = !settings.hidden;
+    event.currentTarget.setAttribute('aria-expanded', String(!settings.hidden));
+    panel.classList.toggle('tools-open', !settings.hidden);
+  };
+  find('[data-grid]').onclick = event => {
+    gridOn = !gridOn;
+    event.currentTarget.setAttribute('aria-pressed', String(gridOn));
+    find('.photo-camera-guide').hidden = !gridOn;
+  };
+  find('[data-torch]').onclick = () => run(async () => {
+    if (!capabilities.torch) { status.textContent = 'Постоянный свет недоступен этой камере в браузере'; return; }
+    await applyCameraSettings({torch: !torchOn});
+    torchOn = !torchOn;
+    find('[data-torch]').setAttribute('aria-pressed', String(torchOn));
+  }, 'Не удалось переключить свет');
+  find('[data-flip]').onclick = () => run(async () => {
+    if (devices.length < 2) return;
+    const index = devices.findIndex(device => device.deviceId === defaults.deviceId);
+    await startCamera(devices[(index + 1) % devices.length].deviceId);
+  }, 'Не удалось переключить камеру');
+  panel.querySelectorAll('[data-capture-mode]').forEach(button => button.onclick = () => {
+    if (busy || shot || recorder?.state === 'recording') return;
+    captureType = button.dataset.captureMode;
+    refreshCaptureMode();
+  });
+  find('[data-camera-zoom]').onclick = () => run(async () => {
+    const range = rangeOf(capabilities, 'zoom');
+    if (!range) { status.textContent = 'Зум недоступен этой камере в браузере'; return; }
+    const current = track.getSettings?.().zoom || 1;
+    const next = current >= Math.min(3, range.max) ? range.min : inRange(current + 1, range);
+    await applyCameraSettings({zoom: next});
+    find('[data-camera-zoom]').textContent = `${Number(next.toFixed(1))}×`;
+  }, 'Не удалось изменить масштаб');
+  find('[data-latest]').onclick = () => find('.photo-camera-thumbnail:last-child')?.click();
   let stream;
   let track;
   let baseConstraints;
@@ -137,15 +228,23 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
   let shot;
   let shotUrl;
   let savedCount = 0;
+  const sessionPhotos = [];
+  let reviewingSaved = null;
   let busy = false;
   let closed = false;
 
   const stopStream = () => {
+    if (recorder?.state === "recording") recorder.stop();
+    clearInterval(recordingTimer);
+    audioStream?.getTracks().forEach(item => item.stop());
     stream?.getTracks().forEach(item => item.stop());
     video.srcObject = null;
     stream = track = null;
   };
   const discardShot = () => {
+    recordedPreview.pause();
+    recordedPreview.removeAttribute("src");
+    recordedPreview.load();
     image.removeAttribute("src");
     if (shotUrl) URL.revokeObjectURL(shotUrl);
     shot = shotUrl = null;
@@ -153,18 +252,22 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
   const history = mountHistory(() => {
     closed = true;
     stopStream();
+    observer.disconnect();
     discardShot();
+    sessionPhotos.forEach(photo => URL.revokeObjectURL(photo.url));
     panel.close();
     panel.remove();
     onClose();
   });
   const updateControls = () => {
     const ready = track?.readyState === "live";
+    const recording = recorder?.state === 'recording';
+    panel.querySelectorAll('[data-flip], [data-capture-mode], [data-aspect], [data-camera-mode]').forEach(control => { control.disabled = busy || recording; });
     shutter.disabled = busy || !ready || !video.videoWidth;
     retake.disabled = save.disabled = busy;
     play.disabled = busy;
     modes.forEach(button => {
-      button.disabled = busy || !ready || (button.dataset.cameraMode === "low" && !canBrighten());
+      button.disabled = busy || recording || !ready || (button.dataset.cameraMode === "low" && !canBrighten());
       button.setAttribute("aria-pressed", String(button.dataset.cameraMode === mode));
     });
     manual.querySelectorAll("input, select").forEach(control => { control.disabled = busy; });
@@ -176,6 +279,7 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
     try { await action(); }
     catch (error) {
       if (!closed) {
+        if (recorder?.state !== "recording") audioStream?.getTracks().forEach(item => item.stop());
         console.warn(errorMessage, error);
         status.textContent = errorMessage;
       }
@@ -191,8 +295,41 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
     panel.querySelectorAll("[data-camera-live]").forEach(control => { control.hidden = reviewing; });
     find(".photo-camera-review").hidden = !reviewing;
     manual.hidden = reviewing || mode !== "pro";
-    find(".photo-camera-guide").hidden = reviewing || mode !== "pro";
+    find(".photo-camera-guide").hidden = reviewing || !gridOn;
+    if (!reviewing) { recordedPreview.pause(); recordedPreview.hidden = true; }
   };
+  function renderFilmstrip() {
+    const strip = find('.photo-camera-filmstrip');
+    strip.replaceChildren();
+    strip.hidden = !sessionPhotos.length;
+    find('[data-latest]').disabled = !sessionPhotos.length;
+    const latest = sessionPhotos.at(-1);
+    find('[data-latest]').style.backgroundImage = latest && latest.kind !== 'video' ? `url("${latest.url}")` : '';
+    find('[data-latest]').textContent = latest?.kind === 'video' ? 'Видео' : '';
+    for (const [index, photo] of sessionPhotos.entries()) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'photo-camera-thumbnail';
+      button.setAttribute('aria-label', `Открыть снимок ${index + 1}`);
+      const thumb = document.createElement(photo.kind === 'video' ? 'video' : 'img');
+      thumb.muted = true;
+      thumb.playsInline = true;
+      thumb.src = photo.url;
+      thumb.alt = '';
+      button.append(thumb);
+      button.onclick = () => {
+        if (busy || shot) return;
+        reviewingSaved = photo;
+        image.src = photo.url;
+        setReview(true);
+        if (photo.kind === 'video') { image.hidden = true; recordedPreview.src = photo.url; recordedPreview.hidden = false; }
+        retake.textContent = 'К камере';
+        save.textContent = 'Удалить снимок';
+        status.textContent = `Снимок ${index + 1} из ${sessionPhotos.length}`;
+      };
+      strip.append(button);
+    }
+  }
   const canBrighten = () => capabilities.torch === true || (rangeOf(capabilities, "exposureCompensation")?.max ?? 0) > 0;
 
   async function startCamera(deviceId) {
@@ -218,9 +355,13 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
       if (closed) return;
       capabilities = track.getCapabilities?.() || {};
       defaults = track.getSettings?.() || {};
+      find("[data-camera-zoom]").textContent = `${defaults.zoom || 1}×`;
       devices = (await navigator.mediaDevices.enumerateDevices?.().catch(() => []) || []).filter(device => device.kind === "videoinput");
       if (closed) return;
-      mode = mode === "low" && !canBrighten() ? "auto" : mode;
+      mode = "auto";
+      torchOn = false;
+      find('[data-torch]').setAttribute('aria-pressed', 'false');
+      refreshCaptureMode();
       renderManual();
       setReview(false);
       try {
@@ -263,6 +404,9 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
   function renderManual() {
     manual.replaceChildren();
     if (mode !== "pro") return;
+    const help = document.createElement('small');
+    help.textContent = 'Сетка и ручные параметры. Показаны только настройки, доступные этой камере в браузере. Авто сбрасывает изменения.';
+    manual.append(help);
     if (devices.length > 1) {
       const label = document.createElement("label");
       label.textContent = "Камера";
@@ -314,16 +458,18 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
   }
 
   for (const button of modes) button.onclick = () => run(async () => {
-    const next = button.dataset.cameraMode;
+    const next = button.dataset.cameraMode === mode && mode !== "auto" ? "auto" : button.dataset.cameraMode;
     if (next === mode) return;
     const values = Object.fromEntries(
       ["zoom", "exposureCompensation", "exposureMode", "whiteBalanceMode", "focusMode"]
         .filter(key => defaults[key] !== undefined)
         .map(key => [key, defaults[key]])
     );
-    if (capabilities.torch === true) values.torch = next === "low";
+    // The dedicated light button owns the torch independently of exposure presets.
     const exposure = rangeOf(capabilities, "exposureCompensation");
     if (exposure && next === "low") values.exposureCompensation = inRange(1, exposure);
+    // Turn the torch off separately so another unsupported parameter cannot keep it on.
+
     await applyCameraSettings(values);
     mode = next;
     status.textContent = next === "low" ? "Подсветка и экспозиция по возможностям камеры" : "Камера готова";
@@ -331,9 +477,54 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
     setReview(false);
   }, "Не удалось применить режим к этой камере.");
 
-  shutter.onclick = () => run(async () => {
+  shutter.onclick = () => {
+    if (recorder?.state === 'recording') { recorder.stop(); return; }
+    return run(async () => {
+    if (captureType === 'video') {
+      if (!window.MediaRecorder) throw new Error('Запись видео не поддерживается');
+      audioStream = await navigator.mediaDevices.getUserMedia({audio: true});
+      if (closed) { audioStream.getTracks().forEach(item => item.stop()); return; }
+      const mimeType = ['video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type));
+      recorder = new MediaRecorder(new MediaStream([...stream.getVideoTracks(), ...audioStream.getAudioTracks()]), mimeType ? {mimeType} : {});
+      const chunks = [];
+      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+      recorder.onstop = () => {
+        clearInterval(recordingTimer);
+        audioStream?.getTracks().forEach(item => item.stop());
+        panel.classList.remove('is-recording');
+        if (closed) return;
+        const blob = new Blob(chunks, {type: recorder.mimeType});
+        if (!blob.size) { status.textContent = 'Не удалось записать видео'; updateControls(); return; }
+        shotUrl = URL.createObjectURL(blob);
+        shot = {file: new File([blob], recorder.mimeType.includes('mp4') ? 'video.mp4' : 'video.webm', {type: recorder.mimeType}), kind: 'video'};
+        setReview(true);
+        image.hidden = true;
+        recordedPreview.src = shotUrl;
+        recordedPreview.hidden = false;
+        status.textContent = 'Видео готово. Проверьте и сохраните';
+        updateControls();
+      };
+      recorder.onerror = () => { status.textContent = 'Ошибка записи. Остановите запись и попробуйте снова'; };
+      recorder.start(1000);
+      panel.classList.add('is-recording');
+      shutter.setAttribute('aria-label', 'Остановить запись');
+      const started = Date.now();
+      recordingTimer = setInterval(() => { status.textContent = `Запись · ${new Date(Date.now()-started).toISOString().slice(14,19)}`; }, 500);
+      return;
+    }
     status.textContent = "Получаем снимок…";
-    const blob = await takeStill(video, track);
+    const original = await takeStill(video, track);
+    const bitmap = await createImageBitmap(original);
+    let blob;
+    try {
+      const crop = cameraCrop(bitmap.width, bitmap.height, aspect, video.videoWidth > video.videoHeight);
+      const canvas = document.createElement('canvas');
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+      canvas.getContext('2d').drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+      blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.98));
+      if (!blob) throw new Error('Не удалось кадрировать снимок');
+    } finally { bitmap.close(); }
     if (closed) return;
     shotUrl = URL.createObjectURL(blob);
     image.src = shotUrl;
@@ -345,37 +536,58 @@ export function openPhotoCamera({ studentName, reference, mountHistory, onSave, 
     }
     if (closed) return;
     const extension = { "image/png": "png", "image/webp": "webp", "image/heic": "heic", "image/heif": "heif" }[blob.type] || "jpg";
-    shot = { file: new File([blob], `photo.${extension}`, { type: blob.type || "image/jpeg" }) };
+    shot = { kind: "photo", file: new File([blob], `photo.${extension}`, { type: blob.type || "image/jpeg" }) };
     status.textContent = `Снимок ${image.naturalWidth} × ${image.naturalHeight}`;
     setReview(true);
-  }, "Не удалось получить снимок. Попробуйте ещё раз.");
+  }, "Не удалось начать съёмку. Проверьте разрешения камеры и микрофона.");
+  };
 
   retake.onclick = () => {
+    reviewingSaved = null;
+    retake.textContent = "Переснять";
+    save.textContent = "Сохранить и продолжить";
     discardShot();
     status.textContent = "Камера готова";
     setReview(false);
     shutter.focus();
   };
   save.onclick = () => run(async () => {
+    if (reviewingSaved) {
+      if (!onDelete || !await onDelete(reviewingSaved.id)) return;
+      const index = sessionPhotos.indexOf(reviewingSaved);
+      URL.revokeObjectURL(reviewingSaved.url);
+      sessionPhotos.splice(index, 1);
+      savedCount = sessionPhotos.length;
+      reviewingSaved = null;
+      renderFilmstrip();
+      retake.onclick();
+      return;
+    }
     status.textContent = "Сохраняем снимок…";
     await onSave(shot);
     if (closed) return;
-    savedCount += 1;
+    sessionPhotos.push({id: shot.id, kind: shot.kind, url: URL.createObjectURL(shot.file)});
+    savedCount = sessionPhotos.length;
+    renderFilmstrip();
     discardShot();
     status.textContent = `Сохранено за сеанс: ${savedCount}`;
     setReview(false);
     requestAnimationFrame(() => shutter.focus());
   }, "Не удалось сохранить снимок. Попробуйте ещё раз.");
-  video.addEventListener("resize", updateControls);
+  video.addEventListener("resize", () => { updateControls(); refreshCaptureMode(); });
   video.addEventListener("loadeddata", updateControls);
   panel.addEventListener("cancel", event => event.preventDefault());
-  exit.onclick = () => history.close();
+  exit.onclick = () => {
+    if (recorder?.state === 'recording') { status.textContent = 'Остановите запись и сохраните видео перед выходом'; return; }
+    history.close();
+  };
   play.onclick = () => run(resumePreview, "Не удалось включить предпросмотр.");
   system.onclick = () => {
     panel.close();
     history.close();
-    openSystemCamera();
+    openSystemCamera(captureType);
   };
+  refreshCaptureMode();
   document.body.append(panel);
   panel.showModal();
   run(() => startCamera(), "Встроенная камера недоступна. Проверьте разрешение браузера.");
