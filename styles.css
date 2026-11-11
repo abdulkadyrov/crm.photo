@@ -6849,3 +6849,4 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .student-directory-matches { display: grid; gap: 6px; max-height: 40dvh; overflow-y: auto; }
 .student-directory-result { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; padding: 12px; min-height: 44px; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); }
 .student-directory-result strong { overflow-wrap: anywhere; }
+[data-home-search-results] > [hidden], .student-card[hidden] { display: none !important; }

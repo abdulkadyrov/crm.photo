@@ -8,7 +8,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=155";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=156";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1134,16 +1134,30 @@ function renderHome() {
         ${filterChip("ready", "Обработано")}
       </div>
     </section>
-    <section class="compact-stack">
+    <section class="compact-stack" data-home-search-results>
+      <p class="muted" data-home-search-empty hidden role="status">Ничего не найдено</p>
       ${projects.map(projectCard).join("") || empty(cloudRequired && cloudAccount()?.role !== "admin" ? "Нажмите «Сервер», чтобы получить назначенный проект" : "Создайте первый проект")}
     </section>
   `;
   bindViewActions();
   const input = view.querySelector("[data-query]");
-  input?.addEventListener("input", (event) => {
-    state.query = event.target.value;
-    renderHome();
-  });
+  const updateHomeSearch = () => {
+    const query = String(input?.value || '').trim().toLocaleLowerCase('ru').replaceAll('ё', 'е');
+    const text = value => String(value || '').toLocaleLowerCase('ru').replaceAll('ё', 'е');
+    let visible = 0;
+    view.querySelectorAll('[data-home-search-results] > [data-open-project]').forEach(card => {
+      const project = projectById(card.dataset.openProject);
+      const classes = classesByProject(project.id);
+      const ids = new Set(classes.map(group => group.id));
+      const matches = !query || text(project.name).includes(query) || classes.some(group => text(group.name).includes(query)) || state.data.students.some(student => ids.has(student.classId) && text(`${student.lastName} ${student.firstName} ${student.qrId || ''}`).includes(query));
+      card.hidden = !matches;
+      if (matches) visible++;
+    });
+    const empty = view.querySelector('[data-home-search-empty]');
+    if (empty) empty.hidden = !query || visible > 0;
+  };
+  input?.addEventListener("input", () => { state.query = input.value; updateHomeSearch(); });
+  updateHomeSearch();
 }
 
 function homeDashboardStats(projects, classes, students, doneTasks, totalTasks) {
@@ -1685,7 +1699,7 @@ function showClassStatsPanel(classId) {
 
 function renderSearch() {
   setShell({ heading: "Поиск", context: "Глобальный поиск", summary: "Проекты · группы · ученики" });
-  const results = filteredStudents();
+  const results = state.data.students.filter(matchesFilter);
   view.innerHTML = `
     <section class="grid">
       <input class="input" data-query placeholder="Ученик, группа, проект или QR" value="${escapeAttr(state.query)}" />
@@ -1698,17 +1712,20 @@ function renderSearch() {
         ${filterChip("paid", "Оплачено")}
       </div>
       <div class="grid">
-        ${results.map(studentCard).join("") || empty("Ничего не найдено")}
+        <p class="muted" data-student-search-empty hidden role="status">Ничего не найдено</p>
+        ${results.map(studentCard).join("")}
       </div>
     </section>
   `;
   bindViewActions();
   const input = view.querySelector("[data-query]");
-  input?.focus();
-  input?.addEventListener("input", (event) => {
-    state.query = event.target.value;
-    renderSearch();
-  });
+  const updateSearchRows = () => {
+    const ids = new Set(filteredStudents().map(student => student.id));
+    view.querySelector('[data-student-search-empty]').hidden = ids.size > 0;
+    view.querySelectorAll('[data-open-student]').forEach(card => { card.hidden = !ids.has(card.dataset.openStudent); });
+  };
+  input?.addEventListener("input", () => { state.query = input.value; updateSearchRows(); });
+  updateSearchRows();
 }
 
 function renderScan() {
