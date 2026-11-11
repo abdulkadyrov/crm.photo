@@ -49,7 +49,7 @@ async function takeStill(video, track) {
   return blob;
 }
 
-export function openPhotoCamera({ studentName, initialType = "photo", reference, mountHistory, onSave, onDelete, onClose, openSystemCamera }) {
+export function openPhotoCamera({ studentName, existingMedia = [], initialType = "photo", reference, mountHistory, onSave, onDelete, onClose, openSystemCamera }) {
   if (document.querySelector(".photo-camera")) return;
   const panel = document.createElement("dialog");
   panel.className = "photo-camera";
@@ -339,7 +339,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   let shot;
   let shotUrl;
   let savedCount = 0;
-  const sessionPhotos = [];
+  const sessionPhotos = existingMedia.filter(item => item.blob instanceof Blob && item.blob.size > 0).map(item => ({ id: item.id, kind: item.type === "video" ? "video" : "photo", url: URL.createObjectURL(item.blob) }));
   let reviewingSaved = null;
   let busy = false;
   let closed = false;
@@ -769,6 +769,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     history.close();
     openSystemCamera(captureType);
   };
+  renderFilmstrip();
   refreshCaptureMode();
   document.body.append(panel);
   panel.showModal();
