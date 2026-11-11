@@ -4426,9 +4426,7 @@ function studentCard(student, { readOnly = false } = {}) {
   const price = studentTotalPrice(student);
   const previewUrl = studentAvatarUrl(student);
   const fullName = `${student.lastName} ${student.firstName}`.trim();
-  const preview = previewUrl
-    ? `<img class="student-thumb" src="${previewUrl}" alt="${escapeAttr(fullName)}" loading="lazy" />`
-    : '<div class="student-thumb empty" aria-label="Фото не добавлено"><span></span><small>Нет фото</small></div>';
+  const preview = `<img class="student-thumb" src="${escapeAttr(previewUrl || './assets/ui/student-avatar.svg')}" alt="${escapeAttr(previewUrl ? fullName : 'Фото не добавлено')}" loading="lazy" />`;
   const finalStats = finalWorkStatsForStudent(student.id);
   return `
     <article class="student-card card-button" ${readOnly ? "data-demo-student" : `data-open-student="${student.id}" tabindex="0"`}>
@@ -13523,7 +13521,9 @@ function studentServicePreviewUrl(student) {
 }
 
 function studentAvatarUrl(student) {
-  const photo = mediaByStudent(student.id).find((item) => item.type === "photo" || item.type === "image");
+  const photo = mediaByStudent(student.id)
+    .filter(item => (item.type === "photo" || item.type === "image") && item.blob)
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")) || String(b.id).localeCompare(String(a.id)))[0];
   if (photo?.blob) return URL.createObjectURL(photo.blob);
   return "";
 }

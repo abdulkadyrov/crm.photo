@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v147";
+const CACHE_VERSION = "v148";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -74,6 +74,7 @@ const REFERENCE_POSE_ASSETS = [
   "./assets/reference-poses/girl-interview-desk.jpg"
 ];
 const APP_SHELL = [
+  "./assets/ui/student-avatar.svg",
   "./js/services/school-demo.js",
   "./js/services/local-portraits.js",
   "./js/ui/local-portraits-panel.js",
@@ -86,13 +87,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=147",
+  "./styles.css?v=148",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=147",
+  "./js/core/app.js?v=148",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=147",
+  "./js/core/legacy-app.js?v=148",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
