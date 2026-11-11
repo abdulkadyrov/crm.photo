@@ -1,4 +1,4 @@
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=159";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=160";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -10,7 +10,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=159";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=160";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1261,8 +1261,8 @@ function dashboardBar(label, value, total, percent) {
   `;
 }
 
-function renderCardCounts(counts) {
-  return `<p class="card-counts"><span>Фото: <strong>${counts.photos}</strong></span><span title="Дети с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Одна выбранная услуга для одного ребёнка — один заказ, независимо от экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
+function renderCardCounts(counts, { includePhotos = true } = {}) {
+  return `<p class="card-counts">${includePhotos ? `<span>Фото: <strong>${counts.photos}</strong></span>` : ""}<span title="Дети с выбранными услугами">Заявки: <strong>${counts.requests}</strong></span><span title="Одна выбранная услуга для одного ребёнка — один заказ, независимо от экземпляров">Заказы: <strong>${counts.orders}</strong></span></p>`;
 }
 
 function projectCard(project) {
@@ -4499,8 +4499,7 @@ function studentCard(student, { readOnly = false } = {}) {
             <h3>${escapeHtml(student.lastName)} ${escapeHtml(student.firstName)}</h3>
             <p class="muted">${escapeHtml(project?.name || "")} • ${escapeHtml(klass?.name || "")}</p>
           </div>
-          <span class="student-service-choice">${chosenServices.length ? `Услуги выбраны: ${chosenServices.length}` : "Услуги не выбраны"}</span>
-          ${renderCardCounts(cardCounts)}
+          ${renderCardCounts(cardCounts, { includePhotos: false })}
           <details class="compact-card-details">
             <summary>${c.doneCount}/${c.total} задач · ${c.percent}%</summary>
             <div class="compact-card-extra">
