@@ -1,6 +1,6 @@
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=167";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=167";
+import { nextInSequence } from "../services/sequence-navigation.js?v=168";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=168";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,7 +12,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=167";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=168";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1452,6 +1452,10 @@ function classStudentSection(classId) {
   const previousGroup = nextInSequence(orderedGroups, klass.id, -1);
   return `
     <section class="class-section">
+      <div class="class-student-actions">
+          <button class="primary-button compact" data-add-student="${klass.id}" type="button">Учащийся</button>
+          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список учащихся" : "Добавить список учащихся"}</button>
+      </div>
       <details class="scope-tools group-tools" data-scope-fold="group-${escapeAttr(klass.id)}">
         <summary>Действия и документы группы</summary>
         <div class="scope-tools-content">
@@ -1462,8 +1466,6 @@ function classStudentSection(classId) {
         </div>
         <div class="class-student-actions">
           <button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы</button>
-          <button class="primary-button compact" data-add-student="${klass.id}" type="button">Учащийся</button>
-          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список учащихся" : "Добавить список учащихся"}</button>
           <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
         </div>
       </div>
