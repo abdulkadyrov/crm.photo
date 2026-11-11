@@ -1,3 +1,4 @@
+import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
 import { addSchoolDemo } from "../services/school-demo.js";
@@ -8,7 +9,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=156";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=157";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -388,7 +389,7 @@ async function init() {
       const data = JSON.parse(new TextDecoder().decode(dataFile.data));
       for (const key of ["operators", "operatorEvents", "settings", "statuses", "checklistTemplates"]) data[key] = [];
       dataFile.data = jsonBytes(data);
-      return {projectId:project.id, projectName:project.name, groupId:klass?.id || "", name:klass?.name || project.name, blob:createZip(files)};
+      return {projectId:project.id, projectName:project.name, groupId:klass?.id || "", name:klass?.name || project.name, blob:await createTransferZip(files)};
     },
     import: async (blob, projectId) => {
       const entries = await parseZip(new Uint8Array(await blob.arrayBuffer()));
@@ -4373,7 +4374,7 @@ async function toggleOperatorActive(operatorId) {
 async function exportOperators() {
   return withBusy("Экспорт сотрудников...", async () => {
     if (currentOperator()?.role !== "owner") return notify("Экспорт сотрудников доступен владельцу.");
-    const blob = createZip(await buildTransferExportFiles("operators"));
+    const blob = await createTransferZip(await buildTransferExportFiles("operators"));
     downloadBlob(blob, `SPF_operators_${new Date().toISOString().slice(0, 10)}.zip`);
     await recordOperatorEvent("export", { targetType: "operators" });
     notify("Сотрудники экспортированы.");
@@ -4828,8 +4829,8 @@ function bindViewActions() {
   updateSelectedExportButton();
   view.querySelector("[data-export-selected-class]")?.addEventListener("click", () => exportClass(view.querySelector("[data-transfer-class]")?.value || state.classId));
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", (event) => runTransferExport(event.currentTarget, "Собираем полную копию…", exportFullBackup)));
-  view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", () => exportProject(node.dataset.exportProject)));
-  view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", () => exportClass(node.dataset.exportClass)));
+  view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", event => runTransferExport(event.currentTarget, "Подготовка ZIP…", () => exportProject(node.dataset.exportProject))));
+  view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", event => runTransferExport(event.currentTarget, "Подготовка ZIP…", () => exportClass(node.dataset.exportClass))));
   view.querySelectorAll("[data-print-final-project]").forEach((node) => node.addEventListener("click", () => reviewFinalWorksForPrint({ projectId: node.dataset.printFinalProject })));
   view.querySelectorAll("[data-print-final-class]").forEach((node) => node.addEventListener("click", () => printClassFinalWorksWithQr(node.dataset.printFinalClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
@@ -9823,9 +9824,9 @@ async function exportProject(projectId, forVakha = false) {
     await put("projects", stampExported(project));
     await recordOperatorEvent("export", { targetType: "project", targetId: projectId });
     await refreshData();
-    const blob = createZip(await buildTransferExportFiles("project", { projectId }, {includeBundled: !forVakha}));
-    downloadBlob(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
-    notify("Проект экспортирован.");
+    const blob = await createTransferZip(await buildTransferExportFiles("project", { projectId }, {includeBundled: forVakha, includeServices: forVakha}));
+    offerTransferDownload(blob, `${safeFileName(`SPF_project_${project.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+    notify(forVakha ? "Архив для Vakha готов." : "Проект готов без каталога услуг. Нажмите «Скачать ZIP».");
   });
 }
 
@@ -9866,8 +9867,8 @@ async function exportClass(classId) {
     await put("classes", stampExported(klass));
     await recordOperatorEvent("export", { targetType: "class", targetId: classId });
     await refreshData();
-    const blob = createZip(await buildTransferExportFiles("class", { classId }));
-    downloadBlob(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
+    const blob = await createTransferZip(await buildTransferExportFiles("class", { classId }));
+    offerTransferDownload(blob, `${safeFileName(`SPF_class_${klass.name}_${new Date().toISOString().slice(0, 10)}`)}.zip`);
     notify("Класс/группа экспортирован.");
   });
 }
@@ -9878,7 +9879,7 @@ async function importClass(file) {
 
 async function exportServices() {
   return withBusy("Экспорт полного архива услуг...", async () => {
-    const blob = createZip(await buildTransferExportFiles("services"));
+    const blob = await createTransferZip(await buildTransferExportFiles("services"));
     downloadBlob(blob, `SPF_services_${new Date().toISOString().slice(0, 10)}.zip`);
     await recordOperatorEvent("export", { targetType: "services" });
     notify("Полный архив услуг экспортирован.");
@@ -9918,7 +9919,7 @@ async function importServices(file) {
 
 async function exportSettings() {
   return withBusy("Экспорт настроек...", async () => {
-    const blob = createZip(await buildTransferExportFiles("settings"));
+    const blob = await createTransferZip(await buildTransferExportFiles("settings"));
     downloadBlob(blob, `SPF_settings_${new Date().toISOString().slice(0, 10)}.zip`);
     await recordOperatorEvent("export", { targetType: "settings" });
     notify("Настройки экспортированы.");
@@ -9932,11 +9933,11 @@ async function importSettings(file) {
 async function exportFullBackup() {
   const includeBundled = Boolean(view.querySelector("[data-backup-bundled]")?.checked);
   return withBusy("Экспорт всех данных...", async () => {
-    const blob = createZip(await buildTransferExportFiles("full_backup", {}, { includeBundled }));
-    downloadBlob(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
+    const blob = await createTransferZip(await buildTransferExportFiles("full_backup", {}, { includeBundled }));
+    offerTransferDownload(blob, `SPF_full_backup_${new Date().toISOString().slice(0, 10)}.zip`);
     await updateStorageLocationSetting({ lastFullBackupAt: now(), filesAtLastBackup: currentBackupFileCount() });
     await recordOperatorEvent("export", { targetType: "full_backup" });
-    notify(`Полный ZIP скачан · ${formatFileSize(blob.size)}.`);
+    notify(`Полный ZIP готов · ${formatFileSize(blob.size)}. Нажмите «Скачать ZIP».`);
   });
 }
 
@@ -9952,8 +9953,8 @@ async function exportSelectedData() {
 
 async function exportSectionArchive(sections, filePrefix, successMessage) {
   return withBusy("Подготовка выбранных данных...", async () => {
-    const blob = createZip(await buildTransferExportFiles("selection", { sections }, { includeBundled: false }));
-    downloadBlob(blob, `${filePrefix}_${new Date().toISOString().slice(0, 10)}.zip`);
+    const blob = await createTransferZip(await buildTransferExportFiles("selection", { sections }, { includeBundled: false }));
+    offerTransferDownload(blob, `${filePrefix}_${new Date().toISOString().slice(0, 10)}.zip`);
     await recordOperatorEvent("export", { targetType: "selection", sections });
     notify(`${successMessage} · ${formatFileSize(blob.size)}.`);
   });
@@ -9980,7 +9981,7 @@ async function runTransferExport(button, pendingLabel, task) {
 
 async function exportWorkConfig() {
   return withBusy("Экспорт рабочей конфигурации...", async () => {
-    const blob = createZip(await buildTransferExportFiles("work_config"));
+    const blob = await createTransferZip(await buildTransferExportFiles("work_config"));
     downloadBlob(blob, `SPF_work_config_${new Date().toISOString().slice(0, 10)}.zip`);
     await recordOperatorEvent("export", { targetType: "work_config" });
     notify("Рабочая конфигурация экспортирована.");
@@ -10009,8 +10010,28 @@ async function exportSettingsZip() {
   notify("Настройки экспортированы.");
 }
 
+async function createTransferZip(files) {
+  return createBlobZip(files, {onProgress: ({index,total}) => {
+    const label = document.querySelector('.busy-card strong');
+    if (label) label.textContent = `Сборка ZIP: ${index} из ${total} файлов`;
+  }});
+}
+function offerTransferDownload(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const panel = document.createElement('dialog');
+  panel.className = 'transfer-download-ready';
+  panel.setAttribute('aria-label', 'Архив готов');
+  panel.innerHTML = `<h2>Архив готов</h2><p>${escapeHtml(fileName)} · ${formatFileSize(blob.size)}</p><a class="primary-button" download="${escapeAttr(fileName)}" href="${escapeAttr(url)}">Скачать ZIP</a><p class="muted">На iPhone нажмите «Скачать ZIP» и сохраните архив в «Файлы».</p><button class="secondary-button" type="button">Закрыть</button>`;
+  document.body.append(panel);
+  const cleanup = () => { panel.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); };
+  panel.addEventListener('close', cleanup, {once:true});
+  panel.querySelector('button').onclick = () => panel.close();
+  panel.showModal();
+}
+
 async function buildTransferExportFiles(exportType, scope = {}, options = {}) {
-  const data = buildTransferData(exportType, scope);
+  const includeServices = options.includeServices ?? exportType !== "project";
+  const data = buildTransferData(exportType, { ...scope, omitServices: !includeServices });
   const mediaFiles = await collectTransferMediaFiles(data, options);
   const exportData = stripTransferMediaDataUrls(data);
   const manifest = {
@@ -10020,7 +10041,8 @@ async function buildTransferExportFiles(exportType, scope = {}, options = {}) {
     ...(exportType === "selection" ? { sections: [...(scope.sections || [])] } : {}),
     exportedAt: now(),
     exportedBy: currentOperatorIdForAction({ warn: false }),
-    bundledAssetsIncluded: options.includeBundled !== false,
+    servicesIncluded: includeServices,
+    bundledAssetsIncluded: includeServices && options.includeBundled !== false,
     containsMedia: mediaFiles.length > 0
   };
   return [
@@ -10821,7 +10843,7 @@ function buildTransferData(exportType, scope = {}) {
       projects: [project],
       classes,
       students,
-      services: state.data.catalog.filter((item) => serviceIds.has(item.id)),
+      services: scope.omitServices ? [] : state.data.catalog.filter((item) => serviceIds.has(item.id)),
       orders: state.data.orders.filter((order) => students.some((student) => student.id === order.studentId)),
       media: state.data.media.filter((media) => students.some((student) => student.id === media.studentId)),
       finalWorks: state.data.finalWorks.filter((work) => students.some((student) => student.id === work.studentId)),
@@ -10983,7 +11005,7 @@ async function collectTransferMediaFiles(data, { includeBundled = true } = {}) {
   await progress("Подготовка фотографий, результатов и документов…");
   for (const order of data.orders || []) {
     for (const [serviceId, draft] of Object.entries(order.localPortraits || {})) {
-      if (draft.image instanceof Blob) files.push({path:`portrait_drafts/${safePath(order.id)}/${safePath(serviceId)}.png`, data:new Uint8Array(await draft.image.arrayBuffer())});
+      if (draft.image instanceof Blob) files.push({path:`portrait_drafts/${safePath(order.id)}/${safePath(serviceId)}.png`, data:draft.image});
     }
   }
   for (const item of data.media || []) {
@@ -10991,7 +11013,7 @@ async function collectTransferMediaFiles(data, { includeBundled = true } = {}) {
     const path = `media/student_files/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
     if (taken.has(path)) continue;
     taken.add(path);
-    files.push({ path, data: new Uint8Array(await item.blob.arrayBuffer()) });
+    files.push({ path, data: item.blob });
   }
   for (const item of data.finalWorks || []) {
     const blob = finalWorkImageBlob(item);
@@ -10999,9 +11021,9 @@ async function collectTransferMediaFiles(data, { includeBundled = true } = {}) {
     const path = `final_results/${item.id}/${safePath(finalWorkFileName(item))}`;
     if (taken.has(path)) continue;
     taken.add(path);
-    files.push({ path, data: new Uint8Array(await blob.arrayBuffer()) });
+    files.push({ path, data: blob });
     const original = finalWorkOriginalBlob(item);
-    if (original) files.push({ path: `final_sources/${item.id}/original`, data: new Uint8Array(await original.arrayBuffer()) });
+    if (original) files.push({ path: `final_sources/${item.id}/original`, data: original });
   }
   for (const item of data.documents || []) {
     const blob = item.blob || await documentBlob(item);
@@ -11009,7 +11031,7 @@ async function collectTransferMediaFiles(data, { includeBundled = true } = {}) {
     const path = `documents/${item.id}/${safePath(item.fileName || `${item.id}.bin`)}`;
     if (taken.has(path)) continue;
     taken.add(path);
-    files.push({ path, data: new Uint8Array(await blob.arrayBuffer()) });
+    files.push({ path, data: blob });
   }
   await progress(`Сборка ZIP: ${(data.students || []).length} детей, ${files.length} файлов…`);
   return files;
@@ -14136,8 +14158,10 @@ function downloadBlob(blob, fileName) {
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
+  document.body.append(link);
   link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 function escapeHtml(value) {

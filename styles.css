@@ -6850,3 +6850,7 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .student-directory-result { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; padding: 12px; min-height: 44px; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--text); }
 .student-directory-result strong { overflow-wrap: anywhere; }
 [data-home-search-results] > [hidden], .student-card[hidden] { display: none !important; }
+.transfer-download-ready { width: min(420px, calc(100% - 24px)); padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); color: var(--text); }
+.transfer-download-ready::backdrop { background: #0008; }
+.transfer-download-ready p { overflow-wrap: anywhere; }
+.transfer-download-ready .primary-button { display: flex; justify-content: center; margin: 16px 0; }
