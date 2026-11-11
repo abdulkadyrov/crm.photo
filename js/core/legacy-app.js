@@ -1,6 +1,6 @@
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=163";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=163";
+import { nextInSequence } from "../services/sequence-navigation.js?v=164";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=164";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,7 +12,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=163";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=164";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -946,6 +946,10 @@ async function seedCatalogIfNeeded() {
 }
 
 function bindShell() {
+  const fixedHeader = document.querySelector('.topbar');
+  const updateHeaderSpace = () => document.documentElement.style.setProperty('--topbar-height', `${Math.ceil(fixedHeader.getBoundingClientRect().height)}px`);
+  new ResizeObserver(updateHeaderSpace).observe(fixedHeader);
+  updateHeaderSpace();
   document.querySelector('#topbar-toggle')?.addEventListener('click', event => {
     const collapsed = document.querySelector('.topbar').classList.toggle('is-collapsed');
     event.currentTarget.setAttribute('aria-expanded', String(!collapsed));
@@ -1400,6 +1404,7 @@ function renderClasses() {
       </label>
       <details class="scope-tools" data-scope-fold="project-${activeProject}">
         <summary>Действия проекта</summary>
+      <div class="scope-tools-content">
       <div class="project-button-row">
         <button class="secondary-button equal-button" data-prepare-school="${activeProject}" type="button">Подготовить работы школы</button>
         <button class="secondary-button equal-button" data-teacher-broadcast="${activeProject}" type="button">Рассылка учителям</button>
@@ -1407,6 +1412,8 @@ function renderClasses() {
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
         <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button>
 
+      </div>
+      ${documentsSection("project", activeProject)}
       </div>
       </details>
               <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
@@ -1418,7 +1425,6 @@ function renderClasses() {
       totalTasks,
       finance: projectFinance
     }) : ""}
-    ${!isClassOpen && activeProject ? documentsSection("project", activeProject) : ""}
     ${formClassId ? studentQuickForm(formClassId) : ""}
     ${isClassOpen ? "" : `
       <section class="class-order-toolbar" aria-label="Порядок групп">
@@ -2313,8 +2319,9 @@ function renderStudent() {
       </div>
     </section>
     <div class="student-step-navigation" role="group" aria-label="Переход между учащимися">
-      <button type="button" data-previous-student aria-label="Предыдущий учащийся" title="${escapeAttr(previousChild ? `${previousChild.lastName} ${previousChild.firstName}` : 'Первый учащийся')}" ${previousChild ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button type="button" data-next-student aria-label="Следующий учащийся" title="${escapeAttr(nextChild ? `${nextChild.lastName} ${nextChild.firstName}` : 'Последний учащийся')}" ${nextChild ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" data-previous-student aria-label="Предыдущий учащийся" title="${escapeAttr(previousChild ? `${previousChild.lastName} ${previousChild.firstName}` : 'Начало списка')}" ${previousChild ? '' : 'disabled'}><strong>${previousChild ? escapeHtml(`${previousChild.lastName} ${previousChild.firstName}`) : 'Начало списка'}</strong><small>Предыдущий</small></button>
+      <div class="student-step-current" aria-current="true" title="${escapeAttr(`${student.lastName} ${student.firstName}`)}"><strong>${escapeHtml(`${student.firstName} ${student.lastName}`)}</strong><small>Этот</small></div>
+      <button type="button" data-next-student aria-label="Следующий учащийся" title="${escapeAttr(nextChild ? `${nextChild.lastName} ${nextChild.firstName}` : 'Конец списка')}" ${nextChild ? '' : 'disabled'}><strong>${nextChild ? escapeHtml(`${nextChild.lastName} ${nextChild.firstName}`) : 'Конец списка'}</strong><small>Следующий</small></button>
     </div>
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;

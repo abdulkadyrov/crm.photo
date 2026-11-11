@@ -8,7 +8,7 @@ export async function bootstrap() {
   state.appVersion = APP_VERSION;
   state.router = router;
 
-  await import("./legacy-app.js?v=163");
+  await import("./legacy-app.js?v=164");
 }
 
 bootstrap();
