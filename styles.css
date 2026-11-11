@@ -2243,7 +2243,7 @@ body:has(.class-roster) {
 }
 
 .app-shell:has(.class-roster) .topbar {
-  position: relative;
+  position: sticky;
 }
 
 .class-roster {
@@ -6868,3 +6868,27 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .student-step-navigation button { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 50%; background: var(--card); color: var(--text); touch-action: manipulation; }
 .student-step-navigation button svg { width: 22px; height: 22px; }
 .student-step-navigation button:disabled { color: var(--muted); opacity: .45; }
+
+.topbar, .app-shell:has(.class-roster) .topbar { position: sticky; top: 0; z-index: 35; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg); backdrop-filter: none; border-bottom: 1px solid var(--line); }
+.topbar-copy { min-width: 0; }
+.topbar h1 { font-size: 18px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.topbar .eyebrow { font-size: 11px; line-height: 1.25; margin-top: 2px; font-weight: 500; }
+.topbar .shell-summary { font-size: 11px; line-height: 1.25; margin-top: 2px; font-weight: 400; }
+.topbar-actions { padding-top: 0; gap: 4px; flex-shrink: 0; }
+.topbar .icon-button { width: 34px; height: 34px; min-width: 34px; min-height: 34px; padding: 7px; border-radius: 50%; }
+#topbar-toggle svg { width: 20px; height: 20px; }
+.topbar.is-collapsed { justify-content: flex-end; padding-top: 2px; padding-bottom: 2px; }
+.topbar.is-collapsed .topbar-copy, .topbar.is-collapsed #theme-toggle { display: none; }
+.topbar.is-collapsed #topbar-toggle svg { transform: rotate(180deg); }
+.scope-tools { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; background: var(--card); }
+.scope-tools > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; min-height: 44px; font-size: 13px; font-weight: 600; cursor: pointer; list-style: none; }
+.scope-tools > summary::-webkit-details-marker { display: none; }
+.scope-tools > summary::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); }
+.scope-tools[open] > summary::after { transform: rotate(225deg); }
+.scope-tools .project-button-row { padding-bottom: 12px; }
+.scope-tools .equal-button { min-height: 44px; padding: 8px 10px; font-size: 12px; border-radius: 12px; }
+.scope-tools-content { display: grid; gap: 10px; padding-bottom: 12px; }
+.group-tools .panel { padding: 10px; box-shadow: none; border-radius: 10px; }
+.group-tools .card-title { font-size: 14px; }
+.group-tools .muted, .group-tools p { font-size: 12px; }
+.group-tools .class-student-actions .compact { min-height: 40px; padding: 6px 10px; font-size: 12px; }

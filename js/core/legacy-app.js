@@ -1,5 +1,6 @@
-import { nextInSequence } from "../services/sequence-navigation.js?v=162";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=162";
+const scopeFoldState = new Map();
+import { nextInSequence } from "../services/sequence-navigation.js?v=163";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=163";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -11,7 +12,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=162";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=163";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -945,6 +946,11 @@ async function seedCatalogIfNeeded() {
 }
 
 function bindShell() {
+  document.querySelector('#topbar-toggle')?.addEventListener('click', event => {
+    const collapsed = document.querySelector('.topbar').classList.toggle('is-collapsed');
+    event.currentTarget.setAttribute('aria-expanded', String(!collapsed));
+    event.currentTarget.setAttribute('aria-label', collapsed ? 'Показать верхнюю панель' : 'Свернуть верхнюю панель');
+  });
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   document.querySelectorAll("[data-route]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1377,10 +1383,11 @@ function renderClasses() {
   if (state.studentFormClassId && !classes.some((klass) => klass.id === state.studentFormClassId)) state.studentFormClassId = null;
   const isClassOpen = Boolean(state.classId);
   const formClassId = state.studentFormClassId;
+  const activeClass = isClassOpen ? classById(state.classId) : null;
   setShell({
-    heading: project?.name || "Группы",
-    context: "Проекты",
-    summary: `${classes.length} групп · ${allProjectStudents.length} ученика · ${doneTasks} из ${totalTasks} задач выполнено`
+    heading: activeClass ? `Группа ${activeClass.name}` : project?.name || "Группы",
+    context: activeClass ? project?.name || "Проект" : "Проекты",
+    summary: activeClass ? `${allProjectStudents.filter(student => student.classId === activeClass.id).length} учащихся` : `${classes.length} групп · ${allProjectStudents.length} учащихся · ${doneTasks} из ${totalTasks} задач выполнено`
   });
   view.innerHTML = `
     ${studentDirectorySearchMarkup(activeProject, state.classId)}
@@ -1391,14 +1398,18 @@ function renderClasses() {
           ${projects.map((project) => `<option value="${project.id}" ${project.id === activeProject ? "selected" : ""}>${escapeHtml(project.name)}</option>`).join("")}
         </select>
       </label>
+      <details class="scope-tools" data-scope-fold="project-${activeProject}">
+        <summary>Действия проекта</summary>
       <div class="project-button-row">
         <button class="secondary-button equal-button" data-prepare-school="${activeProject}" type="button">Подготовить работы школы</button>
         <button class="secondary-button equal-button" data-teacher-broadcast="${activeProject}" type="button">Рассылка учителям</button>
         <button class="secondary-button equal-button" data-export-vakha="${activeProject}" type="button">Экспорт в Vakha Studio</button>
         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
         <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button>
-        <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
+
       </div>
+      </details>
+              <button class="primary-button equal-button" data-add-class="${activeProject}" type="button"><span data-icon="plus"></span>Группа</button>
     </section>`}
     ${!isClassOpen && activeProject ? plainWorkDashboard({
       title: `Дашборд проекта`,
@@ -1435,21 +1446,26 @@ function classStudentSection(classId) {
   const previousGroup = nextInSequence(orderedGroups, klass.id, -1);
   return `
     <section class="class-section">
+      <details class="scope-tools group-tools" data-scope-fold="group-${escapeAttr(klass.id)}">
+        <summary>Действия и документы группы</summary>
+        <div class="scope-tools-content">
       <div class="class-student-toolbar">
         <div class="class-student-toolbar-heading">
-          <h2 class="card-title">Ученики группы ${escapeHtml(klass.name)}</h2>
+          <h2 class="card-title">Учащиеся группы ${escapeHtml(klass.name)}</h2>
           <button class="icon-button" data-close-class-students type="button" aria-label="Свернуть список учеников" title="Свернуть"><span data-icon="close"></span></button>
         </div>
         <div class="class-student-actions">
           <button class="secondary-button compact" data-prepare-class="${klass.id}" type="button">Подготовить работы</button>
-          <button class="primary-button compact" data-add-student="${klass.id}" type="button">Ученик</button>
-          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список детей" : "Добавить полный класс детей"}</button>
+          <button class="primary-button compact" data-add-student="${klass.id}" type="button">Учащийся</button>
+          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список учащихся" : "Добавить список учащихся"}</button>
           <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
         </div>
       </div>
       ${klass.parentCatalogUrl ? `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted" style="overflow-wrap:anywhere">${escapeHtml(klass.parentCatalogUrl)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(klass.parentCatalogUrl)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div></article>` : `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted">Ссылка ещё не получена из Vakha Studio.</p></article>`}
       ${klass.teacher?.name ? `<article class="panel teacher-contact-panel"><div><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</div><label class="teacher-broadcast-check"><input type="checkbox" data-class-broadcast-sent="${klass.id}" ${klass.teacherBroadcastSentAt ? "checked" : ""} /><span>Рассылка отправлена</span></label></article>` : ""}
       ${documentsSection("group", klass.id)}
+        </div>
+      </details>
       ${renderShootingRoster(students)}
       <nav class="class-next-navigation" aria-label="Переход между группами">
         <button class="secondary-button compact" type="button" data-previous-group="${escapeAttr(previousGroup?.id || '')}" aria-label="Предыдущая группа" title="${escapeAttr(previousGroup?.name || 'Первая группа')}" ${previousGroup ? '' : 'disabled'}>Предыдущая</button>
@@ -4562,6 +4578,10 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  view.querySelectorAll('[data-scope-fold]').forEach(details => {
+    details.open = scopeFoldState.get(details.dataset.scopeFold) || false;
+    details.addEventListener('toggle', () => scopeFoldState.set(details.dataset.scopeFold, details.open));
+  });
   view.querySelector('[data-previous-group]')?.addEventListener('click', event => {
     if (event.currentTarget.dataset.previousGroup) openClassStudents(event.currentTarget.dataset.previousGroup);
   });
