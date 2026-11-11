@@ -1,6 +1,6 @@
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=164";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=164";
+import { nextInSequence } from "../services/sequence-navigation.js?v=165";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=165";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,7 +12,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=164";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=165";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -2319,7 +2319,6 @@ function renderStudent() {
       </div>
     </section>
     <div class="student-step-navigation" role="group" aria-label="Переход между учащимися">
-      <button type="button" data-previous-student aria-label="Предыдущий учащийся" title="${escapeAttr(previousChild ? `${previousChild.lastName} ${previousChild.firstName}` : 'Начало списка')}" ${previousChild ? '' : 'disabled'}><strong>${previousChild ? escapeHtml(`${previousChild.lastName} ${previousChild.firstName}`) : 'Начало списка'}</strong><small>Предыдущий</small></button>
       <div class="student-step-current" aria-current="true" title="${escapeAttr(`${student.lastName} ${student.firstName}`)}"><strong>${escapeHtml(`${student.firstName} ${student.lastName}`)}</strong><small>Этот</small></div>
       <button type="button" data-next-student aria-label="Следующий учащийся" title="${escapeAttr(nextChild ? `${nextChild.lastName} ${nextChild.firstName}` : 'Конец списка')}" ${nextChild ? '' : 'disabled'}><strong>${nextChild ? escapeHtml(`${nextChild.lastName} ${nextChild.firstName}`) : 'Конец списка'}</strong><small>Следующий</small></button>
     </div>
