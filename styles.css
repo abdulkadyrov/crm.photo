@@ -6839,3 +6839,9 @@ html[data-cloud-role="photographer"] :is([data-open-montage],[data-remove-studen
 .camera-zoom-quick { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); justify-content: center; gap: 6px; }
 .camera-zoom-quick button { min-width: 34px; min-height: 34px; border-radius: 50%; background: #171717a6; font-size: 12px; }
 .photo-camera-frame:has(.camera-zoom-dial:not([hidden])) .camera-zoom-quick { display: none; }
+/* Keep the shutter low and let the viewfinder use the freed space. */
+.photo-camera:not(.is-reviewing) .photo-camera-controls { position: relative; gap: 2px; padding-top: 2px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.photo-camera:not(.is-reviewing) .photo-camera-status { position: absolute; bottom: calc(100% + 5px); left: 12px; right: 12px; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto; padding: 2px 6px; border-radius: 6px; background: #0009; font-size: 10px; pointer-events: none; }
+.photo-camera:not(.is-reviewing) .photo-camera-status:empty { display: none; }
+.camera-capture-modes button { padding: 5px 8px; }
+.camera-shutter-row { min-height: 78px; }
