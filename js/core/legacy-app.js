@@ -1,4 +1,5 @@
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=160";
+import { nextInSequence } from "../services/sequence-navigation.js";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=161";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -10,7 +11,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=160";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=161";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -973,7 +974,7 @@ function bindShell() {
 
 function navigate(route, params = {}) {
   if (cloudRequired && cloudAccount()?.role !== "admin" && ["profile", "services", "serviceDetail"].includes(route)) return notify("Этот раздел доступен администратору");
-  if (rosterStudentHistory && (route !== "student" || (params.studentId && params.studentId !== state.studentId))) {
+  if (rosterStudentHistory && route !== "student") {
     rosterStudentHistory.forget();
     rosterStudentHistory = null;
   }
@@ -1429,6 +1430,7 @@ function classStudentSection(classId) {
   const klass = classById(classId);
   if (!klass) return "";
   const students = studentsForClassView(klass.id);
+  const nextGroup = nextInSequence(classesByProject(klass.projectId), klass.id);
   return `
     <section class="class-section">
       <div class="class-student-toolbar">
@@ -1447,6 +1449,7 @@ function classStudentSection(classId) {
       ${klass.teacher?.name ? `<article class="panel teacher-contact-panel"><div><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</div><label class="teacher-broadcast-check"><input type="checkbox" data-class-broadcast-sent="${klass.id}" ${klass.teacherBroadcastSentAt ? "checked" : ""} /><span>Рассылка отправлена</span></label></article>` : ""}
       ${documentsSection("group", klass.id)}
       ${renderShootingRoster(students)}
+      <div class="class-next-navigation"><button class="primary-button" type="button" data-next-group="${escapeAttr(nextGroup?.id || '')}" ${nextGroup ? '' : 'disabled'}>${nextGroup ? `Следующая группа: ${escapeHtml(nextGroup.name)} →` : 'Последняя группа'}</button></div>
     </section>
   `;
 }
@@ -1576,7 +1579,7 @@ function openStudentCard(studentId, trigger) {
     id: uid("roster_student"),
     restore: () => {
       rosterStudentHistory = null;
-      if (state.route === "student" && state.studentId === studentId) navigateBackFromStudent();
+      if (state.route === "student") navigateBackFromStudent();
     }
   });
   navigate("student", { studentId });
@@ -2121,6 +2124,11 @@ function studentQuickForm(classId) {
   `;
 }
 
+function nextRosterStudent(student) {
+  const groups = shootingRoster(studentsForClassView(student.classId), child => selectedCatalogIdsForStudent(child).map(id => serviceGender(catalogItemById(id))));
+  return nextInSequence(groups.flatMap(group => group.letters.flatMap(([, rows]) => rows)), student.id);
+}
+
 function renderStudent() {
   releaseStudentMediaPreviews();
   const student = studentById(state.studentId);
@@ -2131,6 +2139,7 @@ function renderStudent() {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
   const order = orderByStudent(student.id);
+  const nextChild = nextRosterStudent(student);
   const media = mediaByStudent(student.id).filter((item) => !isFinalResultMedia(item));
   const finalWorks = finalWorksForStudent(student.id);
   const a4Works = finalWorks.filter((work) => finalWorkA4ImageBlob(work));
@@ -2281,6 +2290,7 @@ function renderStudent() {
       </aside>
       </div>
     </section>
+    <button class="fab-next-student" type="button" data-next-student="${escapeAttr(nextChild?.id || '')}" ${nextChild ? `title="${escapeAttr(`${nextChild.lastName} ${nextChild.firstName}`)}"` : 'disabled'}>${nextChild ? 'Следующий ребёнок →' : 'Последний ребёнок'}</button>
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
   bindViewActions();
@@ -4543,6 +4553,14 @@ function templateEditorRow(item) {
 }
 
 function bindViewActions() {
+  view.querySelector('[data-next-group]')?.addEventListener('click', event => {
+    if (event.currentTarget.dataset.nextGroup) openClassStudents(event.currentTarget.dataset.nextGroup);
+  });
+  view.querySelector('[data-next-student]')?.addEventListener('click', () => {
+    const child = studentById(state.studentId);
+    const next = child && nextRosterStudent(child);
+    if (next) navigate('student', {studentId: next.id});
+  });
   bindStudentDirectorySearch();
   bindShootingRoster();
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));

@@ -32,3 +32,13 @@ test('Back restores the source group and filters but starts the screen at top',(
  });
  back();assert.equal(destination.classId,'a');assert.equal(destination.query,'Иван');assert.equal(destination.filter,'todo');assert.equal(scroll,0);
 });
+
+test('moving to the next child keeps the group Back history and source snapshot',()=>{
+ const target={route:'classes',projectId:'p',classId:'a'};
+ const state={route:'student',studentId:'first',returnTarget:target};let forgotten=false;
+ const navigate=vm.runInNewContext(`(${source.slice(source.indexOf('function navigate(route'),source.indexOf('\nfunction routeSnapshot'))})`,{
+  state,cloudRequired:false,rosterStudentHistory:{forget(){forgotten=true;}},stopQrStream(){},document:{querySelectorAll:()=>[]},window:{scrollY:700},render(){},resetDirectoryScroll(){}
+ });
+ navigate('student',{studentId:'second'});
+ assert.equal(state.studentId,'second');assert.equal(forgotten,false);assert.equal(state.returnTarget,target);
+});
