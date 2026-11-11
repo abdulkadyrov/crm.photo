@@ -73,7 +73,6 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
     <footer class="photo-camera-controls">
       <div class="camera-settings" hidden><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
       </div><div class="camera-capture-modes" data-camera-live><button type="button" data-capture-mode="video">ВИДЕО</button><button type="button" data-capture-mode="photo">ФОТО</button></div>
-      <div class="photo-camera-filmstrip" aria-label="Снимки за сеанс" hidden></div>
       <p class="photo-camera-status" role="status"></p>
       <div class="photo-camera-modes" data-camera-live>
         <button class="photo-camera-button" type="button" data-camera-mode="auto" aria-pressed="true">Авто</button>
@@ -85,6 +84,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
       <button class="photo-camera-button" data-camera-play type="button" hidden>Включить предпросмотр</button>
       <div class="photo-camera-review" hidden>
         <button class="photo-camera-button" data-camera-retake type="button">Переснять</button>
+      <div class="photo-camera-filmstrip" aria-label="Снимки за сеанс" hidden></div>
         <button class="photo-camera-button photo-camera-primary" data-camera-save type="button">Сохранить и продолжить</button>
       </div>
       <button class="photo-camera-button" data-camera-system type="button" hidden>Открыть камеру телефона</button>
@@ -454,7 +454,7 @@ export function openPhotoCamera({ studentName, initialType = "photo", reference,
   function renderFilmstrip() {
     const strip = find('.photo-camera-filmstrip');
     strip.replaceChildren();
-    strip.hidden = true;
+    strip.hidden = !sessionPhotos.length;
     find('[data-latest]').disabled = !sessionPhotos.length;
     const latest = sessionPhotos.at(-1);
     find('[data-latest]').style.backgroundImage = latest && latest.kind !== 'video' ? `url("${latest.url}")` : '';

@@ -1,6 +1,6 @@
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=169";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=169";
+import { nextInSequence } from "../services/sequence-navigation.js?v=170";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=170";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,7 +12,7 @@ import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
 import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=169";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=170";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
