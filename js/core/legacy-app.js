@@ -1,7 +1,8 @@
-import { normalizeStudentName } from "../services/shooting-roster.js?v=174";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=175";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=175";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=174";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=174";
+import { nextInSequence } from "../services/sequence-navigation.js?v=175";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=175";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,8 +13,8 @@ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=174";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=174";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=175";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=175";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1287,7 +1288,7 @@ function projectCard(project) {
   const summaryStudents = state.data.students.filter(student => classes.some(group => group.id === student.classId));
   const cardCounts = cardSummary(summaryStudents, state.data.media, state.data.orders);
   return `
-    <article class="list-card project-summary-card card-button" data-open-project="${project.id}">
+    <article class="list-card project-summary-card card-button" tabindex="0" data-open-project="${project.id}">
       <div class="list-card-main">
         <span class="list-icon metric-blue" data-icon="classes"></span>
         <div class="list-copy">
@@ -2282,6 +2283,7 @@ function renderStudent() {
               `).join("") || '<p class="muted">Услуги не выбраны.</p>'}
             </div>
             <button class="secondary-button" data-open-service-picker-student="${student.id}" type="button"><span data-icon="catalog"></span>Выбрать из каталога</button>
+            <button class="secondary-button compact" data-custom-student="${student.id}" type="button">+ Индивидуальный заказ</button>
             <div class="selected-service-settings">
               ${selectedCatalogItems.map((item) => selectedServiceSettingsCard(item, student.id)).join("")}
             </div>
@@ -2331,14 +2333,61 @@ function renderStudent() {
   maybeOpenPendingFinalWorkViewer(student.id);
 }
 
+
+async function showCustomStudentOrder(studentId, trigger) {
+  const student = studentById(studentId);
+  if (!student) return;
+  const restore = captureDialogReturn(document, window, trigger);
+  const dialog = document.createElement("dialog");
+  dialog.className = "cloud-dialog roster-list-dialog";
+  dialog.setAttribute("aria-label", "Индивидуальный заказ");
+  dialog.innerHTML = `<form><div class="cloud-head"><h2>Индивидуальный заказ</h2><button type="button" data-close>×</button></div><label>Комментарий<textarea class="input" name="comment" rows="3" placeholder="Что нужно сделать"></textarea></label><label>Фото или видео (необязательно)<input class="input" type="file" name="attachment" accept="image/*,video/*"></label><p class="muted">Можно сохранить без вложения.</p><p data-error role="alert"></p><button class="primary-button" type="submit">Добавить заказ</button></form>`;
+  const form = dialog.querySelector("form");
+  dialog.querySelector("[data-close]").onclick = () => dialog.close();
+  dialog.onclose = () => { dialog.remove(); restore(); };
+  form.onsubmit = async event => {
+    event.preventDefault();
+    const submit = form.querySelector('[type="submit"]');
+    if (submit.disabled) return;
+    submit.disabled = true;
+    try {
+      const serviceId = "crm_individual_order";
+      const id = uid("custom");
+      const attachment = form.elements.attachment.files[0];
+      const file = attachment?.size ? attachment : null;
+      if (file && !/^(image|video)\//.test(file.type)) throw new Error("Выберите фото или видео.");
+      const current = studentById(studentId);
+      const previous = state.data.orders.find(order => order.studentId === studentId);
+      const order = orderByStudent(studentId);
+      const mediaId = file ? uid("media") : "";
+      const comment = form.elements.comment.value.trim();
+      const ids = [...new Set([...selectedCatalogIdsForStudent(current), serviceId])];
+      const nextStudent = stampUpdated({ ...current, catalogId: ids[0], catalogIds: ids, selectedServices: buildSelectedServices(ids, selectedServicesForStudent(current)) });
+      const item = { id, type: id, requestType: "custom", requestSource: "crm", serviceId, label: "Индивидуальный заказ", comment, referenceMediaId: mediaId, fileIds: mediaId ? [mediaId] : [], status: "pending" };
+      const nextOrder = stampUpdated({ ...order, catalogId: ids[0], catalogIds: ids, items: [...order.items, item] });
+      const operations = [];
+      if (!catalogItemById(serviceId)) operations.push({ store: "catalog", value: stampCreated({ id: serviceId, name: "Индивидуальный заказ", type: "photo", gender: "unisex", price: 0, angles: [], description: "Индивидуальная работа по комментарию и необязательному фото или видео" }) });
+      operations.push({ store: "students", value: nextStudent, expected: current }, { store: "orders", value: nextOrder, expected: previous });
+      if (file) operations.push({ store: "media", value: stampCreated({ id: mediaId, studentId, type: file.type.startsWith("video/") ? "video" : "photo", orderType: id, fileName: file.name, blob: file }) });
+      operations.forEach(operation => assertCloudWrite(operation.store, operation.value));
+      await recordSync.writeBatch(operations);
+      await refreshData();
+      dialog.close();
+      render();
+    } catch (error) { dialog.querySelector("[data-error]").textContent = error.message; submit.disabled = false; }
+  };
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
 function renderParentRequest(order) {
-  const items = (order?.items || []).filter((item) => item.requestType === "custom" || item.referenceServiceName || item.referenceMediaId);
+  const items = (order?.items || []).filter(isIndividualOrderItem);
   if (!items.length) return "";
   return `
     <section class="parent-request-summary" aria-label="Индивидуальная заявка родителя">
       <div class="parent-request-heading">
         <div><strong>Индивидуальная заявка</strong><small>${escapeHtml(order.vakhaOrderNumber || "Из каталога родителей")}</small></div>
-        <span>От родителя</span>
+        <span>${order.items.some(item => item.requestSource === "crm") ? "Заказ учащегося" : "От родителя"}</span>
       </div>
       ${items.map((item) => {
         const media = item.referenceMediaId ? mediaById(item.referenceMediaId) : null;
@@ -2444,7 +2493,7 @@ function taskRow(item, studentId) {
           ${reference}
         <div>
           <strong>${escapeHtml(orderItemLabel(item))}</strong>
-          <p class="muted">${item.fileIds.length} файлов</p>
+          <p class="muted">${(item.fileIds || []).length} файлов</p>
         </div>
       </div>
       <button class="${item.status === "done" ? "secondary-button" : "primary-button"} compact" data-toggle-task="${studentId}:${item.type}" type="button">
@@ -4535,6 +4584,7 @@ function studentCard(student, { readOnly = false } = {}) {
   const finalStats = finalWorkStatsForStudent(student.id);
   return `
     <article class="student-card card-button ${chosenServices.length ? "has-selected-services" : "no-selected-services"}" ${readOnly ? "data-demo-student" : `data-open-student="${student.id}" tabindex="0"`}>
+      ${student.paymentStatus === "paid" ? '<span class="student-paid-marker" role="img" aria-label="Оплачено" title="Оплачено">₽</span>' : ""}
       <div class="student-card-grid">
         ${preview}
         <div class="student-identity">
@@ -4583,6 +4633,11 @@ function templateEditorRow(item) {
       <button class="icon-button danger-icon" data-remove-template-item type="button" title="Удалить пункт"><span data-icon="trash"></span></button>
     </div>
   `;
+}
+
+function cardControlTarget(event, card) {
+  const control = event.target.closest("button, a, input, select, textarea, summary, .item-menu, [role=button]");
+  return control && control !== card && card.contains(control);
 }
 
 function bindViewActions() {
@@ -4654,13 +4709,18 @@ function bindViewActions() {
     });
   });
   bindStudentDetailScrollSpy();
+  view.querySelectorAll("[data-custom-student]").forEach(button => button.onclick = () => showCustomStudentOrder(button.dataset.customStudent, button));
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
-      if (event.target.closest("button")) return;
-      if (event.target.closest("details")) return;
+      if (cardControlTarget(event, node)) return;
       navigate("classes", { projectId: node.dataset.openProject, classId: null, studentFormClassId: null });
     });
   });
+  view.querySelectorAll("[data-open-project]").forEach(node => node.addEventListener("keydown", event => {
+    if (cardControlTarget(event, node) || !["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    navigate("classes", { projectId: node.dataset.openProject, classId: null, studentFormClassId: null });
+  }));
   view.querySelectorAll("[data-open-project-action]").forEach((node) => {
     node.addEventListener("click", () => navigate("classes", { projectId: node.dataset.openProjectAction, classId: null, studentFormClassId: null }));
   });
@@ -4671,13 +4731,11 @@ function bindViewActions() {
   view.querySelectorAll("[data-add-class]").forEach((node) => node.addEventListener("click", () => addClass(node.dataset.addClass)));
   view.querySelectorAll("[data-open-class], [data-show-class-students]").forEach((node) => {
     node.addEventListener("click", (event) => {
-      if (event.target.closest("button") && !node.dataset.showClassStudents) return;
-      if (event.target.closest("details") && !node.dataset.showClassStudents) return;
+      if (cardControlTarget(event, node)) return;
       openClassStudents(node.dataset.openClass || node.dataset.showClassStudents);
     });
     node.addEventListener("keydown", (event) => {
-      if (event.target.closest("button")) return;
-      if (event.target.closest("details")) return;
+      if (cardControlTarget(event, node)) return;
       if (event.key === "Enter" || event.key === " ") openClassStudents(node.dataset.openClass || node.dataset.showClassStudents);
     });
   });
@@ -4711,13 +4769,11 @@ function bindViewActions() {
   });
   view.querySelectorAll("[data-open-student]").forEach((node) => {
     node.addEventListener("click", (event) => {
-      if (event.target.closest("button")) return;
-      if (event.target.closest("details")) return;
+      if (cardControlTarget(event, node)) return;
       openStudentCard(node.dataset.openStudent, node);
     });
     node.addEventListener("keydown", (event) => {
-      if (event.target.closest("button")) return;
-      if (event.target.closest("details")) return;
+      if (cardControlTarget(event, node)) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         openStudentCard(node.dataset.openStudent, node);
@@ -11726,6 +11782,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
     if (idMaps.services?.has(next.serviceId)) next.serviceId = idMaps.services.get(next.serviceId);
     if (idMaps.media?.has(next.sourceMediaId)) next.sourceMediaId = idMaps.media.get(next.sourceMediaId);
     if (idMaps.media?.has(next.referenceMediaId)) next.referenceMediaId = idMaps.media.get(next.referenceMediaId);
+    if (idMaps.media?.has(next.parentVideoMediaId)) next.parentVideoMediaId = idMaps.media.get(next.parentVideoMediaId);
     if (idMaps.media?.has(next.resultMediaId)) next.resultMediaId = idMaps.media.get(next.resultMediaId);
     next.printQrPayload = finalWorkCompactQrPayload(next);
     next.qrData = finalWorkQrData(next);
@@ -13155,17 +13212,17 @@ function normalizeOrderForStudent(student, order) {
   if (!student) return { ...order, items: order.items?.length ? order.items : defaultOrderItems() };
   const selectedCatalogIds = selectedCatalogIdsForStudent(student);
   if (!selectedCatalogIds.length) {
-    return { ...order, items: [] };
+    return { ...order, items: retainedIndividualItems(order.items) };
   }
   const serviceItems = orderItemsFromCatalogs(selectedCatalogIds, order.items || []);
-  const parentRequestItems = (order.items || []).filter((item) => item.requestType === "custom" || item.referenceServiceName || item.referenceMediaId);
+  const parentRequestItems = retainedIndividualItems(order.items);
   const normalizedItems = [...serviceItems];
   parentRequestItems.forEach((item) => {
-    if (!normalizedItems.some((candidate) => candidate.id === item.id || candidate.taskId === item.taskId)) normalizedItems.push(item);
+    if (!normalizedItems.some((candidate) => (item.id && candidate.id === item.id) || (item.taskId && candidate.taskId === item.taskId) || candidate.type === item.type)) normalizedItems.push(item);
   });
   const serviceTypes = new Set(serviceItems.map((item) => item.type));
   const hasOnlyKnownItems = (order.items || []).length > 0 && (order.items || []).every((item) => serviceTypes.has(item.type) || parentRequestItems.includes(item));
-  if (hasOnlyKnownItems && normalizedItems.length === order.items.length) return order;
+  if (hasOnlyKnownItems && normalizedItems.length === order.items.length) return { ...order, items: normalizedItems };
   return {
     ...order,
     catalogId: selectedCatalogIds[0],
