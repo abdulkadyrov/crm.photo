@@ -1,7 +1,7 @@
-import { normalizeStudentName } from "../services/shooting-roster.js?v=173";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=174";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=173";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=173";
+import { nextInSequence } from "../services/sequence-navigation.js?v=174";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=174";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -12,8 +12,8 @@ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=173";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=173";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=174";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=174";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -1307,11 +1307,11 @@ function projectCard(project) {
         <details class="item-menu">
           <summary aria-label="Меню проекта">...</summary>
           <div class="menu-panel">
-            <button data-open-project-action="${project.id}" type="button">Открыть</button>
-            <button data-export-status-project="${project.id}" type="button">Экспорт</button>
-            <button data-print-final-project="${project.id}" type="button">Печать результатов с QR</button>
+            
+            
+            
             <button data-export-project="${project.id}" type="button">ZIP проекта</button><button data-cloud-project="${project.id}" type="button">Отправить на сервер</button>
-            <button data-open-project-documents="${project.id}" type="button">Документы</button>
+            
             <button data-assign-operator-project="${project.id}" type="button">Назначить сотрудника</button>
             <button data-rename-project="${project.id}" type="button">Переименовать</button>
             <button class="danger-text" data-delete-project="${project.id}" type="button">Удалить</button>
@@ -1640,10 +1640,10 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
           <details class="item-menu class-menu">
             <summary aria-label="Меню группы">...</summary>
             <div class="menu-panel">
-              <button data-open-class-action="${klass.id}" type="button">Открыть группу</button>
-              <button data-add-student="${klass.id}" type="button">Добавить ученика</button>
-              <button data-show-class-stats="${klass.id}" type="button">Статистика</button>
-              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button><button data-children-list="${klass.id}" type="button">Список детей: добавить и изменить</button><button data-parent-class="${klass.id}" type="button">Заказы родителей и ссылка</button>
+              
+              
+              
+              <button data-export-class="${klass.id}" type="button">Экспорт</button><button data-cloud-class="${klass.id}" type="button">Отправить на сервер</button><button data-parent-class="${klass.id}" type="button">Заказы родителей и ссылка</button>
               <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button>
               <button data-mark-printed-class="${klass.id}" type="button">Отметить печать</button>
               <button data-assign-operator-class="${klass.id}" type="button">Назначить сотрудника</button>
@@ -1833,8 +1833,8 @@ function albumProjectCard(project) {
         <details class="item-menu">
           <summary aria-label="Меню проекта">...</summary>
           <div class="menu-panel">
-            <button data-add-album-class="${project.id}" type="button">Добавить группу</button>
-            <button data-open-album-project-action="${project.id}" type="button">Открыть</button>
+            
+            
             <button class="danger-text" data-delete-album-project="${project.id}" type="button">Удалить проект</button>
           </div>
         </details>
@@ -1887,7 +1887,7 @@ function albumClassCard(klass) {
         <details class="item-menu">
           <summary aria-label="Меню группы">...</summary>
           <div class="menu-panel">
-            <button data-open-album-class-action="${klass.id}" type="button">Открыть</button>
+            
             <button data-edit-album-class="${klass.id}" type="button">Изменить</button>
             <button class="danger-text" data-delete-album-class="${klass.id}" type="button">Удалить группу</button>
           </div>
@@ -4562,12 +4562,12 @@ function studentCard(student, { readOnly = false } = {}) {
         ${readOnly ? "" : `<details class="item-menu student-menu">
           <summary aria-label="Меню ученика">...</summary>
           <div class="menu-panel">
-            <button data-open-student-action="${student.id}" type="button">Открыть</button>
+            
             <button data-edit-student="${student.id}" type="button">Редактировать</button>
-            <button data-generate-qr="${student.id}" type="button">QR</button>
-            <button data-open-montage="${student.id}" type="button">Монтаж</button>
-            <button data-show-student-references="${student.id}" type="button">Референсы</button>
-            <button data-export-student="${student.id}" type="button">Экспорт</button>
+            
+            
+            
+            
             <button class="danger-text" data-delete-student="${student.id}" type="button">Удалить</button>
           </div>
         </details>`}

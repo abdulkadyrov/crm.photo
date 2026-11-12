@@ -6932,3 +6932,7 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .photo-camera-thumbnail { transition: transform 160ms cubic-bezier(.2,.8,.2,1); }
 .photo-camera-thumbnail[aria-pressed="true"] { transform: translateY(-4px) scale(1.08); border-color: #fff; box-shadow: 0 0 0 1px #fff; }
 @media (prefers-reduced-motion: reduce) { .photo-camera-thumbnail { transition: none; } }
+
+/* Compact contextual menus keep comfortable touch targets. */
+.item-menu .menu-panel { min-width: 150px; padding: 4px; border-radius: 12px; gap: 0; }
+.item-menu .menu-panel button:not(.class-color-dot) { min-height: 40px; padding: 8px 10px; font-size: 13px; line-height: 1.25; font-weight: 600; border-radius: 8px; }
