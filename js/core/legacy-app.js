@@ -2393,7 +2393,7 @@ function renderParentRequest(order) {
         const media = item.referenceMediaId ? mediaById(item.referenceMediaId) : null;
         const imageUrl = media?.blob?.size ? URL.createObjectURL(media.blob) : "";
         return `<article class="parent-request-item">
-          ${imageUrl ? `<a class="parent-request-image" href="${escapeAttr(imageUrl)}" target="_blank" rel="noopener noreferrer"><img src="${escapeAttr(imageUrl)}" alt="Скрин индивидуальной заявки" loading="lazy"><span>Открыть скрин</span></a>` : ""}
+          ${imageUrl ? (media.type === "video" ? `<video class="parent-request-image" src="${escapeAttr(imageUrl)}" controls playsinline preload="metadata" aria-label="Видео индивидуального заказа"></video>` : `<a class="parent-request-image" href="${escapeAttr(imageUrl)}" target="_blank" rel="noopener noreferrer"><img src="${escapeAttr(imageUrl)}" alt="Фото индивидуального заказа" loading="lazy"><span>Открыть фото</span></a>`) : ""}
           <div class="parent-request-copy">
             <strong>${escapeHtml(item.title || item.label || "Индивидуальный запрос")}</strong>
             ${item.comment ? `<p>${escapeHtml(item.comment)}</p>` : ""}

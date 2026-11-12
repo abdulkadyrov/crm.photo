@@ -43,7 +43,7 @@ test('student order explains imported individual parent requests and opens their
   assert.match(app, /function renderParentRequest\(order\)/);
   assert.match(app, /Индивидуальная заявка/);
   assert.match(app, /Пример из каталога:/);
-  assert.match(app, /Открыть скрин/);
+  assert.match(app, /Открыть фото/);
   assert.match(app, /item\.referenceMediaId \? mediaById/);
   assert.match(css, /\.parent-request-summary\s*\{/);
   assert.match(css, /\.parent-request-item\s*\{[\s\S]*grid-template-columns:\s*74px minmax\(0, 1fr\)/);
