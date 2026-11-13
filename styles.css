@@ -6939,3 +6939,9 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 
 .student-card { position: relative; }
 .student-paid-marker { position: absolute; top: -7px; right: 14px; border-radius: 6px; padding: 2px 7px; background: #16834a; color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; pointer-events: none; }
+
+.position-media-picker { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin: 12px 0; }
+.position-media-picker label { position: relative; }
+.position-media-picker img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; }
+.position-media-strip { display: flex; gap: 6px; overflow-x: auto; margin: 8px 0; }
+.position-media-strip img { width: 54px; height: 64px; object-fit: cover; border-radius: 6px; }

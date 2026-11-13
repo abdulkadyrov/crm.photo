@@ -1,8 +1,9 @@
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=175";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=175";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=176";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=176";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=176";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=175";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=175";
+import { nextInSequence } from "../services/sequence-navigation.js?v=176";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=176";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -13,8 +14,8 @@ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=175";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=175";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=176";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=176";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -2285,7 +2286,7 @@ function renderStudent() {
             <button class="secondary-button" data-open-service-picker-student="${student.id}" type="button"><span data-icon="catalog"></span>Выбрать из каталога</button>
             <button class="secondary-button compact" data-custom-student="${student.id}" type="button">+ Индивидуальный заказ</button>
             <div class="selected-service-settings">
-              ${selectedCatalogItems.map((item) => selectedServiceSettingsCard(item, student.id)).join("")}
+              ${selectedServicesForStudent(student).map(entry => selectedServiceSettingsCard(catalogItemById(entry.serviceId), student.id, entry)).join("")}
             </div>
           </div>
         </div>
@@ -2333,6 +2334,30 @@ function renderStudent() {
   maybeOpenPendingFinalWorkViewer(student.id);
 }
 
+
+async function editServicePosition(button) {
+  const mode = button.hasAttribute("data-position-copy") ? "copy" : button.hasAttribute("data-position-remove") ? "remove" : "media";
+  const [studentId, entryId] = (button.dataset.positionCopy || button.dataset.positionMedia || button.dataset.positionRemove).split(":");
+  const student = studentById(studentId);
+  const entries = selectedServicesForStudent(student);
+  const selected = entries.find(item => item.entryId === entryId);
+  if (!selected) return;
+  const save = async next => {
+    const ids = [...new Set(next.map(item => item.serviceId))];
+    await put("students", stampUpdated({...student, selectedServices: next, catalogIds: ids, catalogId: ids[0] || ""}));
+    await refreshData(); state.preserveScroll = true; renderStudent();
+  };
+  if (mode === "copy") { await save([...entries, duplicatePosition(selected, uid("position"))]); return; }
+  if (mode === "remove") { await save(entries.filter(item => item.entryId !== entryId)); return; }
+  const media = mediaByStudent(studentId).filter(item => ["photo", "image"].includes(item.type) && item.blob?.size);
+  const dialog = document.createElement("dialog"); dialog.className = "cloud-dialog roster-list-dialog";
+  const urls = media.map(item => URL.createObjectURL(item.blob));
+  dialog.innerHTML = `<form><div class="cloud-head"><h2>Фото для этой позиции</h2><button type="button" data-close>×</button></div><div class="position-media-picker">${media.map((item,index) => `<label><input type="checkbox" value="${escapeAttr(item.id)}" ${selected.mediaIds.includes(item.id) ? "checked" : ""}><img src="${escapeAttr(urls[index])}" alt="Фото ${index+1}"></label>`).join("") || "В медиа пока нет фото. Добавьте их через камеру или галерею."}</div><button class="primary-button" type="submit">Прикрепить выбранные</button><p data-error role="alert"></p></form>`;
+  dialog.querySelector("[data-close]").onclick = () => dialog.close();
+  dialog.onclose = () => { urls.forEach(url => URL.revokeObjectURL(url)); dialog.remove(); };
+  dialog.querySelector("form").onsubmit = async event => { event.preventDefault(); const submit = dialog.querySelector('[type="submit"]'); submit.disabled = true; try { const ids = Array.from(dialog.querySelectorAll('input:checked')).map(input => input.value); await save(entries.map(item => item.entryId === entryId ? {...item, mediaIds: ids} : item)); dialog.close(); } catch(error) { dialog.querySelector('[data-error]').textContent = error.message; submit.disabled = false; } };
+  document.body.append(dialog); dialog.showModal();
+}
 
 async function showCustomStudentOrder(studentId, trigger) {
   const student = studentById(studentId);
@@ -2904,10 +2929,11 @@ function servicePickerSelectedChips(catalogIds) {
   }).join("") || '<p class="muted">Услуги не выбраны.</p>';
 }
 
-function selectedServiceSettingsCard(item, studentId) {
+function selectedServiceSettingsCard(item, studentId, entry = null) {
   const student = studentById(studentId);
-  const comment = studentServiceComment(student, item.id);
-  const quantity = studentServiceQuantity(student, item.id);
+  const positionId = entry?.entryId || item.id;
+  const comment = entry?.comment ?? studentServiceComment(student, item.id);
+  const quantity = entry?.quantity ?? studentServiceQuantity(student, item.id);
   const totalPrice = parseMoney(item.price) * quantity;
   return `
     <details class="selected-service-card">
@@ -2927,18 +2953,20 @@ function selectedServiceSettingsCard(item, studentId) {
         </div>
       </div>
       <label class="student-service-quantity-row">
-        <span>Количество</span>
+        <span>Копий этой позиции</span>
         <div class="student-service-stepper">
-          <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:-1" type="button" aria-label="Уменьшить количество">-</button>
-          <span class="student-service-quantity-value" data-service-quantity-value="${studentId}:${item.id}" aria-live="polite">${escapeHtml(String(quantity))}</span>
-          <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${item.id}:1" type="button" aria-label="Увеличить количество">+</button>
+          <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${positionId}:-1" type="button" aria-label="Уменьшить количество">-</button>
+          <span class="student-service-quantity-value" data-service-quantity-value="${studentId}:${positionId}" aria-live="polite">${escapeHtml(String(quantity))}</span>
+          <button class="icon-button student-service-stepper-button" data-service-quantity-step="${studentId}:${positionId}:1" type="button" aria-label="Увеличить количество">+</button>
         </div>
         <strong class="student-service-quantity-total">${escapeHtml(formatMoney(totalPrice))}</strong>
       </label>
       <label class="student-service-comment-field">
         <span>Комментарий к услуге</span>
-        <textarea class="textarea student-service-comment-input" data-service-comment="${studentId}:${item.id}" placeholder="Например: без шляпы, сделать темнее, добавить имя">${escapeHtml(comment)}</textarea>
+        <textarea class="textarea student-service-comment-input" data-service-comment="${studentId}:${positionId}" placeholder="Например: без шляпы, сделать темнее, добавить имя">${escapeHtml(comment)}</textarea>
       </label>
+      <div class="position-media-strip">${(entry?.mediaIds || []).map(id => { const media = mediaById(id); return media?.blob && ["photo", "image"].includes(media.type) ? `<img src="${escapeAttr(URL.createObjectURL(media.blob))}" alt="Фото позиции" loading="lazy">` : ""; }).join("")}</div>
+      <div class="row"><button class="secondary-button compact" data-position-media="${studentId}:${positionId}" type="button">Фото из медиа</button><button class="secondary-button compact" data-position-copy="${studentId}:${positionId}" type="button">+ Ещё такая услуга</button><button class="secondary-button compact danger-text" data-position-remove="${studentId}:${positionId}" type="button">Убрать позицию</button></div>
       </div>
     </details>
   `;
@@ -4709,6 +4737,7 @@ function bindViewActions() {
     });
   });
   bindStudentDetailScrollSpy();
+  view.querySelectorAll("[data-position-copy], [data-position-media], [data-position-remove]").forEach(button => button.onclick = () => editServicePosition(button));
   view.querySelectorAll("[data-custom-student]").forEach(button => button.onclick = () => showCustomStudentOrder(button.dataset.customStudent, button));
   view.querySelectorAll("[data-open-project]").forEach((node) => {
     node.addEventListener("click", (event) => {
@@ -5669,7 +5698,7 @@ async function saveStudentServiceComment(studentId, serviceId, comment, { rerend
   if (!student || !serviceId) return;
   const selectedServices = selectedServicesForStudent(student);
   const nextSelectedServices = buildSelectedServices(selectedCatalogIdsForStudent(student), selectedServices).map((item) => (
-    item.serviceId === serviceId ? { ...item, comment: String(comment || "").trim() } : item
+    (item.entryId || item.serviceId) === serviceId ? { ...item, comment: String(comment || "").trim() } : item
   ));
   await put("students", stampUpdated({ ...student, selectedServices: nextSelectedServices }, { warn: false }));
   await refreshData();
@@ -5685,7 +5714,7 @@ async function saveStudentServiceQuantity(studentId, serviceId, quantity, { rere
   const nextQuantity = normalizeSelectedServiceQuantity(quantity);
   const selectedServices = selectedServicesForStudent(student);
   const nextSelectedServices = buildSelectedServices(selectedCatalogIdsForStudent(student), selectedServices).map((item) => (
-    item.serviceId === serviceId ? { ...item, quantity: nextQuantity } : item
+    (item.entryId || item.serviceId) === serviceId ? { ...item, quantity: nextQuantity } : item
   ));
   await put("students", stampUpdated({ ...student, selectedServices: nextSelectedServices }, { warn: false }));
   await refreshData();
@@ -11751,6 +11780,7 @@ function remapTransferRecord(dataKey, record, idMaps) {
   if (dataKey === "classes" && idMaps.projects?.has(next.projectId)) next.projectId = idMaps.projects.get(next.projectId);
   if (dataKey === "students") {
     if (idMaps.classes?.has(next.classId)) next.classId = idMaps.classes.get(next.classId);
+    next.selectedServices = (next.selectedServices || []).map(item => ({ ...item, mediaIds: (item.mediaIds || []).map(id => idMaps.media?.get(id) || id) }));
     if (idMaps.services?.size) {
       next.catalogId = idMaps.services.get(next.catalogId) || next.catalogId;
       next.catalogIds = (next.catalogIds || []).map((id) => idMaps.services.get(id) || id);
@@ -12037,6 +12067,8 @@ async function buildExportFiles(studentId) {
       return item ? {
         id: item.id,
         title: serviceName(item),
+        entryId: selected.entryId,
+        mediaIds: selected.mediaIds || [],
         quantity: normalizeSelectedServiceQuantity(selected.quantity),
         comment: selected.comment || "",
         previewFile: servicePreviewImageDataUrl(item) ? uniqueServicePreviewFile(item, previewNames) : ""
@@ -13651,23 +13683,12 @@ function normalizeCatalogIds(catalogIds) {
 }
 
 function normalizeSelectedServices(selectedServices) {
-  const seen = new Set();
-  return (selectedServices || [])
-    .map((item) => ({
-      serviceId: String(item?.serviceId || item?.id || "").trim(),
-      quantity: normalizeSelectedServiceQuantity(item?.quantity),
-      comment: String(item?.comment || "").trim()
-    }))
-    .filter((item) => item.serviceId && catalogItemById(item.serviceId) && !seen.has(item.serviceId) && seen.add(item.serviceId));
+  const entries = (selectedServices || []).map(item => ({ ...item, serviceId: String(item?.serviceId || item?.id || "").trim() })).filter(item => item.serviceId && catalogItemById(item.serviceId));
+  return servicePositions(entries.map(item => item.serviceId), entries);
 }
 
 function buildSelectedServices(catalogIds, existing = []) {
-  const byId = new Map(normalizeSelectedServices(existing).map((item) => [item.serviceId, item]));
-  return normalizeCatalogIds(catalogIds).map((serviceId) => ({
-    serviceId,
-    quantity: normalizeSelectedServiceQuantity(byId.get(serviceId)?.quantity),
-    comment: byId.get(serviceId)?.comment || ""
-  }));
+  return servicePositions(normalizeCatalogIds(catalogIds), normalizeSelectedServices(existing));
 }
 
 function selectedServicesForStudent(student) {
@@ -13677,11 +13698,11 @@ function selectedServicesForStudent(student) {
 }
 
 function studentServiceComment(student, serviceId) {
-  return selectedServicesForStudent(student).find((item) => item.serviceId === serviceId)?.comment || "";
+  return selectedServicesForStudent(student).find((item) => (item.entryId || item.serviceId) === serviceId)?.comment || "";
 }
 
 function studentServiceQuantity(student, serviceId) {
-  return normalizeSelectedServiceQuantity(selectedServicesForStudent(student).find((item) => item.serviceId === serviceId)?.quantity);
+  return normalizeSelectedServiceQuantity(selectedServicesForStudent(student).find((item) => (item.entryId || item.serviceId) === serviceId)?.quantity);
 }
 
 function normalizeSelectedServiceQuantity(value) {
