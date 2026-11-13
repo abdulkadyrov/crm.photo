@@ -1,9 +1,9 @@
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=176";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=176";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=176";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=177";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=177";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=177";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=176";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=176";
+import { nextInSequence } from "../services/sequence-navigation.js?v=177";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=177";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -14,8 +14,8 @@ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
 import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=134";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=176";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=176";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=177";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=177";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
 import { buildSectionExportSelection } from "../services/export-filter-service.js?v=134";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
@@ -2162,6 +2162,11 @@ function nextRosterStudent(student, direction = 1) {
 }
 
 function renderStudent() {
+  const previousShell = view.querySelector('.student-detail-shell');
+  const preserveServiceState = previousShell?.dataset.studentState === state.studentId;
+  const serviceScrollY = window.scrollY;
+  const expandedServices = preserveServiceState ? Array.from(view.querySelectorAll('.selected-service-card[open]')).map(node => node.dataset.positionState) : [];
+
   releaseStudentMediaPreviews();
   const student = studentById(state.studentId);
   if (!student) {
@@ -2197,7 +2202,7 @@ function renderStudent() {
       ${studentDetailTabButton("media", "Медиа", media.length + finalWorks.length, activeStudentDetailTab)}
       ${studentDetailTabButton("order", "Заказ", selectedCatalogItems.length, activeStudentDetailTab)}
     </nav>
-    <section class="split student-detail-shell">
+    <section class="split student-detail-shell" data-student-state="${escapeAttr(student.id)}">
       <div class="grid student-detail-main">
         <article class="panel student-detail-section student-overview-card ${activeStudentDetailTab === "overview" ? "is-active" : ""}" data-student-detail-section="overview">
           <div class="card-header">
@@ -2330,6 +2335,11 @@ function renderStudent() {
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
   bindViewActions();
+  if (preserveServiceState) {
+    view.querySelectorAll('.selected-service-card').forEach(node => { node.open = expandedServices.includes(node.dataset.positionState); });
+    window.scrollTo({ top: serviceScrollY, behavior: 'instant' });
+  }
+
   maybeBackfillStudentFinalWorks(student.id);
   maybeOpenPendingFinalWorkViewer(student.id);
 }
@@ -2936,7 +2946,7 @@ function selectedServiceSettingsCard(item, studentId, entry = null) {
   const quantity = entry?.quantity ?? studentServiceQuantity(student, item.id);
   const totalPrice = parseMoney(item.price) * quantity;
   return `
-    <details class="selected-service-card">
+    <details class="selected-service-card" data-position-state="${escapeAttr(positionId)}">
       <summary class="selected-service-card-summary">
         <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
         <span class="mini-catalog-copy"><strong>${escapeHtml(serviceName(item))}</strong><small>${escapeHtml(formatMoney(totalPrice))}</small></span>
@@ -6982,7 +6992,7 @@ function referenceFigureSvg(composition) {
   return `
     <circle cx="450" cy="265" r="108" fill="#f3c7a2" stroke="#111827" stroke-width="9"/>
     <path d="M345 244c38-111 177-118 214-3-55-24-153-23-214 3Z" fill="url(#ink)"/>
-    <path d="M380 410h140c76 0 138 62 138 138v176H242V548c0-76 62-138 138-138Z" fill="#2563eb" stroke="#111827" stroke-width="10"/>
+    <path d="M380 410h140c76 0 138 62 138 138v177H242V548c0-76 62-138 138-138Z" fill="#2563eb" stroke="#111827" stroke-width="10"/>
     <path d="M345 720h210" stroke="#111827" stroke-width="18" stroke-linecap="round"/>
   `;
 }
