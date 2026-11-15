@@ -4,3 +4,5 @@ test('conflicts remain visible and progress describes current file without claim
 test('login loss and errors never claim everything saved',()=>{assert.equal(syncPanelState({status:'Нужен вход — очередь сохранена'}).server,'Нужен вход');assert.equal(syncPanelState({queue:[{error:'Не удалось',store:'media'}]}).title,'Не всё отправлено');});
 
 test('deferred receiving stays incomplete even when the outgoing queue is empty',()=>{const state=syncPanelState({status:'Получение данных отложено — завершите редактирование'});assert.equal(state.kind,'pending');assert.equal(state.title,'Загрузка ещё не завершена');});
+
+test('another tab owning the sync lock is shown as waiting, never completed',()=>{const model=syncPanelState({status:'Ожидаем синхронизацию другой вкладки'});assert.equal(model.kind,'pending');assert.equal(model.server,'Ожидаем');assert.match(model.title,/другой вкладке/);});

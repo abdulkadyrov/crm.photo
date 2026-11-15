@@ -256,7 +256,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   if(!navigator.onLine){update('Без интернета — сохранено');return;}
   running=true;try{
    const run=async()=>{try{await drain();}catch(error){if(!reconnect||!(error?.name==='InvalidStateError'||/database connection is closing/i.test(error?.message||'')))throw error;update('Восстанавливаем соединение с устройством…');db=await reconnect();await drain();}};
-   if(navigator.locks)await navigator.locks.request('crm-record-sync:'+db.name,{ifAvailable:true},async lock=>{if(lock)await run();});else await run();
+   if(navigator.locks)await navigator.locks.request('crm-record-sync:'+db.name,{ifAvailable:true},async lock=>{if(lock)await run();else update('Ожидаем синхронизацию другой вкладки');});else await run();
   }catch(e){if(e instanceof TypeError||['TimeoutError','AbortError'].includes(e.name))e=new Error('Нет связи — изменения сохранены на устройстве');update((e.status===401?'Нужен вход — очередь сохранена':e.message)||'Нет связи — очередь сохранена');}finally{running=false;blobs.clear();}
  }
  async function resolve(q,choice){

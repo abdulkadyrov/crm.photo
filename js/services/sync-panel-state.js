@@ -11,6 +11,7 @@ export function syncPanelState({queue=[],online=true,running=false,status=''}){
  else if(running){kind='sending';title=queue.length?'Отправляем изменения':'Проверяем изменения';server=queue.length?'Отправляем':'Проверяем';detail='Можно продолжать работу в CRM.';}
  else if(errors){kind='attention';title='Не всё отправлено';server='Есть ошибки';detail='Данные на устройстве сохранены. Повторите отправку.';}
  else if(queue.length){kind='pending';title='Изменения в очереди';server='Ожидают отправки';detail='Можно продолжать работу в CRM.';}
+ else if(/другой вкладки/.test(status)){kind='pending';title='Синхронизация в другой вкладке';server='Ожидаем';detail='CRM уже получает данные в другой открытой вкладке. Если ожидание затянулось, обновите её.';}
  else if(/Получение данных отложено/.test(status)){kind='pending';title='Загрузка ещё не завершена';server='Ожидаем загрузку';detail='Завершите редактирование. CRM продолжит получать данные автоматически.';}
  else if(saved){kind='saved';title='Синхронизация завершена';server='Проверено';detail='Изменения отправлены. Доступные данные получены с сервера.';}
  else if(/Нет связи|Нужен вход|Ошибка|соединение/i.test(status)){kind='attention';title='Нет подтверждения сервера';server='Нет связи';detail=status;}
