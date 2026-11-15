@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v200";
+const CACHE_VERSION = "v201";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -74,16 +74,16 @@ const REFERENCE_POSE_ASSETS = [
   "./assets/reference-poses/girl-interview-desk.jpg"
 ];
 const APP_SHELL = [
-  "./js/services/service-positions.js?v=200",
-  "./js/services/individual-order.js?v=200",
+  "./js/services/service-positions.js?v=201",
+  "./js/services/individual-order.js?v=201",
   "./js/services/sequence-navigation.js",
-  "./js/services/sequence-navigation.js?v=200",
+  "./js/services/sequence-navigation.js?v=201",
   "./js/services/card-summary.js",
-  "./js/services/card-summary.js?v=200",
+  "./js/services/card-summary.js?v=201",
   "./js/services/blob-zip.js",
   "./js/services/student-directory.js",
   "./js/services/camera-options.js",
-  "./js/services/camera-options.js?v=200",
+  "./js/services/camera-options.js?v=201",
   "./assets/ui/student-avatar.svg",
   "./js/services/school-demo.js",
   "./js/services/local-portraits.js",
@@ -98,13 +98,13 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=200",
+  "./styles.css?v=201",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=200",
+  "./js/core/app.js?v=201",
   "./js/core/bootstrap.js",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=200",
+  "./js/core/legacy-app.js?v=201",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -127,11 +127,12 @@ const APP_SHELL = [
   "./js/services/catalog-themes.js",
   "./js/services/shooting-roster.js",
   "./js/ui/photo-camera.js",
-  "./js/ui/photo-camera.js?v=200",
+  "./js/ui/photo-camera.js?v=201",
   "./js/services/camera-framing.js",
   "./js/services/teacher-broadcast.js",
   "./js/services/teacher-broadcast.js?v=134",
   "./js/services/class-links-transfer.js",
+  "./js/services/class-link-cache.js",
   "./assets/class-photo/class-photo-a4.png",
   "./assets/game-photo-services/free-fire.webp",
   "./assets/game-photo-services/pubg.webp",

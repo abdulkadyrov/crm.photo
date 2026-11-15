@@ -1,3 +1,5 @@
+import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+let classLinkCache;
 import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=177";
 import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=177";
 import { normalizeStudentName } from "../services/shooting-roster.js?v=177";
@@ -364,6 +366,10 @@ async function init() {
   await initializeCloud();
   DB_NAME = cloudDatabase();
   state.db = await openDb();
+  classLinkCache=createClassLinkCache({db:()=>state.db,load:async id=>{
+    const response=await fetch('/api/v1/parents/classes/'+encodeURIComponent(id),{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(15000)});
+    if(!response.ok)throw new Error('Не удалось обновить ссылку класса');return response.json();
+  }});
   recordSync = createRecordSync({db:state.db,user:cloudAccount,enabled:cloudRequired,notify,prepareRecord:async(store,value)=>{
     if(store!=="documents"||!value||value.blob)return value;
     const blob=await documentBlob(value);
@@ -1444,6 +1450,7 @@ function renderClasses() {
   `;
   bindViewActions();
   addContextBackButton();
+  if(activeClass&&cloudRequired)void refreshClassCatalogLink(activeClass);
 }
 
 function classStudentSection(classId) {
@@ -1472,7 +1479,7 @@ function classStudentSection(classId) {
           <button class="secondary-button compact" data-class-teacher="${klass.id}" type="button">${klass.teacher?.name ? "Изменить учителя" : "Добавить учителя"}</button>
         </div>
       </div>
-      ${klass.parentCatalogUrl ? `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted" style="overflow-wrap:anywhere">${escapeHtml(klass.parentCatalogUrl)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(klass.parentCatalogUrl)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div></article>` : `<article class="panel"><h3 class="card-title">Ссылка каталога класса</h3><p class="muted">Ссылка ещё не получена из Vakha Studio.</p></article>`}
+      ${classCatalogLinkCard(klass)}
       ${klass.teacher?.name ? `<article class="panel teacher-contact-panel"><div><h3 class="card-title">Учитель: ${escapeHtml(klass.teacher.name)}</h3>${klass.teacher.phone ? `<p>Телефон: ${escapeHtml(klass.teacher.phone)}</p>` : ""}${klass.teacher.contacts ? `<p style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(klass.teacher.contacts)}</p>` : ""}</div><label class="teacher-broadcast-check"><input type="checkbox" data-class-broadcast-sent="${klass.id}" ${klass.teacherBroadcastSentAt ? "checked" : ""} /><span>Рассылка отправлена</span></label></article>` : ""}
       ${documentsSection("group", klass.id)}
         </div>
@@ -1484,6 +1491,21 @@ function classStudentSection(classId) {
       </nav>
     </section>
   `;
+}
+
+function displayedClassLink(klass){return classLinkCache?.peek(klass.id)||(cloudRequired?currentClassLink(klass.parentCatalogUrl):klass.parentCatalogUrl)||'';}
+function classCatalogLinkCard(klass){
+ const url=displayedClassLink(klass);
+ return `<article class="panel" data-class-catalog-link="${escapeAttr(klass.id)}"><h3 class="card-title">Ссылка каталога класса</h3>${url?`<p class="muted" style="overflow-wrap:anywhere">${escapeHtml(url)}</p><div class="row"><a class="primary-button compact" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">Открыть каталог</a><button class="secondary-button compact" data-copy-class-link="${klass.id}" type="button">Скопировать ссылку</button></div>`:`<p class="muted">${cloudRequired?'Получаем актуальную ссылку…':'Ссылка ещё не получена из Vakha Studio.'}</p>`}</article>`;
+}
+async function refreshClassCatalogLink(klass){
+ try{
+  const before=displayedClassLink(klass),url=await classLinkCache.resolve(klass.id);
+  if(!url||before===url)return;
+  const panel=view.querySelector(`[data-class-catalog-link="${CSS.escape(klass.id)}"]`);if(!panel)return;
+  panel.outerHTML=classCatalogLinkCard(klass);
+  view.querySelector(`[data-copy-class-link="${CSS.escape(klass.id)}"]`)?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(displayedClassLink(klass));notify('Ссылка класса скопирована.');}catch{notify('Не удалось скопировать ссылку.');}});
+ }catch{/* Existing offline data and queued work are preserved. */}
 }
 
 function renderShootingRosterDemo() {
@@ -4701,8 +4723,9 @@ function bindViewActions() {
   bindStudentDirectorySearch();
   bindShootingRoster();
   view.querySelectorAll("[data-cloud-project]").forEach(b => b.addEventListener("click", () => enqueueCloud("project", b.dataset.cloudProject)));
-  view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = () => {
-    const recipients = state.data.projects.flatMap(project => classesByProject(project.id).map(klass => ({id:klass.id, schoolId:project.id, className:klass.name, school:project.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || '', catalogUrl:klass.parentCatalogUrl || '', sent:Boolean(klass.teacherBroadcastSentAt), sentAt:klass.teacherBroadcastSentAt || ''})));
+  view.querySelectorAll('[data-teacher-broadcast]').forEach(node => node.onclick = async () => {
+    if(cloudRequired)await Promise.all(state.data.classes.filter(klass=>!node.dataset.teacherBroadcast||klass.projectId===node.dataset.teacherBroadcast).map(klass=>classLinkCache.resolve(klass.id))).catch(()=>{});
+    const recipients = state.data.projects.flatMap(project => classesByProject(project.id).map(klass => ({id:klass.id, schoolId:project.id, className:klass.name, school:project.name || '', name:klass.teacher?.name || '', phone:klass.teacher?.phone || '', catalogUrl:displayedClassLink(klass), sent:Boolean(klass.teacherBroadcastSentAt), sentAt:klass.teacherBroadcastSentAt || ''})));
     openTeacherBroadcast({recipients, selectedSchoolId:node.dataset.teacherBroadcast, draft:state.data.settings.find(item => item.id === 'teacher-broadcast-draft')?.value, restore:captureDialogReturn(document,window,node), setSent:setClassTeacherBroadcastSent, save:async value => {await put('settings',stampUpdated({id:'teacher-broadcast-draft',value}));await refreshData();}});
   });
   view.querySelectorAll('[data-export-vakha]').forEach(node => node.onclick = () => exportProject(node.dataset.exportVakha, true));
@@ -4721,7 +4744,8 @@ function bindViewActions() {
     }
   }));
   view.querySelectorAll("[data-copy-class-link]").forEach(node => node.addEventListener("click", async () => {
-    const url = classById(node.dataset.copyClassLink)?.parentCatalogUrl || "";
+    const klass=classById(node.dataset.copyClassLink);
+    const url = klass?displayedClassLink(klass):"";
     if (!url) return notify("Ссылка класса ещё не импортирована.");
     try { await navigator.clipboard.writeText(url); notify("Ссылка класса скопирована."); } catch { notify("Не удалось скопировать ссылку."); }
   }));
@@ -14364,7 +14388,15 @@ function injectIcons() {
 
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    const controlled=Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(!controlled||document.querySelector('[data-pwa-update]'))return;
+      const button=document.createElement('button');button.type='button';button.dataset.pwaUpdate='';button.className='secondary-button compact';button.textContent='Обновить приложение';button.onclick=()=>location.reload();document.querySelector('.topbar-copy')?.append(button);
+    });
+    navigator.serviceWorker.register("./sw.js",{updateViaCache:'none'}).then(registration=>{
+      void registration.update().catch(()=>{});
+      document.addEventListener('visibilitychange',()=>{if(!document.hidden)void registration.update().catch(()=>{});});
+    }).catch(() => {});
   }
 }
 
