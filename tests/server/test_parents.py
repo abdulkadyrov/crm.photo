@@ -24,7 +24,7 @@ class ParentTest(unittest.TestCase):
         result=request('/parents/classes/parent-class','POST',payload,admin);self.assertEqual(result['status'],200,result)
         token=result['data']['url'].split('/')[-1];url='/public/classes/'+token
         public=request(url);self.assertEqual(public['status'],200)
-        self.assertEqual(public['data']['children'],[{'id':'parent-child','public_name':'Иван Иванов'}])
+        self.assertEqual(public['data']['children'],[{'id':'parent-child','public_name':'Иван Иванов','orders':[]}])
         self.assertNotIn('orders',public['data'])
         origin='https://zakaz.khanzama.ru'
         order={'childId':'parent-child','itemIds':['service-parent'],'withoutLaminationIds':['service-parent'],'requestKey':str(uuid.uuid4()),'price':1}
