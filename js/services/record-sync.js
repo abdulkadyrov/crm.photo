@@ -1,3 +1,4 @@
+import {localSyncContents,syncTransferText} from './sync-contents.js';
 import {syncPanelState} from './sync-panel-state.js';
 import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js';
 import {createSyncBlobCache} from './sync-blob-cache.js';
@@ -14,6 +15,7 @@ const result=r=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result)
 export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>true,prepareRecord=async(store,value)=>value,reconnect}) {
  let running=false,started=false,background=true,changed=false,timer,status='Изменения сохраняются на устройстве',button;
  const blobs=new Map(),downloads=new Map(),blobCache=createSyncBlobCache(()=>db);
+ let activity={phase:'idle',sent:0,received:0,downloaded:0,lastCheckedAt:null};
  const get=(store,id)=>result(db.transaction(store).objectStore(store).get(id));
  const all=store=>result(db.transaction(store).objectStore(store).getAll());
  const account=()=>typeof user==='function'?user():user;
@@ -123,7 +125,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
    if(!downloads.has(hash))downloads.set(hash,(async()=>{
     const blob=await(await api(`/sync/blob/${scope}/${hash}`)).blob();
     if(await sha256(blob)!==hash)throw new Error('Контрольная сумма полученного файла не совпала');
-    await blobCache.remember(hash,blob);blobs.set(hash,blob);return blob;
+    await blobCache.remember(hash,blob);blobs.set(hash,blob);activity.downloaded++;return blob;
    })());
    try{return await downloads.get(hash);}finally{downloads.delete(hash);}
   });
@@ -176,7 +178,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
     const tx=db.transaction([row.store,'syncQueue','syncMeta'],'readwrite');const complete=done(tx);
     tx.objectStore('syncQueue').get(key).onsuccess=e=>{if(e.target.result)return;
      tx.objectStore('syncMeta').get('entity:'+key).onsuccess=ev=>{if((ev.target.result?.seq||0)>=row.seq)return;
-      changed=true;row.record===null?tx.objectStore(row.store).delete(row.id):tx.objectStore(row.store).put(value);
+      changed=true;activity.received++;row.record===null?tx.objectStore(row.store).delete(row.id):tx.objectStore(row.store).put(value);
       tx.objectStore('syncMeta').put({id:'entity:'+key,record:row.record,scope,seq:row.seq});
      };
     };await complete;
@@ -208,7 +210,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').put({id:marker,value:true});await complete;
  }
  async function drain(){
-  changed=false;
+  changed=false;activity={phase:'checking',sent:0,received:0,downloaded:0,lastCheckedAt:activity.lastCheckedAt};update('Проверяем доступ и проекты…');
   resetPhotoAccount();
   const fresh=await json('/me');if(fresh.id!==account().id||fresh.role!==account().role){photoScopes.clear();photoDeletes.clear();throw new Error('Аккаунт или роль изменились. Перезагрузите CRM; очередь сохранена.');}
   // Imported archives may contain local parents whose old sync metadata survived.
@@ -229,18 +231,24 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   const queue=(await all('syncQueue')).filter(q=>q.actor===fresh.id&&!q.conflict).sort((a,b)=>Number(a.deleted)-Number(b.deleted)||(a.deleted?-1:1)*(SYNC_STORES.indexOf(a.store)-SYNC_STORES.indexOf(b.store))||a.createdAt-b.createdAt);
   let sent=0;
   for(const q of queue){
-   update(`Отправка ${++sent} из ${queue.length}`);
-   try{await send(q);}catch(e){if(e.status&&[400,403,404,409,413,425].includes(e.status)){const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').delete('flight:'+q.id);await complete;}await rememberError(q,e.message);if(!e.status||[401,429,500,502,503,507].includes(e.status))throw e;}
+   activity.phase='send';activity.total=queue.length;activity.sent=sent;update(`Отправка ${++sent} из ${queue.length}`);
+   try{await send(q);activity.sent++;}catch(e){if(e.status&&[400,403,404,409,413,425].includes(e.status)){const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').delete('flight:'+q.id);await complete;}await rememberError(q,e.message);if(!e.status||[401,429,500,502,503,507].includes(e.status))throw e;}
   }
   const projects=await json('/projects?includeDeleted=1');
   let received=true;
   // Load all school rosters before catalogue/video downloads can occupy the connection.
-  for(const structure of [true,false])for(const scope of structure?projects.map(p=>p.id):['global',...projects.map(p=>p.id)]){
+  for(const structure of [true,false]){
+   const scopes=structure?projects.map(p=>p.id):['global',...projects.map(p=>p.id)];
+   for(const [index,scope] of scopes.entries()){
+   activity.phase=structure?'structure':'receive';activity.scope=index+1;activity.scopes=scopes.length;update(syncTransferText(activity,true));
    try{if(!await pull(scope,structure))received=false;}catch(e){if(e.status!==403)throw e;received=false;}
    if(changed&&canApply()){await onRemote?.();changed=false;}
   }
+  }
   if(changed)await onRemote?.();
-  const remaining=await all('syncQueue'),conflicts=remaining.filter(q=>q.conflict).length;
+  const remaining=(await all('syncQueue')).filter(q=>q.actor===fresh.id),conflicts=remaining.filter(q=>q.conflict).length;
+  if(received&&!remaining.length){activity.lastCheckedAt=Date.now();const tx=db.transaction('syncMeta','readwrite'),complete=done(tx);tx.objectStore('syncMeta').put({id:'last-check:'+actorKey(),value:activity.lastCheckedAt});await complete;}
+  activity.phase='idle';
   update(conflicts?`Нужно согласовать: ${conflicts}`:remaining.length?`Ожидает отправки: ${remaining.length}`:!received?'Получение данных отложено — завершите редактирование':'Всё сохранено на сервере');
  }
  async function sync(){
@@ -277,7 +285,8 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
    const model=syncPanelState({queue,online:navigator.onLine,running,status});
    dialog.dataset.syncState=model.kind;
    const icon=model.kind==='saved'?'<path d="m6 12 4 4 8-8"/>':model.kind==='attention'?'<path d="M12 8v5m0 4h.01"/><circle cx="12" cy="12" r="9"/>':'<path d="M20 8a8 8 0 0 0-14-2L3 9m0-6v6h6M4 16a8 8 0 0 0 14 2l3-3m0 6v-6h-6"/>';
-   dialog.querySelector('[data-summary]').innerHTML=`<div class="sync-panel-hero"><span class="sync-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><div><h3>${esc(model.title)}</h3><p>${esc(model.detail)}</p></div></div><dl class="sync-panel-locations"><div><dt>На устройстве</dt><dd class="is-saved">Сохранено</dd></div><div><dt>На сервере</dt><dd>${esc(model.server)}</dd></div></dl>${model.progress?`<div class="sync-panel-progress"><progress max="${model.progress.total}" value="${model.progress.current-1}" aria-label="Отправка изменений"></progress><span>Отправляем ${model.progress.current} из ${model.progress.total}</span></div>`:''}${model.pending?`<div class="sync-panel-counts"><span>Файлы <b>${model.files}</b></span><span>Карточки <b>${model.cards}</b></span></div>`:''}`;
+   dialog.querySelector('[data-summary]').innerHTML=`<div class="sync-panel-hero"><span class="sync-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><div><h3>${esc(model.title)}</h3><p>${esc(model.detail)}</p></div></div><dl class="sync-panel-locations"><div><dt>Отправка изменений</dt><dd>${queue.length?queue.length+" в очереди":running?"Проверяем":"Очередь пуста"}</dd></div><div><dt>Получение данных</dt><dd>${esc(model.server)}</dd></div></dl><p class="sync-transfer-detail">${esc(syncTransferText(activity,running))}</p>${running?`<p class="sync-transfer-detail">Записей получено: ${activity.received} · файлов: ${activity.downloaded}</p>`:""}<div class="sync-local-contents" data-contents></div>${model.progress?`<div class="sync-panel-progress"><progress max="${model.progress.total}" value="${model.progress.current-1}" aria-label="Отправка изменений"></progress><span>Отправляем ${model.progress.current} из ${model.progress.total}</span></div>`:''}${model.pending?`<div class="sync-panel-counts"><span>Файлы <b>${model.files}</b></span><span>Карточки <b>${model.cards}</b></span></div>`:''}`;
+   try{const contents=await localSyncContents(db),serverPhotos=photoIndex().length;dialog.querySelector('[data-contents]').innerHTML=`<strong>Доступно на этом устройстве</strong><p>Школы: ${contents.projects} · группы: ${contents.classes}<br>Учащиеся: ${contents.students} · чеклисты: ${contents.orders}</p><p>Исходные фото: ${contents.photos} · видео: ${contents.videos}${serverPhotos?`<br>Фото в серверном списке: ${serverPhotos}`:''}</p><small>Считаем только фото и видео с сохранённым файлом. Каталог и готовые работы сюда не входят.</small>`;}catch{dialog.querySelector('[data-contents]').textContent='Не удалось проверить состав данных на устройстве.';}
    dialog.querySelector('[data-status]').textContent='';
    const retryButton=dialog.querySelector('[data-retry]');retryButton.disabled=model.disabled;retryButton.textContent=model.retry;
    const pending=dialog.querySelector('[data-pending]');pending.hidden=!queue.length;dialog.querySelector('[data-queue-count]').textContent=String(queue.length);
@@ -306,10 +315,10 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
    if(!history.length)historyBox.textContent='Пока нет сохранённых конфликтов.';
   }
   const retry=dialog.querySelector('[data-retry]');retry.onclick=async()=>{retry.disabled=true;retry.textContent='Проверяем…';try{await sync();}finally{await render();}};
-  await render();let shownStatus=status+':'+running+':'+navigator.onLine;const refresh=setInterval(()=>{const currentStatus=status+':'+running+':'+navigator.onLine;if(dialog.open&&shownStatus!==currentStatus&&!dialog.querySelector('.sync-record details[open]')&&!dialog.querySelector('.sync-record button:focus')){shownStatus=currentStatus;void render();}},2000);dialog.addEventListener('close',()=>clearInterval(refresh),{once:true});
+  await render();let shownStatus=status+':'+running+':'+navigator.onLine+':'+JSON.stringify(activity);const refresh=setInterval(()=>{const currentStatus=status+':'+running+':'+navigator.onLine+':'+JSON.stringify(activity);if(dialog.open&&shownStatus!==currentStatus&&!dialog.querySelector('.sync-record details[open]')&&!dialog.querySelector('.sync-record button:focus')){shownStatus=currentStatus;void render();}},2000);dialog.addEventListener('close',()=>clearInterval(refresh),{once:true});
  }
  async function start({ui=true,background:automatic=true}={}){
-  if(!enabled||started)return;background=automatic;await restorePhotoIndex();await bootstrap();started=true;
+  if(!enabled||started)return;background=automatic;activity.lastCheckedAt=(await get('syncMeta','last-check:'+actorKey()))?.value||null;await restorePhotoIndex();await bootstrap();started=true;
   if(ui){button=document.createElement('button');button.type='button';button.className='secondary-button compact sync-status-button';button.onclick=()=>void show(button);document.querySelector('.topbar-copy')?.append(button);}
   update('Подключение…');
   if(background){window.addEventListener('online',sync);window.addEventListener('offline',()=>update('Без интернета — сохранено'));document.addEventListener('visibilitychange',()=>{if(!document.hidden)void sync();});setInterval(()=>void sync(),20000);}

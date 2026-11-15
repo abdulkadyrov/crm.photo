@@ -12,7 +12,7 @@ export function syncPanelState({queue=[],online=true,running=false,status=''}){
  else if(errors){kind='attention';title='Не всё отправлено';server='Есть ошибки';detail='Данные на устройстве сохранены. Повторите отправку.';}
  else if(queue.length){kind='pending';title='Изменения в очереди';server='Ожидают отправки';detail='Можно продолжать работу в CRM.';}
  else if(/Получение данных отложено/.test(status)){kind='pending';title='Загрузка ещё не завершена';server='Ожидаем загрузку';detail='Завершите редактирование. CRM продолжит получать данные автоматически.';}
- else if(saved){kind='saved';title='Всё сохранено';server='Сохранено';detail='На устройстве и на сервере актуальные данные.';}
+ else if(saved){kind='saved';title='Синхронизация завершена';server='Проверено';detail='Изменения отправлены. Доступные данные получены с сервера.';}
  else if(/Нет связи|Нужен вход|Ошибка|соединение/i.test(status)){kind='attention';title='Нет подтверждения сервера';server='Нет связи';detail=status;}
  const match=/Отправка (\d+) из (\d+)/.exec(status);
  return {kind,title,server,detail,pending:queue.length,conflicts,errors,files,cards:queue.length-files,retry:running?'Синхронизация…':queue.length?'Повторить отправку':'Проверить обновления',disabled:running||!online,progress:running&&match?{current:Number(match[1]),total:Number(match[2])}:null};

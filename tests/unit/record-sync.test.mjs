@@ -251,7 +251,7 @@ test('deferred receive never claims completion and read-only saving dialog permi
  const previous=globalThis.document;globalThis.document={createElement:()=>({}),querySelector:()=>({append:value=>{button=value;}})};
  try{
   const client=createRecordSync({db,user,enabled:true,canApply:()=>allowed});await client.start({ui:true,background:false});
-  assert.match(button.textContent,/Получение данных отложено/);
-  allowed=true;await client.sync();assert.equal(button.textContent,'Сохранено онлайн');
+  assert.match(button.textContent,/Получение данных отложено/);assert.equal(await get(db,'syncMeta','last-check:owner:admin'),undefined);
+  allowed=true;await client.sync();assert.equal(button.textContent,'Сохранено онлайн');assert.ok((await get(db,'syncMeta','last-check:owner:admin')).value>0);
  }finally{globalThis.document=previous;db.close();}
 });
