@@ -1,3 +1,4 @@
+import {syncPanelState} from './sync-panel-state.js';
 import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js';
 import {createSyncBlobCache} from './sync-blob-cache.js';
 import {captureDialogReturn} from './dialog-return.js';
@@ -216,17 +217,25 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   };await complete;await onRemote?.();schedule();
  }
  async function show(trigger){
-  const restore=captureDialogReturn(document,window,trigger),dialog=document.createElement('dialog');dialog.className='cloud-dialog sync-dialog';dialog.setAttribute('aria-label','Сохранение онлайн');
-  dialog.innerHTML='<div class="cloud-head"><h2>Сохранение онлайн</h2><button data-close aria-label="Закрыть панель">Закрыть</button></div><section class="sync-summary"><strong data-status role="status"></strong><p>Изменения сначала сохраняются на устройстве, затем отправляются на сервер.</p><button class="primary-button" data-retry>Отправить сейчас</button></section><div data-list></div><details class="sync-help"><summary>Как работает сохранение</summary><p>После импорта отправляются проект, классы, карточки и файлы. Пока передаются фото и видео, держите CRM открытой. ZIP-архив для резервной копии сохраняется отдельно.</p></details><details class="sync-help"><summary>История исправлений</summary><div data-history></div></details>';
+  const restore=captureDialogReturn(document,window,trigger),dialog=document.createElement('dialog');dialog.className='cloud-dialog sync-dialog';dialog.setAttribute('aria-label','Сохранение');
+  dialog.innerHTML='<header class="sync-panel-head"><div><h2>Сохранение</h2><small>Данные и файлы CRM</small></div><button data-close type="button" aria-label="Закрыть панель"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><section class="sync-panel-summary" data-summary aria-live="polite"></section><div class="sync-panel-action"><button class="secondary-button" data-retry type="button">Проверить обновления</button><p data-status role="status"></p></div><details class="sync-pending" data-pending><summary>Очередь отправки <span data-queue-count></span></summary><div data-list></div></details><details class="sync-help"><summary>Исправления и восстановление</summary><div data-history></div></details><details class="sync-help"><summary>Как работает сохранение</summary><p>Изменения сначала сохраняются на устройстве. При наличии интернета CRM отправляет новые изменения на сервер. Если связь прервалась, очередь остаётся на устройстве.</p><p>Копирование в S3 можно проверить в разделе «Хранилище» кабинета администратора.</p></details>';
+
 
   document.body.append(dialog);dialog.showModal();history.pushState({...history.state,recordSyncModal:true},'');const back=()=>dialog.close();window.addEventListener('popstate',back,{once:true});
   dialog.onclose=()=>{window.removeEventListener('popstate',back);dialog.remove();if(history.state?.recordSyncModal)history.back();restore();};dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   async function render(){
-   dialog.querySelector('[data-status]').textContent=status;
-   const queue=await all('syncQueue');dialog.querySelector('[data-list]').innerHTML='';
+   const queue=(await all('syncQueue')).filter(row=>row.actor===account()?.id);dialog.querySelector('[data-list]').innerHTML='';
+   const model=syncPanelState({queue,online:navigator.onLine,running,status});
+   dialog.dataset.syncState=model.kind;
+   const icon=model.kind==='saved'?'<path d="m6 12 4 4 8-8"/>':model.kind==='attention'?'<path d="M12 8v5m0 4h.01"/><circle cx="12" cy="12" r="9"/>':'<path d="M20 8a8 8 0 0 0-14-2L3 9m0-6v6h6M4 16a8 8 0 0 0 14 2l3-3m0 6v-6h-6"/>';
+   dialog.querySelector('[data-summary]').innerHTML=`<div class="sync-panel-hero"><span class="sync-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><div><h3>${esc(model.title)}</h3><p>${esc(model.detail)}</p></div></div><dl class="sync-panel-locations"><div><dt>На устройстве</dt><dd class="is-saved">Сохранено</dd></div><div><dt>На сервере</dt><dd>${esc(model.server)}</dd></div></dl>${model.progress?`<div class="sync-panel-progress"><progress max="${model.progress.total}" value="${model.progress.current-1}" aria-label="Отправка изменений"></progress><span>Отправляем ${model.progress.current} из ${model.progress.total}</span></div>`:''}${model.pending?`<div class="sync-panel-counts"><span>Файлы <b>${model.files}</b></span><span>Карточки <b>${model.cards}</b></span></div>`:''}`;
+   dialog.querySelector('[data-status]').textContent='';
+   const retryButton=dialog.querySelector('[data-retry]');retryButton.disabled=model.disabled;retryButton.textContent=model.retry;
+   const pending=dialog.querySelector('[data-pending]');pending.hidden=!queue.length;dialog.querySelector('[data-queue-count]').textContent=String(queue.length);
+   if(model.conflicts||model.errors)pending.open=true;
    const labels={projects:'Проект',albumProjects:'Альбом',classes:'Класс',albumClasses:'Класс альбома',students:'Карточка ребёнка',orders:'Заказ',media:'Фото или видео',finalWorks:'Готовая работа',documents:'Документ',catalog:'Услуга',templates:'Шаблон'};
    const name=v=>v?.name||v?.title||v?.schoolName||[v?.lastName,v?.firstName].filter(Boolean).join(' ');
-   if(queue.length)dialog.querySelector('[data-status]').textContent=`На устройстве сохранено. Осталось отправить: ${queue.length}`;
+
 
    for(const q of queue){
     const local=await get(q.store,q.rid);
@@ -242,13 +251,13 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
     for(const choice of ['local','remote'])section.querySelector('[data-'+choice+']')?.addEventListener('click',async()=>{section.querySelectorAll('button').forEach(b=>b.disabled=true);try{await resolve(q,choice);await render();}catch(e){dialog.querySelector('[data-status]').textContent=e.message;section.querySelectorAll('button').forEach(b=>b.disabled=false);}});
     dialog.querySelector('[data-list]').append(section);
    }
-   if(!queue.length)dialog.querySelector('[data-list]').innerHTML='<p class="sync-empty">Все изменения отправлены. Можно продолжать работу.</p>';
+
    const history=(await all('syncHistory')).sort((a,b)=>b.at-a.at).slice(0,20);const historyBox=dialog.querySelector('[data-history]');historyBox.innerHTML='';
    for(const saved of history){const item=document.createElement('p');item.textContent=`${saved.local?.name||saved.local?.lastName||saved.recordId} · ${new Date(saved.at).toLocaleString()}`;const restoreButton=document.createElement('button');restoreButton.textContent='Восстановить сохранённую версию';restoreButton.onclick=async()=>{restoreButton.disabled=true;try{await writeBatch([{store:saved.store,id:saved.recordId,value:saved.local}]);await onRemote?.();await render();}catch(e){dialog.querySelector('[data-status]').textContent=e.message;restoreButton.disabled=false;}};item.append(restoreButton);historyBox.append(item);}
    if(!history.length)historyBox.textContent='Пока нет сохранённых конфликтов.';
   }
-  const retry=dialog.querySelector('[data-retry]');retry.onclick=async()=>{retry.disabled=true;retry.textContent='Отправляем…';try{await sync();await render();}finally{retry.disabled=false;retry.textContent='Отправить сейчас';}};
-  await render();let shownStatus=status;const refresh=setInterval(()=>{if(dialog.open&&shownStatus!==status&&!dialog.querySelector('details[open]')){shownStatus=status;void render();}},2000);dialog.addEventListener('close',()=>clearInterval(refresh),{once:true});
+  const retry=dialog.querySelector('[data-retry]');retry.onclick=async()=>{retry.disabled=true;retry.textContent='Проверяем…';try{await sync();}finally{await render();}};
+  await render();let shownStatus=status+':'+running+':'+navigator.onLine;const refresh=setInterval(()=>{const currentStatus=status+':'+running+':'+navigator.onLine;if(dialog.open&&shownStatus!==currentStatus&&!dialog.querySelector('.sync-record details[open]')&&!dialog.querySelector('.sync-record button:focus')){shownStatus=currentStatus;void render();}},2000);dialog.addEventListener('close',()=>clearInterval(refresh),{once:true});
  }
  async function start({ui=true,background:automatic=true}={}){
   if(!enabled||started)return;background=automatic;await bootstrap();started=true;

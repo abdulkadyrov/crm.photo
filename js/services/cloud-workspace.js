@@ -163,10 +163,11 @@ export async function showAdmin(trigger){
   if(account?.role!=='admin'){hooks?.notify('Раздел доступен только администратору');return;}
   openDialog(false,'Суперадминка',trigger);
   dialog.classList.add('admin-console');
-  dialog.querySelector('[data-cloud-body]').innerHTML=`<p>Сотрудники, доступ к проектам и работа команды.</p><div class="cloud-actions"><button data-admin-refresh>Обновить</button></div><section><h3>Сотрудники и права</h3><div data-users></div></section><section><h3>Статистика за 30 дней</h3><p class="muted">Только изменения, полученные сервером. Офлайн-работа появится после синхронизации. Повторная отправка не увеличивает показатели.</p><div data-admin-stats></div></section><details><summary>Последние действия с аккаунтами</summary><div data-admin-events></div></details>`;
+  dialog.querySelector('[data-cloud-body]').innerHTML=`<p>Сотрудники, доступ к проектам и работа команды.</p><div class="cloud-actions"><button data-admin-refresh>Обновить</button><button data-storage-open>Хранилище S3</button></div><section><h3>Сотрудники и права</h3><div data-users></div></section><section><h3>Статистика за 30 дней</h3><p class="muted">Только изменения, полученные сервером. Офлайн-работа появится после синхронизации. Повторная отправка не увеличивает показатели.</p><div data-admin-stats></div></section><details><summary>Последние действия с аккаунтами</summary><div data-admin-events></div></details>`;
   const panel=dialog;
   const refresh=async()=>{const button=panel.querySelector('[data-admin-refresh]');button.disabled=true;status('Загрузка…');try{const projects=await json('/projects');if(dialog!==panel||!panel.open)return;await users(projects);await refreshAdminStats();status('Данные обновлены');}catch{status('Нет соединения с сервером. Управление сотрудниками доступно при подключении. Локальная работа сохранена.');}finally{button.disabled=false;}};
   panel.querySelector('[data-admin-refresh]').onclick=refresh;
+  panel.querySelector('[data-storage-open]').onclick=async()=>{const target=panel.querySelector('[data-cloud-body]');await (await import('./storage-browser.js')).mountStorageBrowser(target,{load:(prefix,offset)=>json('/admin/storage?prefix='+encodeURIComponent(prefix)+'&offset='+offset)});};
   await refresh();
 }
 async function refreshAdminStats(){

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import parent_orders
 import sync_api
 import admin_api
+import storage_inventory
 import studio_api
 import ar_jobs
 import hashlib, hmac, json, os, re, secrets, sqlite3, tempfile, time, zipfile
@@ -191,6 +192,7 @@ class Request:
                 return sync_api.route(self,c,u,path,SimpleNamespace(**globals()))
             if path.startswith('/parents/'):
                 return parent_orders.route(self,c,u,path,SimpleNamespace(**globals()))
+            if path=='/admin/storage':return storage_inventory.route(self,c,u,SimpleNamespace(**globals()))
             if path=='/admin/overview' and self.method=='GET':
                 fail(u['role']!='admin',403,'Только администратор видит статистику сотрудников')
                 return admin_api.overview(c)
