@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {indexedDB} from 'fake-indexeddb';
+import {indexedDB,IDBKeyRange} from 'fake-indexeddb';
+globalThis.IDBKeyRange=IDBKeyRange;
 import {createRecordSync,canApplyRemoteChanges} from '../../js/services/record-sync.js';
 import {SYNC_STORES,SYNC_LOCAL_STORES,rebaseLocal,sha256,encodeRecord,decodeRecord} from '../../js/services/sync-codec.js';
 import {createHash} from 'node:crypto';
@@ -17,6 +18,7 @@ function server(){
   const response=v=>new Response(JSON.stringify(v),{headers:{'Content-Type':'application/json'}});
   if(path==='/me')return response(user);
   if(path==='/projects')return response([{id:'p'}]);
+  if(path.startsWith('/sync/photo-index/')){const scope=path.split('/').at(-1),latest=new Map(changes.filter(c=>c.scope===scope&&c.store==='media').map(c=>[c.id,c.record]));return response({photos:[...latest.values()].filter(r=>r&&['photo','image'].includes(r.type)&&r.blob?.size>0).map(r=>({id:r.id,studentId:r.studentId,type:r.type,size:r.blob.size}))});}
   if(path.startsWith('/sync/changes/')){const scope=path.split('/').at(-1),after=Number(parsed.searchParams.get('after')||0),rows=changes.filter(c=>c.scope===scope&&c.seq>after);return response({changes:rows,cursor:rows.at(-1)?.seq||after,more:false});}
   if(path.startsWith('/sync/blob/')){const hash=path.split('/').at(-1);if(opts.method==='POST'){files.set(hash,opts.body);return response({saved:true});}if(parsed.searchParams.has('check'))return response({exists:files.has(hash)});return new Response(files.get(hash));}
   if(path==='/sync/push'){
@@ -193,4 +195,25 @@ test('server missing-blob rejection invalidates upload acknowledgements and repa
  };
  await client.put('media',{...local,note:'new'});await client.sync();assert.equal((await all(db,'syncQueue')).length,1);
  await client.sync();assert.equal(uploads,1);assert.equal((await all(db,'syncQueue')).length,0);assert.equal(s.files.size,1);db.close();
+});
+
+test('photo index is available before original download and respects pending deletes/account changes',async()=>{
+ navigator.onLine=false;const db=await database(),s=server();let actor={...user};let indexSeenBeforeDownload=false;
+ const photo={id:'remote-photo',studentId:'child',type:'photo',blob:{$syncBlob:'0'.repeat(64),kind:'blob',mime:'image/jpeg',size:9}};
+ s.changes.push({store:'media',id:photo.id,scope:'p',seq:1,record:photo});
+ const fetchServer=globalThis.fetch;
+ globalThis.fetch=async(url,opts)=>{if(String(url).includes('/sync/blob/')){indexSeenBeforeDownload=client.photoIndex().length===1;throw new TypeError('simulate original download offline');}return fetchServer(url,opts);};
+ const client=createRecordSync({db,user:()=>actor,enabled:true,notify:()=>{},onRemote:async()=>{}});
+ await client.start({ui:false,background:false});navigator.onLine=true;await client.sync();
+ assert(indexSeenBeforeDownload);assert.equal((await all(db,'media')).length,0);
+ assert.deepEqual(client.photoIndex(),[{id:'remote-photo',studentId:'child',type:'photo',size:9}]);
+ navigator.onLine=false;
+ const offline=createRecordSync({db,user:()=>actor,enabled:true,notify:()=>{},onRemote:async()=>{}});
+ await offline.start({ui:false,background:false});assert.equal(offline.photoIndex().length,1,'metadata survives offline reload without original blob');
+
+ await req(db.transaction('syncMeta','readwrite').objectStore('syncMeta').put({id:'entity:media:'+photo.id,scope:'p',record:photo,seq:1}));
+ navigator.onLine=false;await client.del('media',photo.id);assert.equal(client.photoIndex().length,0);
+ const afterDelete=createRecordSync({db,user:()=>actor,enabled:true,notify:()=>{},onRemote:async()=>{}});await afterDelete.start({ui:false,background:false});assert.equal(afterDelete.photoIndex().length,0,'offline pending deletion overrides persisted server index');
+ actor={id:'other-account',role:'admin'};assert.equal(client.photoIndex().length,0);
+ db.close();
 });

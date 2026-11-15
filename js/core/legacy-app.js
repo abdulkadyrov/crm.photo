@@ -1293,7 +1293,7 @@ function projectCard(project) {
   const finance = projectFinancialStats(project.id);
   const docsCount = documentsForOwner("project", project.id).length;
   const summaryStudents = state.data.students.filter(student => classes.some(group => group.id === student.classId));
-  const cardCounts = cardSummary(summaryStudents, state.data.media, state.data.orders);
+  const cardCounts = cardSummary(summaryStudents, state.data.media, recordSync?.photoIndex?.() || []);
   return `
     <article class="list-card project-summary-card card-button" tabindex="0" data-open-project="${project.id}">
       <div class="list-card-main">
@@ -1649,7 +1649,7 @@ function classCard(klass, index = 0, total = 0, sortMode = "manual") {
   const color = classColorOption(klass.color, klass.name);
   const manualMoveDisabled = sortMode !== "manual";
   const docsCount = documentsForOwner("group", klass.id).length;
-  const cardCounts = cardSummary(allStudents, state.data.media, state.data.orders);
+  const cardCounts = cardSummary(allStudents, state.data.media, recordSync?.photoIndex?.() || []);
   return `
     <article class="class-card group-card card-button" data-open-class="${klass.id}" tabindex="0" style="--class-accent:${escapeAttr(color.accent)};">
       <div class="class-cover" style="background:${escapeAttr(color.gradient)};">
@@ -4638,7 +4638,7 @@ function studentCard(student, { readOnly = false } = {}) {
   const previewUrl = studentAvatarUrl(student);
   const fullName = `${student.lastName} ${student.firstName}`.trim();
   const chosenServices = selectedServiceEntries(student);
-  const cardCounts = cardSummary([student], state.data.media, state.data.orders);
+  const cardCounts = cardSummary([student], state.data.media, recordSync?.photoIndex?.() || []);
   const preview = `<img class="student-thumb" src="${escapeAttr(previewUrl || './assets/ui/student-avatar.svg')}" alt="${escapeAttr(previewUrl ? fullName : 'Фото не добавлено')}" loading="lazy" />`;
   const finalStats = finalWorkStatsForStudent(student.id);
   return `

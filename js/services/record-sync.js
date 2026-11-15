@@ -17,6 +17,43 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  const get=(store,id)=>result(db.transaction(store).objectStore(store).get(id));
  const all=store=>result(db.transaction(store).objectStore(store).getAll());
  const account=()=>typeof user==='function'?user():user;
+ let photoActor='',photoScopes=new Map(),photoDeletes=new Set(),photoIndexChanged=false;
+ const actorKey=()=>{const actor=account();return actor?actor.id+':'+actor.role:'';};
+ function resetPhotoAccount(){const actor=actorKey();if(actor!==photoActor){photoActor=actor;photoScopes.clear();photoDeletes.clear();photoIndexChanged=false;}return actor;}
+ function photoIndex(){resetPhotoAccount();return [...photoScopes.values()].flat().filter(item=>!photoDeletes.has(item.id));}
+ const photoCachePrefix=actor=>'photo-index:'+encodeURIComponent(actor)+':';
+ async function restorePhotoIndex(){
+  const actor=resetPhotoAccount(),prefix=photoCachePrefix(actor);
+  const cached=await result(db.transaction('syncMeta').objectStore('syncMeta').getAll(IDBKeyRange.bound(prefix,prefix+'\uffff')));
+  if(actor!==actorKey()){resetPhotoAccount();return;}
+  photoScopes=new Map(cached.map(row=>[row.scope,row.photos||[]]));
+  photoDeletes=new Set((await all('syncQueue')).filter(q=>q.actor===account()?.id&&q.store==='media'&&q.deleted).map(q=>q.rid));
+  if(photoScopes.size){photoIndexChanged=true;if(canApply()){await onRemote?.();photoIndexChanged=false;}}
+ }
+ async function persistPhotoIndex(actor){
+  const prefix=photoCachePrefix(actor),cached=await result(db.transaction('syncMeta').objectStore('syncMeta').getAllKeys(IDBKeyRange.bound(prefix,prefix+'\uffff')));
+  if(actor!==actorKey()){resetPhotoAccount();return;}
+  const tx=db.transaction('syncMeta','readwrite'),complete=done(tx),store=tx.objectStore('syncMeta');
+  for(const id of cached)if(!photoScopes.has(String(id).slice(prefix.length)))store.delete(id);
+  for(const [scope,photos] of photoScopes)store.put({id:prefix+scope,scope,photos});
+  await complete;
+ }
+
+ async function refreshPhotoIndex(scopes){
+  const actor=resetPhotoAccount();
+  photoDeletes=new Set((await all('syncQueue')).filter(q=>q.actor===account()?.id&&q.store==='media'&&q.deleted).map(q=>q.rid));
+  const next=new Map();
+  for(const scope of scopes){
+   try {const reply=await json(`/sync/photo-index/${scope}`);if(reply.photos?.length)next.set(scope,reply.photos);}
+   catch(error){if(![403,404].includes(error.status))throw error;}
+   if(actor!==actorKey()){resetPhotoAccount();throw new Error('Аккаунт или роль изменились. Перезагрузите CRM; очередь сохранена.');}
+  }
+  if(JSON.stringify([...photoScopes])!==JSON.stringify([...next]))photoIndexChanged=true;
+  photoScopes=next;
+  await persistPhotoIndex(actor);
+  if(photoIndexChanged&&canApply()){await onRemote?.();photoIndexChanged=false;}
+ }
+
  async function api(path,body){
   const response=await fetch('/api/v1'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(body instanceof Blob||path.startsWith('/sync/blob/')?600000:30000),headers:body&&!(body instanceof Blob)?{'Content-Type':'application/json'}:{},body:body instanceof Blob?body:body?JSON.stringify(body):undefined});
   if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||`Ошибка связи ${response.status}`);error.status=response.status;throw error;}return response;
@@ -61,6 +98,8 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
    };};
   }} catch(error){tx.abort();await complete.catch(()=>{});throw error;}
   await complete;
+  resetPhotoAccount();
+  for(const op of prepared)if(op.store==='media'){if(op.value===null)photoDeletes.add(op.id);else photoDeletes.delete(op.id);}
   if(enabled){update(navigator.onLine?'Ожидает отправки':'Без интернета — сохранено');schedule();}
  }
  async function clear(store){const values=await all(store);await writeBatch(values.map(v=>({store,id:v.id,value:null})));}
@@ -167,10 +206,12 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  }
  async function drain(){
   changed=false;
-  const fresh=await json('/me');if(fresh.id!==account().id||fresh.role!==account().role)throw new Error('Аккаунт или роль изменились. Перезагрузите CRM; очередь сохранена.');
+  resetPhotoAccount();
+  const fresh=await json('/me');if(fresh.id!==account().id||fresh.role!==account().role){photoScopes.clear();photoDeletes.clear();throw new Error('Аккаунт или роль изменились. Перезагрузите CRM; очередь сохранена.');}
   // Imported archives may contain local parents whose old sync metadata survived.
   // Register missing project scopes before uploading any project attachment.
   const registered=new Set((await json('/projects')).map(p=>p.id));
+  await refreshPhotoIndex([...registered]);
   if(fresh.role==='admin'){
    const pending=await all('syncQueue');
    for(const scope of new Set(pending.filter(q=>q.actor===fresh.id&&!q.deleted&&q.scope!=='global').map(q=>q.scope))){
@@ -260,12 +301,12 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   await render();let shownStatus=status+':'+running+':'+navigator.onLine;const refresh=setInterval(()=>{const currentStatus=status+':'+running+':'+navigator.onLine;if(dialog.open&&shownStatus!==currentStatus&&!dialog.querySelector('.sync-record details[open]')&&!dialog.querySelector('.sync-record button:focus')){shownStatus=currentStatus;void render();}},2000);dialog.addEventListener('close',()=>clearInterval(refresh),{once:true});
  }
  async function start({ui=true,background:automatic=true}={}){
-  if(!enabled||started)return;background=automatic;await bootstrap();started=true;
+  if(!enabled||started)return;background=automatic;await restorePhotoIndex();await bootstrap();started=true;
   if(ui){button=document.createElement('button');button.type='button';button.className='secondary-button compact sync-status-button';button.onclick=()=>void show(button);document.querySelector('.topbar-copy')?.append(button);}
   update('Подключение…');
   if(background){window.addEventListener('online',sync);window.addEventListener('offline',()=>update('Без интернета — сохранено'));document.addEventListener('visibilitychange',()=>{if(!document.hidden)void sync();});setInterval(()=>void sync(),20000);}
   await sync();
  }
 
- return {writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
+ return {photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
 }

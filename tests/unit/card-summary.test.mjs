@@ -24,3 +24,12 @@ test('repeat imports, duplicate service rows and extra copies never inflate requ
  assert.equal(summary.requests,1);assert.equal(summary.orders,2);
  assert.equal(cardSummary([{id:'unselected',parentOrderIds:['old-request']}],[]).requests,0);
 });
+
+test('original count unions validated server metadata with local originals by stable media ID',()=>{
+ const students=[{id:'child'}];const remote=[{id:'same',studentId:'child',type:'photo',size:100},{id:'remote-only',studentId:'child',type:'image',size:200},{id:'video',studentId:'child',type:'video',size:3},{id:'empty',studentId:'child',type:'photo',size:0},{id:'invalid',studentId:'child',type:'photo',size:'5'},{id:'outside',studentId:'other',type:'photo',size:5}];
+ const local=[{id:'same',studentId:'child',type:'photo',blob:new Blob(['original'])},{id:'new-local',studentId:'child',type:'photo',blob:new Blob(['new'])},{id:'missing',studentId:'child',type:'photo'}];
+ assert.equal(cardSummary(students,local,remote).photos,3);
+ assert.equal(cardSummary(students,[],remote).photos,2);
+ // Distinct capture IDs remain separate even if file name or bytes are equal.
+ assert.equal(cardSummary(students,[...local,{...local[0],id:'another-capture'}],remote).photos,4);
+});

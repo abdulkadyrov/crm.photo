@@ -91,3 +91,20 @@ class SyncTest(unittest.TestCase):
   token=published['data']['url'].split('/')[-1]
   public=request('/public/classes/'+token)['data'];self.assertEqual(public['children'][0]['public_name'],'Синхронизации После');self.assertEqual(public['catalog'][0]['price'],600)
 
+
+ def test_10_photo_index_uses_current_authorized_original_metadata_without_blob_download(self):
+  import json
+  raw=b'photo index original';digest=hashlib.sha256(raw).hexdigest()
+  self.assertEqual(request('/sync/blob/sync-project/'+digest,'POST',raw,self.cookies['admin'])['status'],200)
+  valid={'id':'index-photo','studentId':'sync-child','type':'photo','fileName':'private-name.jpg','blob':{'$syncBlob':digest,'kind':'blob','mime':'image/jpeg','size':len(raw)}}
+  records=[valid,{**valid,'id':'index-video','type':'video'},{**valid,'id':'index-empty','blob':{**valid['blob'],'size':0}},{**valid,'id':'index-wrong-size','blob':{**valid['blob'],'size':999}},{**valid,'id':'index-missing','blob':{**valid['blob'],'$syncBlob':'0'*64}},{**valid,'id':'index-no-student','studentId':'not-found'}]
+  with app.db() as c:
+   for item in records:c.execute('INSERT OR REPLACE INTO sync_records VALUES(?,?,?,?,?)',('media',item['id'],'sync-project',json.dumps(item),100))
+   c.execute('INSERT OR REPLACE INTO sync_records VALUES(?,?,?,?,?)',('media','index-deleted','sync-project',None,101))
+  reply=request('/sync/photo-index/sync-project',cookie=self.cookies['manager'])
+  self.assertEqual(reply['status'],200,reply)
+  rows=[r for r in reply['data']['photos'] if r['id'].startswith('index-')]
+  self.assertEqual(rows,[{'id':'index-photo','studentId':'sync-child','type':'photo','size':len(raw)}])
+  self.assertEqual(request('/sync/photo-index/sync-project')['status'],401)
+  self.assertEqual(request('/sync/photo-index/foreign',cookie=self.cookies['manager'])['status'],404)
+  self.assertEqual(request('/sync/photo-index/sync-project',cookie=self.cookies['viewer'])['status'],403)

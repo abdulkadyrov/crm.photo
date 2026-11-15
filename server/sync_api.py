@@ -143,6 +143,20 @@ def route(r,c,u,path,a):
    c.execute('INSERT OR IGNORE INTO sync_blobs VALUES(?,?,?,?)',(scope,digest,size,u['id']))
    return {'saved':True}
   finally:Path(tmp).unlink(missing_ok=True)
+ if kind=='photo-index' and len(parts)==3 and r.method=='GET':
+  scope=a.identifier(parts[2]);scope_access(a,c,u,scope)
+  # Current immutable-blob metadata only: no image download, finance or file paths.
+  photos=[]
+  for row in c.execute("SELECT id,data FROM sync_records WHERE scope=? AND store='media' AND data IS NOT NULL ORDER BY id",(scope,)):
+   item=json.loads(row['data']);ref=item.get('blob')
+   if item.get('type') not in ('photo','image') or not item.get('studentId') or not isinstance(ref,dict):continue
+   digest=ref.get('$syncBlob');size=ref.get('size')
+   if not isinstance(digest,str) or not re.fullmatch('[a-f0-9]{64}',digest) or type(size) is not int or size<=0:continue
+   if not c.execute('SELECT 1 FROM sync_blobs WHERE scope=? AND digest=? AND size=?',(scope,digest,size)).fetchone():continue
+   student=record(c,'students',item['studentId'])
+   if not student or student['scope']!=scope or student['data'] is None:continue
+   photos.append({'id':row['id'],'studentId':item['studentId'],'type':item['type'],'size':size})
+  return {'photos':photos}
  if kind=='changes' and len(parts)==3 and r.method=='GET':
   scope=a.identifier(parts[2]);scope_access(a,c,u,scope)
   after=int(parse_qs(r.e.get('QUERY_STRING','')).get('after',['0'])[0]);a.fail(after<0)
