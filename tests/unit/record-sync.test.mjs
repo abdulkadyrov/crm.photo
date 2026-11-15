@@ -217,3 +217,41 @@ test('photo index is available before original download and respects pending del
  actor={id:'other-account',role:'admin'};assert.equal(client.photoIndex().length,0);
  db.close();
 });
+
+test('all assigned schools load their structure before attachments and a feed exceeds twenty pages',async()=>{
+ navigator.onLine=true;const db=await database(),s=server(),baseFetch=globalThis.fetch;let blobRequested=false;
+ const pages=[];
+ globalThis.fetch=async(url,opts={})=>{
+  const parsed=new URL(url,'https://crm.khanzama.ru'),path=parsed.pathname.replace('/api/v1','');
+  const response=v=>new Response(JSON.stringify(v),{headers:{'Content-Type':'application/json'}});
+  if(path==='/projects')return response([{id:'p'},{id:'second'},{id:'third'}]);
+  if(path.startsWith('/sync/changes/')){
+   const scope=path.split('/').at(-1),after=Number(parsed.searchParams.get('after')||0),structure=parsed.searchParams.has('structure');
+   if(structure){
+    pages.push(scope+':'+after);
+    const total=scope==='p'?2105:1,end=Math.min(total,after+100),changes=[];
+    for(let i=after+1;i<=end;i++)changes.push({store:i===1?'projects':'students',id:i===1?scope:scope+'-'+i,scope,seq:i,record:i===1?{id:scope,name:scope}:{id:scope+'-'+i,classId:'c',firstName:'Student'}});
+    return response({changes,cursor:end,more:end<total});
+   }
+   assert.ok(await get(db,'projects','third'),'third school exists before full asset feed');
+   assert.ok(await get(db,'students','p-2105'),'no artificial twenty-page truncation');
+   if(scope==='global')return response({changes:[{store:'catalog',id:'file',scope,seq:1,record:{id:'file',blob:{$syncBlob:'a'.repeat(64),size:1,mime:'image/jpeg'}}}],cursor:1,more:false});
+   return response({changes:[],cursor:after,more:false});
+  }
+  if(path.startsWith('/sync/blob/')){blobRequested=true;throw new TypeError('Slow media connection');}
+  return baseFetch(url,opts);
+ };
+ const client=engine(db);await client.start({ui:false,background:false});
+ assert.equal((await all(db,'projects')).length,3);assert.ok(pages.includes('p:2000'));assert.ok(blobRequested);db.close();
+});
+test('deferred receive never claims completion and read-only saving dialog permits receive',async()=>{
+ const seen=[];let editable=true;const doc={querySelector:selector=>{seen.push(selector);return editable?{}:null;},querySelectorAll:()=>[]};
+ assert.equal(canApplyRemoteChanges(doc),false);editable=false;assert.equal(canApplyRemoteChanges(doc),true);assert.match(seen[0],/dialog\[open\]:not\(\.sync-dialog\)/);
+ navigator.onLine=true;const db=await database();server();let allowed=false,button;
+ const previous=globalThis.document;globalThis.document={createElement:()=>({}),querySelector:()=>({append:value=>{button=value;}})};
+ try{
+  const client=createRecordSync({db,user,enabled:true,canApply:()=>allowed});await client.start({ui:true,background:false});
+  assert.match(button.textContent,/Получение данных отложено/);
+  allowed=true;await client.sync();assert.equal(button.textContent,'Сохранено онлайн');
+ }finally{globalThis.document=previous;db.close();}
+});

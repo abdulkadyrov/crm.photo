@@ -108,3 +108,19 @@ class SyncTest(unittest.TestCase):
   self.assertEqual(request('/sync/photo-index/sync-project')['status'],401)
   self.assertEqual(request('/sync/photo-index/foreign',cookie=self.cookies['manager'])['status'],404)
   self.assertEqual(request('/sync/photo-index/sync-project',cookie=self.cookies['viewer'])['status'],403)
+
+ def test_structure_feed_preserves_cursor_acl_and_finance_without_downloading_blobs(self):
+  scope='structure-project'
+  with app.db() as c:
+   c.execute('INSERT INTO projects VALUES(?,?)',(scope,'Structure'))
+   c.execute('INSERT INTO memberships VALUES(?,?)',('sync-manager',scope))
+   for store,rid,data in [('projects',scope,{'id':scope,'name':'School','paidAmount':99}),('media','structure-photo',{'id':'structure-photo','blob':{'$syncBlob':'a'*64,'size':100}}),('students','structure-student',{'id':'structure-student','classId':'class','firstName':'Test','paidAmount':50})]:
+    import json,time
+    c.execute('INSERT INTO sync_changes(store,id,scope,data,actor,at) VALUES(?,?,?,?,?,?)',(store,rid,scope,json.dumps(data),'sync-admin',time.time()))
+  answer=request('/sync/changes/'+scope,cookie=self.cookies['manager'],headers={'QUERY_STRING':'structure=1'})
+  self.assertEqual(answer['status'],200);data=answer['data']
+  self.assertEqual([r['store'] for r in data['changes']],['projects','students'])
+  self.assertNotIn('paidAmount',str(data));self.assertGreater(data['cursor'],0)
+  self.assertEqual(request('/sync/changes/'+scope,cookie=self.cookies['photographer'],headers={'QUERY_STRING':'structure=1'})['status'],403)
+  full=request('/sync/changes/'+scope,cookie=self.cookies['manager'])['data']
+  self.assertEqual(len(full['changes']),3);self.assertEqual(full['cursor'],data['cursor'])

@@ -4,7 +4,7 @@ import {createSyncBlobCache} from './sync-blob-cache.js';
 import {captureDialogReturn} from './dialog-return.js';
 export {SYNC_LOCAL_STORES};
 export function canApplyRemoteChanges(doc) {
- if(doc.querySelector('dialog[open], [role="dialog"], input:focus, textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
+ if(doc.querySelector('dialog[open]:not(.sync-dialog), [role="dialog"]:not(.sync-dialog), input:focus, textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
  return !Array.from(doc.querySelectorAll('video')).some(video=>!video.paused&&!video.ended);
 }
 const keyOf=(store,id)=>store+':'+id;
@@ -160,15 +160,16 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
    else if(pending){queue.put({...pending,base:next});}
   };};await complete;
  }
- async function pull(scope){
-  if(!canApply())return;
-  let cursor=(await get('syncMeta','cursor:'+scope))?.value||0;
-  for(let page=0;page<20;page++){
-   const response=await json(`/sync/changes/${scope}?after=${cursor}`);
+ async function pull(scope,structure=false){
+  if(!canApply())return false;
+  const cursorKey=(structure?'structure-cursor:':'cursor:')+scope;
+  let cursor=(await get('syncMeta',cursorKey))?.value||0;
+  for(;;){
+   const response=await json(`/sync/changes/${scope}?after=${cursor}${structure?'&structure=1':''}`);
    if(response.changes.length)update(`Обновление данных: ${response.changes.length}`);
    const latest=new Map(response.changes.map(row=>[keyOf(row.store,row.id),row]));
    for(const [key,row] of latest){
-    if(!canApply())return;
+    if(!canApply())return false;
     if(!SYNC_STORES.includes(row.store)||await get('syncQueue',key))continue;
     const meta=await get('syncMeta','entity:'+key);if((meta?.seq||0)>=row.seq)continue;
     const value=await unpack(row.record,scope,await get(row.store,row.id));
@@ -180,9 +181,11 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
      };
     };await complete;
    }
-   const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').put({id:'cursor:'+scope,value:response.cursor});await complete;
+   const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').put({id:cursorKey,value:response.cursor});await complete;
+   if(response.more&&response.cursor<=cursor)throw new Error('Сервер не продвинул загрузку данных');
    cursor=response.cursor;if(!response.more)break;
   }
+  return true;
  }
  async function bootstrap(){
   const marker='bootstrap:'+account().id;if(await get('syncMeta',marker))return;
@@ -230,10 +233,15 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
    try{await send(q);}catch(e){if(e.status&&[400,403,404,409,413,425].includes(e.status)){const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').delete('flight:'+q.id);await complete;}await rememberError(q,e.message);if(!e.status||[401,429,500,502,503,507].includes(e.status))throw e;}
   }
   const projects=await json('/projects?includeDeleted=1');
-  for(const scope of ['global',...projects.map(p=>p.id)]){try{await pull(scope);}catch(e){if(e.status!==403)throw e;}if(changed&&canApply()){await onRemote?.();changed=false;}}
+  let received=true;
+  // Load all school rosters before catalogue/video downloads can occupy the connection.
+  for(const structure of [true,false])for(const scope of structure?projects.map(p=>p.id):['global',...projects.map(p=>p.id)]){
+   try{if(!await pull(scope,structure))received=false;}catch(e){if(e.status!==403)throw e;received=false;}
+   if(changed&&canApply()){await onRemote?.();changed=false;}
+  }
   if(changed)await onRemote?.();
   const remaining=await all('syncQueue'),conflicts=remaining.filter(q=>q.conflict).length;
-  update(conflicts?`Нужно согласовать: ${conflicts}`:remaining.length?`Ожидает отправки: ${remaining.length}`:'Всё сохранено на сервере');
+  update(conflicts?`Нужно согласовать: ${conflicts}`:remaining.length?`Ожидает отправки: ${remaining.length}`:!received?'Получение данных отложено — завершите редактирование':'Всё сохранено на сервере');
  }
  async function sync(){
   if(!enabled||running||!started)return;
