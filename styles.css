@@ -6994,3 +6994,11 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .sync-dialog .sync-panel-locations>div { gap:10px; }.sync-dialog .sync-panel-locations dt { min-width:0; }.sync-dialog .sync-panel-locations dd { text-align:right; flex-shrink:0; }
 .sync-local-contents { margin-top:14px; padding-top:12px; border-top:1px solid var(--line,#dce2eb); font-size:12px; line-height:1.5; }
 .sync-local-contents>strong { font-size:13px; }.sync-local-contents p { margin:6px 0; color:var(--text,#172033); }.sync-local-contents small { display:block; color:var(--muted,#657186); font-size:11px; line-height:1.4; }
+.sync-project-progress { padding:14px 16px; border-top:1px solid var(--line,#dce2eb); font-size:12px; line-height:1.45; }
+.sync-project-progress h3 { margin:0 0 7px; font-size:15px; }.sync-project-progress p { margin:7px 0; }.sync-project-progress small { display:block; font-size:11px; color:var(--muted,#657186); margin-top:6px; }
+.sync-project-progress progress { display:block; width:100%; height:7px; accent-color:#2563eb; margin:6px 0; }
+.sync-dialog .transfer-project { margin:10px 0; padding:0; border:1px solid var(--line,#dce2eb); border-radius:10px; background:transparent; }
+.sync-dialog .transfer-project>summary,.sync-dialog .transfer-group>summary { padding:11px 10px; display:list-item; list-style-position:inside; cursor:pointer; font-size:13px; }
+.transfer-project summary>strong { overflow-wrap:anywhere; }.transfer-project summary>span { display:block; margin-top:4px; color:var(--muted,#657186); font-weight:400; font-size:11px; }
+.transfer-project-body { padding:0 10px 12px; }.transfer-meter { margin:10px 0; }.transfer-meter>div { display:flex; flex-wrap:wrap; gap:4px 10px; justify-content:space-between; }.transfer-meter strong { font-variant-numeric:tabular-nums; font-size:11px; }.transfer-meter small { margin:0; }
+.sync-dialog .transfer-group { border-top:1px solid var(--line,#dce2eb); margin:0; padding:0; }.transfer-group .transfer-meter { padding:0 10px; }.transfer-pending { color:#8b5900; }

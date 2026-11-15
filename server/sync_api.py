@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 """Durable, idempotent record synchronization with three-way merges and private blobs."""
 import hashlib,json,os,re,secrets,shutil,tempfile,time
 from pathlib import Path
@@ -143,6 +144,9 @@ def route(r,c,u,path,a):
    c.execute('INSERT OR IGNORE INTO sync_blobs VALUES(?,?,?,?)',(scope,digest,size,u['id']))
    return {'saved':True}
   finally:Path(tmp).unlink(missing_ok=True)
+ if kind=='inventory' and len(parts)==3 and r.method=='GET':
+  import sync_inventory
+  return sync_inventory.snapshot(c,u,a.identifier(parts[2]),SimpleNamespace(**{**vars(a),'scope_access':scope_access,'blob_refs':blob_refs}))
  if kind=='photo-index' and len(parts)==3 and r.method=='GET':
   scope=a.identifier(parts[2]);scope_access(a,c,u,scope)
   # Current immutable-blob metadata only: no image download, finance or file paths.
