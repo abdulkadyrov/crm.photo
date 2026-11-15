@@ -1,5 +1,9 @@
 """One CRM catalog and roster, exposed through capability links to parents."""
 import hashlib, json, math, re, secrets, time
+import parent_mutations
+import studio_public_catalog
+import public_directory
+import studio_analytics
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -15,6 +19,15 @@ def initialize(c):
 
 def route(r,c,u,path,a):
     fail, ident, text = a.fail, a.identifier, a.text
+    if path=='/public/directory':return public_directory.route(r,c,a)
+    if path=='/public/catalog':
+        fail(r.method!='GET',405,'Метод не поддерживается')
+        studio_analytics.record(c,r,'catalog')
+        return studio_public_catalog.payload(c)
+    segments=path.strip('/').split('/')
+    if len(segments)>=3 and segments[:2]==['public','classes']:public_directory.assert_available(c,segments[2],a)
+    extended=parent_mutations.route(r,c,path,a)
+    if extended is not parent_mutations.UNHANDLED:return extended
     if path.startswith('/public/'):
         parts=path.strip('/').split('/')
         fail(len(parts)!=3,404,'Ссылка недействительна')
@@ -24,40 +37,18 @@ def route(r,c,u,path,a):
             order=c.execute('SELECT data FROM parent_orders WHERE token=?',(token,)).fetchone()
             fail(not order,404,'Заказ не найден'); return json.loads(order[0])
         fail(kind!='classes',404,'Не найдено')
-        if r.method=='POST': c.execute('BEGIN IMMEDIATE')
+        if r.method=='POST':return parent_mutations.ordinary(r,c,token,a)
         group=c.execute('SELECT * FROM parent_classes WHERE token=? AND enabled=1',(token,)).fetchone()
         fail(not group,404,'Приём заказов закрыт или ссылка недействительна')
+        if r.method=='GET':public_directory.refresh_children(c,group['id'])
         project=c.execute('SELECT name FROM projects WHERE id=?',(group['project_id'],)).fetchone()
         ids=json.loads(group['services'])
         catalog=[json.loads(row[0]) for sid in ids if (row:=c.execute('SELECT data FROM parent_catalog WHERE id=?',(sid,)).fetchone())]
+        catalog=[item for item in catalog if item.get('is_active') is not False]
         if r.method=='GET':
-            return {'school':{'name':project[0],'city':''},'class':{'id':group['id'],'name':group['name'],'academic_year':'','photo_session_name':'Школьная фотосъёмка'},'children':[{'id':s['id'],'public_name':s['name']} for s in c.execute('SELECT * FROM parent_children WHERE class_id=? AND active=1 ORDER BY name',(group['id'],))], 'catalog':catalog}
-        fail(r.method!='POST',404,'Не найдено')
-        b=r.json(); child=ident(b.get('childId')); key=ident(b.get('requestKey')); items=b.get('itemIds'); without=b.get('withoutLaminationIds',[])
-        fail(not isinstance(items,list) or not 1<=len(items)<=100 or len(set(items))!=len(items))
-        fail(not isinstance(without,list) or len(without)>len(items) or any(not isinstance(v,str) for v in without) or len(set(without))!=len(without) or any(v not in items for v in without),400,'Некорректный выбор ламинации')
-        without=set(without)
-        previous=c.execute('SELECT * FROM parent_orders WHERE request_key=?',(key,)).fetchone()
-        if previous:
-            data=json.loads(previous['data'])
-            saved_without={v['id'] for v in data['selected_items'] if v.get('comment')=='Без ламинации (защиты)'}
-            fail(previous['class_id']!=group['id'] or previous['child_id']!=child or set(items)!={v['id'] for v in data['selected_items']} or without!=saved_without,409,'Эта отправка уже содержит другой заказ')
-            return {**data,'duplicate':True}
-        # Serialise submissions so double clicks/retries cannot create two orders.
-        kid=c.execute('SELECT * FROM parent_children WHERE id=? AND class_id=? AND active=1',(child,group['id'])).fetchone()
-        fail(not kid,400,'Выберите ребёнка из этого класса')
-        fail(c.execute('SELECT 1 FROM parent_orders WHERE class_id=? AND child_id=?',(group['id'],child)).fetchone(),409,'Для этого ребёнка заказ уже отправлен. Для изменений обратитесь к организатору.')
-        selected=[v for v in catalog if v['id'] in items]
-        fail(len(selected)!=len(items),409,'Каталог изменился. Обновите страницу и выберите услуги снова.')
-        rate='parent:'+hashlib.sha256((r.e.get('REMOTE_ADDR','')+'|'+group['id']).encode()).hexdigest()
-        count=c.execute('SELECT * FROM attempts WHERE key=?',(rate,)).fetchone()
-        fail(count and count['until']>time.time() and count['count']>=100,429,'Слишком много заказов. Повторите позже.')
-        c.execute('INSERT OR REPLACE INTO attempts VALUES(?,?,?)',(rate,count['count']+1 if count and count['until']>time.time() else 1,time.time()+3600))
-        oid=secrets.token_hex(16); public=secrets.token_urlsafe(32)
-        selected_items=[{**{k:v[k] for k in ('id','name','type','preview_url','preview_video_url','category')},'price':round(max(0,v['price']-(50 if v['id'] in without else 0)),2),'comment':'Без ламинации (защиты)' if v['id'] in without else 'С ламинацией (защитой)'} for v in selected]
-        result={'id':oid,'child_id':child,'class_id':group['id'],'duplicate':False,'order_number':'VS-'+oid[:10].upper(),'status':'new','selected_items':selected_items, 'total_amount':round(sum(v['price'] for v in selected_items),2),'child_name':kid['name'],'class_name':group['name'],'school_name':project[0],'public_token':public,'created_at':datetime.now(timezone.utc).isoformat()}
-        c.execute('INSERT INTO parent_orders VALUES(?,?,?,?,?,?,?)',(oid,group['id'],child,key,public,json.dumps(result,ensure_ascii=False),time.time()))
-        return result
+            studio_analytics.record(c,r,'class',group)
+            return {'school':{'name':project[0],'city':''},'class':{'id':group['id'],'name':group['name'],'academic_year':'','photo_session_name':'Школьная фотосъёмка'},'children':[{'id':s['id'],'public_name':s['name'],'orders':[{'revision':order.get('revision',1),'status':order['status'],'items':order['selected_items']} for row in c.execute('SELECT data FROM parent_orders WHERE class_id=? AND child_id=?',(group['id'],s['id'])) for order in [json.loads(row[0])]]} for s in c.execute('SELECT * FROM parent_children WHERE class_id=? AND active=1 ORDER BY name',(group['id'],))], 'catalog':catalog}
+        raise a.Error(405,'Метод не поддерживается')
     fail(u is None,401,'Войдите в CRM')
     if path=='/parents/catalog' and r.method=='POST':
         fail(u['role']!='admin',403,'Каталог публикует администратор')
@@ -116,6 +107,10 @@ def route(r,c,u,path,a):
         c.execute('INSERT INTO parent_classes VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,enabled=excluded.enabled,revision=excluded.revision,services=excluded.services',(cid,pid,text(b.get('name')),token,int(bool(b.get('enabled',True))),revision,json.dumps(services)))
         c.execute('UPDATE parent_children SET active=0 WHERE class_id=?',(cid,))
         for kid in children: c.execute('INSERT INTO parent_children VALUES(?,?,?,1) ON CONFLICT(id) DO UPDATE SET name=excluded.name,active=1',(kid['id'],cid,text(kid['name'])))
+        canonical=c.execute("SELECT data FROM sync_records WHERE store='classes' AND id=? AND data IS NOT NULL",(cid,)).fetchone()
+        if canonical:
+            value=json.loads(canonical[0]);value['parentCatalogUrl']=ORIGIN+'/p/'+token
+            parent_mutations.write_record(c,'classes',cid,pid,value)
         a.audit(c,u,'parent_class_saved',cid)
         return {'url':ORIGIN+'/p/'+token,'revision':revision,'enabled':bool(b.get('enabled',True))}
     if path.startswith('/parents/orders/') and r.method=='GET':

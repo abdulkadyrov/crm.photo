@@ -3,6 +3,8 @@ from types import SimpleNamespace
 import parent_orders
 import sync_api
 import admin_api
+import studio_api
+import ar_jobs
 import hashlib, hmac, json, os, re, secrets, sqlite3, tempfile, time, zipfile
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
@@ -39,6 +41,7 @@ def initialize():
         ''')
         parent_orders.initialize(c)
         sync_api.initialize(c)
+        ar_jobs.initialize(c)
 
 @contextmanager
 def db():
@@ -144,7 +147,9 @@ class Request:
         fail(not u,401,'Войдите в серверный аккаунт'); return u
     def route(self):
         if self.method not in ('GET','HEAD'):
-            fail(self.e.get('HTTP_ORIGIN')!=(parent_orders.ORIGIN if self.path.startswith('/api/v1/public/') else ORIGIN),403,'Недопустимый источник запроса')
+            origin=self.e.get('HTTP_ORIGIN')
+            allowed={parent_orders.ORIGIN} if self.path.startswith('/api/v1/public/') else {ORIGIN,parent_orders.ORIGIN} if self.path in ('/api/v1/login','/api/v1/logout') or self.path.startswith('/api/v1/studio/') else {ORIGIN}
+            fail(origin not in allowed,403,'Недопустимый источник запроса')
         path=self.path.removeprefix('/api/v1')
         if path.startswith('/public/media/') and self.method=='GET':
             name=path.split('/')[-1]
@@ -178,6 +183,10 @@ class Request:
                 self.headers.append(('Set-Cookie',f'{COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800'))
                 audit(c,u,'login'); return public_user(c,u)
             u=self.user(c)
+            if path.startswith('/studio/'):
+                return studio_api.route(self,c,u,path,SimpleNamespace(**globals()))
+            if path.startswith('/ar/jobs/'):
+                return ar_jobs.route(self,c,u,path,SimpleNamespace(**globals()))
             if path.startswith('/sync/'):
                 return sync_api.route(self,c,u,path,SimpleNamespace(**globals()))
             if path.startswith('/parents/'):
@@ -217,7 +226,8 @@ class Request:
             if path=='/projects':
                 if self.method=='GET':
                     rows=c.execute('SELECT * FROM projects ORDER BY name') if u['role']=='admin' else c.execute('SELECT p.* FROM projects p JOIN memberships m ON p.id=m.project_id WHERE m.user_id=? ORDER BY p.name',(u['id'],))
-                    return [dict(r) for r in rows]
+                    include_deleted='includeDeleted=1' in self.e.get('QUERY_STRING','').split('&')
+                    return [dict(r) for r in rows if include_deleted or not c.execute("SELECT 1 FROM sync_records WHERE scope=? AND id=? AND store IN ('projects','albumProjects') AND data IS NULL",(r['id'],r['id'])).fetchone()]
                 if self.method=='POST':
                     fail(u['role']!='admin',403,'Только администратор добавляет проекты на сервер')
                     b=self.json(); pid=identifier(b.get('id')); name=text(b.get('name'))
@@ -317,7 +327,7 @@ class Request:
         finally: Path(tmp).unlink(missing_ok=True)
 
 class Media:
-    def __init__(self,path): self.path=path
+    def __init__(self,path,mime=None,private=False): self.path=path; self.mime=mime; self.private=private
 
 def application(environ,start_response):
     r=Request(environ)
@@ -339,8 +349,8 @@ def application(environ,start_response):
                 fail(not match,400,'Некорректный диапазон')
                 start=int(match[1]);end=min(int(match[2]) if match[2] else end,end)
                 fail(start>end or start>=size,400,'Некорректный диапазон')
-            mime={'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'}[path.suffix]
-            head=[('Content-Type',mime),('Content-Length',str(end-start+1)),('Accept-Ranges','bytes'),('Cache-Control','public, max-age=31536000, immutable'),('X-Content-Type-Options','nosniff')]
+            mime=result.mime or {'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'}[path.suffix]
+            head=[('Content-Type',mime),('Content-Length',str(end-start+1)),('Accept-Ranges','bytes'),('Cache-Control','private, no-store' if result.private else 'public, max-age=31536000, immutable'),('X-Content-Type-Options','nosniff')]
             if requested: head.append(('Content-Range',f'bytes {start}-{end}/{size}'))
             start_response('206 Partial Content' if requested else '200 OK',head)
             def media_stream():

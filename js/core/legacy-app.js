@@ -2291,7 +2291,7 @@ function renderStudent() {
             <button class="secondary-button" data-open-service-picker-student="${student.id}" type="button"><span data-icon="catalog"></span>Выбрать из каталога</button>
             <button class="secondary-button compact" data-custom-student="${student.id}" type="button">+ Индивидуальный заказ</button>
             <div class="selected-service-settings">
-              ${selectedServicesForStudent(student).map(entry => selectedServiceSettingsCard(catalogItemById(entry.serviceId), student.id, entry)).join("")}
+              ${selectedServicesForStudent(student).map(entry => selectedServiceSettingsCard(catalogItemById(entry.serviceId), student.id, entry, expandedServices.includes(entry.entryId || entry.serviceId))).join("")}
             </div>
           </div>
         </div>
@@ -2336,7 +2336,6 @@ function renderStudent() {
   `;
   bindViewActions();
   if (preserveServiceState) {
-    view.querySelectorAll('.selected-service-card').forEach(node => { node.open = expandedServices.includes(node.dataset.positionState); });
     window.scrollTo({ top: serviceScrollY, behavior: 'instant' });
   }
 
@@ -2939,14 +2938,14 @@ function servicePickerSelectedChips(catalogIds) {
   }).join("") || '<p class="muted">Услуги не выбраны.</p>';
 }
 
-function selectedServiceSettingsCard(item, studentId, entry = null) {
+function selectedServiceSettingsCard(item, studentId, entry = null, expanded = false) {
   const student = studentById(studentId);
   const positionId = entry?.entryId || item.id;
   const comment = entry?.comment ?? studentServiceComment(student, item.id);
   const quantity = entry?.quantity ?? studentServiceQuantity(student, item.id);
   const totalPrice = parseMoney(item.price) * quantity;
   return `
-    <details class="selected-service-card" data-position-state="${escapeAttr(positionId)}">
+    <details class="selected-service-card" data-position-state="${escapeAttr(positionId)}" ${expanded ? "open" : ""}>
       <summary class="selected-service-card-summary">
         <span class="mini-catalog-thumb">${miniCatalogPreview(item)}</span>
         <span class="mini-catalog-copy"><strong>${escapeHtml(serviceName(item))}</strong><small>${escapeHtml(formatMoney(totalPrice))}</small></span>

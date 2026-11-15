@@ -30,10 +30,10 @@ def merge(base,local,remote,path=''):
    conflicts+=errors
   return out,conflicts
  if all(isinstance(v,list) for v in (base,local,remote)):
-  if path.endswith('/fileIds') and all(all(isinstance(x,str) for x in v) for v in (base,local,remote)):
+  if (path.endswith('/fileIds') or path.endswith('/mediaIds')) and all(all(isinstance(x,str) for x in v) for v in (base,local,remote)):
    removed=(set(base)-set(local))|(set(base)-set(remote))
    return list(dict.fromkeys(x for x in remote+local if x not in removed)),[]
-  key=next((k for k in ('id','serviceId','taskId','type') if all(all(isinstance(i,dict) and isinstance(i.get(k),str) for i in a) and len({i[k] for i in a})==len(a) for a in (base,local,remote))),None)
+  key=next((k for k in ('id','entryId','serviceId','taskId','type') if all(all(isinstance(i,dict) and isinstance(i.get(k),str) for i in a) and len({i[k] for i in a})==len(a) for a in (base,local,remote))),None)
   if key:
    maps=[{v[key]:v for v in a} for a in (base,local,remote)]
    values,errors=merge(*maps,path)
@@ -220,6 +220,9 @@ def route(r,c,u,path,a):
     return [restore_hidden(next((old for old in full if isinstance(old,dict) and isinstance(v,dict) and (old.get('id') or old.get('serviceId') or old.get('type'))==(v.get('id') or v.get('serviceId') or v.get('type'))),{}),v) for v in filtered]
    return filtered
   merged=restore_hidden(current,merged)
+ if store=='finalWorks' and merged and merged.get('arPublication'):
+  job=a.ar_jobs.enqueue(a,c,u,merged,scope)
+  merged={**merged,'arJobId':job['id'],'arStatus':job['state']}
  data=json.dumps(merged,ensure_ascii=False) if merged is not None else None
  if merged!=current or not old:
   cur=c.execute('INSERT INTO sync_changes(store,id,scope,data,actor,at) VALUES(?,?,?,?,?,?)',(store,rid,scope,data,u['id'],time.time()));seq=cur.lastrowid
@@ -235,6 +238,7 @@ def public_catalog(a,data,previous):
  """Project published catalog fields from the canonical CRM record; reuse media bytes."""
  from urllib.parse import urljoin,urlparse
  out=dict(previous)
+ out.update(is_active=data.get('isActive',True),popular=data.get('popular',False),sort_order=data.get('orderIndex',0))
  out.update(id=data['id'],name=str(data.get('name') or data.get('title') or previous.get('name','Услуга')),description=str(data.get('description') or ''),short_description=str(data.get('shortDescription') or ''),category=str(data.get('category') or ''),gender=data.get('gender','unisex'),type=data.get('type','photo'),parent_preview_mode=data.get('parentPreviewMode','auto'))
  match=re.search(r'\d+(?:\.\d+)?',str(data.get('price') or 0).replace(' ','').replace(',','.'));out['price']=float(match[0]) if match else 0
  def media(value):
