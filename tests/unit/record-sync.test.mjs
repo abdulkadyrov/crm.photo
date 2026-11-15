@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {indexedDB} from 'fake-indexeddb';
-import {createRecordSync} from '../../js/services/record-sync.js';
+import {createRecordSync,canApplyRemoteChanges} from '../../js/services/record-sync.js';
 import {SYNC_STORES,SYNC_LOCAL_STORES,rebaseLocal,sha256,encodeRecord,decodeRecord} from '../../js/services/sync-codec.js';
 import {createHash} from 'node:crypto';
 Object.defineProperty(globalThis,'navigator',{configurable:true,value:{onLine:false}});
@@ -84,4 +84,113 @@ test('sync engine can switch to a reopened database after the old connection clo
  const second=await req(indexedDB.open(name,7));client.setDatabase(second);
  await client.put('projects',{id:'p',name:'Recovered'});
  assert.equal((await get(second,'projects','p')).name,'Recovered');second.close();
+});
+
+test('AR result reaches a child work with a paused video preview and waits during playback',async()=>{
+ navigator.onLine=false;const db=await database(),s=server(),video={paused:true,ended:false};let refreshed=0;
+ const doc={querySelector:()=>null,querySelectorAll:()=>[video]};
+ const client=createRecordSync({db,user,enabled:true,notify:()=>{},canApply:()=>canApplyRemoteChanges(doc),onRemote:async()=>{refreshed++;}});
+ await client.start({ui:false,background:false});
+ await client.put('projects',{id:'p',name:'AR acceptance'});
+ await client.put('classes',{id:'c',projectId:'p'});
+ await client.put('students',{id:'child',classId:'c'});
+ await client.put('finalWorks',{id:'work',studentId:'child',arStatus:'queued'});
+ navigator.onLine=true;await client.sync();
+ const ready={id:'work',studentId:'child',arStatus:'ready',viewerUrl:'https://khanzama.ru/ar.photo/ar/test-stable-viewer',qrPayload:'https://khanzama.ru/ar.photo/ar/test-stable-viewer'};
+ s.changes.push({store:'finalWorks',id:'work',scope:'p',seq:s.changes.length+1,record:ready});
+ await client.sync();assert.equal((await get(db,'finalWorks','work')).qrPayload,ready.viewerUrl);assert.equal(refreshed,1);
+ video.paused=false;s.changes.push({store:'finalWorks',id:'work',scope:'p',seq:s.changes.length+1,record:{...ready,serverNote:'arrived during playback'}});
+ await client.sync();assert.equal((await get(db,'finalWorks','work')).serverNote,undefined);assert.equal(refreshed,1);
+ video.paused=true;await client.sync();assert.equal((await get(db,'finalWorks','work')).serverNote,'arrived during playback');assert.equal(refreshed,2);
+ db.close();
+});
+
+test('unchanged server acknowledgement preserves local A4 JPEG and PDF caches',async()=>{
+ navigator.onLine=false;const db=await database(),s=server(),client=engine(db);
+ await client.start({ui:false,background:false});
+ await client.put('projects',{id:'p',name:'Print cache'});
+ await client.put('classes',{id:'c',projectId:'p'});
+ await client.put('students',{id:'child',classId:'c'});
+ const jpg=new Blob(['local JPG'],{type:'image/jpeg'}),pdf=new Blob(['local PDF'],{type:'application/pdf'});
+ await client.put('finalWorks',{id:'work',studentId:'child',arStatus:'ready',a4PrintImage:jpg,a4PrintPdf:pdf});
+ navigator.onLine=true;await client.sync();
+ const saved=await get(db,'finalWorks','work');
+ assert.equal(await saved.a4PrintImage.text(),'local JPG');assert.equal(await saved.a4PrintPdf.text(),'local PDF');
+ const wire=s.changes.find(row=>row.store==='finalWorks').record;
+ assert.equal(wire.a4PrintImage,undefined);assert.equal(wire.a4PrintPdf,undefined);
+ assert.equal((await all(db,'syncQueue')).length,0);db.close();
+});
+
+test('import repairs a missing server project before uploading root attachments and children',async()=>{
+ navigator.onLine=false;const db=await database();server();const fallback=globalThis.fetch;let registered=false;const calls=[];
+ globalThis.fetch=async(url,opts={})=>{
+  const path=new URL(url,'https://crm.khanzama.ru').pathname;
+  if(path==='/api/v1/projects'){
+   if(opts.method==='POST'){registered=true;calls.push('register');return new Response(JSON.stringify(JSON.parse(opts.body)));}
+   return new Response(JSON.stringify(registered?[{id:'imported'}]:[]));
+  }
+  if(path.includes('/sync/blob/')){assert.equal(registered,true,'scope exists before attachment upload');calls.push('blob');}
+  return fallback(url,opts);
+ };
+ const client=engine(db);await client.start({ui:false,background:false});
+ await client.writeBatch([{store:'projects',value:{id:'imported',name:'Imported school',cover:new Blob(['cover'])}},{store:'classes',value:{id:'class1',projectId:'imported',name:'1 А'}}]);
+ navigator.onLine=true;await client.sync();assert.equal((await all(db,'syncQueue')).length,0);assert.equal(calls[0],'register');assert.ok(calls.includes('blob'));db.close();
+});
+
+test('background sync reopens a closing database and keeps the durable queue',async()=>{
+ navigator.onLine=false;const db=await database();server();let reopened=0;
+ const client=createRecordSync({db,user,enabled:true,onRemote:async()=>{},reconnect:async()=>{reopened++;const request=indexedDB.open(db.name,7);return req(request);}});
+ await client.start({ui:false,background:false});await client.put('projects',{id:'p',name:'Survives closure'});db.close();navigator.onLine=true;await client.sync();
+ assert.equal(reopened,1);const check=await req(indexedDB.open(db.name,7));assert.equal((await all(check,'syncQueue')).length,0);assert.equal((await get(check,'projects','p')).name,'Survives closure');check.close();
+});
+
+test('deleted project changes still reach a client when the active project list is empty',async()=>{
+ navigator.onLine=false;const db=await database(),s=server(),original=globalThis.fetch;let deleted=false;
+ globalThis.fetch=async(url,opts={})=>{
+  const parsed=new URL(url,'https://crm.khanzama.ru');
+  if(parsed.pathname==='/api/v1/projects'&&opts.method!=='POST')return new Response(JSON.stringify(!deleted||parsed.searchParams.get('includeDeleted')==='1'?[{id:'p'}]:[]));
+  return original(url,opts);
+ };
+ const client=engine(db);await client.start({ui:false,background:false});await client.put('projects',{id:'p',name:'Old project'});navigator.onLine=true;await client.sync();
+ deleted=true;s.changes.push({store:'projects',id:'p',scope:'p',seq:2,record:null});await client.sync();
+ assert.equal(await get(db,'projects','p'),undefined);assert.equal((await all(db,'syncQueue')).length,0);db.close();
+});
+
+test('persisted IndexedDB blobs and upload acknowledgements survive reload without repeat transfer',async()=>{
+ navigator.onLine=false;const db=await database(),s=server(),first=engine(db);
+ let binaryRequests=0;const fetchServer=globalThis.fetch;
+ globalThis.fetch=(url,options)=>{if(String(url).includes('/sync/blob/'))binaryRequests++;return fetchServer(url,options);};
+ await first.start({ui:false,background:false});
+ await first.writeBatch([{store:'projects',value:{id:'p',name:'School'}},{store:'classes',value:{id:'c',projectId:'p'}},{store:'students',value:{id:'s',classId:'c'}},{store:'media',value:{id:'m',studentId:'s',blob:new Blob(['original photo'],{type:'image/jpeg'})}}]);
+ navigator.onLine=true;await first.sync();assert.equal(binaryRequests,2,'one existence check and one upload');
+ const reloaded=engine(db);await reloaded.start({ui:false,background:false});
+ const local=await get(db,'media','m');await reloaded.put('media',{...local,note:'Metadata only'});await reloaded.sync();
+ assert.equal(binaryRequests,2,'metadata edit does not resend the photo or repeat its check');
+ const latest=s.changes.filter(row=>row.store==='media').at(-1);
+ s.changes.push({...latest,seq:s.changes.length+1,record:{...latest.record,note:'Remote edit'}});
+ await reloaded.sync();assert.equal((await get(db,'media','m')).note,'Remote edit');assert.equal(binaryRequests,2,'same remote photo comes from persistent cache');
+ const receipts=s.receipts.size;await reloaded.put('media',await get(db,'media','m'));await reloaded.sync();
+ assert.equal(s.receipts.size,receipts,'unchanged record is not sent');assert.equal((await all(db,'syncQueue')).length,0);db.close();
+});
+test('existing IndexedDB photos seed cache without downloading the same bytes again',async()=>{
+ navigator.onLine=false;const db=await database(),s=server(),client=engine(db);
+ await client.start({ui:false,background:false});const blob=new Blob(['already on device'],{type:'image/jpeg'});
+ await client.writeBatch([{store:'projects',value:{id:'p'}},{store:'classes',value:{id:'c',projectId:'p'}},{store:'students',value:{id:'s',classId:'c'}},{store:'media',value:{id:'m',studentId:'s',blob}}],{queue:false});
+ const wire=await encodeRecord({id:'m',studentId:'s',blob,note:'new metadata'},sha256);
+ s.changes.push({store:'media',id:'m',scope:'p',record:wire,seq:1});
+ let downloads=0;const fetchServer=globalThis.fetch;globalThis.fetch=(url,opts)=>{if(String(url).includes('/sync/blob/'))downloads++;return fetchServer(url,opts);};
+ navigator.onLine=true;await client.sync();assert.equal(downloads,0);assert.equal(await (await get(db,'media','m')).blob.text(),'already on device');db.close();
+});
+test('server missing-blob rejection invalidates upload acknowledgements and repairs the durable retry',async()=>{
+ navigator.onLine=false;const db=await database(),s=server(),client=engine(db);await client.start({ui:false,background:false});
+ await client.writeBatch([{store:'projects',value:{id:'p'}},{store:'classes',value:{id:'c',projectId:'p'}},{store:'students',value:{id:'s',classId:'c'}},{store:'media',value:{id:'m',studentId:'s',blob:new Blob(['recoverable'])}}]);
+ navigator.onLine=true;await client.sync();const local=await get(db,'media','m');s.files.clear();
+ const fetchServer=globalThis.fetch;let rejectOnce=true,uploads=0;
+ globalThis.fetch=(url,opts={})=>{
+  if(String(url).includes('/sync/blob/')&&opts.method==='POST')uploads++;
+  if(String(url).endsWith('/sync/push')&&rejectOnce){rejectOnce=false;return Promise.resolve(new Response(JSON.stringify({error:'Missing blob'}),{status:425}));}
+  return fetchServer(url,opts);
+ };
+ await client.put('media',{...local,note:'new'});await client.sync();assert.equal((await all(db,'syncQueue')).length,1);
+ await client.sync();assert.equal(uploads,1);assert.equal((await all(db,'syncQueue')).length,0);assert.equal(s.files.size,1);db.close();
 });

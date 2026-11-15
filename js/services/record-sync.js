@@ -1,22 +1,27 @@
 import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js';
+import {createSyncBlobCache} from './sync-blob-cache.js';
 import {captureDialogReturn} from './dialog-return.js';
 export {SYNC_LOCAL_STORES};
+export function canApplyRemoteChanges(doc) {
+ if(doc.querySelector('dialog[open], [role="dialog"], input:focus, textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
+ return !Array.from(doc.querySelectorAll('video')).some(video=>!video.paused&&!video.ended);
+}
 const keyOf=(store,id)=>store+':'+id;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const done=tx=>new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Сохранение отменено'));});
 const result=r=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
-export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>true,prepareRecord=async(store,value)=>value}) {
+export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>true,prepareRecord=async(store,value)=>value,reconnect}) {
  let running=false,started=false,background=true,changed=false,timer,status='Изменения сохраняются на устройстве',button;
- const blobs=new Map();
+ const blobs=new Map(),downloads=new Map(),blobCache=createSyncBlobCache(()=>db);
  const get=(store,id)=>result(db.transaction(store).objectStore(store).get(id));
  const all=store=>result(db.transaction(store).objectStore(store).getAll());
  const account=()=>typeof user==='function'?user():user;
  async function api(path,body){
-  const response=await fetch('/api/v1'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(body instanceof Blob?600000:30000),headers:body&&!(body instanceof Blob)?{'Content-Type':'application/json'}:{},body:body instanceof Blob?body:body?JSON.stringify(body):undefined});
+  const response=await fetch('/api/v1'+path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(body instanceof Blob||path.startsWith('/sync/blob/')?600000:30000),headers:body&&!(body instanceof Blob)?{'Content-Type':'application/json'}:{},body:body instanceof Blob?body:body?JSON.stringify(body):undefined});
   if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||`Ошибка связи ${response.status}`);error.status=response.status;throw error;}return response;
  }
  const json=async(path,body)=>(await api(path,body)).json();
- function update(message){status=message;if(button)button.textContent='Синхронизация · '+message;}
+ function update(message){status=message;if(button)button.textContent=message==='Всё сохранено на сервере'?'Сохранено онлайн':'Сохранение · '+message;}
  async function scopeFor(store,value,id,lookup=get){
   const parent=async(store,id)=>scopeFor(store,await lookup(store,id),id,lookup);
   if(['catalog','templates'].includes(store))return 'global';
@@ -60,15 +65,30 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  async function clear(store){const values=await all(store);await writeBatch(values.map(v=>({store,id:v.id,value:null})));}
  function schedule(){if(!started||!background)return;clearTimeout(timer);timer=setTimeout(()=>void sync(),1200);}
  async function uploadBlob(scope,blob){
-  const hash=await sha256(blob);blobs.set(hash,blob);
-  if(!(await json(`/sync/blob/${scope}/${hash}?check=1`)).exists)await api(`/sync/blob/${scope}/${hash}`,blob);
+  const hash=await blobCache.hash(blob);blobs.set(hash,blob);
+  if(!await blobCache.confirmed(scope,hash)){
+   if(!(await json(`/sync/blob/${scope}/${hash}?check=1`)).exists)await api(`/sync/blob/${scope}/${hash}`,blob);
+   await blobCache.confirm(scope,hash);
+  }
   return hash;
  }
  async function pack(value,scope){return encodeRecord(value,blob=>uploadBlob(scope,blob));}
- async function unpack(value,scope){return decodeRecord(value,async hash=>{
-  if(blobs.has(hash))return blobs.get(hash);
-  const blob=await(await api(`/sync/blob/${scope}/${hash}`)).blob();if(await sha256(blob)!==hash)throw new Error('Контрольная сумма полученного файла не совпала');blobs.set(hash,blob);return blob;
- });}
+ async function unpack(value,scope,local){
+  let seeded;
+  return decodeRecord(value,async hash=>{
+   if(blobs.has(hash))return blobs.get(hash);
+   let cached=await blobCache.get(hash);
+   if(!cached&&local){seeded??=blobCache.seed(local);await seeded;cached=await blobCache.get(hash);}
+   if(cached){blobs.set(hash,cached);return cached;}
+   if(!downloads.has(hash))downloads.set(hash,(async()=>{
+    const blob=await(await api(`/sync/blob/${scope}/${hash}`)).blob();
+    if(await sha256(blob)!==hash)throw new Error('Контрольная сумма полученного файла не совпала');
+    await blobCache.remember(hash,blob);blobs.set(hash,blob);return blob;
+   })());
+   try{return await downloads.get(hash);}finally{downloads.delete(hash);}
+  });
+ }
+
  async function rememberError(q,error,conflict){
   const tx=db.transaction('syncQueue','readwrite');const complete=done(tx);const store=tx.objectStore('syncQueue');store.get(q.id).onsuccess=e=>{if(e.target.result?.op===q.op)store.put({...e.target.result,error,conflict:conflict||null});};await complete;
  }
@@ -78,19 +98,25 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   else {
    const tx=db.transaction([q.store,'syncQueue']);const [local,latest]=await Promise.all([result(tx.objectStore(q.store).get(q.rid)),result(tx.objectStore('syncQueue').get(q.id))]);
    if(latest?.op!==q.op)return;
-   next=await pack(await prepareRecord(q.store,local??null),q.scope);
+   const prepared=await prepareRecord(q.store,local??null);
+   next=await encodeRecord(prepared,blob=>blobCache.hash(blob));
+   if(q.base!==null&&JSON.stringify(next)===JSON.stringify(q.base)){
+    const write=db.transaction('syncQueue','readwrite'),saved=done(write),queue=write.objectStore('syncQueue');
+    queue.get(q.id).onsuccess=e=>{if(e.target.result?.op===q.op)queue.delete(q.id);};await saved;return;
+   }
+   next=await pack(prepared,q.scope);
    flight={id:'flight:'+q.id,request:{store:q.store,id:q.rid,scope:q.scope,op:q.op,base:q.base,next,...(q.restoreSeq?{restoreSeq:q.restoreSeq}:{})}};
    const txSave=db.transaction('syncMeta','readwrite');const saved=done(txSave);txSave.objectStore('syncMeta').put(flight);await saved;
   }
-  const reply=await json('/sync/push',flight.request);
+  let reply;try{reply=await json('/sync/push',flight.request);}catch(error){if(error.status===425)await blobCache.invalidate(q.scope);throw error;}
   if(reply.conflict){await rememberError(q,reply.message,reply);const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').delete('flight:'+q.id);await complete;return;}
   if(JSON.stringify(next)!==JSON.stringify(reply.record)&&!canApply())return;
-  const restored=await unpack(reply.record,q.scope);
+  const restored=await unpack(reply.record,q.scope,await get(q.store,q.rid));
   const write=db.transaction([q.store,'syncQueue','syncMeta'],'readwrite');const complete=done(write);const queue=write.objectStore('syncQueue'),meta=write.objectStore('syncMeta');meta.delete('flight:'+q.id);
   queue.get(q.id).onsuccess=e=>{const pending=e.target.result;meta.get('entity:'+q.id).onsuccess=ev=>{
    if((ev.target.result?.seq||0)>reply.seq)return;
    meta.put({id:'entity:'+q.id,scope:q.scope,record:reply.record,seq:reply.seq});
-   if(pending?.op===q.op){if(JSON.stringify(next)!==JSON.stringify(reply.record))changed=true;queue.delete(q.id);reply.record===null?write.objectStore(q.store).delete(q.rid):write.objectStore(q.store).put(restored);}
+   if(pending?.op===q.op){if(JSON.stringify(next)!==JSON.stringify(reply.record))changed=true;queue.delete(q.id);if(JSON.stringify(next)!==JSON.stringify(reply.record)){reply.record===null?write.objectStore(q.store).delete(q.rid):write.objectStore(q.store).put(restored);}}
    else if(pending){queue.put({...pending,base:next});}
   };};await complete;
  }
@@ -99,12 +125,13 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   let cursor=(await get('syncMeta','cursor:'+scope))?.value||0;
   for(let page=0;page<20;page++){
    const response=await json(`/sync/changes/${scope}?after=${cursor}`);
+   if(response.changes.length)update(`Обновление данных: ${response.changes.length}`);
    const latest=new Map(response.changes.map(row=>[keyOf(row.store,row.id),row]));
    for(const [key,row] of latest){
     if(!canApply())return;
     if(!SYNC_STORES.includes(row.store)||await get('syncQueue',key))continue;
     const meta=await get('syncMeta','entity:'+key);if((meta?.seq||0)>=row.seq)continue;
-    const value=await unpack(row.record,scope);
+    const value=await unpack(row.record,scope,await get(row.store,row.id));
     const tx=db.transaction([row.store,'syncQueue','syncMeta'],'readwrite');const complete=done(tx);
     tx.objectStore('syncQueue').get(key).onsuccess=e=>{if(e.target.result)return;
      tx.objectStore('syncMeta').get('entity:'+key).onsuccess=ev=>{if((ev.target.result?.seq||0)>=row.seq)return;
@@ -140,14 +167,28 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  async function drain(){
   changed=false;
   const fresh=await json('/me');if(fresh.id!==account().id||fresh.role!==account().role)throw new Error('Аккаунт или роль изменились. Перезагрузите CRM; очередь сохранена.');
+  // Imported archives may contain local parents whose old sync metadata survived.
+  // Register missing project scopes before uploading any project attachment.
+  const registered=new Set((await json('/projects')).map(p=>p.id));
+  if(fresh.role==='admin'){
+   const pending=await all('syncQueue');
+   for(const scope of new Set(pending.filter(q=>q.actor===fresh.id&&!q.deleted&&q.scope!=='global').map(q=>q.scope))){
+    if(registered.has(scope))continue;
+    const root=(await get('projects',scope))||(await get('albumProjects',scope));
+    if(!root)continue;
+    await json('/projects',{id:scope,name:root.name||root.schoolName||'Проект'});
+    const store=await get('projects',scope)?'projects':'albumProjects';
+    if(!pending.some(q=>q.store===store&&q.rid===scope))await writeBatch([{store,value:root}]);
+   }
+  }
   const queue=(await all('syncQueue')).filter(q=>q.actor===fresh.id&&!q.conflict).sort((a,b)=>Number(a.deleted)-Number(b.deleted)||(a.deleted?-1:1)*(SYNC_STORES.indexOf(a.store)-SYNC_STORES.indexOf(b.store))||a.createdAt-b.createdAt);
   let sent=0;
   for(const q of queue){
    update(`Отправка ${++sent} из ${queue.length}`);
    try{await send(q);}catch(e){if(e.status&&[400,403,404,409,413,425].includes(e.status)){const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').delete('flight:'+q.id);await complete;}await rememberError(q,e.message);if(!e.status||[401,429,500,502,503,507].includes(e.status))throw e;}
   }
-  const projects=await json('/projects');
-  for(const scope of ['global',...projects.map(p=>p.id)]){try{await pull(scope);}catch(e){if(e.status!==403)throw e;}}
+  const projects=await json('/projects?includeDeleted=1');
+  for(const scope of ['global',...projects.map(p=>p.id)]){try{await pull(scope);}catch(e){if(e.status!==403)throw e;}if(changed&&canApply()){await onRemote?.();changed=false;}}
   if(changed)await onRemote?.();
   const remaining=await all('syncQueue'),conflicts=remaining.filter(q=>q.conflict).length;
   update(conflicts?`Нужно согласовать: ${conflicts}`:remaining.length?`Ожидает отправки: ${remaining.length}`:'Всё сохранено на сервере');
@@ -156,7 +197,8 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   if(!enabled||running||!started)return;
   if(!navigator.onLine){update('Без интернета — сохранено');return;}
   running=true;try{
-   if(navigator.locks)await navigator.locks.request('crm-record-sync:'+db.name,{ifAvailable:true},async lock=>{if(lock)await drain();});else await drain();
+   const run=async()=>{try{await drain();}catch(error){if(!reconnect||!(error?.name==='InvalidStateError'||/database connection is closing/i.test(error?.message||'')))throw error;update('Восстанавливаем соединение с устройством…');db=await reconnect();await drain();}};
+   if(navigator.locks)await navigator.locks.request('crm-record-sync:'+db.name,{ifAvailable:true},async lock=>{if(lock)await run();});else await run();
   }catch(e){if(e instanceof TypeError||['TimeoutError','AbortError'].includes(e.name))e=new Error('Нет связи — изменения сохранены на устройстве');update((e.status===401?'Нужен вход — очередь сохранена':e.message)||'Нет связи — очередь сохранена');}finally{running=false;blobs.clear();}
  }
  async function resolve(q,choice){
@@ -174,27 +216,39 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   };await complete;await onRemote?.();schedule();
  }
  async function show(trigger){
-  const restore=captureDialogReturn(document,window,trigger),dialog=document.createElement('dialog');dialog.className='cloud-dialog';dialog.setAttribute('aria-label','Синхронизация');
-  dialog.innerHTML='<div class="cloud-head"><h2>Синхронизация</h2><button data-close>Закрыть</button></div><p data-status role="status"></p><p>Рабочие изменения отправляются автоматически, когда CRM открыта и есть интернет. Не закрывайте приложение до завершения передачи больших файлов.</p><button data-retry>Повторить сейчас</button><div data-list></div><details><summary>Сохранённые версии после согласования</summary><div data-history></div></details>';
+  const restore=captureDialogReturn(document,window,trigger),dialog=document.createElement('dialog');dialog.className='cloud-dialog sync-dialog';dialog.setAttribute('aria-label','Сохранение онлайн');
+  dialog.innerHTML='<div class="cloud-head"><h2>Сохранение онлайн</h2><button data-close aria-label="Закрыть панель">Закрыть</button></div><section class="sync-summary"><strong data-status role="status"></strong><p>Изменения сначала сохраняются на устройстве, затем отправляются на сервер.</p><button class="primary-button" data-retry>Отправить сейчас</button></section><div data-list></div><details class="sync-help"><summary>Как работает сохранение</summary><p>После импорта отправляются проект, классы, карточки и файлы. Пока передаются фото и видео, держите CRM открытой. ZIP-архив для резервной копии сохраняется отдельно.</p></details><details class="sync-help"><summary>История исправлений</summary><div data-history></div></details>';
+
   document.body.append(dialog);dialog.showModal();history.pushState({...history.state,recordSyncModal:true},'');const back=()=>dialog.close();window.addEventListener('popstate',back,{once:true});
   dialog.onclose=()=>{window.removeEventListener('popstate',back);dialog.remove();if(history.state?.recordSyncModal)history.back();restore();};dialog.querySelector('[data-close]').onclick=()=>dialog.close();
   async function render(){
    dialog.querySelector('[data-status]').textContent=status;
    const queue=await all('syncQueue');dialog.querySelector('[data-list]').innerHTML='';
+   const labels={projects:'Проект',albumProjects:'Альбом',classes:'Класс',albumClasses:'Класс альбома',students:'Карточка ребёнка',orders:'Заказ',media:'Фото или видео',finalWorks:'Готовая работа',documents:'Документ',catalog:'Услуга',templates:'Шаблон'};
+   const name=v=>v?.name||v?.title||v?.schoolName||[v?.lastName,v?.firstName].filter(Boolean).join(' ');
+   if(queue.length)dialog.querySelector('[data-status]').textContent=`На устройстве сохранено. Осталось отправить: ${queue.length}`;
+
    for(const q of queue){
-    const local=await get(q.store,q.rid),title=local?.name||local?.title||[local?.lastName,local?.firstName].filter(Boolean).join(' ')||q.rid;
-    const section=document.createElement('section');section.className='panel';
+    const local=await get(q.store,q.rid);
+    const child=local?.studentId?await get('students',local.studentId):null;
+    const group=(local?.classId||child?.classId)?await get('classes',local?.classId||child?.classId):null;
+    const project=await get('projects',q.scope)||await get('albumProjects',q.scope);
+    const title=[labels[q.store]||'Запись',name(local)||name(child)||name(group)||name(project)].filter(Boolean).join(' · ');
+    const context=[name(project),name(group)].filter(Boolean).join(' / ');
+    const message=q.error==='Проект не найден'?'Проект ещё не отправлен. Нажмите «Отправить сейчас», чтобы повторить передачу вместе с проектом.':q.error||'В очереди на отправку';
+    const section=document.createElement('section');section.className='sync-record';
     const summary=v=>JSON.stringify(v,(k,x)=>k==='$syncBlob'?'Файл':typeof x==='string'&&x.length>300?x.slice(0,300)+'…':x,2)?.slice(0,6000)||'Удалено';
-    section.innerHTML=`<h3>${esc(title)}</h3><p>${esc(q.error||'Ожидает отправки')}</p>${q.conflict?`<p>Различаются: ${esc(q.conflict.fields.join(', '))}. Обе версии сохранятся в истории на этом устройстве.</p><details><summary>Версия на устройстве</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(summary(local))}</pre></details><details><summary>Серверная версия</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(summary(q.conflict.current))}</pre></details><button data-local>Сохранить изменения устройства</button><button data-remote>Принять серверную версию</button>`:''}`;
+    section.innerHTML=`<h3>${esc(title)}</h3>${context?`<small>${esc(context)}</small>`:''}<p>${esc(message)}</p><details><summary>Технические данные</summary><code>${esc(q.rid)}</code></details>${q.conflict?`<p>Различаются: ${esc(q.conflict.fields.join(', '))}. Обе версии сохранятся в истории на этом устройстве.</p><details><summary>Версия на устройстве</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(summary(local))}</pre></details><details><summary>Серверная версия</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(summary(q.conflict.current))}</pre></details><button data-local>Сохранить изменения устройства</button><button data-remote>Принять серверную версию</button>`:''}`;
     for(const choice of ['local','remote'])section.querySelector('[data-'+choice+']')?.addEventListener('click',async()=>{section.querySelectorAll('button').forEach(b=>b.disabled=true);try{await resolve(q,choice);await render();}catch(e){dialog.querySelector('[data-status]').textContent=e.message;section.querySelectorAll('button').forEach(b=>b.disabled=false);}});
     dialog.querySelector('[data-list]').append(section);
    }
-   if(!queue.length)dialog.querySelector('[data-list]').textContent='Неотправленных изменений нет.';
+   if(!queue.length)dialog.querySelector('[data-list]').innerHTML='<p class="sync-empty">Все изменения отправлены. Можно продолжать работу.</p>';
    const history=(await all('syncHistory')).sort((a,b)=>b.at-a.at).slice(0,20);const historyBox=dialog.querySelector('[data-history]');historyBox.innerHTML='';
    for(const saved of history){const item=document.createElement('p');item.textContent=`${saved.local?.name||saved.local?.lastName||saved.recordId} · ${new Date(saved.at).toLocaleString()}`;const restoreButton=document.createElement('button');restoreButton.textContent='Восстановить сохранённую версию';restoreButton.onclick=async()=>{restoreButton.disabled=true;try{await writeBatch([{store:saved.store,id:saved.recordId,value:saved.local}]);await onRemote?.();await render();}catch(e){dialog.querySelector('[data-status]').textContent=e.message;restoreButton.disabled=false;}};item.append(restoreButton);historyBox.append(item);}
    if(!history.length)historyBox.textContent='Пока нет сохранённых конфликтов.';
   }
-  dialog.querySelector('[data-retry]').onclick=async()=>{await sync();await render();};await render();
+  const retry=dialog.querySelector('[data-retry]');retry.onclick=async()=>{retry.disabled=true;retry.textContent='Отправляем…';try{await sync();await render();}finally{retry.disabled=false;retry.textContent='Отправить сейчас';}};
+  await render();let shownStatus=status;const refresh=setInterval(()=>{if(dialog.open&&shownStatus!==status&&!dialog.querySelector('details[open]')){shownStatus=status;void render();}},2000);dialog.addEventListener('close',()=>clearInterval(refresh),{once:true});
  }
  async function start({ui=true,background:automatic=true}={}){
   if(!enabled||started)return;background=automatic;await bootstrap();started=true;

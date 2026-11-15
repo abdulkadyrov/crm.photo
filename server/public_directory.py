@@ -1,5 +1,5 @@
 """Explicitly public school/class directory, backed by canonical CRM roster only."""
-import json,secrets
+import json,secrets,time
 from datetime import datetime,timezone
 from urllib.parse import parse_qs
 
@@ -38,6 +38,7 @@ def project_roster(c,a):
    published=c.execute('SELECT * FROM parent_classes WHERE id=?',(cid,)).fetchone()
   elif published['name']!=name:
    c.execute('UPDATE parent_classes SET name=?,revision=revision+1 WHERE id=?',(name,cid))
+  publish_canonical_link(c,cid,pid,value,published['token'])
   if published['enabled']:groups[cid]={'id':cid,'name':name,'token':published['token'],'projectId':pid}
  refresh_children(c)
  for row in list(c.execute("SELECT id,scope,data FROM sync_records WHERE store='students' AND data IS NOT NULL")):
@@ -88,3 +89,13 @@ def refresh_children(c,class_id=None):
   if value is None or not active(value) or value.get('classId')!=child['class_id'] or not group or row['scope']!=group['project_id']:
    c.execute('UPDATE parent_children SET active=0 WHERE id=?',(child['id'],))
    c.execute('UPDATE parent_classes SET revision=revision+1 WHERE id=?',(child['class_id'],))
+
+def publish_canonical_link(c,cid,pid,value,token):
+ """Replace obsolete export links using the existing server token, without changing the roster."""
+ url='https://zakaz.khanzama.ru/p/'+token
+ if value.get('parentCatalogUrl')==url and value.get('parentCatalogToken')==token:return False
+ updated={**value,'parentCatalogUrl':url,'parentCatalogToken':token}
+ encoded=json.dumps(updated,ensure_ascii=False)
+ seq=c.execute('INSERT INTO sync_changes(store,id,scope,data,actor,at) VALUES(?,?,?,?,?,?)',('classes',cid,pid,encoded,'parent-directory',time.time())).lastrowid
+ c.execute("UPDATE sync_records SET data=?,seq=? WHERE store='classes' AND id=? AND scope=?",(encoded,seq,cid,pid))
+ return True

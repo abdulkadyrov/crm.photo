@@ -182,3 +182,16 @@ class Studio(unittest.TestCase):
   with app.db() as c:c.execute("UPDATE sync_records SET data=NULL WHERE store='projects' AND id='deletion-school'")
   self.assertEqual(request('/public/classes/'+tokens['deletion-b'])['status'],404)
   after=request('/public/directory');self.assertEqual(after['status'],200,after);self.assertFalse(any(s['id']=='deletion-school' for s in after['data']['schools']))
+ def test_directory_updates_legacy_canonical_class_link_once_without_changing_token_or_teacher(self):
+  token='L'*40
+  value={'id':'link-class','projectId':'studio-project','name':'Ссылки','parentCatalogUrl':'https://waystudia.github.io/vakha.studia/?/p/old-token','teacher':{'name':'Учитель','phone':'private'},'teacherBroadcastSentAt':'preserve'}
+  with app.db() as c:
+   parent_mutations.write_record(c,'classes',value['id'],'studio-project',value)
+   c.execute('INSERT INTO parent_classes VALUES(?,?,?,?,?,?,?)',(value['id'],'studio-project',value['name'],token,1,1,'[]'))
+  first=request('/public/directory');self.assertEqual(first['status'],200,first)
+  with app.db() as c:
+   record=c.execute("SELECT data,seq FROM sync_records WHERE store='classes' AND id='link-class'").fetchone();updated=json.loads(record['data']);seq=record['seq']
+   self.assertEqual(updated['parentCatalogUrl'],'https://zakaz.khanzama.ru/p/'+token);self.assertEqual(updated['parentCatalogToken'],token);self.assertEqual(updated['teacher'],value['teacher']);self.assertEqual(updated['teacherBroadcastSentAt'],'preserve')
+   self.assertEqual(c.execute("SELECT token FROM parent_classes WHERE id='link-class'").fetchone()[0],token)
+  self.assertEqual(request('/public/directory')['status'],200)
+  with app.db() as c:self.assertEqual(c.execute("SELECT seq FROM sync_records WHERE store='classes' AND id='link-class'").fetchone()[0],seq)
