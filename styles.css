@@ -7002,3 +7002,6 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .transfer-project summary>strong { overflow-wrap:anywhere; }.transfer-project summary>span { display:block; margin-top:4px; color:var(--muted,#657186); font-weight:400; font-size:11px; }
 .transfer-project-body { padding:0 10px 12px; }.transfer-meter { margin:10px 0; }.transfer-meter>div { display:flex; flex-wrap:wrap; gap:4px 10px; justify-content:space-between; }.transfer-meter strong { font-variant-numeric:tabular-nums; font-size:11px; }.transfer-meter small { margin:0; }
 .sync-dialog .transfer-group { border-top:1px solid var(--line,#dce2eb); margin:0; padding:0; }.transfer-group .transfer-meter { padding:0 10px; }.transfer-pending { color:#8b5900; }
+
+/* Keep the header steady while sync details change in its panel. */
+.topbar-copy .sync-status-button{inline-size:160px;max-inline-size:100%;min-height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -62,7 +62,24 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||`Ошибка связи ${response.status}`);error.status=response.status;throw error;}return response;
  }
  const json=async(path,body)=>(await api(path,body)).json();
- function update(message){status=message;if(button)button.textContent=message==='Всё сохранено на сервере'?'Сохранено онлайн':'Сохранение · '+message;}
+ function update(message,{quiet=false}={}){
+  status=message;
+  if(!button)return;
+  button.title=message;
+  // A successful background poll does not change the header's label or geometry.
+  // The open sync panel still receives the full live status and activity details.
+  if(quiet)return;
+  const label=message==='Всё сохранено на сервере'?'Сохранено онлайн'
+   :message.startsWith('Отправка')?'Отправляем данные'
+   :/^(Обновление данных|Списки школ|Получаем данные)/.test(message)?'Получаем данные'
+   :message==='Ожидает отправки'||message.startsWith('Ожидает отправки:')?'Ожидает отправки'
+   :message.startsWith('Получение данных отложено')?'Получение отложено'
+   :message.startsWith('Без интернета')||message.startsWith('Нет связи')?'Нет связи'
+   :message.startsWith('Подключение')||message.startsWith('Проверяем')?'Проверяем связь'
+   :message.startsWith('Ожидаем синхронизацию')?'Другая вкладка'
+   :'Нужна проверка';
+  if(button.textContent!==label)button.textContent=label;
+ }
  async function scopeFor(store,value,id,lookup=get){
   const parent=async(store,id)=>scopeFor(store,await lookup(store,id),id,lookup);
   if(['catalog','templates'].includes(store))return 'global';
@@ -211,7 +228,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   const tx=db.transaction('syncMeta','readwrite');const complete=done(tx);tx.objectStore('syncMeta').put({id:marker,value:true});await complete;
  }
  async function drain(){
-  changed=false;activity={phase:'checking',sent:0,received:0,downloaded:0,lastCheckedAt:activity.lastCheckedAt};update('Проверяем доступ и проекты…');
+  changed=false;activity={phase:'checking',sent:0,received:0,downloaded:0,lastCheckedAt:activity.lastCheckedAt};update('Проверяем доступ и проекты…',{quiet:activity.lastCheckedAt!==null});
   resetPhotoAccount();
   const fresh=await json('/me');if(fresh.id!==account().id||fresh.role!==account().role){photoScopes.clear();photoDeletes.clear();throw new Error('Аккаунт или роль изменились. Перезагрузите CRM; очередь сохранена.');}
   // Imported archives may contain local parents whose old sync metadata survived.
@@ -241,7 +258,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   for(const structure of [true,false]){
    const scopes=structure?projects.map(p=>p.id):['global',...projects.map(p=>p.id)];
    for(const [index,scope] of scopes.entries()){
-   activity.phase=structure?'structure':'receive';activity.scope=index+1;activity.scopes=scopes.length;update(syncTransferText(activity,true));
+   activity.phase=structure?'structure':'receive';activity.scope=index+1;activity.scopes=scopes.length;update(syncTransferText(activity,true),{quiet:activity.lastCheckedAt!==null});
    try{if(!await pull(scope,structure))received=false;}catch(e){if(e.status!==403)throw e;received=false;}
    if(changed&&canApply()){await onRemote?.();changed=false;}
   }

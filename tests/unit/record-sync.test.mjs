@@ -251,7 +251,33 @@ test('deferred receive never claims completion and read-only saving dialog permi
  const previous=globalThis.document;globalThis.document={createElement:()=>({}),querySelector:()=>({append:value=>{button=value;}})};
  try{
   const client=createRecordSync({db,user,enabled:true,canApply:()=>allowed});await client.start({ui:true,background:false});
-  assert.match(button.textContent,/Получение данных отложено/);assert.equal(await get(db,'syncMeta','last-check:owner:admin'),undefined);
+  assert.equal(button.textContent,'Получение отложено');assert.match(button.title,/Получение данных отложено/);assert.equal(await get(db,'syncMeta','last-check:owner:admin'),undefined);
   allowed=true;await client.sync();assert.equal(button.textContent,'Сохранено онлайн');assert.ok((await get(db,'syncMeta','last-check:owner:admin')).value>0);
  }finally{globalThis.document=previous;db.close();}
+});
+
+test('idle polling keeps the saved header steady, but actual uploads and connection failures remain visible',async()=>{
+ const previousDocument=globalThis.document;
+ const labels=[];
+ const button={title:'',set textContent(value){this.label=value;labels.push(value);},get textContent(){return this.label;}};
+ globalThis.document={createElement:()=>button,querySelector:()=>({append:()=>{}})};
+ navigator.onLine=false;
+ const db=await database(),s=server(),client=engine(db);
+ try{
+  await client.start({ui:true,background:false});
+  navigator.onLine=true;await client.sync();
+  assert.equal(button.textContent,'Сохранено онлайн');
+  labels.length=0;
+  await client.sync();await client.sync();
+  assert.deepEqual(labels,[],'empty checks should not rewrite the saved label');
+  assert.equal(button.title,'Всё сохранено на сервере');
+  await client.put('projects',{id:'p',name:'New school name'});
+  labels.length=0;await client.sync();
+  assert.ok(labels.includes('Отправляем данные'),'real pending edits must show upload activity');
+  assert.equal(button.textContent,'Сохранено онлайн');
+  assert.equal(s.changes.at(-1).record.name,'New school name');
+  globalThis.fetch=async()=>{throw new TypeError('connection lost');};
+  await client.sync();assert.equal(button.textContent,'Нет связи');
+  assert.match(button.title,/изменения сохранены на устройстве/);
+ }finally{db.close();globalThis.document=previousDocument;}
 });
