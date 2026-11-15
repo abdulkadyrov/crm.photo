@@ -1464,7 +1464,7 @@ function classStudentSection(classId) {
     <section class="class-section">
       <div class="class-student-actions class-quick-actions">
           <button class="primary-button compact" data-add-student="${klass.id}" type="button">+ Учащийся</button>
-          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">${students.length ? "Список учащихся" : "Добавить список учащихся"}</button>
+          <button class="secondary-button compact" data-children-list="${klass.id}" type="button">Список учащихся</button>
       </div>
       <details class="scope-tools group-tools" data-scope-fold="group-${escapeAttr(klass.id)}">
         <summary>Действия и документы группы</summary>
