@@ -1,3 +1,5 @@
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=219";
+const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
 import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=218";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
@@ -992,6 +994,17 @@ function bindShell() {
   documentInput?.addEventListener("change", handleDocumentInput);
 }
 
+function rememberSelectedCard() {
+ if(state.route==='student'){
+  const student=studentById(state.studentId),group=student&&classById(student.classId);
+  if(student)lastCardSelection.remember('student',student.id,student.classId);
+  if(group){lastCardSelection.remember('group',group.id,group.projectId);lastCardSelection.remember('project',group.projectId);}
+ } else if(state.route==='classes') {
+  if(state.projectId)lastCardSelection.remember('project',state.projectId);
+  if(state.classId){const group=classById(state.classId);if(group)lastCardSelection.remember('group',group.id,group.projectId);}
+ }
+}
+
 function navigate(route, params = {}) {
   if (cloudRequired && cloudAccount()?.role !== "admin" && ["profile", "services", "serviceDetail"].includes(route)) return notify("Этот раздел доступен администратору");
   if (rosterStudentHistory && route !== "student") {
@@ -1008,6 +1021,7 @@ function navigate(route, params = {}) {
     state.studentDetailTab = "overview";
   }
   Object.assign(state, params, { route });
+  rememberSelectedCard();
   document.querySelectorAll(".nav-item").forEach((item) => {
     const itemRoute = item.dataset.route;
     item.classList.toggle("active", itemRoute === route || (itemRoute === "albums" && route.startsWith("album")) || (itemRoute === "settings" && ["settings", "profile", "services", "serviceDetail", "catalog"].includes(route)));
@@ -4702,6 +4716,7 @@ function cardControlTarget(event, card) {
 }
 
 function bindViewActions() {
+  bindCardSelection(view,lastCardSelection,{group:classById,student:studentById});
   view.querySelectorAll('[data-scope-fold]').forEach(details => {
     details.open = scopeFoldState.get(details.dataset.scopeFold) || false;
     details.addEventListener('toggle', () => scopeFoldState.set(details.dataset.scopeFold, details.open));
