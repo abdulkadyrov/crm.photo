@@ -14,6 +14,14 @@ class SyncTest(unittest.TestCase):
   for role in ('admin','manager','photographer','viewer'):cls.cookies[role]=request('/login','POST',{'login':'sync-'+role,'password':PASSWORD})['headers']['Set-Cookie'].split(';')[0]
  def push(self,store,base,nxt,role='admin',scope='sync-project',op=None,**extra):
   rid=(nxt or base)['id'];return request('/sync/push','POST',{'store':store,'id':rid,'scope':scope,'base':base,'next':nxt,'op':op or str(uuid.uuid4()),**extra},self.cookies[role])
+ def test_shared_print_settings_only(self):
+  setting={'id':'spf-final-work-print','codeType':'qr','codeColor':'#d9d9d9','codeLayoutVersion':2}
+  self.assertTrue(self.push('settings',None,setting,scope='global')['data']['saved'])
+  feed=request('/sync/changes/global',cookie=self.cookies['admin'],headers={'QUERY_STRING':'structure=1&results=metadata'})['data']['changes']
+  self.assertTrue(any(row['store']=='settings' and row['record']==setting for row in feed))
+  self.assertEqual(self.push('settings',setting,{**setting,'codeType':'barcode'},role='manager',scope='global')['status'],403)
+  self.assertEqual(self.push('settings',None,{'id':'local-camera','private':'device'},scope='global')['status'],403)
+
  def test_01_seed_and_disjoint_edits(self):
   p={'id':'sync-project','name':'School'};self.assertEqual(self.push('projects',None,p)['status'],200)
   g={'id':'sync-class','projectId':p['id'],'name':'1A'};self.assertEqual(self.push('classes',None,g)['status'],200)

@@ -4,8 +4,8 @@ import hashlib,json,os,re,secrets,shutil,tempfile,time
 from pathlib import Path
 from urllib.parse import parse_qs
 
-STORES={'projects','classes','students','orders','media','catalog','templates','finalWorks','documents','albumProjects','albumClasses','albumStudents','albumGroupMedia','albumTeachers','albumMedia'}
-GLOBAL={'catalog','templates'}
+STORES={'settings','projects','classes','students','orders','media','catalog','templates','finalWorks','documents','albumProjects','albumClasses','albumStudents','albumGroupMedia','albumTeachers','albumMedia'}
+GLOBAL={'settings','catalog','templates'}
 MISSING=object()
 
 def initialize(c):
@@ -199,6 +199,7 @@ def route(r,c,u,path,a):
   return {'changes':changes,'cursor':rows[-1]['seq'] if rows else after,'more':len(rows)==100}
  if kind!='push' or r.method!='POST':raise a.Error(404,'Не найдено')
  b=r.json(8*1024*1024);store=b.get('store');a.fail(store not in STORES);rid=a.identifier(b.get('id'));op=a.identifier(b.get('op'));scope=a.identifier(b.get('scope'));base=b.get('base');nxt=b.get('next')
+ a.fail(store=='settings' and rid!='spf-final-work-print',403,'Синхронизируются только настройки печати')
  def bad_keys(value):
   if isinstance(value,dict):return bool(set(value)&{'__proto__','constructor','prototype'}) or any(bad_keys(v) for v in value.values())
   if isinstance(value,list):return any(bad_keys(v) for v in value)

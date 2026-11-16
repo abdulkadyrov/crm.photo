@@ -2,7 +2,7 @@ import {mergeDeferredRecord} from './deferred-final-work.js?v=218';
 import {mountProjectProgress} from './sync-project-progress.js';
 import {syncTransferText} from './sync-contents.js';
 import {syncPanelState} from './sync-panel-state.js';
-import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js';
+import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js?v=221';
 import {createSyncBlobCache} from './sync-blob-cache.js';
 import {captureDialogReturn} from './dialog-return.js';
 export {SYNC_LOCAL_STORES};
@@ -83,6 +83,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  }
  async function scopeFor(store,value,id,lookup=get){
   const parent=async(store,id)=>scopeFor(store,await lookup(store,id),id,lookup);
+  if(store==='settings')return id==='spf-final-work-print' ? 'global' : null;
   if(['catalog','templates'].includes(store))return 'global';
   if(['projects','albumProjects'].includes(store))return id;
   if(!value){const meta=await get('syncMeta','entity:'+keyOf(store,id));if(meta)return meta.scope;value=await lookup(store,id);if(!value)return null;}
@@ -105,7 +106,7 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   const actor=account();const prepared=[];
   const batch=new Map(operations.filter(op=>op.value!==null).map(op=>[keyOf(op.store,op.id||op.value?.id),op.value]));
   const lookup=(store,id)=>batch.has(keyOf(store,id))?Promise.resolve(batch.get(keyOf(store,id))):get(store,id);
-  for(const op of operations){const id=op.id||op.value?.id;const tracked=enabled&&queue&&actor&&SYNC_STORES.includes(op.store)&&actor.role!=='viewer'&&(actor.role==='admin'||!['catalog','templates','documents'].includes(op.store))&&(actor.role!=='photographer'||['students','orders','media'].includes(op.store));prepared.push({...op,id,tracked,expectedWire:tracked&&op.expected!==undefined?await encodeRecord(op.expected,sha256):undefined,scope:tracked?await scopeFor(op.store,op.value,id,lookup):null});}
+  for(const op of operations){const id=op.id||op.value?.id;const tracked=enabled&&queue&&actor&&SYNC_STORES.includes(op.store)&&(op.store!=='settings'||id==='spf-final-work-print')&&actor.role!=='viewer'&&(actor.role==='admin'||!['settings','catalog','templates','documents'].includes(op.store))&&(actor.role!=='photographer'||['students','orders','media'].includes(op.store));prepared.push({...op,id,tracked,expectedWire:tracked&&op.expected!==undefined?await encodeRecord(op.expected,sha256):undefined,scope:tracked?await scopeFor(op.store,op.value,id,lookup):null});}
   if(!prepared.length)return;
   if(prepared.some(op=>op.tracked&&op.value!==null&&!op.scope))throw new Error('Сначала сохраните проект и класс.');
   const tx=db.transaction([...new Set([...prepared.map(v=>v.store),...SYNC_LOCAL_STORES.slice(0,2)])],'readwrite');const complete=done(tx);
@@ -212,7 +213,8 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  async function bootstrap(){
   const marker='bootstrap:'+account().id;if(await get('syncMeta',marker))return;
   if(account().role!=='viewer')for(const store of SYNC_STORES){
-   if(account().role!=='admin'&&['catalog','templates','documents','projects','albumProjects'].includes(store))continue;
+   if(store==='settings')continue; // Existing device defaults must not overwrite shared preferences.
+   if(account().role!=='admin'&&['settings','catalog','templates','documents','projects','albumProjects'].includes(store))continue;
    if(account().role==='photographer'&&!['students','orders','media'].includes(store))continue;
    for(const value of await all(store)){
     const key=keyOf(store,value.id);if(await get('syncMeta','entity:'+key)||await get('syncQueue',key))continue;

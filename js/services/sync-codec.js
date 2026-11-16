@@ -1,5 +1,5 @@
 import {sha256 as hash256} from '../../vendor/noble-hashes/sha2.js';
-export const SYNC_STORES=['catalog','templates','projects','albumProjects','classes','albumClasses','students','albumStudents','albumGroupMedia','albumTeachers','media','albumMedia','orders','finalWorks','documents'];
+export const SYNC_STORES=['settings','catalog','templates','projects','albumProjects','classes','albumClasses','students','albumStudents','albumGroupMedia','albumTeachers','media','albumMedia','orders','finalWorks','documents'];
 export const SYNC_LOCAL_STORES=['syncQueue','syncMeta','syncHistory'];
 const ignored=new Set(['objectUrl','urlObject','fileHandle','directoryHandle','handle','a4PrintImage','a4PrintPdf']);
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
