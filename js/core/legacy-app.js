@@ -7391,9 +7391,12 @@ function finalWorkA4PdfBlob(work) {
 }
 
 function finalWorkOriginalBlob(work) {
-  if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
-  if (work?.blob instanceof Blob) return work.blob;
-  return mediaById(work?.resultMediaId)?.blob || mediaById(work?.sourceMediaId)?.blob || null;
+  const original = work?.originalFinalImage;
+  const shoot = mediaById(work?.sourceMediaId)?.blob;
+  const originalMatchesShoot = original instanceof Blob && shoot instanceof Blob
+    && original.size === shoot.size && original.type === shoot.type;
+  if (original instanceof Blob && !originalMatchesShoot && !finalWorkSourceHasEmbeddedQr(work)) return original;
+  return finalWorkA4SourceCandidates(work).find(candidate => candidate.blob instanceof Blob)?.blob || null;
 }
 
 function finalWorkA4SourceCandidates(work) {
