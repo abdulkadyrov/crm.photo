@@ -29,7 +29,7 @@ import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=217";
 import { printCodeLayout } from "../services/print-code-layout.js";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
