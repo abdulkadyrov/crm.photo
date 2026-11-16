@@ -28,7 +28,7 @@ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=218";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=222";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
@@ -7903,6 +7903,16 @@ function printClassFinalWorksWithQr(classId) {
   return reviewFinalWorksForPrint({ classId });
 }
 
+async function originalPhotoForPrintReview(work) {
+  const source=mediaById(work.sourceMediaId);
+  if (source?.blob instanceof Blob) return source.blob;
+  if (work.sourceMediaId && recordSync) {
+    try {const original=(await recordSync.loadRecord('media',work.sourceMediaId))?.record?.blob;return original instanceof Blob ? original : null;}
+    catch(error) {console.error('Не удалось загрузить оригинал',work.sourceMediaId,error);}
+  }
+  return null; // A finished portrait must never be labelled as the camera original.
+}
+
 async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   const scope = classId ? classById(classId) : projectById(projectId);
   if (!scope) return notify("Проект или группа не найдены.");
@@ -7913,6 +7923,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   if (!works.length) return notify("Нет готовых результатов для печати.");
   const exportLabel = finalWorkPrintSettings().codeType === "barcode" ? "Скачать PDF со штрихкодом" : "Скачать PDF с QR";
   const printAssets = new Map();
+  const sourcePhotos = new Map();
   await withBusy("Готовлю фотографии A4…", async () => {
     for (let work of works) {
       if (["image","mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(work.id);
@@ -7925,6 +7936,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
         sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
       });
       printAssets.set(work.id, assets);
+      sourcePhotos.set(work.id, await originalPhotoForPrintReview(work));
     }
   });
   if (printAssets.size !== works.length) return notify("Не удалось подготовить все фотографии A4. Повторите попытку.");
@@ -7942,8 +7954,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     <div class="toolbar print-review-controls"><button class="secondary-button" data-review-all type="button">Выбрать все</button><button class="secondary-button" data-review-none type="button">Снять выбор</button><strong data-review-count aria-live="polite"></strong></div>
     <div class="print-review-list" tabindex="0" aria-label="Фотографии для сравнения">${works.map(work => {
       const student = studentById(work.studentId);
-      const source = mediaById(work.sourceMediaId)?.blob;
-      const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
+      const original = sourcePhotos.get(work.id);
       return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать (проверьте лицо и мимику)</span></label><div class="print-review-pair" style="--print-review-ratio: ${printAssets.get(work.id).orientation === "horizontal" ? "3508 / 2480" : "2480 / 3508"}"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
     }).join("")}</div>
     <div class="print-review-footer"><button class="primary-button" data-review-download type="button">${exportLabel}</button><button class="secondary-button" data-review-preview type="button">Просмотр</button></div>

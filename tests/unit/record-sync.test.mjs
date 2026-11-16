@@ -281,3 +281,11 @@ test('idle polling keeps the saved header steady, but actual uploads and connect
   assert.match(button.title,/изменения сохранены на устройстве/);
  }finally{db.close();globalThis.document=previousDocument;}
 });
+
+test('only the shared print settings sync globally; device and account settings stay local',async()=>{
+ const db=await database();const sync=engine(db);
+ await sync.put('settings',{id:'spf-final-work-print',codeType:'qr',codeColor:'#d9d9d9',codeLayoutVersion:2});
+ await sync.put('settings',{id:'local-camera',deviceId:'private-local-device'});
+ const queue=await all(db,'syncQueue');assert.equal(queue.length,1);assert.equal(queue[0].scope,'global');assert.equal(queue[0].rid,'spf-final-work-print');
+ db.close();
+});
