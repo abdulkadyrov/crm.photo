@@ -16,6 +16,7 @@ ORIGIN = os.environ.get('CRM_ORIGIN', 'https://crm.khanzama.ru')
 ROLES = {'admin', 'manager', 'photographer', 'viewer'}
 MAX_UPLOAD = 1024 * 1024 * 1024
 SYNC_BLOB_FREE_RESERVE = max(0, int(os.environ.get('CRM_SYNC_BLOB_FREE_RESERVE', 512 * 1024 * 1024)))
+S3_PRIMARY = os.environ.get('CRM_S3_PRIMARY','') == '1'
 COOKIE = '__Host-crm_session'
 
 class Error(Exception):

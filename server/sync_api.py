@@ -149,6 +149,16 @@ def route(r,c,u,path,a):
   a.fail(r.method!='POST',404,'Не найдено');a.fail(u['role']=='viewer' or scope=='global' and u['role']!='admin',403,'Нет права загрузки')
   if row and target.exists():return {'saved':True,'duplicate':True}
   size=int(r.e.get('CONTENT_LENGTH','0'));a.fail(size<0 or size>a.MAX_UPLOAD,413,'Файл больше 1 ГБ')
+  if getattr(a,'S3_PRIMARY',False):
+   if row and mirrored_ready(c,scope,digest):return {'saved':True,'duplicate':True}
+   from private_storage import PrivateS3,InvalidUpload
+   try:PrivateS3().upload_stream(scope,digest,r.e['wsgi.input'],size)
+   except InvalidUpload as error:raise a.Error(400,str(error))
+   except Exception:raise a.Error(503,'Хранилище временно недоступно. Файл остаётся на устройстве')
+   c.execute('INSERT OR IGNORE INTO sync_blobs VALUES(?,?,?,?)',(scope,digest,size,u['id']))
+   c.execute('CREATE TABLE IF NOT EXISTS storage_mirror(scope TEXT,digest TEXT,state TEXT,attempts INTEGER DEFAULT 0,next_at REAL DEFAULT 0,PRIMARY KEY(scope,digest))')
+   c.execute("INSERT INTO storage_mirror(scope,digest,state) VALUES(?,?,'ready') ON CONFLICT(scope,digest) DO UPDATE SET state='ready'",(scope,digest))
+   return {'saved':True}
   a.fail(shutil.disk_usage(a.ROOT).free<size+a.SYNC_BLOB_FREE_RESERVE,507,'На сервере недостаточно места. Файл остаётся на устройстве')
   fd,tmp=tempfile.mkstemp(dir=folder);digest_check=hashlib.sha256()
   try:
