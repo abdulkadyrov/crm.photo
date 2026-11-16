@@ -1,3 +1,4 @@
+import {createNavigationHistory} from "../services/navigation-history.js?v=220";
 import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=219";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
 import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=218";
@@ -74,7 +75,8 @@ let DB_NAME = "school-photo-flow";
 let cloudImportInProgress = false;
 let recordSync = null;
 let databaseReconnect = null;
-let rosterStudentHistory = null;
+let rosterStudentHistory = null; // Legacy direct-entry fallback; route history owns new transitions.
+let navigationHistory;
 let rosterScroll = null;
 const studentMediaPreviewUrls = new Set();
 const APP_NAME = "Vakha Studio";
@@ -469,7 +471,7 @@ async function init() {
     const projectId = await addSchoolDemo(state.db, state.data.catalog);
     await refreshData();
     navigate('classes', {projectId, classId:null});
-  } else navigateFromUrl() || navigate("home");
+  } else navigationHistory?.resume() || navigateFromUrl() || navigate("home");
   registerServiceWorker();
   recordSync.start().catch(error=>notify(`Синхронизация: ${error.message}. Локальные данные сохранены.`));
 }
@@ -968,6 +970,7 @@ function bindShell() {
     event.currentTarget.setAttribute('aria-label', collapsed ? 'Показать верхнюю панель' : 'Свернуть верхнюю панель');
   });
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  navigationHistory = createNavigationHistory({win:window, scope:()=>cloudAccount()?.id || state.currentOperatorId || 'local', capture:routeSnapshot, restore:restoreRouteSnapshot});
   document.querySelectorAll("[data-route]").forEach((button) => {
     button.addEventListener("click", () => {
       const route = button.dataset.route;
@@ -1011,9 +1014,11 @@ function navigate(route, params = {}) {
     rosterStudentHistory.forget();
     rosterStudentHistory = null;
   }
+  cancelRouteScrollRestore();
+  const replace = route === state.route && (route === "student" || (!Object.hasOwn(params,'projectId') || params.projectId === state.projectId) && (!Object.hasOwn(params,'classId') || params.classId === state.classId));
+  navigationHistory.transition(() => {
   stopQrStream();
-  const prevRoute = state.route;
-  const prevScrollY = window.scrollY;
+
   if (route === "student" && state.route !== "student") {
     state.returnTarget = routeSnapshot();
   }
@@ -1028,6 +1033,8 @@ function navigate(route, params = {}) {
   });
   render();
   resetDirectoryScroll();
+  }, {replace});
+  addContextBackButton();
 }
 
 function routeSnapshot() {
@@ -1040,7 +1047,16 @@ function routeSnapshot() {
     studentFormClassId: state.studentFormClassId,
     query: state.query,
     filter: state.filter,
+    studentId: state.studentId,
+    studentDetailTab: state.studentDetailTab,
+    albumProjectId: state.albumProjectId,
+    albumClassId: state.albumClassId,
+    albumTab: state.albumTab,
+    directoryQueries: [...studentDirectoryQueries],
     scrollY: window.scrollY,
+    scrollX: window.scrollX,
+    openDetails: [...view.querySelectorAll('details')].flatMap((node,index)=>node.open ? [index] : []),
+    innerScroll: [...view.querySelectorAll('*')].flatMap((node,index)=>node.scrollTop || node.scrollLeft ? [{index,top:node.scrollTop,left:node.scrollLeft}] : []),
     rosterFocus: source ? {
       id: source.dataset.openStudent,
       menu: Boolean(document.activeElement.closest("[data-open-student-action]"))
@@ -1052,6 +1068,40 @@ function routeSnapshot() {
     ) : [],
     rosterLetter: roster?.querySelector?.("[aria-current]")?.dataset.rosterJump
   };
+}
+
+let cancelRouteScrollRestore = () => {};
+function restoreRouteSnapshot(target) {
+  cancelRouteScrollRestore();
+  if (!target?.route) return;
+  stopQrStream();
+  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,openDetails,innerScroll,...route} = target;
+  if (directoryQueries) {studentDirectoryQueries.clear();for (const [key,value] of directoryQueries) studentDirectoryQueries.set(key,value);}
+  Object.assign(state,route);
+  rememberSelectedCard();
+  document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.route===state.route));
+  render();
+  const details = [...view.querySelectorAll('details')];
+  details.forEach((node,index)=>{node.open=(openDetails || []).includes(index);});
+  if (rosterLetter) view.querySelector(`[data-roster-jump="${CSS.escape(rosterLetter)}"]`)?.setAttribute('aria-current','true');
+  if (rosterFocus) {
+    const card=view.querySelector(`[data-open-student="${CSS.escape(rosterFocus.id)}"]`);
+    (rosterFocus.menu ? card?.querySelector('[data-open-student-action]') : card)?.focus({preventScroll:true});
+  }
+  const nodes=[...view.querySelectorAll('*')];
+  const position=()=>{
+    for (const saved of innerScroll || []) {const node=nodes[saved.index];if(node){node.scrollTop=saved.top;node.scrollLeft=saved.left;}}
+    window.scrollTo({left:scrollX || 0,top:scrollY || 0,behavior:'instant'});
+  };
+  // Images/layout may finish after render. Stop correcting as soon as the user interacts.
+  position();
+  const controller=new AbortController();let frame=0;
+  const observer=new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(position);});
+  observer.observe(view);
+  const timer=setTimeout(()=>cancelRouteScrollRestore(),1500);
+  cancelRouteScrollRestore=()=>{controller.abort();observer.disconnect();cancelAnimationFrame(frame);clearTimeout(timer);cancelRouteScrollRestore=()=>{};};
+  for(const event of ['pointerdown','touchstart','wheel','keydown']) window.addEventListener(event,()=>cancelRouteScrollRestore(),{once:true,passive:true,signal:controller.signal});
+  frame=requestAnimationFrame(position);
 }
 
 function render() {
@@ -1083,7 +1133,7 @@ function render() {
 
 function addContextBackButton() {
   const mainRoutes = new Set(["home", "classes", "scan", "albums", "settings"]);
-  const nestedMainRoute = state.route === "classes" && state.classId;
+  const nestedMainRoute = state.route === "classes" && (state.classId || navigationHistory?.canBack());
   if ((mainRoutes.has(state.route) && !nestedMainRoute) || view.querySelector(".fab-back")) return;
   const button = document.createElement("button");
   button.className = "fab-back";
@@ -1097,6 +1147,7 @@ function addContextBackButton() {
 }
 
 function navigateContextBack() {
+  if (navigationHistory?.back()) return;
   if (state.route === "classes" && state.classId) {
     return navigate("classes", { classId: null, studentFormClassId: null });
   }
@@ -1110,7 +1161,7 @@ function navigateContextBack() {
     const klass = albumClassById(state.albumClassId);
     return navigate("albumProject", { albumProjectId: klass?.albumProjectId || state.albumProjectId });
   }
-  return history.length > 1 ? history.back() : navigate("home");
+  return navigate("home");
 }
 
 function setShell({ heading, context = APP_NAME, summary = "" }) {
@@ -1642,18 +1693,8 @@ function bindShootingRoster() {
 }
 
 function openStudentCard(studentId, trigger) {
-  if (!trigger.closest(".class-roster, .scoped-student-search")) return navigate("student", { studentId });
   trigger.focus({ preventScroll: true });
-  const routeHistory = mountDialogHistory({
-    id: uid("roster_student"),
-    restore: () => {
-      rosterStudentHistory = null;
-      if (state.route === "student") navigateBackFromStudent();
-    }
-  });
   navigate("student", { studentId });
-  if (state.route === "student") rosterStudentHistory = routeHistory;
-  else routeHistory.forget();
 }
 
 function classCard(klass, index = 0, total = 0, sortMode = "manual") {
@@ -4819,12 +4860,7 @@ function bindViewActions() {
     });
   });
   view.querySelectorAll("[data-open-class-action]").forEach((node) => node.addEventListener("click", () => openClassStudents(node.dataset.openClassAction)));
-  view.querySelector("[data-close-class-students]")?.addEventListener("click", () => {
-    state.classId = null;
-    state.studentFormClassId = null;
-    renderClasses();
-    resetDirectoryScroll();
-  });
+  view.querySelector("[data-close-class-students]")?.addEventListener("click", navigateContextBack);
   view.querySelectorAll("[data-show-class-stats]").forEach((node) => node.addEventListener("click", () => showClassStatsPanel(node.dataset.showClassStats)));
   view.querySelectorAll("[data-class-sort-project]").forEach(node => node.addEventListener("click", () => updateProjectClassSort(node.dataset.classSortProject, node.dataset.classSortMode)));
   view.querySelectorAll("[data-move-class]").forEach((node) => node.addEventListener("click", () => moveClass(node.dataset.moveClass)));
@@ -9805,6 +9841,7 @@ function stopQrStream() {
 }
 
 function navigateBackFromStudent() {
+  if (navigationHistory?.back()) return;
   if (rosterStudentHistory) return rosterStudentHistory.close();
   const target = state.returnTarget;
   if (target?.route && target.route !== "student") {
@@ -9815,18 +9852,7 @@ function navigateBackFromStudent() {
       query: target.query,
       filter: target.filter
     });
-    for (const [id, index] of target.rosterDetails || []) {
-      const card = view.querySelector(`[data-open-student="${CSS.escape(id)}"]`);
-      const details = card?.querySelectorAll("details")[index];
-      if (details) details.open = true;
-    }
-    if (target.rosterLetter) view.querySelector(`[data-roster-jump="${CSS.escape(target.rosterLetter)}"]`)?.setAttribute("aria-current", "true");
-    if (target.rosterFocus) {
-      const card = view.querySelector(`[data-open-student="${CSS.escape(target.rosterFocus.id)}"]`);
-      const control = target.rosterFocus.menu ? card?.querySelector("[data-open-student-action]") : card;
-      control?.focus({ preventScroll: true });
-    }
-    resetDirectoryScroll();
+    restoreRouteSnapshot(target);
     return;
   }
   const student = studentById(state.studentId);

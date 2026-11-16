@@ -18,26 +18,26 @@ const source=readFileSync(new URL('../../js/core/legacy-app.js',import.meta.url)
 test('opening another group on the same route resets inherited scroll',()=>{
  const state={route:'classes',classId:'a'};let scroll=900;
  const navigate=vm.runInNewContext(`(${source.slice(source.indexOf('function navigate(route'),source.indexOf('\nfunction routeSnapshot'))})`,{
-  state,rememberSelectedCard(){},cloudRequired:false,rosterStudentHistory:null,stopQrStream(){},document:{querySelectorAll:()=>[]},window:{get scrollY(){return scroll;}},
+  state,rememberSelectedCard(){},addContextBackButton(){},cancelRouteScrollRestore(){},navigationHistory:{transition:apply=>apply(),back:()=>false},cloudRequired:false,rosterStudentHistory:null,stopQrStream(){},document:{querySelectorAll:()=>[]},window:{get scrollY(){return scroll;}},
   render(){scroll=900;},resetDirectoryScroll(){scroll=0;}
  });
  navigate('classes',{classId:'b'});assert.equal(state.classId,'b');assert.equal(scroll,0);
 });
-test('Back restores the source group and filters but starts the screen at top',()=>{
+test('direct-entry Back restores the source group, filters and saved scroll',()=>{
  const target={route:'classes',projectId:'p',classId:'a',query:'Иван',filter:'todo',scrollY:900};
  let destination,scroll=500;
  const back=vm.runInNewContext(`(${source.slice(source.indexOf('function navigateBackFromStudent()'),source.indexOf('\nasync function detectQrFromVideo'))})`,{
-  state:{returnTarget:target},rosterStudentHistory:null,
+  state:{returnTarget:target},navigationHistory:{back:()=>false},rosterStudentHistory:null,restoreRouteSnapshot(value){scroll=value.scrollY;},
   navigate(route,params){destination={route,...params};},resetDirectoryScroll(){scroll=0;},view:{querySelector:()=>null}
  });
- back();assert.equal(destination.classId,'a');assert.equal(destination.query,'Иван');assert.equal(destination.filter,'todo');assert.equal(scroll,0);
+ back();assert.equal(destination.classId,'a');assert.equal(destination.query,'Иван');assert.equal(destination.filter,'todo');assert.equal(scroll,900);
 });
 
 test('moving to the next child keeps the group Back history and source snapshot',()=>{
  const target={route:'classes',projectId:'p',classId:'a'};
  const state={route:'student',studentId:'first',returnTarget:target};let forgotten=false;
  const navigate=vm.runInNewContext(`(${source.slice(source.indexOf('function navigate(route'),source.indexOf('\nfunction routeSnapshot'))})`,{
-  state,rememberSelectedCard(){},cloudRequired:false,rosterStudentHistory:{forget(){forgotten=true;}},stopQrStream(){},document:{querySelectorAll:()=>[]},window:{scrollY:700},render(){},resetDirectoryScroll(){}
+  state,rememberSelectedCard(){},addContextBackButton(){},cancelRouteScrollRestore(){},navigationHistory:{transition:apply=>apply(),back:()=>false},cloudRequired:false,rosterStudentHistory:{forget(){forgotten=true;}},stopQrStream(){},document:{querySelectorAll:()=>[]},window:{scrollY:700},render(){},resetDirectoryScroll(){}
  });
  navigate('student',{studentId:'second'});
  assert.equal(state.studentId,'second');assert.equal(forgotten,false);assert.equal(state.returnTarget,target);
