@@ -7018,3 +7018,8 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
   .photo-print-preview { padding: 0; }
   .photo-print-preview .print-preview-panel { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; padding: 10px; }
 }
+
+.print-code-color-control { min-width: 0; }
+.print-code-color-control input[type="color"] { width: 100%; min-width: 0; height: 40px; padding: 4px; cursor: pointer; }
+.print-code-color-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.print-code-color-presets button { min-width: 0; min-height: 36px; padding: 6px 4px; font-size: 12px; }
