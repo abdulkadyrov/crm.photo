@@ -7396,7 +7396,8 @@ function finalWorkOriginalBlob(work) {
   const originalMatchesShoot = original instanceof Blob && shoot instanceof Blob
     && original.size === shoot.size && original.type === shoot.type;
   if (original instanceof Blob && !originalMatchesShoot && !finalWorkSourceHasEmbeddedQr(work)) return original;
-  return finalWorkA4SourceCandidates(work).find(candidate => candidate.blob instanceof Blob)?.blob || null;
+  return finalWorkA4SourceCandidates(work).find(candidate => candidate.blob instanceof Blob
+    && (!originalMatchesShoot || candidate.kind !== "original"))?.blob || null;
 }
 
 function finalWorkA4SourceCandidates(work) {
