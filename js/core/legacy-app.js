@@ -7953,8 +7953,8 @@ function finalWorkPrintPreviewHtml(pages) {
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body { background: #e5e7eb; }
-    .photo-page { margin: 12px auto; width: min(100%, 210mm); aspect-ratio: 2480 / 3508; line-height: 0; }
-    .photo-page.landscape { width: min(100%, 297mm); aspect-ratio: 3508 / 2480; }
+    .photo-page { margin: 12px auto; width: min(calc(100% - 16px), calc((100vh - 24px) * 0.7069555)); aspect-ratio: 2480 / 3508; line-height: 0; }
+    .photo-page.landscape { width: min(calc(100% - 16px), calc((100vh - 24px) * 1.4145161)); aspect-ratio: 3508 / 2480; }
     img { display: block; width: 100%; height: 100%; }
     @media print {
       body { background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
