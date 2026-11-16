@@ -7391,9 +7391,13 @@ function finalWorkA4PdfBlob(work) {
 }
 
 function finalWorkOriginalBlob(work) {
-  if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
-  if (work?.blob instanceof Blob) return work.blob;
-  return mediaById(work?.resultMediaId)?.blob || mediaById(work?.sourceMediaId)?.blob || null;
+  const original = work?.originalFinalImage;
+  const shoot = mediaById(work?.sourceMediaId)?.blob;
+  const originalMatchesShoot = original instanceof Blob && shoot instanceof Blob
+    && original.size === shoot.size && original.type === shoot.type;
+  if (original instanceof Blob && !originalMatchesShoot && !finalWorkSourceHasEmbeddedQr(work)) return original;
+  return finalWorkA4SourceCandidates(work).find(candidate => candidate.blob instanceof Blob
+    && (!originalMatchesShoot || candidate.kind !== "original"))?.blob || null;
 }
 
 function finalWorkA4SourceCandidates(work) {
@@ -7867,14 +7871,15 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
       const original = source instanceof Blob ? source : finalWorkOriginalBlob(work);
       return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" checked /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — печатать (проверьте лицо и мимику)</span></label><div class="print-review-pair" style="--print-review-ratio: ${printAssets.get(work.id).orientation === "horizontal" ? "3508 / 2480" : "2480 / 3508"}"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
     }).join("")}</div>
-    <div class="print-review-footer"><button class="primary-button" data-review-download type="button">${exportLabel}</button><span class="muted">A4 · копии из заказа</span></div>
+    <div class="print-review-footer"><button class="primary-button" data-review-download type="button">${exportLabel}</button><button class="secondary-button" data-review-preview type="button">Просмотр</button></div>
   </section>`;
   const inputs = [...panel.querySelectorAll("[data-review-work]")];
   const download = panel.querySelector("[data-review-download]");
+  const preview = panel.querySelector("[data-review-preview]");
   let busy = false;
   const update = () => {
     panel.querySelector("[data-review-count]").textContent = `Выбрано ${inputs.filter(input => input.checked).length} из ${works.length}`;
-    download.disabled = busy || !inputs.some(input => input.checked);
+    download.disabled = preview.disabled = busy || !inputs.some(input => input.checked);
   };
   const previousFocus = document.activeElement;
   const close = () => {
@@ -7897,20 +7902,22 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   for (const [selector, checked] of [["[data-review-all]", true], ["[data-review-none]", false]]) {
     panel.querySelector(selector).onclick = () => { inputs.forEach(input => input.checked = checked); update(); };
   }
+  const selectedPages = () => finalWorkSelectedPrintPages(works, printAssets, new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork)));
+  preview.onclick = () => {
+    try { showFinalWorkPrintPreview(selectedPages(), scope.name); }
+    catch (error) { notify("Не удалось открыть просмотр. " + error.message); }
+  };
   download.onclick = async () => {
-    const selectedIds = new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork));
-    const selected = works.filter(work => selectedIds.has(work.id));
+    const selected = selectedPages();
     busy = true; update();
     download.textContent = "Готовлю PDF…";
     async function* pages() {
-      for (const work of selected) {
-        const assets = printAssets.get(work.id);
+      for (const { work, assets } of selected) {
         const jpeg = assets.jpgBlob;
         if (!jpeg) throw new Error("Не удалось создать A4: " + finalWorkTitle(work));
         const horizontal = assets.orientation === "horizontal";
         const dimensions = horizontal ? A4_HORIZONTAL_PX : A4_VERTICAL_PX;
-        const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
-        for (let copy = 0; copy < quantity; copy++) yield { jpeg, ...dimensions, landscape: horizontal };
+        yield { jpeg, ...dimensions, landscape: horizontal };
       }
     }
     try {
@@ -7927,6 +7934,79 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   document.body.append(panel);
   update();
   panel.querySelector("[data-review-close]").focus();
+}
+
+function finalWorkSelectedPrintPages(works, printAssets, selectedIds) {
+  return works.filter(work => selectedIds.has(work.id)).flatMap(work => {
+    const assets = printAssets.get(work.id);
+    if (!(assets?.jpgBlob instanceof Blob)) throw new Error("Не удалось создать A4: " + finalWorkTitle(work));
+    const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
+    return Array.from({ length: quantity }, () => ({ work, assets }));
+  });
+}
+
+function finalWorkPrintPreviewHtml(pages) {
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Фотографии A4</title><style>
+    @page { size: A4 portrait; margin: 0; }
+    @page portrait { size: A4 portrait; margin: 0; }
+    @page landscape { size: A4 landscape; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { background: #e5e7eb; }
+    .photo-page { margin: 12px auto; width: min(calc(100% - 16px), calc((100vh - 24px) * 0.7069555)); aspect-ratio: 2480 / 3508; line-height: 0; }
+    .photo-page.landscape { width: min(calc(100% - 16px), calc((100vh - 24px) * 1.4145161)); aspect-ratio: 3508 / 2480; }
+    img { display: block; width: 100%; height: 100%; }
+    @media print {
+      body { background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .photo-page { page: portrait; width: 210mm; height: 297mm; margin: 0; break-inside: avoid; break-after: page; }
+      .photo-page.landscape { page: landscape; width: 297mm; height: 210mm; }
+      .photo-page:last-child { break-after: auto; }
+    }
+  </style></head><body>${pages.map(page => `<div class="photo-page ${page.orientation === "horizontal" ? "landscape" : "portrait"}"><img src="${escapeAttr(page.url)}" alt="${escapeAttr(page.title)}"></div>`).join("")}</body></html>`;
+}
+
+function showFinalWorkPrintPreview(pages, scopeName) {
+  const urls = new Map();
+  const renderedPages = pages.map(({ work, assets }) => {
+    if (!urls.has(work.id)) urls.set(work.id, URL.createObjectURL(assets.jpgBlob));
+    return { url: urls.get(work.id), title: finalWorkTitle(work), orientation: assets.orientation };
+  });
+  const previousFocus = document.activeElement;
+  const preview = showInternalPrintPreview(`Просмотр · ${scopeName} · ${pages.length} листов`, finalWorkPrintPreviewHtml(renderedPages));
+  preview.classList.add("photo-print-preview");
+  const frame = preview.querySelector("iframe");
+  const print = preview.querySelector("[data-print-preview]");
+  print.textContent = "Печатать";
+  print.disabled = true;
+  const hint = document.createElement("p");
+  hint.className = "muted photo-print-hint";
+  hint.textContent = "A4 · 100% · без полей · колонтитулы выключены";
+  print.parentNode.before(hint);
+  const ready = async () => {
+    try {
+      await Promise.all([...frame.contentDocument.images].map(image => image.decode()));
+      print.disabled = false;
+    } catch { hint.textContent = "Не удалось загрузить фото. Закройте просмотр и попробуйте ещё раз."; }
+  };
+  frame.addEventListener("load", ready, { once: true });
+  const close = () => {
+    urls.forEach(url => URL.revokeObjectURL(url));
+    preview.remove();
+    previousFocus?.focus();
+  };
+  preview.querySelectorAll("[data-close-print-preview]").forEach(button => button.addEventListener("click", close));
+  preview.addEventListener("click", event => { if (event.target === preview) close(); });
+  preview.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.stopPropagation(); close(); }
+    if (event.key === "Tab") {
+      const controls = [...preview.querySelectorAll('button:not(:disabled), iframe')];
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+  preview.querySelector("[data-close-print-preview]").focus();
+  return preview;
 }
 
 function finalWorkPrintPageHtml(work, imageUrl) {
