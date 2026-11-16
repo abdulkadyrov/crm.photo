@@ -2,7 +2,8 @@
 Restore: python backup_s3.py --restore <snapshot-id> --destination <empty-directory>
 No local originals or existing backups are deleted by the scheduled backup.
 """
-import argparse,contextlib,fcntl,hashlib,json,os,re,sqlite3,tempfile,time,uuid
+import argparse,contextlib,fcntl,hashlib,json,os,re,sqlite3,tempfile,time,uuid,threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path,PurePosixPath
 from private_storage import PrivateS3
 PREFIX='crm-backups/v1/'
@@ -19,7 +20,7 @@ def safe_path(value):
  return str(p)
 
 class Backup:
- def __init__(self,storage):self.s=storage;self.c=storage.client;self.bucket=storage.bucket;self.checked=set()
+ def __init__(self,storage):self.s=storage;self.c=storage.client;self.bucket=storage.bucket;self.checked=set();self.locks={}
  def head(self,key):
   try:return self.c.head_object(Bucket=self.bucket,Key=key)
   except Exception as e:
@@ -31,6 +32,8 @@ class Backup:
    for block in iter(lambda:body.read(1024*1024),b''):h.update(block);count+=len(block)
   if count!=size or h.hexdigest()!=digest:raise RuntimeError('S3 backup readback mismatch')
  def pool(self,digest,size,path=None,source_key=None):
+  with self.locks.setdefault(digest,threading.Lock()):return self._pool(digest,size,path,source_key)
+ def _pool(self,digest,size,path=None,source_key=None):
   if not re.fullmatch('[a-f0-9]{64}',digest):raise ValueError('Invalid digest')
   key=PREFIX+'pool/'+digest
   if key in self.checked:return key
@@ -61,12 +64,16 @@ class Backup:
     if path:digest=digest or digest_file(path);size=Path(path).stat().st_size
     key=self.pool(digest,size,path,source);entries[safe_path(relative)]={'key':key,'sha256':digest,'size':size}
    add('crm.sqlite3',db)
-   for scope,digest,size in blobs:
+   def add_blob(row):
+    scope,digest,size=row
     local=root/'sync-blobs'/digest
     if local.is_file():
      if digest_file(local)!=digest:raise RuntimeError('Local blob hash mismatch')
      add('sync-blobs/'+digest,local,digest)
     else:add('sync-blobs/'+digest,digest=digest,size=size,source=self.s.key(scope,digest))
+   with ThreadPoolExecutor(max_workers=4) as workers:
+    for index,_ in enumerate(workers.map(add_blob,blobs),1):
+     if index%100==0:print(json.dumps({'verifiedBlobs':index,'totalBlobs':len(blobs)}),flush=True)
    for folder in ('sync-blobs','parent-media','packages'):
     for p in sorted((root/folder).rglob('*')):
      if p.is_symlink():raise RuntimeError('Symlink in backup input')
