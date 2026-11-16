@@ -114,7 +114,7 @@ class SyncTest(unittest.TestCase):
   with app.db() as c:
    c.execute('INSERT INTO projects VALUES(?,?)',(scope,'Structure'))
    c.execute('INSERT INTO memberships VALUES(?,?)',('sync-manager',scope))
-   for store,rid,data in [('projects',scope,{'id':scope,'name':'School','paidAmount':99}),('media','structure-photo',{'id':'structure-photo','blob':{'$syncBlob':'a'*64,'size':100}}),('students','structure-student',{'id':'structure-student','classId':'class','firstName':'Test','paidAmount':50})]:
+   for store,rid,data in [('projects',scope,{'id':scope,'name':'School','paidAmount':99}),('media','structure-photo',{'id':'structure-photo','blob':{'$syncBlob':'a'*64,'size':100}}),('students','structure-student',{'id':'structure-student','classId':'class','firstName':'Test','paidAmount':50}),('finalWorks','structure-final',{'id':'structure-final','studentId':'structure-student','image':{'$syncBlob':'b'*64,'size':100},'paidAmount':80})]:
     import json,time
     c.execute('INSERT INTO sync_changes(store,id,scope,data,actor,at) VALUES(?,?,?,?,?,?)',(store,rid,scope,json.dumps(data),'sync-admin',time.time()))
   answer=request('/sync/changes/'+scope,cookie=self.cookies['manager'],headers={'QUERY_STRING':'structure=1'})
@@ -123,4 +123,8 @@ class SyncTest(unittest.TestCase):
   self.assertNotIn('paidAmount',str(data));self.assertGreater(data['cursor'],0)
   self.assertEqual(request('/sync/changes/'+scope,cookie=self.cookies['photographer'],headers={'QUERY_STRING':'structure=1'})['status'],403)
   full=request('/sync/changes/'+scope,cookie=self.cookies['manager'])['data']
-  self.assertEqual(len(full['changes']),3);self.assertEqual(full['cursor'],data['cursor'])
+  self.assertEqual(len(full['changes']),4);self.assertEqual(full['cursor'],data['cursor'])
+  metadata=request('/sync/changes/'+scope,cookie=self.cookies['manager'],headers={'QUERY_STRING':'structure=1&results=metadata'})['data']
+  self.assertEqual([r['store'] for r in metadata['changes']],['projects','students','finalWorks'])
+  self.assertEqual(metadata['changes'][-1]['record']['image']['$syncBlob'],'b'*64)
+  self.assertNotIn('paidAmount',str(metadata))

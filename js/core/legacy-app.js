@@ -1,3 +1,4 @@
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=218";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
 import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=177";
@@ -24,7 +25,7 @@ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=218";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
@@ -2590,7 +2591,7 @@ function releaseStudentMediaPreviews() {
 
 function finalResultCard(work) {
   const blob = finalWorkImageBlob(work);
-  const url = blob ? URL.createObjectURL(blob) : "";
+  const url = finalWorkRemoteImageUrl(work) || (blob ? URL.createObjectURL(blob) : "");
   const titleText = finalWorkTitle(work);
   return `
     <article class="final-result-card">
@@ -7373,11 +7374,32 @@ function finalWorkById(workId) {
   return state.data.finalWorks.find((work) => work.id === workId);
 }
 
+async function ensureFinalWorkLoaded(workId) {
+ const work=finalWorkById(workId);
+ if(!work || !hasDeferredBlobs(work))return work;
+ const load=async()=>{
+  const loaded=await recordSync.loadRecord('finalWorks',workId);
+  if(!loaded)throw new Error('Готовая работа больше не доступна на сервере.');
+  const current=finalWorkById(workId)||work;
+  for(const key of Object.keys(loaded.wire)) {
+   const ref=loaded.wire[key];
+   if(ref?.$syncBlob && current[key]?.$syncBlob===ref.$syncBlob)current[key]=loaded.record[key];
+  }
+  return current;
+ };
+ return document.querySelector('.busy-overlay')?load():withBusy('Загружаю готовую работу с сервера…',load);
+}
+
+function finalWorkRemoteImageUrl(work) {
+ return deferredFinalImageUrl(work,work?.projectId||classById(work?.groupId)?.projectId);
+}
+
 function finalWorkImageBlob(work) {
   if (work?.mergedPrintImage instanceof Blob) return work.mergedPrintImage;
   if (work?.image instanceof Blob) return work.image;
   if (work?.originalFinalImage instanceof Blob) return work.originalFinalImage;
   if (work?.blob instanceof Blob) return work.blob;
+  if (["image","mergedPrintImage","blob"].some(key=>work?.[key]?.$syncBlob)) return null;
   return mediaById(work?.resultMediaId)?.blob || mediaById(work?.sourceMediaId)?.blob || null;
 }
 
@@ -7835,13 +7857,14 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   if (!scope) return notify("Проект или группа не найдены.");
   const works = state.data.finalWorks.filter(work => {
     const groupId = work.groupId || studentById(work.studentId)?.classId;
-    return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && finalWorkImageBlob(work);
+    return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && (finalWorkImageBlob(work) || finalWorkRemoteImageUrl(work));
   });
   if (!works.length) return notify("Нет готовых результатов для печати.");
   const exportLabel = finalWorkPrintSettings().codeType === "barcode" ? "Скачать PDF со штрихкодом" : "Скачать PDF с QR";
   const printAssets = new Map();
   await withBusy("Готовлю фотографии A4…", async () => {
-    for (const work of works) {
+    for (let work of works) {
+      if (["image","mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(work.id);
       const assets = await buildFinalWorkA4Assets({
         file: finalWorkOriginalBlob(work) || finalWorkImageBlob(work),
         studentId: work.studentId,
@@ -8350,7 +8373,8 @@ async function finalWorkPrintableBlob(work) {
 
 async function ensureFinalWorkMergedImage(workId) {
   if (!workId || state.finalWorkMergeQueue.has(workId)) return;
-  const work = finalWorkById(workId);
+  let work = finalWorkById(workId);
+  if (work && ["image","mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(workId);
   if (!finalWorkNeedsMergedImage(work)) return;
   if (!finalWorkA4SourceCandidates(work).some((item) => item.blob instanceof Blob)) return;
   state.finalWorkMergeQueue.add(workId);
@@ -8410,7 +8434,8 @@ async function rebuildStoredFinalWorkPrintImages() {
 
 async function ensureFinalWorkA4Assets(workId) {
   if (!workId || state.finalWorkA4Queue.has(workId)) return finalWorkById(workId) || null;
-  const work = finalWorkById(workId);
+  let work = finalWorkById(workId);
+  if (work && ["image","mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(workId);
   if (!work) return null;
   if (!finalWorkA4OrientationNeedsRefresh(work)) return work;
   if (!finalWorkA4SourceCandidates(work).some((item) => item.blob instanceof Blob)) return work;

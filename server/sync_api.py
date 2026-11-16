@@ -194,7 +194,8 @@ def route(r,c,u,path,a):
   rows=list(c.execute('SELECT * FROM sync_changes WHERE scope=? AND seq>? ORDER BY seq LIMIT 100',(scope,after)))
   changes=[{'store':row['store'],'id':row['id'],'scope':row['scope'],'seq':row['seq'],'record':visible(a,u,row['store'],json.loads(row['data']) if row['data'] else None)} for row in rows if u['role']=='admin' or row['store']!='documents']
   if parse_qs(r.e.get('QUERY_STRING','')).get('structure')==['1']:
-   changes=[row for row in changes if not any(blob_refs(row['record']))]
+   include_results=parse_qs(r.e.get('QUERY_STRING','')).get('results')==['metadata']
+   changes=[row for row in changes if not any(blob_refs(row['record'])) or include_results and row['store']=='finalWorks']
   return {'changes':changes,'cursor':rows[-1]['seq'] if rows else after,'more':len(rows)==100}
  if kind!='push' or r.method!='POST':raise a.Error(404,'Не найдено')
  b=r.json(8*1024*1024);store=b.get('store');a.fail(store not in STORES);rid=a.identifier(b.get('id'));op=a.identifier(b.get('op'));scope=a.identifier(b.get('scope'));base=b.get('base');nxt=b.get('next')

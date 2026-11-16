@@ -1,3 +1,4 @@
+import {mergeDeferredRecord} from './deferred-final-work.js?v=218';
 import {mountProjectProgress} from './sync-project-progress.js';
 import {syncTransferText} from './sync-contents.js';
 import {syncPanelState} from './sync-panel-state.js';
@@ -182,17 +183,18 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
  }
  async function pull(scope,structure=false){
   if(!canApply())return false;
-  const cursorKey=(structure?'structure-cursor:':'cursor:')+scope;
+  const cursorKey=(structure?'structure-results-v1-cursor:':'cursor:')+scope;
   let cursor=(await get('syncMeta',cursorKey))?.value||0;
   for(;;){
-   const response=await json(`/sync/changes/${scope}?after=${cursor}${structure?'&structure=1':''}`);
+   const response=await json(`/sync/changes/${scope}?after=${cursor}${structure?'&structure=1&results=metadata':''}`);
    if(response.changes.length)update(`Обновление данных: ${response.changes.length}`);
    const latest=new Map(response.changes.map(row=>[keyOf(row.store,row.id),row]));
    for(const [key,row] of latest){
     if(!canApply())return false;
     if(!SYNC_STORES.includes(row.store)||await get('syncQueue',key))continue;
     const meta=await get('syncMeta','entity:'+key);if((meta?.seq||0)>=row.seq)continue;
-    const value=await unpack(row.record,scope,await get(row.store,row.id));
+    const local=await get(row.store,row.id);
+    const value=structure&&row.store==='finalWorks'?mergeDeferredRecord(row.record,local,meta?.record):await unpack(row.record,scope,local);
     const tx=db.transaction([row.store,'syncQueue','syncMeta'],'readwrite');const complete=done(tx);
     tx.objectStore('syncQueue').get(key).onsuccess=e=>{if(e.target.result)return;
      tx.objectStore('syncMeta').get('entity:'+key).onsuccess=ev=>{if((ev.target.result?.seq||0)>=row.seq)return;
@@ -246,6 +248,8 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
     if(!pending.some(q=>q.store===store&&q.rid===scope))await writeBatch([{store,value:root}]);
    }
   }
+  // Ready-result metadata must arrive even when outgoing uploads fail or originals are large.
+  for(const scope of registered){await pull(scope,true);if(changed&&canApply()){await onRemote?.();changed=false;}}
   const queue=(await all('syncQueue')).filter(q=>q.actor===fresh.id&&!q.conflict).sort((a,b)=>Number(a.deleted)-Number(b.deleted)||(a.deleted?-1:1)*(SYNC_STORES.indexOf(a.store)-SYNC_STORES.indexOf(b.store))||a.createdAt-b.createdAt);
   let sent=0;
   for(const q of queue){
@@ -343,5 +347,6 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   await sync();
  }
 
- return {photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
+ async function loadRecord(store,id){const wire=await get(store,id);if(!wire)return null;const scope=await scopeFor(store,wire,id);return {wire,record:await unpack(wire,scope,wire)};}
+ return {loadRecord,photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
 }
