@@ -18,7 +18,7 @@ const source=readFileSync(new URL('../../js/core/legacy-app.js',import.meta.url)
 test('opening another group on the same route resets inherited scroll',()=>{
  const state={route:'classes',classId:'a'};let scroll=900;
  const navigate=vm.runInNewContext(`(${source.slice(source.indexOf('function navigate(route'),source.indexOf('\nfunction routeSnapshot'))})`,{
-  state,cloudRequired:false,rosterStudentHistory:null,stopQrStream(){},document:{querySelectorAll:()=>[]},window:{get scrollY(){return scroll;}},
+  state,rememberSelectedCard(){},cloudRequired:false,rosterStudentHistory:null,stopQrStream(){},document:{querySelectorAll:()=>[]},window:{get scrollY(){return scroll;}},
   render(){scroll=900;},resetDirectoryScroll(){scroll=0;}
  });
  navigate('classes',{classId:'b'});assert.equal(state.classId,'b');assert.equal(scroll,0);
@@ -37,7 +37,7 @@ test('moving to the next child keeps the group Back history and source snapshot'
  const target={route:'classes',projectId:'p',classId:'a'};
  const state={route:'student',studentId:'first',returnTarget:target};let forgotten=false;
  const navigate=vm.runInNewContext(`(${source.slice(source.indexOf('function navigate(route'),source.indexOf('\nfunction routeSnapshot'))})`,{
-  state,cloudRequired:false,rosterStudentHistory:{forget(){forgotten=true;}},stopQrStream(){},document:{querySelectorAll:()=>[]},window:{scrollY:700},render(){},resetDirectoryScroll(){}
+  state,rememberSelectedCard(){},cloudRequired:false,rosterStudentHistory:{forget(){forgotten=true;}},stopQrStream(){},document:{querySelectorAll:()=>[]},window:{scrollY:700},render(){},resetDirectoryScroll(){}
  });
  navigate('student',{studentId:'second'});
  assert.equal(state.studentId,'second');assert.equal(forgotten,false);assert.equal(state.returnTarget,target);
