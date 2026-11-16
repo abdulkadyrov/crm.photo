@@ -47,4 +47,11 @@ class TestS3Backup(unittest.TestCase):
  def test_restore_refuses_nonempty_target(self):
   snapshot=self.b.create(self.root)
   with self.assertRaises(ValueError):self.b.restore(snapshot,self.root)
+ def test_legacy_archives_removed_only_after_verified_receipt(self):
+  folder=Path(self.temp.name)/'archives';folder.mkdir();p=folder/'crm-20261115T010000Z.tar.gz';p.write_bytes(b'original historical bytes')
+  self.s.client.corrupt=True
+  with self.assertRaises(RuntimeError):self.b.migrate_archives(folder)
+  self.assertTrue(p.exists());self.s.client.corrupt=False
+  self.assertEqual(self.b.migrate_archives(folder),1);self.assertFalse(p.exists())
+  receipt=self.b.read_json(PREFIX+'legacy-archives/'+p.name+'.json');self.assertEqual(receipt['archiveValidity'],'not-assessed')
 if __name__=='__main__':unittest.main()

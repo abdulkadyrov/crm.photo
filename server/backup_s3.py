@@ -84,6 +84,21 @@ class Backup:
    self.put_json(base+'COMPLETE.json',{'manifestSha256':digest,'files':len(entries),'databaseRestore':'ok'})
    print(json.dumps({'snapshot':snapshot,'files':len(entries),'uniqueObjects':len(self.checked),'databaseRestore':'ok','complete':True}),flush=True)
    return snapshot
+ def migrate_archives(self,folder):
+  # Preserve original bytes, including historical incomplete archives, without
+  # representing them as verified recoverable snapshots.
+  moved=0
+  for path in sorted(Path(folder).glob('crm-????????T??????Z.tar.gz')):
+   if path.is_symlink() or not path.is_file():raise ValueError('Unsafe legacy archive')
+   before=path.stat();digest=digest_file(path);key=self.pool(digest,before.st_size,path)
+   after=path.stat()
+   if (before.st_size,before.st_mtime_ns)!=(after.st_size,after.st_mtime_ns):raise RuntimeError('Archive changed during migration')
+   record={'key':key,'sha256':digest,'size':before.st_size,'originalName':path.name,'archiveValidity':'not-assessed','byteReadback':'sha256-verified'}
+   receipt=PREFIX+'legacy-archives/'+path.name+'.json';self.put_json(receipt,record)
+   if self.read_json(receipt)!=record:raise RuntimeError('Archive receipt verification failed')
+   path.unlink();moved+=1
+   print(json.dumps({'legacyArchiveOffloaded':path.name,'bytes':before.st_size,'verified':True}),flush=True)
+  return moved
  def restore(self,snapshot,destination):
   if not re.fullmatch('[A-Za-z0-9_-]+',snapshot):raise ValueError('Invalid snapshot')
   base=PREFIX+'snapshots/'+snapshot+'/';complete=self.read_json(base+'COMPLETE.json');manifest=self.read_json(base+'manifest.json')
@@ -102,12 +117,13 @@ class Backup:
   return manifest
 
 def main():
- parser=argparse.ArgumentParser();parser.add_argument('--root',default=os.environ.get('CRM_DATA_DIR','/var/lib/crm-photo'));parser.add_argument('--restore');parser.add_argument('--destination');args=parser.parse_args()
+ parser=argparse.ArgumentParser();parser.add_argument('--root',default=os.environ.get('CRM_DATA_DIR','/var/lib/crm-photo'));parser.add_argument('--restore');parser.add_argument('--destination');parser.add_argument('--migrate-archives');args=parser.parse_args()
  os.umask(0o077)
  with open(Path(args.root)/'.s3-backup.lock','a') as lock:
   fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
   backup=Backup(PrivateS3())
-  if args.restore:
+  if args.migrate_archives:backup.migrate_archives(args.migrate_archives)
+  elif args.restore:
    if not args.destination:parser.error('--destination required')
    backup.restore(args.restore,args.destination)
   else:backup.create(args.root)
