@@ -1,8 +1,10 @@
 """Optional private S3 mirror; filesystem remains durable during provider outages.
 No keys, bucket credentials or S3 client are exposed to the browser.
 """
-import hashlib, os, re
+import hashlib, os, re, uuid
 from pathlib import Path
+
+class InvalidUpload(ValueError):pass
 
 class PrivateS3:
  def __init__(self, client=None):
@@ -24,6 +26,43 @@ class PrivateS3:
   with Path(path).open('rb') as stream:
    self.client.upload_fileobj(stream,self.bucket,key,ExtraArgs={'Metadata':{'sha256':digest}})
   return key
+ def upload_stream(self,scope,digest,stream,size):
+  key=self.key(scope,digest);temporary='crm/staging/'+uuid.uuid4().hex
+  upload=None;completed=False
+  try:
+   upload=self.client.create_multipart_upload(Bucket=self.bucket,Key=temporary,Metadata={'sha256':digest})['UploadId']
+   remaining=size;check=hashlib.sha256();parts=[]
+   while remaining:
+    wanted=min(8*1024*1024,remaining);data=bytearray()
+    while len(data)<wanted:
+     chunk=stream.read(wanted-len(data))
+     if not chunk or len(chunk)>wanted-len(data):raise InvalidUpload('Передача прервана')
+     data.extend(chunk)
+    check.update(data);remaining-=len(data)
+    part=self.client.upload_part(Bucket=self.bucket,Key=temporary,UploadId=upload,PartNumber=len(parts)+1,Body=bytes(data))
+    parts.append({'ETag':part['ETag'],'PartNumber':len(parts)+1})
+   if check.hexdigest()!=digest:raise InvalidUpload('Контрольная сумма не совпала')
+   if parts:
+    self.client.complete_multipart_upload(Bucket=self.bucket,Key=temporary,UploadId=upload,MultipartUpload={'Parts':parts});completed=True
+   else:
+    self.client.abort_multipart_upload(Bucket=self.bucket,Key=temporary,UploadId=upload);upload=None
+    self.client.put_object(Bucket=self.bucket,Key=temporary,Body=b'',Metadata={'sha256':digest});completed=True
+   self.client.copy_object(Bucket=self.bucket,Key=key,CopySource={'Bucket':self.bucket,'Key':temporary},MetadataDirective='COPY')
+   head=self.client.head_object(Bucket=self.bucket,Key=key)
+   if head.get('ContentLength')!=size or head.get('Metadata',{}).get('sha256')!=digest:raise RuntimeError('Uploaded asset metadata mismatch')
+   return key
+  finally:
+   if upload and not completed:
+    try:self.client.abort_multipart_upload(Bucket=self.bucket,Key=temporary,UploadId=upload)
+    except Exception:pass
+   try:self.client.delete_object(Bucket=self.bucket,Key=temporary)
+   except Exception:pass
+ def open(self,scope,digest,size):
+  result=self.client.get_object(Bucket=self.bucket,Key=self.key(scope,digest))
+  body=result['Body']
+  if result.get('ContentLength')!=size or result.get('Metadata',{}).get('sha256')!=digest:
+   body.close();raise RuntimeError('Private asset metadata mismatch')
+  return body
  def signed_get(self,scope,digest,expires=300,mime=None):
   params={'Bucket':self.bucket,'Key':self.key(scope,digest)}
   if mime is not None:

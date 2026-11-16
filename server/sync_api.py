@@ -113,6 +113,18 @@ def blob_refs(data):
 def conflict_result(a,u,store,rid,current,seq,fields,message='Одна запись изменена на разных устройствах'):
  return {'conflict':True,'store':store,'id':rid,'current':visible(a,u,store,current),'seq':seq,'fields':fields,'message':message}
 
+def mirrored_ready(c,scope,digest):
+ if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='storage_mirror'").fetchone():return False
+ return bool(c.execute("SELECT 1 FROM storage_mirror WHERE scope=? AND digest=? AND state='ready'",(scope,digest)).fetchone())
+
+class CloudBlob:
+ def __init__(self,body,size):self.body=body;self.size=size
+ def __iter__(self):
+  try:
+   while chunk:=self.body.read(1024*1024):yield chunk
+  finally:self.close()
+ def close(self):self.body.close()
+
 class BlobFile:
  def __init__(self,path):self.path=path
 
@@ -125,13 +137,28 @@ def route(r,c,u,path,a):
   folder=a.ROOT/'sync-blobs';folder.mkdir(exist_ok=True,mode=0o700);target=folder/digest
   query=parse_qs(r.e.get('QUERY_STRING',''))
   if r.method=='GET':
-   if 'check' in query:return {'exists':bool(row and target.exists())}
-   a.fail(not row or not target.exists(),404,'Файл не найден')
+   if 'check' in query:return {'exists':bool(row and (target.exists() or mirrored_ready(c,scope,digest)))}
+   a.fail(not row,404,'Файл не найден')
    a.fail(u['role']!='admin' and not c.execute("SELECT 1 FROM sync_records WHERE scope=? AND store!='documents' AND data IS NOT NULL AND instr(data,?)>0",(scope,digest)).fetchone() and (row['actor']!=u['id'] or c.execute("SELECT 1 FROM sync_records WHERE scope=? AND data IS NOT NULL AND instr(data,?)>0",(scope,digest)).fetchone()),403,'Нет доступа к файлу')
-   return BlobFile(target)
+   if target.exists():return BlobFile(target)
+   a.fail(not mirrored_ready(c,scope,digest),404,'Файл не найден')
+   try:
+    from private_storage import PrivateS3
+    return CloudBlob(PrivateS3().open(scope,digest,row['size']),row['size'])
+   except Exception:raise a.Error(503,'Хранилище временно недоступно; повторите загрузку')
   a.fail(r.method!='POST',404,'Не найдено');a.fail(u['role']=='viewer' or scope=='global' and u['role']!='admin',403,'Нет права загрузки')
   if row and target.exists():return {'saved':True,'duplicate':True}
   size=int(r.e.get('CONTENT_LENGTH','0'));a.fail(size<0 or size>a.MAX_UPLOAD,413,'Файл больше 1 ГБ')
+  if getattr(a,'S3_PRIMARY',False):
+   if row and mirrored_ready(c,scope,digest):return {'saved':True,'duplicate':True}
+   from private_storage import PrivateS3,InvalidUpload
+   try:PrivateS3().upload_stream(scope,digest,r.e['wsgi.input'],size)
+   except InvalidUpload as error:raise a.Error(400,str(error))
+   except Exception:raise a.Error(503,'Хранилище временно недоступно. Файл остаётся на устройстве')
+   c.execute('INSERT OR IGNORE INTO sync_blobs VALUES(?,?,?,?)',(scope,digest,size,u['id']))
+   c.execute('CREATE TABLE IF NOT EXISTS storage_mirror(scope TEXT,digest TEXT,state TEXT,attempts INTEGER DEFAULT 0,next_at REAL DEFAULT 0,PRIMARY KEY(scope,digest))')
+   c.execute("INSERT INTO storage_mirror(scope,digest,state) VALUES(?,?,'ready') ON CONFLICT(scope,digest) DO UPDATE SET state='ready'",(scope,digest))
+   return {'saved':True}
   a.fail(shutil.disk_usage(a.ROOT).free<size+a.SYNC_BLOB_FREE_RESERVE,507,'На сервере недостаточно места. Файл остаётся на устройстве')
   fd,tmp=tempfile.mkstemp(dir=folder);digest_check=hashlib.sha256()
   try:

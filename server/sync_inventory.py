@@ -15,6 +15,9 @@ def snapshot(c,u,scope,a):
     stored=c.execute('SELECT size FROM sync_blobs WHERE scope=? AND digest=?',(scope,digest)).fetchone();path=a.ROOT/'sync-blobs'/digest
     try:ready=bool(stored and stored['size']==size and path.stat().st_size==size)
     except OSError:ready=False
+    if not ready and stored and stored['size']==size:
+     from sync_api import mirrored_ready
+     ready=mirrored_ready(c,scope,digest)
     files[digest]={'id':digest,'bytes':size,'ready':ready}
   item={'id':row['id'],'store':row['store'],'files':list(dict.fromkeys(refs)),'studentId':value.get('studentId') or value.get('ownerId'),'classId':value.get('classId') or value.get('albumClassId') or value.get('groupId')}
   records.append(item)
