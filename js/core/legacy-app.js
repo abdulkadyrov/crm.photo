@@ -4388,6 +4388,7 @@ function showSettingsDetail(section) {
         </select></label>
         <label class="field-label"><span>Размер кода в пикселях A4</span><input class="input" data-final-print-qr-px type="number" min="160" max="600" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
         <label class="field-label"><span>Отступ, px</span><input class="input" data-final-print-qr-margin type="number" min="0" max="300" value="${Number.parseInt(finalPrint.qrMargin, 10)}" /></label>
+        <div class="field-label print-code-color-control"><label for="final-print-code-color">Цвет кода</label><input id="final-print-code-color" class="input" type="color" data-final-print-code-color value="${escapeAttr(finalPrint.codeColor)}" /><div class="print-code-color-presets"><button class="secondary-button" type="button" data-final-print-color-preset="#000000">Чёрный</button><button class="secondary-button" type="button" data-final-print-color-preset="#ffffff">Белый</button></div></div>
         <label class="field-label"><span>Фон кода</span><select class="select" data-final-print-code-background><option value="white" ${finalPrint.codeBackground !== "transparent" ? "selected" : ""}>Белый фон</option><option value="transparent" ${finalPrint.codeBackground === "transparent" ? "selected" : ""}>Без фона</option></select></label>
         <label class="field-label"><span>Непрозрачность: <output data-print-opacity-label>${Math.round(finalPrint.codeOpacity * 100)}%</output></span><input data-final-print-opacity type="range" min="10" max="100" step="1" value="${Math.round(finalPrint.codeOpacity * 100)}" /></label>
         </div><figure class="print-settings-preview"><canvas data-print-settings-preview width="2480" height="3508" aria-label="Живой пример фотографии A4 с кодом"></canvas><figcaption class="muted" data-print-preview-caption>Пример A4 · 2480 × 3508 px</figcaption></figure></div><p class="muted">Для надёжного сканирования минимальный размер ограничен 160 px. Белый фон считывается стабильнее на фотографии. Штрихкод и QR содержат ID ученика.</p>
@@ -8077,6 +8078,7 @@ function finalWorkPrintSettings() {
     qrSize: ["small", "medium", "large"].includes(saved.qrSize) ? saved.qrSize : "small",
     qrMargin: `${clampNumber(Number.parseFloat(saved.qrMargin), 0, 300, 10)}px`,
     codeType: saved.codeType === "barcode" ? "barcode" : "qr",
+    codeColor: /^#[0-9a-f]{6}$/i.test(saved.codeColor || "") ? saved.codeColor : "#000000",
     codeOpacity: clampNumber(saved.codeOpacity, 0.1, 1, 1),
     codeBackground: saved.codeBackground === "transparent" ? "transparent" : "white",
     qrPixelSize
@@ -8091,6 +8093,7 @@ function printSettingsFromView() {
     qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 160, 600, 200),
     qrMargin: `${clampNumber(view.querySelector("[data-final-print-qr-margin]")?.value, 0, 300, 10)}px`,
     codeType: view.querySelector("[data-final-print-code-type]")?.value === "barcode" ? "barcode" : "qr",
+    codeColor: view.querySelector("[data-final-print-code-color]")?.value || finalWorkPrintSettings().codeColor,
     codeBackground: view.querySelector("[data-final-print-code-background]")?.value === "transparent" ? "transparent" : "white",
     codeOpacity: clampNumber(Number(view.querySelector("[data-final-print-opacity]")?.value) / 100, 0.1, 1, 1)
   };
@@ -8099,6 +8102,11 @@ function printSettingsFromView() {
 async function mountPrintSettingsPreview() {
   const canvas = view.querySelector("[data-print-settings-preview]");
   if (!canvas) return;
+  const colorInput = view.querySelector("[data-final-print-code-color]");
+  view.querySelectorAll("[data-final-print-color-preset]").forEach(button => button.addEventListener("click", () => {
+    colorInput.value = button.dataset.finalPrintColorPreset;
+    colorInput.dispatchEvent(new Event("input", { bubbles: true }));
+  }));
   let revision = 0;
   let image;
   try { image = await loadImageFromUrl("./assets/templates/children/child-boy-pirate-captain/preview.webp"); }
@@ -8120,7 +8128,7 @@ async function mountPrintSettingsPreview() {
       console.error(error);
     }
   };
-  view.querySelectorAll("[data-final-print-qr-enabled], [data-final-print-qr-position], [data-final-print-qr-px], [data-final-print-qr-margin], [data-final-print-opacity], [data-final-print-code-type], [data-final-print-code-background]").forEach(input => input.addEventListener("input", update));
+  view.querySelectorAll("[data-final-print-qr-enabled], [data-final-print-qr-position], [data-final-print-qr-px], [data-final-print-qr-margin], [data-final-print-opacity], [data-final-print-code-type], [data-final-print-code-color], [data-final-print-code-background]").forEach(input => input.addEventListener("input", update));
   await update();
 }
 
@@ -8550,12 +8558,13 @@ async function drawFinalWorkCodeOverlay(context, width, height, payload, qrOverl
   if (!settings.qrEnabled && !force && !(qrOverlayFile instanceof Blob)) return;
   const barcode = settings.codeType === "barcode";
   const whiteBackground = settings.codeBackground !== "transparent";
+  const codeColor = /^#[0-9a-f]{6}$/i.test(settings.codeColor || "") ? settings.codeColor : "#000000";
   let codeImage;
   if (barcode) {
     codeImage = document.createElement("canvas");
     if (typeof window.JsBarcode !== "function") throw new Error("Штрихкод недоступен");
-    window.JsBarcode(codeImage, String(payload).replace(/[^\x20-\x7E]/g, "").slice(0, 100) || "DEMO-001", { format: "CODE128", width: 3, height: 180, displayValue: false, margin: 24, background: whiteBackground ? "#ffffff" : "transparent" });
-  } else codeImage = await finalWorkQrOverlayImage(payload, qrOverlayFile, whiteBackground);
+    window.JsBarcode(codeImage, String(payload).replace(/[^\x20-\x7E]/g, "").slice(0, 100) || "DEMO-001", { format: "CODE128", width: 3, height: 180, displayValue: false, margin: 24, lineColor: codeColor, background: whiteBackground ? "#ffffff" : "transparent" });
+  } else codeImage = await finalWorkQrOverlayImage(payload, qrOverlayFile, whiteBackground, codeColor);
   const layout = printCodeLayout(width, height, settings);
   context.save();
   context.globalAlpha = layout.opacity;
@@ -8649,10 +8658,19 @@ async function drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverl
   return drawFinalWorkCodeOverlay(context, width, height, payload, qrOverlayFile, settings);
 }
 
-async function finalWorkQrOverlayImage(qrPayload, qrOverlayFile = null, whiteBackground = true) {
+function recolorPrintCodePixels(data, color) {
+  const rgb = [1, 3, 5].map(offset => Number.parseInt(color.slice(offset, offset + 2), 16));
+  for (let pixel = 0; pixel < data.length; pixel += 4) {
+    const darkness = 1 - (data[pixel] + data[pixel + 1] + data[pixel + 2]) / (3 * 255);
+    data[pixel + 3] = Math.round(data[pixel + 3] * darkness);
+    [data[pixel], data[pixel + 1], data[pixel + 2]] = rgb;
+  }
+}
+
+async function finalWorkQrOverlayImage(qrPayload, qrOverlayFile = null, whiteBackground = true, codeColor = "#000000") {
   if (qrOverlayFile instanceof Blob) {
     const image = await loadImageForCanvas(qrOverlayFile);
-    if (whiteBackground) return image;
+    if (whiteBackground && codeColor.toLowerCase() === "#000000") return image;
     const canvas = document.createElement("canvas");
     canvas.width = image.width || image.naturalWidth;
     canvas.height = image.height || image.naturalHeight;
@@ -8660,13 +8678,16 @@ async function finalWorkQrOverlayImage(qrPayload, qrOverlayFile = null, whiteBac
     context.drawImage(image, 0, 0);
     image.close?.();
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-    for (let p = 0; p < pixels.data.length; p += 4) {
-      if (pixels.data[p] >= 245 && pixels.data[p + 1] >= 245 && pixels.data[p + 2] >= 245) pixels.data[p + 3] = 0;
-    }
+    recolorPrintCodePixels(pixels.data, codeColor);
     context.putImageData(pixels, 0, 0);
+    if (whiteBackground) {
+      context.globalCompositeOperation = "destination-over";
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
     return canvas;
   }
-  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8, whiteBackground))}`;
+  const qrDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(qrPayload, 8, whiteBackground, codeColor))}`;
   return loadImageFromUrl(qrDataUrl);
 }
 
@@ -14207,7 +14228,8 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, number));
 }
 
-function createQrSvg(text, scale = 6, whiteBackground = true) {
+function createQrSvg(text, scale = 6, whiteBackground = true, color = "#000000") {
+  const codeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : "#000000";
   const modules = createQrModules(text);
   const size = modules.length;
   const quiet = 4;
@@ -14216,7 +14238,7 @@ function createQrSvg(text, scale = 6, whiteBackground = true) {
   modules.forEach((row, y) => row.forEach((dark, x) => {
     if (dark) rects.push(`<rect x="${x + quiet}" y="${y + quiet}" width="1" height="1"/>`);
   }));
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${full} ${full}" width="${full * scale}" height="${full * scale}" role="img" aria-label="QR">${whiteBackground ? '<rect width="100%" height="100%" fill="#fff"/>' : ""}<g fill="#000">${rects.join("")}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${full} ${full}" width="${full * scale}" height="${full * scale}" role="img" aria-label="QR">${whiteBackground ? '<rect width="100%" height="100%" fill="#fff"/>' : ""}<g fill="${codeColor}">${rects.join("")}</g></svg>`;
 }
 
 function createQrModules(text) {
