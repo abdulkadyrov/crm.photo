@@ -22,6 +22,15 @@ class SyncTest(unittest.TestCase):
   self.assertEqual(self.push('settings',setting,{**setting,'codeType':'barcode'},role='manager',scope='global')['status'],403)
   self.assertEqual(self.push('settings',None,{'id':'local-camera','private':'device'},scope='global')['status'],403)
 
+ def test_source_on_demand(self):
+  photo={'id':'lookup-photo','studentId':'sync-child','type':'photo'}
+  self.assertTrue(self.push('media',None,photo)['data']['saved'])
+  result=request('/sync/record/media/lookup-photo',cookie=self.cookies['admin'])
+  self.assertEqual(result['status'],200);self.assertEqual(result['data']['record'],photo)
+  self.assertEqual(result['data']['scope'],'sync-project')
+  self.assertEqual(request('/sync/record/media/missing-photo',cookie=self.cookies['admin'])['status'],404)
+  self.assertEqual(request('/sync/record/settings/spf-final-work-print',cookie=self.cookies['admin'])['status'],404)
+
  def test_01_seed_and_disjoint_edits(self):
   p={'id':'sync-project','name':'School'};self.assertEqual(self.push('projects',None,p)['status'],200)
   g={'id':'sync-class','projectId':p['id'],'name':'1A'};self.assertEqual(self.push('classes',None,g)['status'],200)

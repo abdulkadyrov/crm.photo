@@ -130,6 +130,11 @@ class BlobFile:
 
 def route(r,c,u,path,a):
  parts=path.strip('/').split('/');kind=parts[1] if len(parts)>1 else ''
+ if kind=='record' and len(parts)==4 and r.method=='GET':
+  store=parts[2];a.fail(store!='media',404,'Не найдено');rid=a.identifier(parts[3])
+  row=record(c,store,rid);a.fail(not row or row['data'] is None,404,'Исходник не найден')
+  scope_access(a,c,u,row['scope'])
+  return {'store':store,'id':rid,'scope':row['scope'],'record':visible(a,u,store,json.loads(row['data']))}
  if kind=='blob' and len(parts)==4:
   scope=a.identifier(parts[2]);digest=parts[3];a.fail(not re.fullmatch('[a-f0-9]{64}',digest))
   scope_access(a,c,u,scope)

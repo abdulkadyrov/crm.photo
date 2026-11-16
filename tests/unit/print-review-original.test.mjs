@@ -9,6 +9,7 @@ test('print review hydrates the camera source from the server, rather than displ
  const camera=new Blob(['camera']);let requested;
  const result=await original({id:'photo',blob:{$syncBlob:'hash'}},async(store,id)=>{requested=[store,id];return {record:{blob:camera}};})({sourceMediaId:'photo',originalFinalImage:new Blob(['generated'])});
  assert.equal(result,camera);assert.deepEqual(requested,['media','photo']);
+ assert.equal(await original(null,async()=>({record:{blob:camera}}))({sourceMediaId:'remote-photo'}),camera);
 });
 test('missing or failed original stays missing, never falls back to the generated picture',async()=>{
  assert.equal(await original(null)({originalFinalImage:new Blob(['generated'])}),null);

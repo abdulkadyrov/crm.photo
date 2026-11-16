@@ -28,7 +28,7 @@ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=221";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=222";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
@@ -7906,9 +7906,9 @@ function printClassFinalWorksWithQr(classId) {
 async function originalPhotoForPrintReview(work) {
   const source=mediaById(work.sourceMediaId);
   if (source?.blob instanceof Blob) return source.blob;
-  if (source?.blob?.$syncBlob && recordSync) {
-    try {const original=(await recordSync.loadRecord('media',source.id))?.record?.blob;return original instanceof Blob ? original : null;}
-    catch(error) {console.error('Не удалось загрузить оригинал',source.id,error);}
+  if (work.sourceMediaId && recordSync) {
+    try {const original=(await recordSync.loadRecord('media',work.sourceMediaId))?.record?.blob;return original instanceof Blob ? original : null;}
+    catch(error) {console.error('Не удалось загрузить оригинал',work.sourceMediaId,error);}
   }
   return null; // A finished portrait must never be labelled as the camera original.
 }

@@ -2,7 +2,7 @@ import {mergeDeferredRecord} from './deferred-final-work.js?v=218';
 import {mountProjectProgress} from './sync-project-progress.js';
 import {syncTransferText} from './sync-contents.js';
 import {syncPanelState} from './sync-panel-state.js';
-import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js?v=221';
+import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js?v=222';
 import {createSyncBlobCache} from './sync-blob-cache.js';
 import {captureDialogReturn} from './dialog-return.js';
 export {SYNC_LOCAL_STORES};
@@ -349,6 +349,12 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   await sync();
  }
 
- async function loadRecord(store,id){const wire=await get(store,id);if(!wire)return null;const scope=await scopeFor(store,wire,id);return {wire,record:await unpack(wire,scope,wire)};}
+ async function loadRecord(store,id){
+  let wire=await get(store,id),scope;
+  if(!wire&&enabled&&store==='media') {const remote=await json(`/sync/record/media/${encodeURIComponent(id)}`);wire=remote.record;scope=remote.scope;}
+  if(!wire)return null;
+  scope ||= await scopeFor(store,wire,id);
+  return {wire,record:await unpack(wire,scope,wire)};
+ }
  return {loadRecord,photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
 }
