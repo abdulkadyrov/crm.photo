@@ -7005,3 +7005,16 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 
 /* Keep the header steady while sync details change in its panel. */
 .topbar-copy .sync-status-button{inline-size:160px;max-inline-size:100%;min-height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Selected A4 photo preview uses the same coded bitmaps as the PDF export. */
+.print-review-footer > button { flex: 1 1 0; min-width: 0; }
+.print-review-footer .secondary-button { min-height: 40px; padding: 10px 12px; font-size: 14px; }
+.photo-print-preview { z-index: 10001; }
+.photo-print-preview .print-preview-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 8px; }
+.photo-print-preview .card-header { min-width: 0; gap: 8px; }
+.photo-print-preview .card-title { font-size: 18px; line-height: 1.3; }
+.photo-print-hint { margin: 0; font-size: 12px; }
+@media (max-width: 600px) {
+  .photo-print-preview { padding: 0; }
+  .photo-print-preview .print-preview-panel { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; padding: 10px; }
+}
