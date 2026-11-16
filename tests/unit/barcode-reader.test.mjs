@@ -18,5 +18,8 @@ test('fallback decodes actual printed Code128 student IDs without native Barcode
   const i=(y*width+x+30)*4;data[i]=data[i+1]=data[i+2]=0;
  }
  assert.equal(decodeCode128ImageData({data,width,height},ZXing),payload);
+ const inverted = new Uint8ClampedArray(data);
+ for(let i=0;i<inverted.length;i+=4)for(let channel=0;channel<3;channel++)inverted[i+channel]=255-inverted[i+channel];
+ assert.equal(decodeCode128ImageData({data:inverted,width,height},ZXing),payload);
  assert.equal(decodeCode128ImageData({data:new Uint8ClampedArray(100*100*4).fill(255),width:100,height:100},ZXing),'');
 });
