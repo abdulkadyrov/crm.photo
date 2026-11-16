@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "vakha-studio-cache-";
-const CACHE_VERSION = "v219";
+const CACHE_VERSION = "v220";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const CHILD_TEMPLATE_PREVIEWS = [
   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
@@ -89,8 +89,8 @@ const APP_SHELL = [
   "./js/services/local-portraits.js",
   "./js/ui/local-portraits-panel.js",
   "./js/services/record-sync.js",
-  "./js/services/record-sync.js?v=219",
-  "./js/services/deferred-final-work.js?v=219",
+  "./js/services/record-sync.js?v=220",
+  "./js/services/deferred-final-work.js?v=220",
   "./js/services/sync-panel-state.js",
   "./js/services/sync-contents.js",
   "./js/services/sync-project-progress.js",
@@ -104,14 +104,15 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./styles.css?v=219",
+  "./styles.css?v=220",
   "./app.js",
   "./js/core/app.js",
-  "./js/core/app.js?v=219",
+  "./js/core/app.js?v=220",
   "./js/core/bootstrap.js",
-  "./js/services/card-selection.js?v=219",
+  "./js/services/card-selection.js?v=220",
+  "./js/services/navigation-history.js?v=220",
   "./js/core/legacy-app.js",
-  "./js/core/legacy-app.js?v=219",
+  "./js/core/legacy-app.js?v=220",
   "./js/core/router.js",
   "./js/core/state.js",
   "./js/core/events.js",
@@ -227,7 +228,7 @@ const APP_SHELL = [
   "./vendor/jsQR.js",
   "./vendor/zxing.min.js",
   "./js/services/barcode-reader.js",
-  "./js/services/barcode-reader.js?v=219",
+  "./js/services/barcode-reader.js?v=220",
   "./vendor/JsBarcode.code128.min.js",
   "./js/services/print-code-layout.js",
   "./js/services/portrait-identity-policy.js",
