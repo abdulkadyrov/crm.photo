@@ -24,6 +24,12 @@ class PrivateS3:
   with Path(path).open('rb') as stream:
    self.client.upload_fileobj(stream,self.bucket,key,ExtraArgs={'Metadata':{'sha256':digest}})
   return key
+ def open(self,scope,digest,size):
+  result=self.client.get_object(Bucket=self.bucket,Key=self.key(scope,digest))
+  body=result['Body']
+  if result.get('ContentLength')!=size or result.get('Metadata',{}).get('sha256')!=digest:
+   body.close();raise RuntimeError('Private asset metadata mismatch')
+  return body
  def signed_get(self,scope,digest,expires=300,mime=None):
   params={'Bucket':self.bucket,'Key':self.key(scope,digest)}
   if mime is not None:

@@ -336,6 +336,9 @@ def application(environ,start_response):
     headers=[('Cache-Control','no-store'),('X-Content-Type-Options','nosniff')]
     try:
         result=r.route(); status=200
+        if isinstance(result,sync_api.CloudBlob):
+            start_response("200 OK",headers+[("Content-Type","application/octet-stream"),("Content-Length",str(result.size))])
+            return result
         if isinstance(result,sync_api.BlobFile):
             path=result.path
             start_response("200 OK",headers+[("Content-Type","application/octet-stream"),("Content-Length",str(path.stat().st_size))])
@@ -379,7 +382,7 @@ def application(environ,start_response):
     except Exception:
         import traceback; traceback.print_exc(); status=500; result={'error':'Ошибка сервера. Локальные данные сохранены'}
     data=json.dumps(result,ensure_ascii=False).encode()
-    start_response(f'{status} '+{200:'OK',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',409:'Conflict',413:'Payload Too Large',429:'Too Many Requests',500:'Internal Server Error'}.get(status,'Error'),headers+r.headers+[('Content-Type','application/json; charset=utf-8'),('Content-Length',str(len(data)))])
+    start_response(f'{status} '+{200:'OK',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',409:'Conflict',413:'Payload Too Large',429:'Too Many Requests',500:'Internal Server Error',503:'Service Unavailable'}.get(status,'Error'),headers+r.headers+[('Content-Type','application/json; charset=utf-8'),('Content-Length',str(len(data)))])
     return [data]
 
 initialize()
