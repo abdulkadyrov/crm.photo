@@ -37,7 +37,7 @@ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-mo
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
 import { decodeCode128ImageData } from "../services/barcode-reader.js?v=217";
-import { printCodeLayout } from "../services/print-code-layout.js";
+import { printCodeLayout } from "../services/print-code-layout.js?v=230";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -305,7 +305,7 @@ const state = {
 };
 
 const QR_SCAN_INTERVAL = 120;
-const FINAL_WORK_QR_MIN_PX = 72;
+const FINAL_WORK_QR_MIN_PX = 48;
 const FINAL_WORK_QR_MAX_PX = 132;
 const A4_VERTICAL_PX = { width: 2480, height: 3508 };
 const A4_HORIZONTAL_PX = { width: 3508, height: 2480 };
@@ -4445,7 +4445,7 @@ function showSettingsDetail(section) {
         <label class="field-label"><span>Положение кода</span><select class="select" data-final-print-qr-position>
           ${["bottom-right", "bottom-left", "top-right", "top-left"].map((value) => `<option value="${value}" ${value === finalPrint.qrPosition ? "selected" : ""}>${({"bottom-right":"Справа снизу","bottom-left":"Слева снизу","top-right":"Справа сверху","top-left":"Слева сверху"})[value]}</option>`).join("")}
         </select></label>
-        <label class="field-label"><span>Размер кода в пикселях A4</span><input class="input" data-final-print-qr-px type="number" min="160" max="600" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
+        <label class="field-label"><span>Размер кода в пикселях A4</span><input class="input" data-final-print-qr-px type="number" min="48" max="600" step="1" value="${escapeAttr(String(finalPrint.qrPixelSize))}" /></label>
         <label class="field-label"><span>Отступ, px</span><input class="input" data-final-print-qr-margin type="number" min="0" max="300" value="${Number.parseInt(finalPrint.qrMargin, 10)}" /></label>
         <div class="field-label print-code-color-control"><label for="final-print-code-color">Цвет кода</label><input id="final-print-code-color" class="input" type="color" data-final-print-code-color value="${escapeAttr(finalPrint.codeColor)}" /><div class="print-code-color-presets"><button class="secondary-button" type="button" data-final-print-color-preset="#000000">Чёрный</button><button class="secondary-button" type="button" data-final-print-color-preset="#ffffff">Белый</button></div></div>
         <label class="field-label"><span>Фон кода</span><select class="select" data-final-print-code-background><option value="white" ${finalPrint.codeBackground !== "transparent" ? "selected" : ""}>Белый фон</option><option value="transparent" ${finalPrint.codeBackground === "transparent" ? "selected" : ""}>Без фона</option></select></label>
@@ -8252,7 +8252,7 @@ function finalWorksPrintSheetHtml(title, pagesHtml) {
 function finalWorkPrintSettings() {
   const saved = state.data.settings.find((item) => item.id === SETTING_IDS.finalWorkPrint) || {};
   const legacySize = { small: 160, medium: 200, large: 260 }[saved.qrSize] || 200;
-  const qrPixelSize = clampNumber(saved.qrPixelSize, 160, 600, legacySize);
+  const qrPixelSize = clampNumber(saved.qrPixelSize, 48, 600, legacySize);
   return {
     id: SETTING_IDS.finalWorkPrint,
     qrEnabled: saved.qrEnabled !== false,
@@ -8272,7 +8272,7 @@ function printSettingsFromView() {
     ...finalWorkPrintSettings(),
     qrEnabled: Boolean(view.querySelector("[data-final-print-qr-enabled]")?.checked),
     qrPosition: view.querySelector("[data-final-print-qr-position]")?.value || "bottom-right",
-    qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 160, 600, 200),
+    qrPixelSize: clampNumber(view.querySelector("[data-final-print-qr-px]")?.value, 48, 600, 200),
     qrMargin: `${clampNumber(view.querySelector("[data-final-print-qr-margin]")?.value, 0, 300, 10)}px`,
     codeType: view.querySelector("[data-final-print-code-type]")?.value === "barcode" ? "barcode" : "qr",
     codeColor: view.querySelector("[data-final-print-code-color]")?.value || finalWorkPrintSettings().codeColor,
