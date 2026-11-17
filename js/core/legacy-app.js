@@ -1,3 +1,5 @@
+import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+let printAssetCache, printAssetCacheKey;
 import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=229";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
@@ -7554,7 +7556,7 @@ function finalWorkOriginalBlob(work) {
   const shoot = mediaById(work?.sourceMediaId)?.blob;
   const originalMatchesShoot = original instanceof Blob && shoot instanceof Blob
     && original.size === shoot.size && original.type === shoot.type;
-  if (original instanceof Blob && !originalMatchesShoot && !finalWorkSourceHasEmbeddedQr(work)) return original;
+  if (original instanceof Blob && shoot instanceof Blob && !originalMatchesShoot && !finalWorkSourceHasEmbeddedQr(work)) return original;
   return finalWorkA4SourceCandidates(work).find(candidate => candidate.blob instanceof Blob
     && (!originalMatchesShoot || candidate.kind !== "original"))?.blob || null;
 }
@@ -7573,12 +7575,13 @@ function finalWorkA4SourceCandidates(work) {
     ...(!originalMatchesShoot ? [originalCandidate] : []),
     { blob: work?.blob, sourceHasEmbeddedQr: embedded, kind: "legacy-original" },
     { blob: work?.mergedPrintImage, sourceHasEmbeddedQr: false, kind: "merged-result" },
-    { blob: sourceMediaBlob, sourceHasEmbeddedQr: false, kind: "source-media" },
-    ...(originalMatchesShoot ? [originalCandidate] : [])
+
   ];
 }
 
 function cleanOriginalForCandidate(work, candidate) {
+  const original=work?.originalFinalImage, camera=mediaById(work?.sourceMediaId)?.blob;
+  if(original instanceof Blob && !(camera instanceof Blob && original.size===camera.size && original.type===camera.type))return original;
   if (!candidate?.sourceHasEmbeddedQr) return candidate?.blob || work?.originalFinalImage || null;
   return work?.originalFinalImage || candidate?.blob || null;
 }
@@ -8018,22 +8021,39 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "", studentI
   const exportLabel = finalWorkPrintSettings().codeType === "barcode" ? "Скачать PDF со штрихкодом" : "Скачать PDF с QR";
   const printAssets = new Map();
   const sourcePhotos = new Map();
+  const cacheKey=`${cloudDatabase()}:${cloudAccount()?.id || 'local'}`;
+  if(printAssetCacheKey!==cacheKey){printAssetCache=createPrintAssetCache(cacheKey);printAssetCacheKey=cacheKey;}
+  let cacheFailures=0,cachedCount=0,cancelled=false;
   await withBusy("Готовлю фотографии A4…", async () => {
-    for (let work of works) {
-      if (["image","mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(work.id);
-      const assets = await buildFinalWorkA4Assets({
-        file: finalWorkOriginalBlob(work) || finalWorkImageBlob(work),
-        studentId: work.studentId,
-        orientationMode: finalWorkA4Mode(work),
-        qrOverlayFile: work.animationQrImage,
-      qrPayload: finalWorkTextQrPayload(work),
-        forceQr: true,
-        sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
-      });
-      printAssets.set(work.id, assets);
-      sourcePhotos.set(work.id, await originalPhotoForPrintReview(work));
+    const card=document.querySelector('.busy-card');
+    if(card){const stop=document.createElement('button');stop.type='button';stop.className='secondary-button compact';stop.textContent='Остановить после текущего фото';stop.onclick=()=>{cancelled=true;stop.disabled=true;stop.textContent='Завершаем текущее фото…';};card.append(stop);}
+    for (let index=0;index<works.length;index++) {
+      if(cancelled)break;
+      let work=works[index];
+      const label=document.querySelector('.busy-card strong');
+      if(label)label.textContent=`Фото ${index+1} из ${works.length} · из кэша: ${cachedCount}`;
+      const signature=printAssetSignature(work,finalWorkPrintSettings(),finalWorkTextQrPayload(work));
+      const cached=await printAssetCache.get(work.id,signature).catch(()=>null);
+      if(cached){printAssets.set(work.id,cached.assets);sourcePhotos.set(work.id,cached.original);cachedCount++;continue;}
+      const cameraRef=mediaById(work.sourceMediaId)?.blob;
+      const field=work.originalFinalImage?.mime==='image/png' && work.originalFinalImage.$syncBlob!==cameraRef?.$syncBlob ? 'originalFinalImage' : 'image';
+      if(work[field]?.$syncBlob){
+        const loaded=await recordSync.loadRecord('finalWorks',work.id,{fields:[field]});
+        if(!loaded?.record?.[field])throw new Error('Файл результата недоступен. Подключитесь к интернету для первой загрузки.');
+        work={...work,[field]:loaded.record[field]};
+      }else if (["mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(work.id);
+      // Ready result takes precedence. Camera originals are comparison-only.
+      const candidate=finalWorkA4SourceCandidates(work).find(item=>item.blob instanceof Blob);
+      if(!candidate)throw new Error('Нет готового результата: '+finalWorkTitle(work));
+      const assets=await buildFinalWorkA4Assets({file:finalWorkOriginalBlob(work)||candidate.blob,studentId:work.studentId,orientationMode:finalWorkA4Mode(work),qrOverlayFile:work.animationQrImage,qrPayload:finalWorkTextQrPayload(work),forceQr:true,sourceHasEmbeddedQr:candidate.sourceHasEmbeddedQr,includePdf:false});
+      const original=await originalPhotoForPrintReview(work);
+      printAssets.set(work.id,assets);sourcePhotos.set(work.id,original);
+      try{await printAssetCache.put(work.id,signature,assets,original);}catch{cacheFailures++;}
+      await new Promise(resolve=>setTimeout(resolve,0));
     }
   });
+  if(cancelled){notify(`Подготовка остановлена. Готовые макеты сохранены на устройстве: ${printAssets.size-cacheFailures}.`);return;}
+  if(cacheFailures)notify(`Не удалось сохранить на устройстве ${cacheFailures} макетов. Освободите место, прежде чем работать без интернета.`);
   if (printAssets.size !== works.length) return notify("Не удалось подготовить все фотографии A4. Повторите попытку.");
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop print-review-backdrop";
@@ -8045,7 +8065,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "", studentI
     return `<img src="${escapeAttr(url)}" alt="${escapeAttr(label)}" loading="lazy" />`;
   };
   panel.innerHTML = `<section class="qr-panel print-review-panel" role="dialog" aria-modal="true" aria-label="Проверка перед печатью" tabindex="-1">
-    <div class="print-review-header"><div><h2 class="card-title">Проверка перед печатью</h2><p class="muted">${escapeHtml(scope.name)}</p></div><button class="icon-button" data-review-close type="button" aria-label="Закрыть">×</button></div>
+    <div class="print-review-header"><div><h2 class="card-title">Проверка перед печатью</h2><p class="muted">${escapeHtml(scope.name)}</p><p class="muted" role="status">На устройстве: ${works.length-cacheFailures} из ${works.length} макетов · повторно использовано: ${cachedCount}</p></div><button class="icon-button" data-review-close type="button" aria-label="Закрыть">×</button></div>
     <div class="toolbar print-review-controls"><button class="secondary-button" data-review-all type="button">Выбрать все</button><button class="secondary-button" data-review-none type="button">Снять выбор</button><strong data-review-count aria-live="polite"></strong></div>
     <div class="print-review-list" tabindex="0" aria-label="Фотографии для сравнения">${works.map(work => {
       const student = studentById(work.studentId);
@@ -8726,7 +8746,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
   notify("Макет A4 обновлён.");
 }
 
-async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false, sourceHasEmbeddedQr = false, qrPayload = "" }) {
+async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false, sourceHasEmbeddedQr = false, qrPayload = "", includePdf = true }) {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -8742,7 +8762,7 @@ async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto
   if (typeof image.close === "function") image.close();
   if (!embeddedQr || forceQr) await drawFinalWorkA4QrOverlay(context, page.width, page.height, studentId, qrOverlayFile, forceQr);
   const jpgBlob = await canvasToImageBlob(canvas, "image/jpeg", 0.95);
-  const pdfBlob = jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
+  const pdfBlob = includePdf && jpgBlob ? await createPdfBlobFromJpeg(jpgBlob, orientation) : null;
   return {
     orientationMode: ["auto", "vertical", "horizontal"].includes(orientationMode) ? orientationMode : "auto",
     orientation,

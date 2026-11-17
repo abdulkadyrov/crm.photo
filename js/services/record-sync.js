@@ -349,12 +349,13 @@ export function createRecordSync({db,user,enabled,notify,onRemote,canApply=()=>t
   await sync();
  }
 
- async function loadRecord(store,id){
+ async function loadRecord(store,id,{fields}={}){
   let wire=await get(store,id),scope;
   if(!wire&&enabled&&store==='media') {const remote=await json(`/sync/record/media/${encodeURIComponent(id)}`);wire=remote.record;scope=remote.scope;}
   if(!wire)return null;
   scope ||= await scopeFor(store,wire,id);
-  return {wire,record:await unpack(wire,scope,wire)};
+  const hydration=fields ? Object.fromEntries(Object.entries(wire).filter(([key])=>key==='id'||fields.includes(key))) : wire;
+  return {wire,record:await unpack(hydration,scope,wire)};
  }
  return {loadRecord,photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
 }

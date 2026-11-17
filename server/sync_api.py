@@ -274,6 +274,11 @@ def route(r,c,u,path,a):
     return [restore_hidden(next((old for old in full if isinstance(old,dict) and isinstance(v,dict) and (old.get('id') or old.get('serviceId') or old.get('type'))==(v.get('id') or v.get('serviceId') or v.get('type'))),{}),v) for v in filtered]
    return filtered
   merged=restore_hidden(current,merged)
+ if store=='finalWorks' and current and merged:
+  from print_integrity import replaces_finished_with_camera
+  source=c.execute("SELECT data FROM sync_records WHERE store='media' AND id=? AND data IS NOT NULL",(current.get('sourceMediaId'),)).fetchone()
+  camera=json.loads(source[0]).get('blob') if source else None
+  if replaces_finished_with_camera(current,merged,camera):return conflict_result(a,u,store,rid,current,old['seq'] if old else 0,['/originalFinalImage'],'Готовый результат нельзя заменить исходным снимком при пересборке печати. Обновите CRM.')
  if store=='finalWorks' and merged and merged.get('arPublication'):
   job=a.ar_jobs.enqueue(a,c,u,merged,scope)
   merged={**merged,'arJobId':job['id'],'arStatus':job['state']}

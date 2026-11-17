@@ -44,9 +44,9 @@ test('an original field matching the camera file cannot displace a finished imag
   assert.equal(context.finalWorkOriginalBlob({sourceMediaId:'shoot',originalFinalImage:duplicateShoot,image:printed,sourceHasEmbeddedQr:false}), printed);
 });
 
-test('a source-only legacy work remains readable and absent media returns null', () => {
+test('a camera-only work is not a finished print result', () => {
   const context = contextFor({shoot:{blob:shoot}});
-  assert.equal(context.finalWorkOriginalBlob({sourceMediaId:'shoot'}), shoot);
+  assert.equal(context.finalWorkOriginalBlob({sourceMediaId:'shoot'}), null);
   assert.equal(context.finalWorkOriginalBlob({}), null);
 });
 
@@ -56,6 +56,7 @@ test('class print review passes the generated portrait to A4 preparation, not so
   const stop = new Error('stop after selecting the actual print image');
   let selected;
   Object.assign(context, {
+    document:{querySelector:()=>null},printAssetCache:{get:async()=>null},printAssetCacheKey:'test:user',cloudDatabase:()=>"test",cloudAccount:()=>({id:'user'}),printAssetSignature:()=>"signature",
     state:{data:{finalWorks:[work]}}, classById:() => ({id:'class',name:'1а'}),
     finalWorkImageBlob:w => w.image, finalWorkA4Mode:() => 'vertical',
     finalWorkPrintSettings:() => ({codeType:'barcode'}), finalWorkArViewerUrl:() => '', finalWorkTextQrPayload:() => 'qr-payload',
@@ -70,4 +71,15 @@ test('class print review passes the generated portrait to A4 preparation, not so
   assert.equal(selected.sourceHasEmbeddedQr,false);
   assert.equal(selected.forceQr,true);
   assert.equal(selected.qrPayload,'qr-payload');
+});
+
+test('a deferred camera record never makes its raw original win over the ready template',()=>{
+ const context=contextFor({shoot:{blob:{$syncBlob:'camera'}}});
+ const work={sourceMediaId:'shoot',originalFinalImage:shoot,image:generated};
+ assert.equal(context.finalWorkOriginalBlob(work),generated);
+});
+test('regenerating print layouts preserves the clean generated original',()=>{
+ const begin=source.indexOf('function cleanOriginalForCandidate('),end=source.indexOf('\nasync function buildFinalWorkMergedAssetForWork(',begin);
+ const context=vm.createContext({Blob,mediaById:()=>({blob:shoot})});vm.runInContext(source.slice(begin,end),context);
+ assert.equal(context.cleanOriginalForCandidate({sourceMediaId:'shoot',originalFinalImage:generated},{blob:printed,sourceHasEmbeddedQr:false}),generated);
 });
