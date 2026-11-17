@@ -7053,3 +7053,12 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .project-print-groups summary label { font-weight: 600; }
 .project-print-picker .checkbox-row { align-items: start; gap: 8px; padding: 6px 0; }
 .project-print-picker input[type=checkbox] { width: 18px; height: 18px; flex: none; }
+
+.project-print-picker { padding: 14px; gap: 10px; font-size: 14px; }
+.project-print-picker .cloud-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.project-print-picker h2 { margin: 0; font-size: 20px; }
+.project-print-picker p { margin: 0; font-size: 13px; line-height: 1.35; }
+.project-print-picker .toolbar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.project-print-picker .toolbar button { font-size: 13px; padding: 8px; }
+.project-print-groups { max-height: 35dvh; margin: 0; }
+.project-print-groups summary { font-size: 13px; }

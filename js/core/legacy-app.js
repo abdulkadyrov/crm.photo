@@ -1,4 +1,4 @@
-import { openProjectPrintPicker } from "../ui/project-print-picker.js";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=229";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
 import {createNavigationHistory} from "../services/navigation-history.js?v=220";
