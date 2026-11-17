@@ -1,3 +1,5 @@
+import { openProjectPrintPicker } from "../ui/project-print-picker.js";
+import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
 import {createNavigationHistory} from "../services/navigation-history.js?v=220";
 import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=219";
@@ -63,7 +65,7 @@ import { calculatePhotographerWorkOverview } from "../services/photographer-anal
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=228";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -1385,7 +1387,7 @@ function projectCard(project) {
             
             
             
-            <button data-export-project="${project.id}" type="button">ZIP проекта</button><button data-cloud-project="${project.id}" type="button">Отправить на сервер</button>
+            <button data-project-print-picker="${project.id}" type="button">Печать · PDF</button><button data-export-project="${project.id}" type="button">ZIP проекта</button><button data-cloud-project="${project.id}" type="button">Отправить на сервер</button>
             
             <button data-assign-operator-project="${project.id}" type="button">Назначить сотрудника</button>
             <button data-rename-project="${project.id}" type="button">Переименовать</button>
@@ -5077,9 +5079,10 @@ function bindViewActions() {
   updateSelectedExportButton();
   view.querySelector("[data-export-selected-class]")?.addEventListener("click", () => exportClass(view.querySelector("[data-transfer-class]")?.value || state.classId));
   view.querySelectorAll("[data-action='export-all']").forEach((node) => node.addEventListener("click", (event) => runTransferExport(event.currentTarget, "Собираем полную копию…", exportFullBackup)));
+  view.querySelectorAll('[data-project-print-picker]').forEach(button=>button.onclick=()=>chooseProjectPrint(button.dataset.projectPrintPicker));
   view.querySelectorAll("[data-export-project]").forEach((node) => node.addEventListener("click", event => runTransferExport(event.currentTarget, "Подготовка ZIP…", () => exportProject(node.dataset.exportProject))));
   view.querySelectorAll("[data-export-class]").forEach((node) => node.addEventListener("click", event => runTransferExport(event.currentTarget, "Подготовка ZIP…", () => exportClass(node.dataset.exportClass))));
-  view.querySelectorAll("[data-print-final-project]").forEach((node) => node.addEventListener("click", () => reviewFinalWorksForPrint({ projectId: node.dataset.printFinalProject })));
+  view.querySelectorAll("[data-print-final-project]").forEach((node) => node.addEventListener("click", () => chooseProjectPrint(node.dataset.printFinalProject)));
   view.querySelectorAll("[data-print-final-class]").forEach((node) => node.addEventListener("click", () => printClassFinalWorksWithQr(node.dataset.printFinalClass)));
   view.querySelectorAll("[data-export-student]").forEach((node) => node.addEventListener("click", () => exportZip(node.dataset.exportStudent)));
   view.querySelectorAll("[data-open-montage]").forEach((node) => node.addEventListener("click", () => showMontagePanel(node.dataset.openMontage)));
@@ -7986,6 +7989,13 @@ function printClassFinalWorksWithQr(classId) {
   return reviewFinalWorksForPrint({ classId });
 }
 
+function chooseProjectPrint(projectId) {
+    const project=projectById(projectId);
+    const groups=state.data.classes.filter(group=>group.projectId===project.id);
+    const ids=new Set(groups.map(group=>group.id));
+    openProjectPrintPicker({project,groups,students:state.data.students.filter(student=>ids.has(student.classId)),works:state.data.finalWorks.filter(work=>ids.has(work.groupId||studentById(work.studentId)?.classId)),onReview:options=>reviewFinalWorksForPrint({projectId:project.id,...options})});
+}
+
 async function originalPhotoForPrintReview(work) {
   const source=mediaById(work.sourceMediaId);
   if (source?.blob instanceof Blob) return source.blob;
@@ -7996,11 +8006,12 @@ async function originalPhotoForPrintReview(work) {
   return null; // A finished portrait must never be labelled as the camera original.
 }
 
-async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
+async function reviewFinalWorksForPrint({ classId = "", projectId = "", studentIds = null, separators = true } = {}) {
   const scope = classId ? classById(classId) : projectById(projectId);
   if (!scope) return notify("Проект или группа не найдены.");
   const works = state.data.finalWorks.filter(work => {
     const groupId = work.groupId || studentById(work.studentId)?.classId;
+    if(studentIds && !studentIds.has(work.studentId))return false;
     return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && (finalWorkImageBlob(work) || finalWorkRemoteImageUrl(work));
   });
   if (!works.length) return notify("Нет готовых результатов для печати.");
@@ -8072,7 +8083,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
   for (const [selector, checked] of [["[data-review-all]", true], ["[data-review-none]", false]]) {
     panel.querySelector(selector).onclick = () => { inputs.forEach(input => input.checked = checked); update(); };
   }
-  const selectedPages = () => finalWorkSelectedPrintPages(works, printAssets, new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork)));
+  const selectedPages = () => groupedPrintPages(finalWorkSelectedPrintPages(works, printAssets, new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork))), work=>work.groupId || studentById(work.studentId)?.classId, separators);
   preview.onclick = () => {
     try { showFinalWorkPrintPreview(selectedPages(), scope.name); }
     catch (error) { notify("Не удалось открыть просмотр. " + error.message); }
@@ -8082,7 +8093,8 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
     busy = true; update();
     download.textContent = "Готовлю PDF…";
     async function* pages() {
-      for (const { work, assets } of selected) {
+      for (const { work, assets, blank } of selected) {
+        if(blank){yield {blank:true,width:2480,height:3508};continue;}
         const jpeg = assets.jpgBlob;
         if (!jpeg) throw new Error("Не удалось создать A4: " + finalWorkTitle(work));
         const horizontal = assets.orientation === "horizontal";
@@ -8123,7 +8135,7 @@ function finalWorkPrintPreviewHtml(pages) {
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body { background: #e5e7eb; }
-    .photo-page { margin: 12px auto; width: min(calc(100% - 16px), calc((100vh - 24px) * 0.7069555)); aspect-ratio: 2480 / 3508; line-height: 0; }
+    .photo-page { background: white; margin: 12px auto; width: min(calc(100% - 16px), calc((100vh - 24px) * 0.7069555)); aspect-ratio: 2480 / 3508; line-height: 0; }
     .photo-page.landscape { width: min(calc(100% - 16px), calc((100vh - 24px) * 1.4145161)); aspect-ratio: 3508 / 2480; }
     img { display: block; width: 100%; height: 100%; }
     @media print {
@@ -8132,12 +8144,13 @@ function finalWorkPrintPreviewHtml(pages) {
       .photo-page.landscape { page: landscape; width: 297mm; height: 210mm; }
       .photo-page:last-child { break-after: auto; }
     }
-  </style></head><body>${pages.map(page => `<div class="photo-page ${page.orientation === "horizontal" ? "landscape" : "portrait"}"><img src="${escapeAttr(page.url)}" alt="${escapeAttr(page.title)}"></div>`).join("")}</body></html>`;
+  </style></head><body>${pages.map(page => `<div class="photo-page ${page.orientation === "horizontal" ? "landscape" : "portrait"}">${page.blank ? "" : `<img src="${escapeAttr(page.url)}" alt="${escapeAttr(page.title)}">`}</div>`).join("")}</body></html>`;
 }
 
 function showFinalWorkPrintPreview(pages, scopeName) {
   const urls = new Map();
-  const renderedPages = pages.map(({ work, assets }) => {
+  const renderedPages = pages.map(({ work, assets, blank }) => {
+    if(blank)return {blank:true,orientation:"vertical"};
     if (!urls.has(work.id)) urls.set(work.id, URL.createObjectURL(assets.jpgBlob));
     return { url: urls.get(work.id), title: finalWorkTitle(work), orientation: assets.orientation };
   });

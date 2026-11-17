@@ -7045,3 +7045,11 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .camera-fast-capture { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 6px; align-items: center; padding: 8px 0; color: #fff; font-size: 14px; }
 .camera-fast-capture input { width: 18px; height: 18px; margin: 0; }
 .camera-fast-capture small { grid-column: 2; color: #ccc; font-size: 12px; line-height: 1.35; }
+
+.project-print-picker { width: min(620px, calc(100vw - 24px)); }
+.project-print-groups { max-height: 50dvh; overflow: auto; margin: 12px 0; }
+.project-print-groups details { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.project-print-groups details > div { padding: 8px 0 0 16px; }
+.project-print-groups summary label { font-weight: 600; }
+.project-print-picker .checkbox-row { align-items: start; gap: 8px; padding: 6px 0; }
+.project-print-picker input[type=checkbox] { width: 18px; height: 18px; flex: none; }
