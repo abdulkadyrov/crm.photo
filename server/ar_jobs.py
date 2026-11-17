@@ -47,7 +47,7 @@ def enqueue(a,c,u,work,scope):
 
 def public_job(job):
  result=json.loads(job['result']) if job.get('result') else {}
- return {'id':job['id'],'workId':job['work_id'],'status':job['state'],'attempts':job['attempts'],'error':job['error'],**result}
+ return {'id':job['id'],'workId':job['work_id'],'requestKey':job['request_key'],'status':job['state'],'attempts':job['attempts'],'error':job['error'],**result}
 
 def route(r,c,u,path,a):
  a.fail(r.method!='GET',405,'Доступно чтение статуса')

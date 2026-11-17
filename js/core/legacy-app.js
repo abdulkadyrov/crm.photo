@@ -7260,8 +7260,9 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   panel.querySelector('[data-send-montage-ar]')?.addEventListener('click', async event=>{
     if(event.currentTarget.disabled)return;
     if(cloudRequired&&!['admin','manager'].includes(cloudAccount()?.role))return notify('Отправка доступна администратору или менеджеру.');
-    if(!service||!source?.blob)return notify('Добавьте фото и выберите услугу.');
-    if(!mediaByStudent(student.id).some(item=>item.type==='video'&&item.blob?.size))return notify('Добавьте готовое видео в медиа ребёнка.');
+    const report=message=>{panel.querySelector('[data-montage-ar-status]').textContent=message;notify(message);};
+    if(!service)return report('Выберите услугу.');
+    if(!mediaByStudent(student.id).some(item=>item.type==='video'&&item.blob?.size))return report('Добавьте готовое видео в медиа ребёнка, затем отправьте его в AR Photo.');
     const button=event.currentTarget;button.disabled=true;button.textContent='Подготовка фото A4…';
     try {
       let work=arWork;
@@ -8334,7 +8335,7 @@ async function publishFinalWorkAR(workId) {
     polling=true;
     try {
       const response=await fetch(`/api/v1/ar/jobs/by-work/${encodeURIComponent(workId)}`,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(10000)});
-      if(response.ok){const job=await response.json();latest={...latest,...job,arJobId:job.id,arStatus:job.status,arError:job.error};showStatus(latest);}
+      if(response.ok){const job=await response.json();if(job.requestKey!==latest.arPublication?.requestKey)return;latest={...latest,...job,arJobId:job.id,arStatus:job.status,arError:job.error};showStatus(latest);}
     }catch { /* The durable queue continues when this device is offline. */ }
     finally {polling=false;}
   },4000);

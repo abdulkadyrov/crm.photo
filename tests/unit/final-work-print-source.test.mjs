@@ -58,7 +58,7 @@ test('class print review passes the generated portrait to A4 preparation, not so
   Object.assign(context, {
     state:{data:{finalWorks:[work]}}, classById:() => ({id:'class',name:'1а'}),
     finalWorkImageBlob:w => w.image, finalWorkA4Mode:() => 'vertical',
-    finalWorkPrintSettings:() => ({codeType:'barcode'}), finalWorkArViewerUrl:() => '',
+    finalWorkPrintSettings:() => ({codeType:'barcode'}), finalWorkArViewerUrl:() => '', finalWorkTextQrPayload:() => 'qr-payload',
     withBusy:async (_, action) => action(),
     buildFinalWorkA4Assets:async options => {selected=options;throw stop;}
   });
@@ -69,4 +69,5 @@ test('class print review passes the generated portrait to A4 preparation, not so
   assert.equal(selected.file,generated);
   assert.equal(selected.sourceHasEmbeddedQr,false);
   assert.equal(selected.forceQr,true);
+  assert.equal(selected.qrPayload,'qr-payload');
 });
