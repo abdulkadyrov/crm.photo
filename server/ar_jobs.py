@@ -19,15 +19,24 @@ def enqueue(a,c,u,work,scope):
  key=a.identifier(intent.get('requestKey'));marker=a.identifier(intent.get('markerMediaId'));video=a.identifier(intent.get('videoMediaId'))
  assets={}
  for name,mid in [('marker',marker),('video',video)]:
-  row=c.execute("SELECT scope,data FROM sync_records WHERE store='media' AND id=? AND data IS NOT NULL",(mid,)).fetchone()
-  a.fail(not row or row['scope']!=scope,409,'Сначала синхронизируйте медиа проекта')
-  media=json.loads(row['data']); a.fail(media.get('studentId')!=work.get('studentId'),403,'Медиа другого учащегося')
-  blob=media.get('blob',{});digest=blob.get('$syncBlob','')
+  if name=='marker' and intent.get('markerSource')=='a4':
+   media=work
+   a.fail(mid!=work['id'],400,'Маркер должен принадлежать этой работе')
+   blob=intent.get('markerA4Image',{})
+  else:
+   row=c.execute("SELECT scope,data FROM sync_records WHERE store='media' AND id=? AND data IS NOT NULL",(mid,)).fetchone()
+   a.fail(not row or row['scope']!=scope,409,'Сначала синхронизируйте медиа проекта')
+   media=json.loads(row['data']); a.fail(media.get('studentId')!=work.get('studentId'),403,'Медиа другого учащегося')
+   blob=media.get('blob',{})
+  digest=blob.get('$syncBlob','')
   a.fail(not re.fullmatch('[a-f0-9]{64}',digest),409,'Файл ещё не отправлен')
   mime=blob.get('mime',''); a.fail(not mime.startswith('image/' if name=='marker' else 'video/'),400,'Нужны фото-маркер и готовое видео')
   a.fail(not c.execute('SELECT 1 FROM sync_blobs WHERE scope=? AND digest=?',(scope,digest)).fetchone(),409,'Файл не синхронизирован')
   assets[name]={'mediaId':mid,'sha256':digest,'mime':mime}
  payload={'version':1,'workId':work['id'],'projectId':scope,'studentId':work['studentId'],'assets':assets}
+ if intent.get('markerSource')=='a4':
+  a.fail(intent.get('frame') not in ('a4-portrait','a4-landscape'),400,'Нужна ориентация A4')
+  payload['frame']=intent['frame']
  encoded=json.dumps(payload,sort_keys=True,separators=(',',':'))
  old=c.execute('SELECT * FROM ar_jobs WHERE request_key=?',(key,)).fetchone()
  a.fail(old and (old['scope']!=scope or old['payload']!=encoded),409,'Ключ публикации уже использован для другой работы')
@@ -42,7 +51,9 @@ def public_job(job):
 
 def route(r,c,u,path,a):
  a.fail(r.method!='GET',405,'Доступно чтение статуса')
- jid=a.identifier(path.split('/')[-1]);job=c.execute('SELECT * FROM ar_jobs WHERE id=?',(jid,)).fetchone()
+ jid=a.identifier(path.split('/')[-1])
+ if '/by-work/' in path:job=c.execute('SELECT * FROM ar_jobs WHERE work_id=? ORDER BY created DESC LIMIT 1',(jid,)).fetchone()
+ else:job=c.execute('SELECT * FROM ar_jobs WHERE id=?',(jid,)).fetchone()
  a.fail(not job,404,'Публикация не найдена');a.access(c,u,job['scope']);return public_job(dict(job))
 
 def run_one(a, adapter, now=None):

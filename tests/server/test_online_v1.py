@@ -56,6 +56,21 @@ class OnlineV1(unittest.TestCase):
   with app.db() as c:
    final=json.loads(c.execute("SELECT data FROM sync_records WHERE store='finalWorks' AND id=?",(work['id'],)).fetchone()[0]);self.assertEqual(final['qrPayload'],adapter.publish.return_value['viewerUrl'])
   self.assertEqual(request('/ar/jobs/'+one['id'],cookie=self.cookies['viewer'])['status'],200)
+ def test_a4_marker_is_pinned_to_request_and_status_lookup_checks_scope(self):
+  raw=b'a4-cropped-print';digest=hashlib.sha256(raw).hexdigest()
+  with app.db() as c:
+   c.execute('INSERT OR IGNORE INTO sync_blobs VALUES(?,?,?,?)',('v1-project',digest,len(raw),'v1-admin'))
+   video=hashlib.sha256(b'v-a4').hexdigest()
+   c.execute('INSERT OR IGNORE INTO sync_blobs VALUES(?,?,?,?)',('v1-project',video,4,'v1-admin'))
+   parent_mutations.write_record(c,'media','v1-a4-video','v1-project',{'id':'v1-a4-video','studentId':'v1-child','blob':{'$syncBlob':video,'mime':'video/mp4'}})
+   marker={'$syncBlob':digest,'mime':'image/jpeg'}
+   work={'id':'v1-a4-work','studentId':'v1-child','a4PrintImage':{'$syncBlob':'f'*64},'arPublication':{'requestKey':str(uuid.uuid4()),'markerSource':'a4','markerA4Image':marker,'markerMediaId':'v1-a4-work','videoMediaId':'v1-a4-video','frame':'a4-portrait'}}
+   job=ar_jobs.enqueue(app,c,{'role':'admin'},work,'v1-project')
+   payload=json.loads(job['payload']);self.assertEqual(payload['assets']['marker']['sha256'],digest);self.assertEqual(payload['frame'],'a4-portrait')
+   work['a4PrintImage']={'$syncBlob':'e'*64}
+   self.assertEqual(ar_jobs.enqueue(app,c,{'role':'admin'},work,'v1-project')['id'],job['id'])
+  result=request('/ar/jobs/by-work/v1-a4-work',cookie=self.cookies['manager']);self.assertEqual(result['status'],200);self.assertEqual(result['data']['id'],job['id'])
+  with app.db() as c:c.execute('DELETE FROM ar_jobs WHERE id=?',(job['id'],))
  def test_storage_adapter_is_private_and_retains_spool_on_failure(self):
   import private_storage,os,tempfile
   from pathlib import Path

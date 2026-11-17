@@ -1,3 +1,4 @@
+import { arPublicationState } from "../services/ar-publication-state.js";
 import {createNavigationHistory} from "../services/navigation-history.js?v=220";
 import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=219";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
@@ -7149,13 +7150,17 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   const reference = service ? montageReferenceForService(service) : null;
   const promptText = service ? servicePrompt(service) : "";
   const works = service ? finalWorksForStudent(student.id).filter((work) => work.serviceId === service.id) : [];
+  const publishedArUrl = works.slice().sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""))).map(finalWorkArViewerUrl).find(Boolean) || "";
+  const arWork = works.slice().sort((a,b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")))[0];
+  const arState = arPublicationState(arWork);
   const animationQrFile = state.currentMontageQr?.studentId === student.id && state.currentMontageQr?.serviceId === service?.id
     ? state.currentMontageQr.file
     : null;
   const needsAnimationQr = service && ["video", "both"].includes(normalizeMediaKind(service.mediaKind, "both"));
   const sourceUrl = source?.blob ? URL.createObjectURL(source.blob) : "";
   const referenceUrl = reference?.url || "";
-  const animationQrUrl = animationQrFile ? URL.createObjectURL(animationQrFile) : "";
+  const animationQrSvg = publishedArUrl ? createQrSvg(publishedArUrl, 8, true) : "";
+  const animationQrUrl = animationQrSvg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(animationQrSvg)}` : animationQrFile ? URL.createObjectURL(animationQrFile) : "";
   document.querySelector(".montage-backdrop")?.remove();
   const panel = document.createElement("div");
   panel.className = "qr-panel-backdrop montage-backdrop";
@@ -7194,9 +7199,9 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
               <div class="card-header"><h3 class="card-title">QR для оживления</h3></div>
               <div class="montage-animation-qr-content">
                 ${animationQrUrl ? `<img class="montage-animation-qr-preview" src="${animationQrUrl}" alt="QR для оживления" />` : '<div class="montage-animation-qr-empty">QR будет в углу фото</div>'}
-                <div class="montage-animation-qr-actions">
-                  <button class="secondary-button compact" data-upload-montage-qr type="button">${animationQrUrl ? "Заменить QR" : "Загрузить QR"}</button>
-                  ${animationQrUrl ? '<button class="secondary-button compact" data-remove-montage-qr type="button">Убрать</button>' : ""}
+                <div class="montage-animation-qr-actions"><button class="primary-button compact" data-send-montage-ar type="button" >${arState.busy ? "Проверить отправку" : arState.ready ? "Обновить в AR Photo" : "Отправить в AR Photo"}</button><p role="status" data-montage-ar-status>${escapeHtml(arState.title)}. ${escapeHtml(arState.detail)}</p>
+                  ${publishedArUrl ? `<a class="secondary-button compact" href="${escapeAttr(publishedArUrl)}" target="_blank" rel="noopener noreferrer">Открыть AR</a><button class="secondary-button compact" data-download-ar-qr type="button">Скачать QR</button>` : `<button class="secondary-button compact" data-upload-montage-qr type="button">${animationQrUrl ? "Заменить QR" : "Загрузить QR"}</button>
+                  ${animationQrUrl ? '<button class="secondary-button compact" data-remove-montage-qr type="button">Убрать</button>' : ""}`}
                 </div>
               </div>
             </article>
@@ -7221,7 +7226,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   `;
   const close = () => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    if (animationQrUrl) URL.revokeObjectURL(animationQrUrl);
+    if (animationQrUrl && !publishedArUrl) URL.revokeObjectURL(animationQrUrl);
     panel.remove();
   };
   panel.addEventListener("click", (event) => {
@@ -7229,13 +7234,13 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   });
   panel.querySelector("[data-montage-service]")?.addEventListener("change", (event) => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    if (animationQrUrl) URL.revokeObjectURL(animationQrUrl);
+    if (animationQrUrl && !publishedArUrl) URL.revokeObjectURL(animationQrUrl);
     panel.remove();
     showMontagePanel(student.id, event.currentTarget.value, source?.id || "");
   });
   panel.querySelector("[data-montage-source]")?.addEventListener("change", (event) => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-    if (animationQrUrl) URL.revokeObjectURL(animationQrUrl);
+    if (animationQrUrl && !publishedArUrl) URL.revokeObjectURL(animationQrUrl);
     panel.remove();
     showMontagePanel(student.id, service?.id || "", event.currentTarget.value);
   });
@@ -7248,6 +7253,21 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     state.currentFinalWork = { studentId: student.id, serviceId: service.id, sourceMediaId: source?.id || "", referenceMediaId: reference?.id || "", animationQrFile };
     finalWorkInput.value = "";
     finalWorkInput.click();
+  });
+  panel.querySelector("[data-download-ar-qr]")?.addEventListener("click", () => {
+    downloadBlob(new Blob([animationQrSvg], { type: "image/svg+xml" }), safeFileName(`AR_QR_${student.lastName}_${student.firstName}.svg`));
+  });
+  panel.querySelector('[data-send-montage-ar]')?.addEventListener('click', async event=>{
+    if(event.currentTarget.disabled)return;
+    if(cloudRequired&&!['admin','manager'].includes(cloudAccount()?.role))return notify('Отправка доступна администратору или менеджеру.');
+    if(!service||!source?.blob)return notify('Добавьте фото и выберите услугу.');
+    if(!mediaByStudent(student.id).some(item=>item.type==='video'&&item.blob?.size))return notify('Добавьте готовое видео в медиа ребёнка.');
+    const button=event.currentTarget;button.disabled=true;button.textContent='Подготовка фото A4…';
+    try {
+      let work=arWork;
+      if(!work)throw new Error('Добавьте готовый результат для этой услуги: в AR отправляется его кадр A4.');
+      close();await publishFinalWorkAR(work.id);
+    }catch(error){notify(error.message);button.disabled=false;button.textContent='Отправить в AR Photo';}
   });
   panel.querySelector("[data-upload-montage-qr]")?.addEventListener("click", () => {
     state.currentMontageQr = { studentId: student.id, serviceId: service.id, sourceMediaId: source?.id || "", file: null };
@@ -7280,8 +7300,25 @@ async function handleMontageQrInput(event) {
   const target = state.currentMontageQr;
   event.target.value = "";
   if (!file || !target) return;
-  if (!fileLooksImage(file)) return notify("Загрузите QR как изображение: JPG, PNG или WebP.");
-  state.currentMontageQr = { ...target, file };
+  if (!fileLooksImage(file) && !/\.svg$/i.test(file.name || "")) return notify("Загрузите QR как изображение: SVG, JPG, PNG или WebP.");
+  let qrFile = file;
+  if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name || "")) {
+    try {
+      // Decode as an image (scripts and external resources are disabled), then
+      // persist pixels so SVG decoding support is not needed by print canvases.
+      const svg = new Blob([await file.text()], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(svg);
+      let image;
+      try { image = await loadImageFromUrl(url); } finally { URL.revokeObjectURL(url); }
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 2048;
+      canvas.getContext("2d").drawImage(image, 0, 0, 2048, 2048);
+      const blob = await canvasToImageBlob(canvas, "image/png", 1);
+      if (!blob?.size) throw new Error("Пустой QR");
+      qrFile = new File([blob], file.name.replace(/\.svg$/i, "") + ".png", { type: "image/png" });
+    } catch { return notify("Не удалось прочитать SVG. Попробуйте другой SVG или PNG."); }
+  }
+  state.currentMontageQr = { ...target, file: qrFile };
   document.querySelector(".montage-backdrop")?.remove();
   showMontagePanel(target.studentId, target.serviceId, target.sourceMediaId);
   notify("QR добавлен: он будет размещён в углу готового фото.");
@@ -7516,6 +7553,7 @@ async function buildFinalWorkA4AssetsForWork(work, orientationMode = finalWorkA4
       studentId: work.studentId,
       orientationMode,
       qrOverlayFile: work.animationQrImage,
+      qrPayload: finalWorkTextQrPayload(work),
       sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
       forceQr: forceCodeRefresh
     }),
@@ -7932,6 +7970,7 @@ async function reviewFinalWorksForPrint({ classId = "", projectId = "" } = {}) {
         studentId: work.studentId,
         orientationMode: finalWorkA4Mode(work),
         qrOverlayFile: work.animationQrImage,
+      qrPayload: finalWorkTextQrPayload(work),
         forceQr: true,
         sourceHasEmbeddedQr: finalWorkSourceHasEmbeddedQr(work)
       });
@@ -8270,7 +8309,67 @@ function finalWorkIdFromCompactPrintQr(value) {
   return token.startsWith("final_") ? token : "";
 }
 
+async function publishFinalWorkAR(workId) {
+  const work = finalWorkById(workId);
+  if (!work) return;
+  if (cloudRequired && !["admin", "manager"].includes(cloudAccount()?.role)) return notify("Публикация AR доступна менеджеру или администратору.");
+  const media = mediaByStudent(work.studentId);
+  const videos = media.filter(item => item.type === "video" && item.blob?.size);
+  if (!videos.length) return notify("Добавьте готовое видео в медиа ребёнка.");
+  const pending = arPublicationState(work).busy;
+  const restore = captureDialogReturn(document, window, view.querySelector(`[data-publish-ar="${CSS.escape(workId)}"]`));
+  let dialogHistory;
+  const dialog = document.createElement("dialog"); dialog.className = "cloud-dialog roster-list-dialog";
+  dialog.innerHTML = `<form><div class="cloud-head"><h2>Отправка в AR Photo</h2><button type="button" data-close aria-label="Закрыть">×</button></div><p>Фото: готовый кадр A4. Видео будет обрезано по центру до тех же пропорций.</p><label>Готовое видео<select class="input" name="video" ${pending ? "disabled" : ""}>${videos.map(item => `<option value="${escapeAttr(item.id)}">${escapeHtml(item.fileName || item.id)}</option>`).join("")}</select></label><div role="status" aria-live="polite" data-ar-status></div><p data-error role="alert"></p><button class="primary-button" type="submit" ${pending ? "disabled" : ""}>${pending ? "Задача уже в очереди" : "Отправить фото A4 и видео"}</button></form>`;
+  let polling = false;
+  const showStatus = value => {
+    const model=arPublicationState(value);
+    dialog.querySelector('[data-ar-status]').innerHTML=`<strong>${escapeHtml(model.title)}</strong><p>${escapeHtml(model.detail)}</p>${model.busy ? '<progress aria-label="Публикация в AR Photo"></progress>' : ''}${model.ready && finalWorkArViewerUrl(value) ? `<a class="secondary-button compact" href="${escapeAttr(finalWorkArViewerUrl(value))}" target="_blank" rel="noopener noreferrer">Открыть AR Photo</a>` : ''}`;
+  };
+  let latest=work;
+  showStatus(work);
+  const timer=setInterval(async()=>{
+    if(!dialog.isConnected || !dialog.open){clearInterval(timer);return;}
+    if(polling || !arPublicationState(latest).busy || !cloudRequired)return;
+    polling=true;
+    try {
+      const response=await fetch(`/api/v1/ar/jobs/by-work/${encodeURIComponent(workId)}`,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(10000)});
+      if(response.ok){const job=await response.json();latest={...latest,...job,arJobId:job.id,arStatus:job.status,arError:job.error};showStatus(latest);}
+    }catch { /* The durable queue continues when this device is offline. */ }
+    finally {polling=false;}
+  },4000);
+  dialog.querySelector('[data-close]').onclick = () => dialog.close();dialog.onclose = () => dialogHistory?.close();
+  dialog.oncancel = event => { event.preventDefault(); dialogHistory?.close(); };
+  dialog.querySelector('form').onsubmit = async event => {
+    event.preventDefault();const form=event.currentTarget;form.querySelector('[type="submit"]').disabled=true;
+    try {
+      const current=finalWorkById(workId);
+      if(arPublicationState(current).busy){latest=current;showStatus(current);return;}
+      form.querySelector('[data-ar-status]').textContent='Подготовка фото A4…';
+      if(!finalWorkA4ImageBlob(current)?.size)throw new Error('Сначала подготовьте готовое фото A4 для этой услуги.');
+      const intent={requestKey:crypto.randomUUID(),markerSource:'a4',markerA4Image:finalWorkA4ImageBlob(current),markerMediaId:current.id,videoMediaId:form.elements.video.value,frame:current.a4OrientationResolved==='horizontal'?'a4-landscape':'a4-portrait'};
+      latest=stampUpdated({...current,arPublication:intent,arStatus:'queued',arError:''});
+      await put('finalWorks',latest);
+      await refreshData();showStatus(latest);form.elements.video.disabled=true;
+      form.querySelector('[type="submit"]').textContent='Задача сохранена в очереди';
+    } catch(error) {dialog.querySelector('[data-error]').textContent=error.message;form.querySelector('[type="submit"]').disabled=false;}
+  };
+  document.body.append(dialog);dialog.showModal();
+  dialogHistory = mountDialogHistory({id:uid("ar_publish"),restore:()=>{dialog.onclose=null;if(dialog.open)dialog.close();dialog.remove();restore();}});
+}
+
+
+function finalWorkArViewerUrl(work) {
+  if (work?.arStatus === "ready" && work.viewerUrl) {
+    try { const url = new URL(work.viewerUrl); if (url.protocol === "https:" && url.hostname === "khanzama.ru" && url.pathname.startsWith("/ar.photo/")) return url.href; } catch {}
+  }
+  return "";
+}
+
+
 function finalWorkTextQrPayload(work) {
+  const viewerUrl=finalWorkArViewerUrl(work);
+  if(viewerUrl)return viewerUrl;
   return [
     "Vakha Studio",
     `School: ${finalWorkQrCompactField(finalWorkQrSchoolName(work), 18)}`,
@@ -8406,7 +8505,8 @@ function finalWorkA4ResolvedOrientation(work) {
 }
 
 function finalWorkA4OrientationNeedsRefresh(work) {
-  return !finalWorkA4ImageBlob(work)
+  return (Boolean(finalWorkArViewerUrl(work)) && work?.a4ArViewerUrl !== finalWorkArViewerUrl(work))
+    || !finalWorkA4ImageBlob(work)
     || !finalWorkA4PdfBlob(work)
     || work?.a4QrVersion !== 6
     || work?.a4CodeSettingsKey !== JSON.stringify(finalWorkPrintSettings())
@@ -8517,6 +8617,7 @@ async function ensureFinalWorkA4Assets(workId) {
       a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
       originalFinalImage: cleanOriginalForCandidate(latestWork, candidate),
       sourceHasEmbeddedQr: candidate.sourceHasEmbeddedQr,
+      a4ArViewerUrl: finalWorkArViewerUrl(latestWork),
       a4PreparedAt: now()
     });
     await put("finalWorks", next);
@@ -8557,6 +8658,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
       a4PrintPdf: assets.pdfBlob,
       a4QrVersion: 6,
       a4CodeSettingsKey: JSON.stringify(finalWorkPrintSettings()),
+      a4ArViewerUrl: finalWorkArViewerUrl(latestWork),
       a4PreparedAt: now()
     }));
   });
@@ -8566,7 +8668,7 @@ async function regenerateFinalWorkA4(workId, orientationMode = "auto") {
   notify("Макет A4 обновлён.");
 }
 
-async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false, sourceHasEmbeddedQr = false }) {
+async function buildFinalWorkA4Assets({ file, studentId, orientationMode = "auto", qrOverlayFile = null, forceQr = false, sourceHasEmbeddedQr = false, qrPayload = "" }) {
   const image = await loadImageForCanvas(file);
   const sourceWidth = image.width || image.naturalWidth || 0;
   const sourceHeight = image.height || image.naturalHeight || 0;
@@ -8738,11 +8840,25 @@ async function buildFinalWorkMergedAsset(file, qrPayload, qrOverlayFile = null, 
   };
 }
 
+function isArPrintPayload(payload) {
+  try { const url = new URL(payload); return url.protocol === "https:" && url.hostname === "khanzama.ru" && url.pathname.startsWith("/ar.photo/ar/"); } catch { return false; }
+}
+
+
 async function drawFinalWorkQrOverlay(context, width, height, qrPayload, qrOverlayFile = null, studentId = "") {
+  const ar = isArPrintPayload(qrPayload);
   const settings = finalWorkPrintSettings();
-  const work = settings.codeType === "barcode" ? findFinalWorkFromPrintPayload(qrPayload) : null;
-  const payload = settings.codeType === "barcode" ? (studentQrPayload(studentById(studentId || work?.studentId)) || studentId || qrPayload) : qrPayload;
-  return drawFinalWorkCodeOverlay(context, width, height, payload, qrOverlayFile, settings);
+  const work = studentId ? null : findFinalWorkFromPrintPayload(qrPayload);
+  const childId = studentId || work?.studentId || "";
+  const student = studentById(childId);
+  const childPayload = studentQrPayload(student || { id: childId, qrId: childId }) || childId || qrPayload;
+  const hasAnimationQr = ar || qrOverlayFile instanceof Blob;
+  const childSettings = hasAnimationQr ? { ...settings, qrPosition: settings.qrPosition.endsWith("left") ? "bottom-right" : "bottom-left" } : settings;
+  await drawFinalWorkCodeOverlay(context, width, height, childPayload, null, childSettings);
+  if (hasAnimationQr) {
+    const arSettings = { ...settings, codeType: "qr", qrEnabled: true, codeBackground: "white", codeOpacity: 1 };
+    await drawFinalWorkCodeOverlay(context, width, height, qrPayload, ar ? null : qrOverlayFile, arSettings, true);
+  }
 }
 
 function recolorPrintCodePixels(data, color) {
