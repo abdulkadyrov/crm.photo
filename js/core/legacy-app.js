@@ -7262,7 +7262,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     notify("Промпт скопирован");
   });
   panel.querySelectorAll('[data-montage-result-open]').forEach(button => button.addEventListener('click', () => {
-    close();showFinalWorkViewer(button.dataset.montageResultOpen);
+    showFinalWorkViewer(button.dataset.montageResultOpen, {trigger:button});
   }));
   panel.querySelectorAll('[data-montage-result-delete]').forEach(button => button.addEventListener('click', async () => {
     button.disabled=true;
