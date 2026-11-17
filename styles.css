@@ -7038,3 +7038,6 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 .montage-result-edit summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 6px 0; }
 .montage-result-edit label { display: grid; gap: 6px; margin: 8px 0; font-size: 13px; }
 .montage-result-edit .input { width: 100%; min-width: 0; }
+
+.montage-result-delete-confirm { grid-column: 1 / -1; min-width: 0; }
+.montage-result-delete-confirm p { margin: 0 0 8px; font-size: 14px; }

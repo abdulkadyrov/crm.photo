@@ -7158,7 +7158,7 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
     const blob = finalWorkImageBlob(work);
     const url = blob instanceof Blob && blob.size ? URL.createObjectURL(blob) : "";
     if (url) resultPreviewUrls.push(url);
-    return `<div class="montage-result-row"><button class="final-result-preview" data-montage-result-open="${escapeAttr(work.id)}" type="button" aria-label="Открыть результат ${escapeAttr(finalWorkTitle(work))}">${url ? `<img src="${url}" alt="${escapeAttr(finalWorkTitle(work))}" loading="lazy" />` : "Превью"}</button><div class="montage-result-copy"><strong>${escapeHtml(finalWorkTitle(work))}</strong><small>${escapeHtml(work.originalFinalImage?.name || work.fileName || "")}</small><small>Добавлено: ${escapeHtml(work.createdAt ? new Date(work.createdAt).toLocaleString("ru-RU") : "—")}</small></div><div class="montage-result-actions"><button class="secondary-button compact" data-montage-result-open="${escapeAttr(work.id)}" type="button">Открыть</button><button class="danger-button compact" data-montage-result-delete="${escapeAttr(work.id)}" type="button">Удалить</button></div><details class="montage-result-edit"><summary>Изменить услугу</summary><label>Услуга результата<select class="input" data-montage-result-service="${escapeAttr(work.id)}">${services.map(item => `<option value="${escapeAttr(item.id)}" ${item.id === work.serviceId ? "selected" : ""}>${escapeHtml(serviceName(item))}</option>`).join("")}</select></label><button class="secondary-button compact" data-montage-result-save="${escapeAttr(work.id)}" type="button">Сохранить услугу</button><p role="status" data-result-status></p></details></div>`;
+    return `<div class="montage-result-row"><button class="final-result-preview" data-montage-result-open="${escapeAttr(work.id)}" type="button" aria-label="Открыть результат ${escapeAttr(finalWorkTitle(work))}">${url ? `<img src="${url}" alt="${escapeAttr(finalWorkTitle(work))}" loading="lazy" />` : "Превью"}</button><div class="montage-result-copy"><strong>${escapeHtml(finalWorkTitle(work))}</strong><small>${escapeHtml(work.originalFinalImage?.name || work.fileName || "")}</small><small>Добавлено: ${escapeHtml(work.createdAt ? new Date(work.createdAt).toLocaleString("ru-RU") : "—")}</small></div><div class="montage-result-actions"><button class="secondary-button compact" data-montage-result-open="${escapeAttr(work.id)}" type="button">Открыть</button><button class="danger-button compact" data-montage-result-delete="${escapeAttr(work.id)}" type="button">Удалить</button></div><div class="montage-result-delete-confirm" data-result-delete-confirm hidden><p>Удалить этот результат? Его запись и макет печати будут удалены.</p><div class="montage-result-actions"><button class="danger-button compact" data-result-confirm-delete="${escapeAttr(work.id)}" type="button">Удалить результат</button><button class="secondary-button compact" data-result-cancel-delete type="button">Отмена</button></div></div><details class="montage-result-edit"><summary>Изменить услугу</summary><label>Услуга результата<select class="input" data-montage-result-service="${escapeAttr(work.id)}">${services.map(item => `<option value="${escapeAttr(item.id)}" ${item.id === work.serviceId ? "selected" : ""}>${escapeHtml(serviceName(item))}</option>`).join("")}</select></label><button class="secondary-button compact" data-montage-result-save="${escapeAttr(work.id)}" type="button">Сохранить услугу</button><p role="status" data-result-status></p></details></div>`;
   }).join("");
   const animationQrFile = state.currentMontageQr?.studentId === student.id && state.currentMontageQr?.serviceId === service?.id
     ? state.currentMontageQr.file
@@ -7264,11 +7264,17 @@ function showMontagePanel(studentId, selectedServiceId = "", selectedMediaId = "
   panel.querySelectorAll('[data-montage-result-open]').forEach(button => button.addEventListener('click', () => {
     showFinalWorkViewer(button.dataset.montageResultOpen, {trigger:button});
   }));
-  panel.querySelectorAll('[data-montage-result-delete]').forEach(button => button.addEventListener('click', async () => {
+  panel.querySelectorAll('[data-montage-result-delete]').forEach(button => button.addEventListener('click', () => {
+    button.closest('.montage-result-row').querySelector('[data-result-delete-confirm]').hidden=false;
+  }));
+  panel.querySelectorAll('[data-result-cancel-delete]').forEach(button => button.addEventListener('click', () => {
+    button.closest('[data-result-delete-confirm]').hidden=true;
+  }));
+  panel.querySelectorAll('[data-result-confirm-delete]').forEach(button => button.addEventListener('click', async () => {
+    if(button.disabled)return;
     button.disabled=true;
     try {
-      await deleteFinalWork(button.dataset.montageResultDelete);
-      if(finalWorkById(button.dataset.montageResultDelete)){button.disabled=false;return;}
+      await deleteFinalWork(button.dataset.resultConfirmDelete, {confirmed:true});
       close();showMontagePanel(student.id,service?.id || "",source?.id || "");
     } catch(error) {notify(error.message);button.disabled=false;}
   }));
@@ -7935,10 +7941,10 @@ async function downloadFinalWorkA4Pdf(workId) {
   downloadBlob(blob, finalWorkA4PdfFileName(work));
 }
 
-async function deleteFinalWork(workId) {
+async function deleteFinalWork(workId, {confirmed = false} = {}) {
   const work = finalWorkById(workId);
   if (!work) return;
-  if (!confirm(`Удалить готовую работу «${finalWorkTitle(work)}» без возможности восстановления?`)) return;
+  if (!confirmed && !confirm(`Удалить готовую работу «${finalWorkTitle(work)}» без возможности восстановления?`)) return;
   await del("finalWorks", workId);
   if (work.resultMediaId && mediaById(work.resultMediaId)?.type === "final_work") await del("media", work.resultMediaId);
   await refreshData();
