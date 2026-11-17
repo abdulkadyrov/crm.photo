@@ -1,9 +1,11 @@
+import { freezeCameraFrame, encodeCameraFrame, bindCameraShutter } from "../services/camera-capture.js";
 import { describeCamera, chooseCameraRecordingType, recordedCameraBlob, snapCameraZoom, CAMERA_ZOOM_STOPS } from "../services/camera-options.js?v=154";
 import { cameraCrop } from "../services/camera-framing.js";
 const preferredVideo = {
-  width: { ideal: 3840 },
-  height: { ideal: 2880 },
-  aspectRatio: { ideal: 4 / 3 }
+  width: { ideal: 2560 },
+  height: { ideal: 1920 },
+  aspectRatio: { ideal: 4 / 3 },
+  frameRate: { ideal: 60, max: 60 }
 };
 
 const manualControls = [
@@ -71,7 +73,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       <div class="photo-camera-guide" aria-hidden="true" hidden></div>
     </div>
     <footer class="photo-camera-controls">
-      <div class="camera-settings" hidden><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
+      <div class="camera-settings" hidden><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-fast-capture checked /> Быстрый спуск<small>Текущий кадр без ожидания. Выключите для максимального разрешения фото.</small></label><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
       </div><div class="camera-capture-modes" data-camera-live><button type="button" data-capture-mode="video">ВИДЕО</button><button type="button" data-capture-mode="photo">ФОТО</button></div>
       <p class="photo-camera-status" role="status"></p>
       <div class="photo-camera-modes" data-camera-live>
@@ -517,7 +519,9 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       defaults = track.getSettings?.() || {};
       configureZoom();
       find("[data-camera-zoom]").textContent = `${defaults.zoom || 1}×`;
-      devices = (await navigator.mediaDevices.enumerateDevices?.().catch(() => []) || []).filter(device => device.kind === "videoinput");
+      navigator.mediaDevices.enumerateDevices?.().then(found => {
+        if (!closed && track === activeTrack) devices = found.filter(device => device.kind === "videoinput");
+      }).catch(() => {});
       if (closed) return;
       mode = "auto";
       torchOn = false;
@@ -546,7 +550,8 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
     await video.play();
     if (closed) return;
     play.hidden = true;
-    status.textContent = savedCount ? `Сохранено за сеанс: ${savedCount}` : "Камера готова";
+    const fps = Number(track?.getSettings?.().frameRate);
+    status.textContent = savedCount ? `Сохранено за сеанс: ${savedCount}` : `Камера готова${fps > 0 ? ` · ${Math.round(fps)} кадр/с` : ""}`;
   }
 
   async function applyCameraSettings(values) {
@@ -653,7 +658,13 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
     setReview(false);
   }, "Не удалось применить режим к этой камере.");
 
-  shutter.onclick = () => {
+  const shoot = () => {
+    if (busy || closed || shutter.disabled) return;
+    let frozen = null;
+    if (captureType === 'photo' && find('[data-fast-capture]').checked) {
+      try { frozen = freezeCameraFrame(video, aspect); video.pause(); }
+      catch(error) { status.textContent = error.message; return; }
+    }
     if (recorder?.state === 'recording') { recorder.stop(); return; }
     return run(async () => {
     if (captureType === 'video') {
@@ -691,10 +702,16 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       return;
     }
     status.textContent = "Получаем снимок…";
+    let blob;
+    if (frozen) {
+      // Give the button/status a paint opportunity after the pixels are safely copied.
+      await new Promise(resolve => setTimeout(resolve, 0));
+      try { blob = await encodeCameraFrame(frozen); }
+      catch(error) { if (!closed) video.play().catch(() => {}); throw error; }
+    } else {
     const original = await takeStill(video, track);
     if (torchOn && capabilities.torch === true) await applyCameraSettings({torch: true});
     const bitmap = await createImageBitmap(original);
-    let blob;
     try {
       const crop = cameraCrop(bitmap.width, bitmap.height, aspect, video.videoWidth > video.videoHeight);
       const canvas = document.createElement('canvas');
@@ -704,6 +721,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.98));
       if (!blob) throw new Error('Не удалось кадрировать снимок');
     } finally { bitmap.close(); }
+    }
     if (closed) return;
     shotUrl = URL.createObjectURL(blob);
     image.src = shotUrl;
@@ -711,6 +729,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       await image.decode();
     } catch (error) {
       discardShot();
+      if (!closed) video.play().catch(() => {});
       throw error;
     }
     if (closed) return;
@@ -720,6 +739,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
     setReview(true);
   }, "Не удалось начать съёмку. Проверьте разрешения камеры и микрофона.");
   };
+  bindCameraShutter(shutter, {shoot, isPhoto: () => captureType === 'photo'});
 
   retake.onclick = () => {
     reviewingSaved = null;

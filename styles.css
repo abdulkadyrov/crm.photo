@@ -7041,3 +7041,7 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 
 .montage-result-delete-confirm { grid-column: 1 / -1; min-width: 0; }
 .montage-result-delete-confirm p { margin: 0 0 8px; font-size: 14px; }
+
+.camera-fast-capture { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 6px; align-items: center; padding: 8px 0; color: #fff; font-size: 14px; }
+.camera-fast-capture input { width: 18px; height: 18px; margin: 0; }
+.camera-fast-capture small { grid-column: 2; color: #ccc; font-size: 12px; line-height: 1.35; }
