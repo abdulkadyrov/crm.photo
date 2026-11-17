@@ -7026,3 +7026,15 @@ html { scroll-padding-top: calc(var(--topbar-height, 80px) + 8px); }
 
 /* Last opened item: an inset outline preserves card dimensions and status colors. */
 .card-button.is-last-selected { outline: 3px solid var(--primary); outline-offset: -3px; }
+
+.montage-result-list { display: grid; gap: 0; min-width: 0; }
+.montage-result-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.montage-result-row:last-child { border-bottom: 0; }
+.montage-result-row .final-result-preview { width: 64px; height: 80px; grid-row: auto; }
+.montage-result-copy { display: grid; align-content: start; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.montage-result-copy small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.montage-result-actions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.montage-result-edit { grid-column: 1 / -1; min-width: 0; }
+.montage-result-edit summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 6px 0; }
+.montage-result-edit label { display: grid; gap: 6px; margin: 8px 0; font-size: 13px; }
+.montage-result-edit .input { width: 100%; min-width: 0; }
