@@ -1,4 +1,4 @@
-# v248 scanner and print comparison overlay
+# v249 scanner and print comparison overlay
 
 Production v247 contains scanner, fulfillment and comment functionality not yet
 published in main. The adjacent patch applies narrowly to that production source;
@@ -9,7 +9,7 @@ Baseline hashes (SHA-256):
 - js/ui/group-scan-panel.js: 40cdfe45b3187c4512dda297d13e75afc0ac4322913e68f201b515e09a5176de
 
 Install js/ui/scan-photo-viewer.js, apply the patch, bump shell imports and SW to
-v248, and precache the viewer module. Preserve the preceding release for rollback.
+v249, and precache the viewer module. Preserve the preceding release for rollback.
 
 Single photo: pinch, wheel, double click or +/-; pan by dragging.
 Comparison: outline each head separately; their centers and sizes become the same,
@@ -20,3 +20,6 @@ Scanner comments now save to students.staffComments with the work title before
 advancing, including repeated scans. Save failures leave the current scan and text
 in place. Existing scanner notes on other devices remain in those local journals;
 they are not retroactively claimed as saved to the server.
+
+The scanner original selector can choose any source photo in the child media.
+Changing that selection retains the unsaved scan comment; no source record is changed.
