@@ -1,0 +1,507 @@
+--- a/camera/index.html
++++ b/camera/index.html
+@@ -1,2 +1,2 @@
+ <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer"><title>Камера для Mac</title><style>
+-*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#f8fafc;font:16px system-ui,-apple-system,sans-serif}main{max-width:650px;min-height:100dvh;margin:auto;padding:max(16px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}h1{font-size:22px;margin:0}p{margin:0;line-height:1.4}label{display:block;font-size:14px}input,button,select{font:inherit;border-radius:12px;min-height:46px;width:100%;padding:10px 12px}input,select{border:1px solid #64748b;background:#1e293b;color:#fff}button{border:0;background:#2563eb;color:#fff;font-weight:650;cursor:pointer}button:disabled{opacity:.55}form{display:grid;gap:10px}input{font-size:28px;text-align:center;letter-spacing:.15em}.viewfinder{position:relative;flex:1;min-height:280px;border-radius:14px;overflow:hidden;background:#020617}.viewfinder video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain}.aim{position:absolute;width:64%;aspect-ratio:1;max-height:80%;border:2px solid #fff;border-radius:16px;left:18%;top:50%;transform:translateY(-50%);pointer-events:none}.controls{display:flex;gap:8px}.controls>*{min-width:0;flex:1}.secondary{background:#334155}.small{font-size:13px;color:#cbd5e1}#live[hidden],#pair[hidden]{display:none}#live{flex:1;display:flex;flex-direction:column;gap:10px}#status{min-height:40px;font-size:14px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}</style></head><body><main><h1>Камера для Mac</h1><p class="small">На этом экране видно, куда направлена камера. Вход в CRM не нужен.</p><form id="pair"><label for="code">Код с экрана Mac</label><input id="code" name="code" inputmode="numeric" pattern="[0-9 ]{8,9}" autocomplete="one-time-code" maxlength="9" placeholder="0000 0000" required><button type="submit">Подключить камеру</button></form><section id="live" hidden><div class="viewfinder"><video id="video" playsinline muted autoplay></video><div class="aim" aria-hidden="true"></div></div><p class="small">Наведите рамку на QR фотографии. Выбор услуги выполняется на Mac.</p><div class="controls"><select id="device" aria-label="Выбор камеры"></select><button type="button" class="secondary" id="stop">Остановить</button></div><button type="button" id="resume" hidden>Включить камеру снова</button></section><p id="status" role="status" aria-live="polite">Откройте «Камера телефона» в CRM на Mac, затем введите показанный код.</p></main><script type="module" src="/js/ui/phone-camera-sender.js?v=264"></script></body></html>
++*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#f8fafc;font:16px system-ui,-apple-system,sans-serif}main{max-width:650px;min-height:100dvh;margin:auto;padding:max(16px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}h1{font-size:22px;margin:0}p{margin:0;line-height:1.4}label{display:block;font-size:14px}input,button,select{font:inherit;border-radius:12px;min-height:46px;width:100%;padding:10px 12px}input,select{border:1px solid #64748b;background:#1e293b;color:#fff}button{border:0;background:#2563eb;color:#fff;font-weight:650;cursor:pointer}button:disabled{opacity:.55}form{display:grid;gap:10px}input{font-size:28px;text-align:center;letter-spacing:.15em}.viewfinder{position:relative;flex:1;min-height:280px;border-radius:14px;overflow:hidden;background:#020617}.viewfinder video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain}.aim{position:absolute;width:64%;aspect-ratio:1;max-height:80%;border:2px solid #fff;border-radius:16px;left:18%;top:50%;transform:translateY(-50%);pointer-events:none}.controls{display:flex;gap:8px}.controls>*{min-width:0;flex:1}.secondary{background:#334155}.small{font-size:13px;color:#cbd5e1}#live[hidden],#pair[hidden]{display:none}#live{flex:1;display:flex;flex-direction:column;gap:10px}#status{min-height:40px;font-size:14px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}</style></head><body><main><h1>Камера для Mac</h1><p class="small">На этом экране видно, куда направлена камера. Вход в CRM не нужен.</p><form id="pair"><label for="code">Код с экрана Mac</label><input id="code" name="code" inputmode="numeric" pattern="[0-9 ]{8,9}" autocomplete="one-time-code" maxlength="9" placeholder="0000 0000" required><button type="submit">Подключить камеру</button></form><section id="live" hidden><div class="viewfinder"><video id="video" playsinline muted autoplay></video><div class="aim" aria-hidden="true"></div></div><p class="small">Наведите рамку на QR фотографии. Коснитесь изображения для фокуса. Выбор услуги выполняется на Mac.</p><div class="controls"><select id="device" aria-label="Выбор камеры"></select><button type="button" class="secondary" id="stop">Остановить</button></div><button type="button" id="resume" hidden>Включить камеру снова</button></section><p id="status" role="status" aria-live="polite">Откройте «Камера телефона» в CRM на Mac, затем введите показанный код.</p></main><script type="module" src="/js/ui/phone-camera-sender.js?v=265"></script></body></html>
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=264" />
++    <link rel="stylesheet" href="./styles.css?v=265" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=264"></script>
++    <script type="module" src="./js/core/app.js?v=265"></script>
+   </body>
+ </html>
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=264");
++  await import("./legacy-app.js?v=265");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,37 +1,37 @@
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=264';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=264';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=264';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=265';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=265';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=265';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=264";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=264";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=264";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=264";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=264";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=264";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=264";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=264";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=264";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=264";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=264";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=264";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=265";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=265";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=265";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=265";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=265";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=265";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=265";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=265";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=265";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=265";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=265";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=265";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=264";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=264";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=265";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=265";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=264";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=264";
++import {createNavigationHistory} from "../services/navigation-history.js?v=265";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=265";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=264";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=265";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=264";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=264";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=264";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=265";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=265";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=265";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=264";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=264";
++import { nextInSequence } from "../services/sequence-navigation.js?v=265";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=265";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -39,24 +39,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=264";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=265";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=264";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=264";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=265";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=265";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=264";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=265";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=264";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=265";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=264";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=265";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=264";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=264";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=265";
++import { printCodeLayout } from "../services/print-code-layout.js?v=265";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -79,12 +79,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=264";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=265";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=264";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=265";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+--- a/js/ui/group-scan-panel.js
++++ b/js/ui/group-scan-panel.js
+@@ -1,3 +1,4 @@
++import {bindTapFocus} from '../services/camera-focus.js';
+ import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=261';
+ import { studentCommentPreview } from '../services/student-comments.js';
+ import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js?v=261';
+@@ -13,13 +14,14 @@
+   if(!lockGroup)panel.querySelector('#group-scan-title').textContent='QR-сканер';
+   if(lockGroup){panel.querySelector('.group-scan-group').hidden=true;panel.querySelector('#group-scan-title').textContent='Сканер · '+(groups.find(group=>group.id===initialGroupId)?.name||'Группа');}
+   let session,stream=null,detector=null,frame=0,generation=0,closed=false,starting=false,readingFile=false,pending=null,lastRaw='',emptyFrames=0,summaryMode=false,history,selected=new Set(),imageUrls=[];
++  const tapFocus=bindTapFocus(video,{getTrack:()=>stream?.getVideoTracks()[0],onStatus:message=>panel.querySelector('[data-camera-message]').textContent=message});
+   const data=()=>getData();
+   const children=()=>data().students.filter(student=>groupSelect.value==='*'||student.classId===groupSelect.value);
+   const persist=()=>{try{writeSession(groupSelect.value,session);return true;}catch{panel.querySelector('[data-camera-message]').textContent='Не удалось сохранить журнал на устройстве. Не закрывайте проверку до завершения.';return false;}};
+   const releaseImages=()=>{for(const url of imageUrls)URL.revokeObjectURL(url);imageUrls=[];};
+   const loadSession=()=>{let saved;try{saved=readSession(groupSelect.value);}catch{}session=saved?.groupId===groupSelect.value&&Array.isArray(saved.events)?saved:{id:crypto.randomUUID(),groupId:groupSelect.value,createdAt:new Date().toISOString(),events:[]};selected=new Set(scanSessionSummary(session,children()).studentIds);pending=null;resultBox.hidden=true;updateCounts();};
+   function updateCounts(){const stats=scanSessionSummary(session,children());const count=panel.querySelector('[data-count]');count.textContent=`Дети ${stats.children}/${children().length} · Фото ${stats.copies}`;count.title=`Работ ${stats.works} · Отклонено ${stats.rejected} · Повторов ${stats.duplicates}`;}
+-  function stopCamera(){generation++;starting=false;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(track=>track.stop());stream=null;video.srcObject=null;video.hidden=true;panel.querySelector('[data-camera-hint]').hidden=false;panel.querySelector('[data-stop]').hidden=true;panel.querySelector('[data-camera]').textContent='Камера';panel.querySelector('[data-camera]').disabled=false;}
++  function stopCamera(){tapFocus.reset();generation++;starting=false;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(track=>track.stop());stream=null;video.srcObject=null;video.hidden=true;panel.querySelector('[data-camera-hint]').hidden=false;panel.querySelector('[data-stop]').hidden=true;panel.querySelector('[data-camera]').textContent='Камера';panel.querySelector('[data-camera]').disabled=false;}
+   async function startCamera(){
+     if(starting||stream||closed)return;starting=true;const token=++generation;panel.querySelector('[data-camera]').disabled=true;panel.querySelector('[data-camera-message]').textContent='Открываем камеру…';
+     try{
+@@ -106,7 +108,7 @@
+   };
+   let unsubscribeCloud,unsubscribeStatus;
+   const pageHide=()=>{stopCamera();persist();};window.addEventListener('pagehide',pageHide);
+-  const finish=()=>{if(closed)return;closed=true;stopCamera();releaseImages();persist();unsubscribeCloud?.();unsubscribeStatus?.();window.removeEventListener('pagehide',pageHide);panel.remove();restore?.();};
++  const finish=()=>{if(closed)return;closed=true;tapFocus.dispose();stopCamera();releaseImages();persist();unsubscribeCloud?.();unsubscribeStatus?.();window.removeEventListener('pagehide',pageHide);panel.remove();restore?.();};
+   panel.querySelector('[data-close]').onclick=()=>history?history.close():finish();
+   panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();history?history.close():finish();}if(event.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,summary,[tabindex="0"]')].filter(el=>!el.disabled&&el.getClientRects().length);if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===nodes.at(-1)){event.preventDefault();nodes[0]?.focus();}}});
+   document.body.append(panel);history=mountHistory?.(finish);loadSession();if(scanSync){unsubscribeCloud=scanSync.subscribe(cloudRefresh);unsubscribeStatus=scanSync.subscribeStatus(message=>{const label=panel.querySelector('[data-cloud-scan-status]');label.hidden=false;label.textContent=message;});void scanSync.sync();}panel.querySelector(lockGroup?'[data-camera]':'[data-group]').focus({preventScroll:true});return panel;
+--- a/js/ui/phone-camera-sender.js
++++ b/js/ui/phone-camera-sender.js
+@@ -1,10 +1,13 @@
++import {bindTapFocus} from '../services/camera-focus.js';
+ const form=document.querySelector('#pair'),video=document.querySelector('#video'),status=document.querySelector('#status'),live=document.querySelector('#live'),device=document.querySelector('#device'),stopButton=document.querySelector('#stop'),resume=document.querySelector('#resume');
++let focusUntil=0;
++const tapFocus=bindTapFocus(video,{getTrack:()=>stream?.getVideoTracks()[0],onStatus:message=>{focusUntil=Date.now()+1800;status.textContent=message;}});
+ let session=null,stream=null,timer=null,generation=0,wake=null;
+ const say=message=>status.textContent=message;
+ function stop(message='Передача остановлена.'){generation++;clearTimeout(timer);stream?.getTracks().forEach(track=>track.stop());stream=null;video.srcObject=null;void wake?.release().catch(()=>{});wake=null;resume.hidden=!session;stopButton.disabled=true;say(message);}
+ async function start(deviceId=''){
+  stop('Открываем камеру…');const token=generation;
+- try{const acquired=await navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});if(token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;video.srcObject=stream;live.hidden=false;form.hidden=true;await video.play();if(token!==generation)return;
++ try{const acquired=await navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}},audio:false});if(token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;tapFocus.reset();video.srcObject=stream;live.hidden=false;form.hidden=true;await video.play();if(token!==generation)return;
+   const cameras=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');if(token!==generation)return;device.replaceChildren(...cameras.map((d,i)=>new Option(d.label||`Камера ${i+1}`,d.deviceId)));device.value=stream.getVideoTracks()[0]?.getSettings().deviceId||cameras[0]?.deviceId||'';stopButton.disabled=false;resume.hidden=true;say('Камера включена · передаём изображение на Mac');
+   try{const lock=await navigator.wakeLock?.request('screen');if(token!==generation)void lock?.release().catch(()=>{});else wake=lock;}catch{}
+   const canvas=document.createElement('canvas');
+@@ -13,7 +16,7 @@
+     const response=await fetch('/api/v1/public/camera/frame/'+session.id,{method:'POST',credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(10000),headers:{'Content-Type':'image/jpeg',Authorization:'Bearer '+session.token},body:await blob.arrayBuffer()});
+     if(token!==generation)return;
+     if(!response.ok){if([401,403,404,410].includes(response.status)){session=null;try{sessionStorage.removeItem('crm-phone-camera');}catch{}stop('Mac отключил камеру. Получите новый код подключения.');live.hidden=true;form.hidden=false;return;}throw new Error('Нет связи');}
+-    const result=await response.json();say(result.notice==='recognized'?'QR распознан · выберите услугу на Mac':'Передаём на Mac · наведите рамку на QR');
++    const result=await response.json();if(Date.now()>focusUntil)say(result.notice==='recognized'?'QR распознан · выберите услугу на Mac':'Передаём на Mac · наведите рамку на QR');
+    }catch{if(token===generation)say('Связь прервалась · камера видна здесь, повторяем передачу…');}
+    if(token===generation&&stream)timer=setTimeout(tick,180);
+   };void tick();
+--- a/js/ui/photo-camera.js
++++ b/js/ui/photo-camera.js
+@@ -1,3 +1,4 @@
++import {bindTapFocus} from '../services/camera-focus.js';
+ import { freezeCameraFrame, encodeCameraFrame, bindCameraShutter } from "../services/camera-capture.js";
+ import { describeCamera, chooseCameraRecordingType, recordedCameraBlob, snapCameraZoom, CAMERA_ZOOM_STOPS } from "../services/camera-options.js?v=154";
+ import { cameraCrop } from "../services/camera-framing.js";
+@@ -5,7 +6,7 @@
+   width: { ideal: 2560 },
+   height: { ideal: 1920 },
+   aspectRatio: { ideal: 4 / 3 },
+-  frameRate: { ideal: 60, max: 60 }
++  frameRate: { ideal: 30, max: 60 }
+ };
+ 
+ const manualControls = [
+@@ -73,7 +74,7 @@
+       <div class="photo-camera-guide" aria-hidden="true" hidden></div>
+     </div>
+     <footer class="photo-camera-controls">
+-      <div class="camera-settings" hidden><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-fast-capture checked /> Быстрый спуск<small>Текущий кадр без ожидания. Выключите для максимального разрешения фото.</small></label><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
++      <div class="camera-settings" hidden><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-focus-before checked /> Фокус перед снимком<small>Держите камеру неподвижно. Касанием можно выбрать точку, если браузер поддерживает.</small></label><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-fast-capture checked /> Кадр из предпросмотра<small>Снимок после фокусировки. Выключите для максимального разрешения фото.</small></label><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
+       </div><div class="camera-capture-modes" data-camera-live><button type="button" data-capture-mode="video">ВИДЕО</button><button type="button" data-capture-mode="photo">ФОТО</button></div>
+       <p class="photo-camera-status" role="status"></p>
+       <div class="photo-camera-modes" data-camera-live>
+@@ -333,6 +334,7 @@
+   find('[data-latest]').onclick = () => find('.photo-camera-thumbnail:last-child')?.click();
+   let stream;
+   let track;
++  const tapFocus = bindTapFocus(video,{getTrack:()=>track,onStatus:message=>{if(!closed)status.textContent=message;},enabled:()=>!busy&&!panel.classList.contains('is-reviewing')});
+   let baseConstraints;
+   let capabilities = {};
+   let defaults = {};
+@@ -364,6 +366,7 @@
+   };
+   const history = mountHistory(() => {
+     closed = true;
++    tapFocus.dispose();
+     stopStream();
+     observer.disconnect();
+     discardShot();
+@@ -394,6 +397,7 @@
+       if (!closed) {
+         if (recorder?.state !== "recording") audioStream?.getTracks().forEach(item => item.stop());
+         console.warn(errorMessage, error);
++        if(video.paused&&!panel.classList.contains("is-reviewing"))video.play().catch(()=>{});
+         status.textContent = errorMessage;
+       }
+     } finally {
+@@ -506,6 +510,7 @@
+       if (closed) return nextStream.getTracks().forEach(item => item.stop());
+       stream = nextStream;
+       track = stream.getVideoTracks()[0];
++      tapFocus.reset();
+       const activeTrack = track;
+       track.addEventListener("ended", () => {
+         if (closed || activeTrack !== track) return;
+@@ -551,7 +556,7 @@
+     if (closed) return;
+     play.hidden = true;
+     const fps = Number(track?.getSettings?.().frameRate);
+-    status.textContent = savedCount ? `Сохранено за сеанс: ${savedCount}` : `Камера готова${fps > 0 ? ` · ${Math.round(fps)} кадр/с` : ""}`;
++    status.textContent = savedCount ? `Сохранено за сеанс: ${savedCount}` : `Камера готова${fps > 0 ? ` · ${Math.round(fps)} кадр/с` : ""} · касание — фокус`;
+   }
+ 
+   async function applyCameraSettings(values) {
+@@ -661,7 +666,7 @@
+   const shoot = () => {
+     if (busy || closed || shutter.disabled) return;
+     let frozen = null;
+-    if (captureType === 'photo' && find('[data-fast-capture]').checked) {
++    if (captureType === 'photo' && find('[data-fast-capture]').checked && !find('[data-focus-before]').checked) {
+       try { frozen = freezeCameraFrame(video, aspect); video.pause(); }
+       catch(error) { status.textContent = error.message; return; }
+     }
+@@ -701,6 +706,11 @@
+       recordingTimer = setInterval(() => { status.textContent = `Запись · ${new Date(Date.now()-started).toISOString().slice(14,19)}`; }, 500);
+       return;
+     }
++    if(find('[data-focus-before]').checked){
++      try { await tapFocus.prepare(); } catch(error) { if(!closed)status.textContent=error.message; return; }
++      if(closed)return;
++      if(find('[data-fast-capture]').checked){ frozen=freezeCameraFrame(video,aspect);video.pause(); }
++    }
+     status.textContent = "Получаем снимок…";
+     let blob;
+     if (frozen) {
+--- a/js/ui/selective-print-panel.js
++++ b/js/ui/selective-print-panel.js
+@@ -1,3 +1,4 @@
++import {bindTapFocus} from '../services/camera-focus.js';
+ import {phoneCameraRequest,receivePhoneCamera} from '../services/phone-camera.js';
+ import {createPrintSelectionStore,searchPrintStudents,resolveSelectiveCode,selectedPrintWorks} from '../services/selective-print.js';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+@@ -9,6 +10,7 @@
+  .selective-print-panel{width:min(720px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto;color:var(--text)}
+  .selective-print-panel h2{font-size:18px;margin:0}.selective-print-panel p{margin:0;font-size:12px}.sp-head,.sp-tools,.sp-row,.sp-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sp-head{justify-content:space-between}.sp-head button{min-height:40px;width:40px;flex:none;padding:6px;font-size:22px}.selective-print-panel>*{flex-shrink:0}.sp-body{min-height:0;flex:0 0 auto}.sp-search{width:100%;min-height:44px}.sp-tools>*{flex:1;min-width:0;min-height:40px;font-size:13px;padding:8px}.sp-video{width:100%;height:180px;object-fit:cover;border-radius:10px;background:var(--card-strong)}.sp-camera{margin:8px 0}.sp-connection{padding:8px;border:1px solid var(--line);border-radius:10px}.sp-connection summary{font-size:13px;cursor:pointer}.sp-connection img{display:block;width:170px;height:170px;margin:8px auto}.sp-connection input{width:100%;font-size:12px}.sp-child{padding:10px 0;border-bottom:1px solid var(--line)}.sp-child h3{margin:0 0 3px;font-size:14px;overflow-wrap:anywhere}.sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.sp-card{border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;display:flex;flex-direction:column;gap:5px;background:var(--card)}.sp-card img{height:84px;object-fit:contain;width:100%;background:var(--card-strong);border-radius:6px}.sp-card strong{font-size:12px;overflow-wrap:anywhere}.sp-card small{font-size:11px}.sp-card button{min-height:40px;font-size:12px;padding:7px}.sp-card[data-selected=true]{border-color:var(--primary)}.sp-footer{flex:none;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}.sp-footer button{min-height:42px;font-size:13px}.sp-status{font-size:12px;min-height:16px}.sp-panel-tabs{display:flex;gap:6px}.sp-panel-tabs button{flex:1;min-height:40px;font-size:13px}.sp-panel-tabs [aria-pressed=true]{border-color:var(--primary)}.sp-card label{font-size:12px}.sp-card input[type=number]{width:65px;min-height:36px}.sp-empty{padding:20px 0}.sp-notice{padding:8px;background:var(--card-strong);border-radius:8px;font-size:12px}.sp-file{display:flex;align-items:center;justify-content:center;cursor:pointer}
+  </style><header class="sp-head"><h2>${companion?'Выбор для Mac':'Выборочная печать'}</h2><button class="secondary-button compact" type="button" data-close aria-label="Закрыть">×</button></header><p data-title></p><details class="sp-connection" ><summary>Выбор на другом устройстве · с входом в CRM</summary><p>Откройте QR на iPhone и войдите в тот же аккаунт CRM. Выбор появится здесь.</p><img src="${esc(qrImage(link.href))}" alt="QR для подключения телефона" /><input class="input" data-link readonly aria-label="Ссылка для телефона" value="${esc(link.href)}" /><button class="secondary-button compact" type="button" data-copy-link>Скопировать ссылку</button></details><input class="input sp-search" type="search" data-search placeholder="Фамилия или имя" aria-label="Поиск по фамилии или имени" autocomplete="off" /><div class="sp-tools"><button class="secondary-button" type="button" data-camera>Камера Mac</button>${!companion?'<button class="secondary-button" type="button" data-phone-camera>Камера телефона</button>':''}<label class="secondary-button sp-file">Фото QR<input type="file" accept="image/*" capture="environment" data-file hidden /></label><button class="secondary-button" type="button" data-refresh>Обновить</button></div><aside class="sp-notice" data-phone-connection hidden><p>Разблокируйте телефон и откройте <a href="/camera/" target="_blank" rel="noopener" data-camera-url></a></p><p>Введите код: <strong data-phone-code style="font-size:24px;letter-spacing:.12em"></strong></p><p data-phone-status role="status">Ожидаем телефон…</p><button class="secondary-button compact" type="button" data-phone-disconnect>Отключить телефон</button></aside><div class="sp-camera" hidden><video class="sp-video" playsinline muted></video><div class="sp-row"><select class="select" data-device aria-label="Выбор камеры"></select><button class="secondary-button compact" type="button" data-stop>Выключить</button></div></div><div class="sp-panel-tabs"><button class="secondary-button" data-tab="add" type="button" aria-pressed="true">Добавить</button><button class="secondary-button" data-tab="selected" type="button" aria-pressed="false">Выбрано · 0</button></div><p class="sp-notice" data-notice hidden role="status"></p><div class="sp-body" data-body></div><details><summary style="font-size:12px">Ввести QR / штрихкод вручную</summary><form class="sp-row" data-manual><input class="input" name="code" aria-label="Код фотографии" required /><button class="secondary-button compact" type="submit">Найти</button></form></details><footer class="sp-footer"><p class="sp-status" data-status role="status"></p><button class="primary-button" data-review type="button" disabled>${companion?'Выбор завершён':'Проверить · печать / PDF'}</button></footer></section>`;
++ const tapFocus=bindTapFocus(panel.querySelector('video'),{getTrack:()=>remoteCamera?null:stream?.getVideoTracks()[0],onStatus:message=>showNotice(message)});
+  let remoteCamera=null;let paired=false,mode='add',target=null,closed=false,stream=null,frame=0,generation=0,lastRaw='',emptyFrames=0,history,busy=false,lastSignature='';
+  const body=panel.querySelector('[data-body]'),notice=panel.querySelector('[data-notice]'),search=panel.querySelector('[data-search]');
+  const showNotice=text=>{notice.hidden=!text;notice.textContent=text;};
+@@ -45,7 +47,7 @@
+  search.oninput=()=>{panel.querySelector('.sp-connection').open=false;target=null;showNotice('');render();};
+  panel.querySelector('[data-manual]').onsubmit=event=>{event.preventDefault();code(new FormData(event.target).get('code'));event.target.reset();};
+  panel.querySelector('[data-file]').onchange=async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{const raw=await decodeFile(file);if(!closed)raw?code(raw):showNotice('QR не распознан. Снимите код крупнее или используйте поиск.');}catch{showNotice('Не удалось прочитать QR. Используйте поиск по фамилии.');}};
+- function stop(){remoteCamera?.stop();remoteCamera=null;panel.querySelector('[data-phone-connection]').hidden=true;generation++;cancelAnimationFrame(frame);stream?.getTracks().forEach(t=>t.stop());stream=null;panel.querySelector('.sp-camera').hidden=true;}
++ function stop(){tapFocus.reset();remoteCamera?.stop();remoteCamera=null;panel.querySelector('[data-phone-connection]').hidden=true;generation++;cancelAnimationFrame(frame);stream?.getTracks().forEach(t=>t.stop());stream=null;panel.querySelector('.sp-camera').hidden=true;}
+  function watch(detector,token){const video=panel.querySelector('video');const canvas=document.createElement('canvas');let previous=0;const tick=async time=>{if(closed||token!==generation||!stream)return;if(!target&&mode==='add'&&!search.value&&time-previous>350){previous=time;const raw=await detectFrame(video,detector,canvas).catch(()=>'');if(closed||token!==generation)return;if(!raw){if(++emptyFrames>=2)lastRaw='';}else{emptyFrames=0;if(raw!==lastRaw){lastRaw=raw;code(raw);}}}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);}
+  async function start(deviceId=''){
+   panel.querySelector('.sp-connection').open=false;target=null;mode='add';search.value='';lastRaw='';emptyFrames=0;tabs();showNotice('Наведите камеру на QR фотографии.');render();stop();const token=generation;
+@@ -72,7 +74,7 @@
+  panel.querySelector('[data-review]').onclick=async()=>{if(companion){store.ready();return;}busy=true;panel.querySelector('[data-review]').disabled=true;try{await store.sync(true);if(store.pending)throw new Error('Дождитесь сохранения списка в облаке.');const snapshot=store.snapshot;selectedPrintWorks(snapshot);if(!closed)await onReview(snapshot,()=>!closed);}catch(error){showNotice(error.message);}finally{busy=false;panel.querySelector('[data-review]').disabled=!store.snapshot?.items.length||!!store.pending||store.snapshot?.items.some(i=>i.stale||i.blocked);}};
+  const leaveCamera=()=>stop();window.addEventListener('pagehide',leaveCamera);
+  const reconnect=()=>void store.sync(true);window.addEventListener('online',reconnect);window.addEventListener('focus',reconnect);
+- const finish=()=>{if(closed)return;closed=true;stop();window.removeEventListener('pagehide',leaveCamera);store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
++ const finish=()=>{if(closed)return;closed=true;tapFocus.dispose();stop();window.removeEventListener('pagehide',leaveCamera);store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
+  const close=()=>history?history.close():finish();panel.querySelector('[data-close]').onclick=close;panel.onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}if(event.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,summary,a')].filter(n=>!n.disabled&&n.getClientRects().length);if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===nodes.at(-1)){event.preventDefault();nodes[0]?.focus();}}};
+  document.body.append(panel);history=mountHistory?.(finish);render();void store.sync(true);search.focus({preventScroll:true});return panel;
+ }
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v264";
++const CACHE_VERSION = "v265";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,39 +74,39 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=264",
+-  "./js/ui/group-scan-panel.js?v=264",
+-  "./js/ui/scan-photo-viewer.js?v=264",
+-  "./js/ui/group-scan-panel.js?v=264",
++  "./js/ui/scan-photo-viewer.js?v=265",
++  "./js/ui/group-scan-panel.js?v=265",
++  "./js/ui/scan-photo-viewer.js?v=265",
++  "./js/ui/group-scan-panel.js?v=265",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=264",
+-  "./js/services/individual-order.js?v=264",
++  "./js/services/service-positions.js?v=265",
++  "./js/services/individual-order.js?v=265",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=264",
++  "./js/services/sequence-navigation.js?v=265",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=264",
++  "./js/services/card-summary.js?v=265",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=264",
++  "./js/services/camera-options.js?v=265",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=264",
+-  "./js/services/deferred-final-work.js?v=264",
++  "./js/services/record-sync.js?v=265",
++  "./js/services/deferred-final-work.js?v=265",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=264",
++  "./js/services/sync-codec.js?v=265",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -114,37 +114,37 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=264",
++  "./styles.css?v=265",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=264",
++  "./js/core/app.js?v=265",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=264",
+-  "./js/services/navigation-history.js?v=264",
++  "./js/services/card-selection.js?v=265",
++  "./js/services/navigation-history.js?v=265",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=264",
+-  "./js/ui/scan-work-picker.js?v=264",
+-  "./js/ui/group-scan-panel.js?v=264",
++  "./js/services/roster-filters.js?v=265",
++  "./js/ui/scan-work-picker.js?v=265",
++  "./js/ui/group-scan-panel.js?v=265",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=264",
++  "./js/services/student-comments.js?v=265",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=264",
+-  "./js/ui/scan-photo-viewer.js?v=264",
++  "./js/services/image-delivery.js?v=265",
++  "./js/ui/scan-photo-viewer.js?v=265",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=264",
+-  "./js/services/group-scan.js?v=264",
++  "./js/ui/student-quick-actions.js?v=265",
++  "./js/services/group-scan.js?v=265",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=264",
+-  "./js/ui/project-print-picker.js?v=264",
++  "./js/services/print-selection.js?v=265",
++  "./js/ui/project-print-picker.js?v=265",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=264",
++  "./js/services/student-stage-icons.js?v=265",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=264",
++  "./js/ui/fulfillment-panel.js?v=265",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=264",
++  "./js/services/print-order.js?v=265",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -152,14 +152,15 @@
+   "./js/services/selective-print.js",
+   "./js/ui/selective-print-panel.js",
+   "./js/services/phone-camera.js",
++  "./js/services/camera-focus.js",
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=264",
++  "./js/services/fulfillment.js?v=265",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=264",
++  "./js/core/legacy-app.js?v=265",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -182,10 +183,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=264",
++  "./js/ui/photo-camera.js?v=265",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=264",
++  "./js/services/teacher-broadcast.js?v=265",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -227,7 +228,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=264",
++  "./js/services/parent-orders.js?v=265",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -239,12 +240,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=264",
++  "./js/services/finalwork-service.js?v=265",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=264",
++  "./js/services/export-filter-service.js?v=265",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -275,7 +276,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=264",
++  "./js/services/barcode-reader.js?v=265",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",

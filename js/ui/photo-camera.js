@@ -1,3 +1,4 @@
+import {bindTapFocus} from '../services/camera-focus.js';
 import { freezeCameraFrame, encodeCameraFrame, bindCameraShutter } from "../services/camera-capture.js";
 import { describeCamera, chooseCameraRecordingType, recordedCameraBlob, snapCameraZoom, CAMERA_ZOOM_STOPS } from "../services/camera-options.js?v=154";
 import { cameraCrop } from "../services/camera-framing.js";
@@ -5,7 +6,7 @@ const preferredVideo = {
   width: { ideal: 2560 },
   height: { ideal: 1920 },
   aspectRatio: { ideal: 4 / 3 },
-  frameRate: { ideal: 60, max: 60 }
+  frameRate: { ideal: 30, max: 60 }
 };
 
 const manualControls = [
@@ -73,7 +74,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       <div class="photo-camera-guide" aria-hidden="true" hidden></div>
     </div>
     <footer class="photo-camera-controls">
-      <div class="camera-settings" hidden><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-fast-capture checked /> Быстрый спуск<small>Текущий кадр без ожидания. Выключите для максимального разрешения фото.</small></label><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
+      <div class="camera-settings" hidden><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-focus-before checked /> Фокус перед снимком<small>Держите камеру неподвижно. Касанием можно выбрать точку, если браузер поддерживает.</small></label><label class="camera-fast-capture" data-camera-live><input type="checkbox" data-fast-capture checked /> Кадр из предпросмотра<small>Снимок после фокусировки. Выключите для максимального разрешения фото.</small></label><div class="photo-camera-aspect" data-camera-live><button class="photo-camera-button" type="button" data-camera-aspect-toggle aria-expanded="false">4:3</button><div data-camera-aspects hidden aria-label="Соотношение сторон"><button class="photo-camera-button" type="button" data-aspect="1" aria-pressed="false">1:1</button><button class="photo-camera-button" type="button" data-aspect="1.3333333333333333" aria-pressed="true">4:3</button><button class="photo-camera-button" type="button" data-aspect="1.7777777777777777" aria-pressed="false">16:9</button></div></div>
       </div><div class="camera-capture-modes" data-camera-live><button type="button" data-capture-mode="video">ВИДЕО</button><button type="button" data-capture-mode="photo">ФОТО</button></div>
       <p class="photo-camera-status" role="status"></p>
       <div class="photo-camera-modes" data-camera-live>
@@ -333,6 +334,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
   find('[data-latest]').onclick = () => find('.photo-camera-thumbnail:last-child')?.click();
   let stream;
   let track;
+  const tapFocus = bindTapFocus(video,{getTrack:()=>track,onStatus:message=>{if(!closed)status.textContent=message;},enabled:()=>!busy&&!panel.classList.contains('is-reviewing')});
   let baseConstraints;
   let capabilities = {};
   let defaults = {};
@@ -364,6 +366,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
   };
   const history = mountHistory(() => {
     closed = true;
+    tapFocus.dispose();
     stopStream();
     observer.disconnect();
     discardShot();
@@ -394,6 +397,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       if (!closed) {
         if (recorder?.state !== "recording") audioStream?.getTracks().forEach(item => item.stop());
         console.warn(errorMessage, error);
+        if(video.paused&&!panel.classList.contains("is-reviewing"))video.play().catch(()=>{});
         status.textContent = errorMessage;
       }
     } finally {
@@ -506,6 +510,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       if (closed) return nextStream.getTracks().forEach(item => item.stop());
       stream = nextStream;
       track = stream.getVideoTracks()[0];
+      tapFocus.reset();
       const activeTrack = track;
       track.addEventListener("ended", () => {
         if (closed || activeTrack !== track) return;
@@ -551,7 +556,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
     if (closed) return;
     play.hidden = true;
     const fps = Number(track?.getSettings?.().frameRate);
-    status.textContent = savedCount ? `Сохранено за сеанс: ${savedCount}` : `Камера готова${fps > 0 ? ` · ${Math.round(fps)} кадр/с` : ""}`;
+    status.textContent = savedCount ? `Сохранено за сеанс: ${savedCount}` : `Камера готова${fps > 0 ? ` · ${Math.round(fps)} кадр/с` : ""} · касание — фокус`;
   }
 
   async function applyCameraSettings(values) {
@@ -661,7 +666,7 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
   const shoot = () => {
     if (busy || closed || shutter.disabled) return;
     let frozen = null;
-    if (captureType === 'photo' && find('[data-fast-capture]').checked) {
+    if (captureType === 'photo' && find('[data-fast-capture]').checked && !find('[data-focus-before]').checked) {
       try { frozen = freezeCameraFrame(video, aspect); video.pause(); }
       catch(error) { status.textContent = error.message; return; }
     }
@@ -700,6 +705,11 @@ export function openPhotoCamera({ studentName, existingMedia = [], initialType =
       const started = Date.now();
       recordingTimer = setInterval(() => { status.textContent = `Запись · ${new Date(Date.now()-started).toISOString().slice(14,19)}`; }, 500);
       return;
+    }
+    if(find('[data-focus-before]').checked){
+      try { await tapFocus.prepare(); } catch(error) { if(!closed)status.textContent=error.message; return; }
+      if(closed)return;
+      if(find('[data-fast-capture]').checked){ frozen=freezeCameraFrame(video,aspect);video.pause(); }
     }
     status.textContent = "Получаем снимок…";
     let blob;
