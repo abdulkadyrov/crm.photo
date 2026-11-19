@@ -42,3 +42,33 @@ class PhoneCameraTest(unittest.TestCase):
   token=self.pair()['data']['token'];r=request('/sync/phone-camera/'+self.session['id'],'POST',{'action':'notice','notice':'recognized'},self.cookies['admin']);self.assertEqual(r['status'],200)
   r=self.frame(token);self.assertEqual(r['data'],{'received':True,'notice':'recognized'})
   self.assertEqual(request('/sync/print-selections/'+self.session['id'],'POST',{'op':str(uuid.uuid4()),'action':'ready'},headers={'HTTP_AUTHORIZATION':'Bearer '+token})['status'],401)
+
+ def seed_picker(self):
+  ref={'$syncBlob':'a'*64,'mime':'image/jpeg','size':10}
+  with app.db() as c:
+   for store,rid,data in [('classes','camera-g',{'id':'camera-g','projectId':'camera-project','name':'2а'}),('students','camera-child',{'id':'camera-child','classId':'camera-g','firstName':'Адам','lastName':'Ахмадов'}),('finalWorks','camera-wolf',{'id':'camera-wolf','studentId':'camera-child','title':'Страж гор и волк','image':ref}),('finalWorks','camera-tower',{'id':'camera-tower','studentId':'camera-child','title':'Джигит у башни','image':ref})]:
+    c.execute('INSERT OR REPLACE INTO sync_records VALUES(?,?,?,?,0)',(store,rid,'camera-project',json.dumps(data)))
+  token=self.pair()['data']['token'];self.token=token
+  return ref
+ def public(self,action,body=None,token=None):return request('/public/camera/'+action+'/'+self.session['id'],'POST',body,headers={'HTTP_AUTHORIZATION':'Bearer '+(token or self.token)})
+ def offer(self):return request('/sync/phone-camera/'+self.session['id'],'POST',{'action':'offer','studentId':'camera-child'},self.cookies['admin'])
+ def test_phone_picker_scope_idempotency_and_mac_sync(self):
+  ref=self.seed_picker();self.assertEqual(self.public('state')['data']['works'],[])
+  self.assertEqual(self.public('choose',{'workId':'camera-wolf'})['status'],403)
+  self.assertEqual(self.offer()['status'],200);state=self.public('state')['data'];self.assertEqual(len(state['works']),2);self.assertEqual(state['student']['name'],'Ахмадов Адам')
+  body={'op':str(uuid.uuid4()),'workId':'camera-wolf','imageHash':ref['$syncBlob']}
+  first=self.public('choose',body);self.assertEqual(first['status'],200,first);self.assertTrue(first['data']['saved']);self.assertEqual(first['data']['count'],1)
+  self.assertTrue(self.public('choose',body)['data']['duplicate']);self.assertEqual(self.public('state')['data']['count'],1)
+  self.assertEqual(self.public('choose',{'op':str(uuid.uuid4()),'workId':'camera-tower','imageHash':'wrong'})['status'],409)
+  self.assertEqual(self.public('choose',{'op':str(uuid.uuid4()),'workId':'camera-tower','imageHash':ref['$syncBlob']})['data']['count'],2)
+  self.assertEqual(self.public('state',token='wrong')['status'],403)
+  self.assertEqual(self.public('next')['data']['works'],[]);self.assertEqual(self.public('choose',body)['status'],403)
+ def test_phone_code_and_revocation(self):
+  self.seed_picker();self.assertEqual(self.public('code',{'code':'camera-child'})['status'],200)
+  host=request('/sync/phone-camera/'+self.session['id'],cookie=self.cookies['admin'])['data'];self.assertEqual(host['code'],'camera-child');self.assertEqual(host['codeSeq'],1)
+  self.assertEqual(self.public('code',{'code':'x'*4097})['status'],400)
+  self.offer()
+  with app.db() as c:c.execute("UPDATE users SET active=0 WHERE id='camera-admin'")
+  try:self.assertEqual(self.public('state')['status'],403)
+  finally:
+   with app.db() as c:c.execute("UPDATE users SET active=1 WHERE id='camera-admin'")

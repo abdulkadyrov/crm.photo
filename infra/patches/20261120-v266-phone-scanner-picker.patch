@@ -1,0 +1,567 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=265" />
++    <link rel="stylesheet" href="./styles.css?v=266" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=265"></script>
++    <script type="module" src="./js/core/app.js?v=266"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v265";
++const CACHE_VERSION = "v266";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,39 +74,39 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=265",
+-  "./js/ui/group-scan-panel.js?v=265",
+-  "./js/ui/scan-photo-viewer.js?v=265",
+-  "./js/ui/group-scan-panel.js?v=265",
++  "./js/ui/scan-photo-viewer.js?v=266",
++  "./js/ui/group-scan-panel.js?v=266",
++  "./js/ui/scan-photo-viewer.js?v=266",
++  "./js/ui/group-scan-panel.js?v=266",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=265",
+-  "./js/services/individual-order.js?v=265",
++  "./js/services/service-positions.js?v=266",
++  "./js/services/individual-order.js?v=266",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=265",
++  "./js/services/sequence-navigation.js?v=266",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=265",
++  "./js/services/card-summary.js?v=266",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=265",
++  "./js/services/camera-options.js?v=266",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=265",
+-  "./js/services/deferred-final-work.js?v=265",
++  "./js/services/record-sync.js?v=266",
++  "./js/services/deferred-final-work.js?v=266",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=265",
++  "./js/services/sync-codec.js?v=266",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -114,37 +114,37 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=265",
++  "./styles.css?v=266",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=265",
++  "./js/core/app.js?v=266",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=265",
+-  "./js/services/navigation-history.js?v=265",
++  "./js/services/card-selection.js?v=266",
++  "./js/services/navigation-history.js?v=266",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=265",
+-  "./js/ui/scan-work-picker.js?v=265",
+-  "./js/ui/group-scan-panel.js?v=265",
++  "./js/services/roster-filters.js?v=266",
++  "./js/ui/scan-work-picker.js?v=266",
++  "./js/ui/group-scan-panel.js?v=266",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=265",
++  "./js/services/student-comments.js?v=266",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=265",
+-  "./js/ui/scan-photo-viewer.js?v=265",
++  "./js/services/image-delivery.js?v=266",
++  "./js/ui/scan-photo-viewer.js?v=266",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=265",
+-  "./js/services/group-scan.js?v=265",
++  "./js/ui/student-quick-actions.js?v=266",
++  "./js/services/group-scan.js?v=266",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=265",
+-  "./js/ui/project-print-picker.js?v=265",
++  "./js/services/print-selection.js?v=266",
++  "./js/ui/project-print-picker.js?v=266",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=265",
++  "./js/services/student-stage-icons.js?v=266",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=265",
++  "./js/ui/fulfillment-panel.js?v=266",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=265",
++  "./js/services/print-order.js?v=266",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -152,15 +152,17 @@
+   "./js/services/selective-print.js",
+   "./js/ui/selective-print-panel.js",
+   "./js/services/phone-camera.js",
++  "./js/services/scan-feedback.js",
++  "./js/ui/phone-print-picker.js",
+   "./js/services/camera-focus.js",
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=265",
++  "./js/services/fulfillment.js?v=266",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=265",
++  "./js/core/legacy-app.js?v=266",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -183,10 +185,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=265",
++  "./js/ui/photo-camera.js?v=266",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=265",
++  "./js/services/teacher-broadcast.js?v=266",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -228,7 +230,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=265",
++  "./js/services/parent-orders.js?v=266",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -240,12 +242,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=265",
++  "./js/services/finalwork-service.js?v=266",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=265",
++  "./js/services/export-filter-service.js?v=266",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -276,7 +278,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=265",
++  "./js/services/barcode-reader.js?v=266",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=265");
++  await import("./legacy-app.js?v=266");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,37 +1,37 @@
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=265';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=265';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=265';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=266';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=266';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=266';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=265";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=265";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=265";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=265";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=265";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=265";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=265";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=265";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=265";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=265";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=265";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=265";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=266";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=266";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=266";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=266";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=266";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=266";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=266";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=266";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=266";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=266";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=266";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=266";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=265";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=265";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=266";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=266";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=265";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=265";
++import {createNavigationHistory} from "../services/navigation-history.js?v=266";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=266";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=265";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=266";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=265";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=265";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=265";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=266";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=266";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=266";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=265";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=265";
++import { nextInSequence } from "../services/sequence-navigation.js?v=266";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=266";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -39,24 +39,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=265";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=266";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=265";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=265";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=266";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=266";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=265";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=266";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=265";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=266";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=265";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=266";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=265";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=265";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=266";
++import { printCodeLayout } from "../services/print-code-layout.js?v=266";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -79,12 +79,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=265";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=266";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=265";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=266";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+--- a/js/ui/selective-print-panel.js
++++ b/js/ui/selective-print-panel.js
+@@ -1,21 +1,25 @@
++import {createScanFeedback} from '../services/scan-feedback.js';
+ import {bindTapFocus} from '../services/camera-focus.js';
+ import {phoneCameraRequest,receivePhoneCamera} from '../services/phone-camera.js';
+ import {createPrintSelectionStore,searchPrintStudents,resolveSelectiveCode,selectedPrintWorks} from '../services/selective-print.js';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ export function openSelectivePrintPanel({id,companion=false,request,storage=localStorage,storageKey,qrImage,parseWork,studentTokens,createDetector,detectFrame,decodeFile,onReview,mountHistory,restore}){
++ const feedback=createScanFeedback();
+  const sourceMenus=[...document.querySelectorAll('details.item-menu[open]')];sourceMenus.forEach(menu=>menu.open=false);
+  const panel=document.createElement('div');panel.className='qr-panel-backdrop selective-print-backdrop';
+  const link=new URL(location.origin+location.pathname);link.searchParams.set('printSelection',id);
+  panel.innerHTML=`<section class="qr-panel selective-print-panel" role="dialog" aria-modal="true" aria-label="Выборочная печать" tabindex="-1"><style>
+  .selective-print-panel{width:min(720px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto;color:var(--text)}
+  .selective-print-panel h2{font-size:18px;margin:0}.selective-print-panel p{margin:0;font-size:12px}.sp-head,.sp-tools,.sp-row,.sp-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sp-head{justify-content:space-between}.sp-head button{min-height:40px;width:40px;flex:none;padding:6px;font-size:22px}.selective-print-panel>*{flex-shrink:0}.sp-body{min-height:0;flex:0 0 auto}.sp-search{width:100%;min-height:44px}.sp-tools>*{flex:1;min-width:0;min-height:40px;font-size:13px;padding:8px}.sp-video{width:100%;height:180px;object-fit:cover;border-radius:10px;background:var(--card-strong)}.sp-camera{margin:8px 0}.sp-connection{padding:8px;border:1px solid var(--line);border-radius:10px}.sp-connection summary{font-size:13px;cursor:pointer}.sp-connection img{display:block;width:170px;height:170px;margin:8px auto}.sp-connection input{width:100%;font-size:12px}.sp-child{padding:10px 0;border-bottom:1px solid var(--line)}.sp-child h3{margin:0 0 3px;font-size:14px;overflow-wrap:anywhere}.sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.sp-card{border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;display:flex;flex-direction:column;gap:5px;background:var(--card)}.sp-card img{height:84px;object-fit:contain;width:100%;background:var(--card-strong);border-radius:6px}.sp-card strong{font-size:12px;overflow-wrap:anywhere}.sp-card small{font-size:11px}.sp-card button{min-height:40px;font-size:12px;padding:7px}.sp-card[data-selected=true]{border-color:var(--primary)}.sp-footer{flex:none;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}.sp-footer button{min-height:42px;font-size:13px}.sp-status{font-size:12px;min-height:16px}.sp-panel-tabs{display:flex;gap:6px}.sp-panel-tabs button{flex:1;min-height:40px;font-size:13px}.sp-panel-tabs [aria-pressed=true]{border-color:var(--primary)}.sp-card label{font-size:12px}.sp-card input[type=number]{width:65px;min-height:36px}.sp-empty{padding:20px 0}.sp-notice{padding:8px;background:var(--card-strong);border-radius:8px;font-size:12px}.sp-file{display:flex;align-items:center;justify-content:center;cursor:pointer}
+- </style><header class="sp-head"><h2>${companion?'Выбор для Mac':'Выборочная печать'}</h2><button class="secondary-button compact" type="button" data-close aria-label="Закрыть">×</button></header><p data-title></p><details class="sp-connection" ><summary>Выбор на другом устройстве · с входом в CRM</summary><p>Откройте QR на iPhone и войдите в тот же аккаунт CRM. Выбор появится здесь.</p><img src="${esc(qrImage(link.href))}" alt="QR для подключения телефона" /><input class="input" data-link readonly aria-label="Ссылка для телефона" value="${esc(link.href)}" /><button class="secondary-button compact" type="button" data-copy-link>Скопировать ссылку</button></details><input class="input sp-search" type="search" data-search placeholder="Фамилия или имя" aria-label="Поиск по фамилии или имени" autocomplete="off" /><div class="sp-tools"><button class="secondary-button" type="button" data-camera>Камера Mac</button>${!companion?'<button class="secondary-button" type="button" data-phone-camera>Камера телефона</button>':''}<label class="secondary-button sp-file">Фото QR<input type="file" accept="image/*" capture="environment" data-file hidden /></label><button class="secondary-button" type="button" data-refresh>Обновить</button></div><aside class="sp-notice" data-phone-connection hidden><p>Разблокируйте телефон и откройте <a href="/camera/" target="_blank" rel="noopener" data-camera-url></a></p><p>Введите код: <strong data-phone-code style="font-size:24px;letter-spacing:.12em"></strong></p><p data-phone-status role="status">Ожидаем телефон…</p><button class="secondary-button compact" type="button" data-phone-disconnect>Отключить телефон</button></aside><div class="sp-camera" hidden><video class="sp-video" playsinline muted></video><div class="sp-row"><select class="select" data-device aria-label="Выбор камеры"></select><button class="secondary-button compact" type="button" data-stop>Выключить</button></div></div><div class="sp-panel-tabs"><button class="secondary-button" data-tab="add" type="button" aria-pressed="true">Добавить</button><button class="secondary-button" data-tab="selected" type="button" aria-pressed="false">Выбрано · 0</button></div><p class="sp-notice" data-notice hidden role="status"></p><div class="sp-body" data-body></div><details><summary style="font-size:12px">Ввести QR / штрихкод вручную</summary><form class="sp-row" data-manual><input class="input" name="code" aria-label="Код фотографии" required /><button class="secondary-button compact" type="submit">Найти</button></form></details><footer class="sp-footer"><p class="sp-status" data-status role="status"></p><button class="primary-button" data-review type="button" disabled>${companion?'Выбор завершён':'Проверить · печать / PDF'}</button></footer></section>`;
++ </style><header class="sp-head"><h2>${companion?'Выбор для Mac':'Выборочная печать'}</h2><button class="secondary-button compact" type="button" data-close aria-label="Закрыть">×</button></header><p data-title></p><details class="sp-connection" ><summary>Выбор на другом устройстве · с входом в CRM</summary><p>Откройте QR на iPhone и войдите в тот же аккаунт CRM. Выбор появится здесь.</p><img src="${esc(qrImage(link.href))}" alt="QR для подключения телефона" /><input class="input" data-link readonly aria-label="Ссылка для телефона" value="${esc(link.href)}" /><button class="secondary-button compact" type="button" data-copy-link>Скопировать ссылку</button></details><input class="input sp-search" type="search" data-search placeholder="Фамилия или имя" aria-label="Поиск по фамилии или имени" autocomplete="off" /><div class="sp-tools"><button type="button" class="secondary-button" data-sound>Звук вкл.</button><button class="secondary-button" type="button" data-camera>Камера Mac</button>${!companion?'<button class="secondary-button" type="button" data-phone-camera>Камера телефона</button>':''}<label class="secondary-button sp-file">Фото QR<input type="file" accept="image/*" capture="environment" data-file hidden /></label><button class="secondary-button" type="button" data-refresh>Обновить</button></div><aside class="sp-notice" data-phone-connection hidden><p>Разблокируйте телефон и откройте <a href="/camera/" target="_blank" rel="noopener" data-camera-url></a></p><p>Введите код: <strong data-phone-code style="font-size:24px;letter-spacing:.12em"></strong></p><p data-phone-status role="status">Ожидаем телефон…</p><button class="secondary-button compact" type="button" data-phone-disconnect>Отключить телефон</button></aside><div class="sp-camera" hidden><video class="sp-video" playsinline muted></video><div class="sp-row"><select class="select" data-device aria-label="Выбор камеры"></select><button class="secondary-button compact" type="button" data-stop>Выключить</button></div></div><div class="sp-panel-tabs"><button class="secondary-button" data-tab="add" type="button" aria-pressed="true">Добавить</button><button class="secondary-button" data-tab="selected" type="button" aria-pressed="false">Выбрано · 0</button></div><p class="sp-notice" data-notice hidden role="status"></p><div class="sp-body" data-body></div><details><summary style="font-size:12px">Ввести QR / штрихкод вручную</summary><form class="sp-row" data-manual><input class="input" name="code" aria-label="Код фотографии" required /><button class="secondary-button compact" type="submit">Найти</button></form></details><footer class="sp-footer"><p class="sp-status" data-status role="status"></p><button class="primary-button" data-review type="button" disabled>${companion?'Выбор завершён':'Проверить · печать / PDF'}</button></footer></section>`;
+  const tapFocus=bindTapFocus(panel.querySelector('video'),{getTrack:()=>remoteCamera?null:stream?.getVideoTracks()[0],onStatus:message=>showNotice(message)});
++ let acknowledged=null;
+  let remoteCamera=null;let paired=false,mode='add',target=null,closed=false,stream=null,frame=0,generation=0,lastRaw='',emptyFrames=0,history,busy=false,lastSignature='';
+  const body=panel.querySelector('[data-body]'),notice=panel.querySelector('[data-notice]'),search=panel.querySelector('[data-search]');
+  const showNotice=text=>{notice.hidden=!text;notice.textContent=text;};
+  const store=createPrintSelectionStore({id,request,storage,key:storageKey,changed:(snapshot,message,pending)=>{
+   if(closed)return;panel.querySelector('[data-status]').textContent=message;
++  if(snapshot&&pending===0){const ids=new Set(snapshot.items.map(i=>i.workId+':'+i.imageHash));if(acknowledged&&[...ids].some(id=>!acknowledged.has(id)))feedback.play('saved');acknowledged=ids;}
+   if(snapshot){if(!companion&&snapshot.items.length&&!paired){paired=true;panel.querySelector('.sp-connection').open=false;}panel.querySelector('[data-title]').textContent=snapshot.title+' · '+(snapshot.groups.find(g=>g.id===snapshot.groupId)?.name||'Все группы');panel.querySelector('[data-tab=selected]').textContent=`Выбрано · ${snapshot.items.length}`;panel.querySelector('[data-review]').disabled=busy||!!pending||!snapshot.items.length||snapshot.items.some(i=>i.stale||i.blocked);const signature=JSON.stringify(snapshot);if(signature!==lastSignature){lastSignature=signature;render();}}
+  }});
+  function preview(work){return work.image?.$syncBlob?`/api/v1/sync/blob/${encodeURIComponent(store.snapshot.projectId)}/${work.image.$syncBlob}?preview=800`:'';}
+@@ -35,13 +39,13 @@
+   }).join('')+(students.length>40?'<p>Показаны первые 40 детей. Уточните фамилию или имя.</p>':'')+(!visible.length?'<p class="sp-empty">'+(mode==='selected'?'Список пока пуст. Добавьте фотографии сканером или поиском.':'Ничего не найдено. Проверьте фамилию или код.')+'</p>':'');
+   if(mode==='selected')for(const item of snapshot.items.filter(i=>!snapshot.works.some(w=>w.id===i.workId))){const row=document.createElement('div');row.className='sp-notice';row.textContent='Работа удалена или недоступна. ';const button=document.createElement('button');button.type='button';button.className='secondary-button compact';button.textContent='Убрать из списка';button.onclick=()=>change({id:item.workId,image:{$syncBlob:item.imageHash}},false);row.append(button);body.append(row);}
+   for(const image of body.querySelectorAll('img'))image.onerror=()=>{image.alt='Превью не загрузилось · обновите список';};
+-  for(const button of body.querySelectorAll('[data-add]'))button.onclick=()=>{const work=store.snapshot.works.find(w=>w.id===button.dataset.add),item=store.snapshot.items.find(i=>i.workId===work.id);if(item&&!item.stale&&!item.blocked){showNotice('Эта услуга уже в списке. Повторный QR не добавляет ещё один экземпляр.');return;}change(work,true);};
++  for(const button of body.querySelectorAll('[data-add]'))button.onclick=()=>{const work=store.snapshot.works.find(w=>w.id===button.dataset.add),item=store.snapshot.items.find(i=>i.workId===work.id);if(item&&!item.stale&&!item.blocked){feedback.play('duplicate');showNotice('Эта услуга уже в списке. Повторный QR не добавляет ещё один экземпляр.');return;}change(work,true);};
+   for(const button of body.querySelectorAll('[data-remove]'))button.onclick=()=>change(store.snapshot.works.find(w=>w.id===button.dataset.remove),false);
+   for(const input of body.querySelectorAll('[data-copies]'))input.onchange=()=>{const count=Number(input.value);if(!Number.isInteger(count)||count<1||count>99){input.reportValidity();return;}change(store.snapshot.works.find(w=>w.id===input.dataset.copies),true,count);};
+-  body.querySelector('[data-next]')?.addEventListener('click',()=>{target=null;remoteCamera?.notice('scanning');showNotice('');render();search.focus({preventScroll:true});});body.scrollTop=scroll;
++  body.querySelector('[data-next]')?.addEventListener('click',()=>{target=null;remoteCamera?.notice('scanning');remoteCamera?.offer({studentId:''});showNotice('');render();search.focus({preventScroll:true});});body.scrollTop=scroll;
+  }
+  function change(work,selected,copies=1){try{store.select(work,selected,copies);showNotice(selected?'Добавлено для печати · '+work.title:'Убрано из списка');}catch{showNotice('Не удалось сохранить выбор на устройстве. Освободите место и повторите.');}}
+- function code(raw){const snapshot=store.snapshot;if(!snapshot)return showNotice('Дождитесь загрузки проекта.');const result=resolveSelectiveCode(raw,snapshot,{parseWork,studentTokens});if(result.kind==='unknown')return showNotice('Код не найден в этом проекте. Найдите ребёнка по фамилии.');if(remoteCamera)remoteCamera.notice('recognized');else stop();target=result;mode='add';search.value='';tabs();showNotice('Выберите услугу на фотографии.');render();}
++ function code(raw){const snapshot=store.snapshot;if(!snapshot)return showNotice('Дождитесь загрузки проекта.');const result=resolveSelectiveCode(raw,snapshot,{parseWork,studentTokens});if(result.kind==='unknown'){remoteCamera?.offer({studentId:''});remoteCamera?.notice('unknown');return showNotice('Код не найден в этом проекте. Найдите ребёнка по фамилии.');}feedback.play('read');if(remoteCamera){remoteCamera.notice('recognized');if(result.studentId)remoteCamera.offer({studentId:result.studentId,workIds:result.workId?[result.workId]:[]});}else stop();lastRaw=raw;target=result;mode='add';search.value='';tabs();showNotice('Выберите услугу на фотографии.');render();}
+  const tabs=()=>{for(const button of panel.querySelectorAll('[data-tab]'))button.setAttribute('aria-pressed',String(button.dataset.tab===mode));};
+  for(const button of panel.querySelectorAll('[data-tab]'))button.onclick=()=>{mode=button.dataset.tab;tabs();render();};
+  search.oninput=()=>{panel.querySelector('.sp-connection').open=false;target=null;showNotice('');render();};
+@@ -62,7 +66,7 @@
+    const session=await phoneCameraRequest('POST','',{selectionId:id});if(closed||token!==generation){void phoneCameraRequest('POST',session.id,{action:'stop'}).catch(()=>{});return;}
+    const detector=await createDetector();if(closed||token!==generation){void phoneCameraRequest('POST',session.id,{action:'stop'}).catch(()=>{});return;}
+    panel.querySelector('[data-phone-connection]').hidden=false;const url=panel.querySelector('[data-camera-url]');url.href=new URL('/camera/',location.origin).href;url.textContent=location.host+'/camera';panel.querySelector('[data-phone-code]').textContent=session.code.slice(0,4)+' '+session.code.slice(4);
+-   remoteCamera=receivePhoneCamera({session,onStatus:message=>{if(!closed&&token===generation)panel.querySelector('[data-phone-status]').textContent=message;},onStream:async acquired=>{
++   remoteCamera=receivePhoneCamera({session,onSelection:()=>void store.sync(true),onCode:raw=>{if(!closed&&token===generation)code(raw);},onNext:()=>{target=null;showNotice('Покажите следующий QR');render();void store.sync(true);},onStatus:message=>{if(!closed&&token===generation)panel.querySelector('[data-phone-status]').textContent=message;},onStream:async acquired=>{
+     if(closed||token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;const video=panel.querySelector('video');video.style.objectFit='contain';video.srcObject=stream;panel.querySelector('.sp-camera').hidden=false;panel.querySelector('[data-device]').hidden=true;
+     try{await video.play();if(!closed&&token===generation)watch(detector,token);}catch{showNotice('Не удалось открыть изображение камеры. Подключите телефон заново.');}
+    }});
+@@ -74,7 +78,8 @@
+  panel.querySelector('[data-review]').onclick=async()=>{if(companion){store.ready();return;}busy=true;panel.querySelector('[data-review]').disabled=true;try{await store.sync(true);if(store.pending)throw new Error('Дождитесь сохранения списка в облаке.');const snapshot=store.snapshot;selectedPrintWorks(snapshot);if(!closed)await onReview(snapshot,()=>!closed);}catch(error){showNotice(error.message);}finally{busy=false;panel.querySelector('[data-review]').disabled=!store.snapshot?.items.length||!!store.pending||store.snapshot?.items.some(i=>i.stale||i.blocked);}};
+  const leaveCamera=()=>stop();window.addEventListener('pagehide',leaveCamera);
+  const reconnect=()=>void store.sync(true);window.addEventListener('online',reconnect);window.addEventListener('focus',reconnect);
+- const finish=()=>{if(closed)return;closed=true;tapFocus.dispose();stop();window.removeEventListener('pagehide',leaveCamera);store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
++ const finish=()=>{if(closed)return;closed=true;tapFocus.dispose();stop();window.removeEventListener('pagehide',leaveCamera);store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);feedback.dispose();panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
+  const close=()=>history?history.close():finish();panel.querySelector('[data-close]').onclick=close;panel.onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}if(event.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,summary,a')].filter(n=>!n.disabled&&n.getClientRects().length);if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===nodes.at(-1)){event.preventDefault();nodes[0]?.focus();}}};
++ const sound=panel.querySelector('[data-sound]');const soundLabel=()=>{sound.textContent=feedback.enabled?'Звук вкл.':'Звук выкл.';sound.setAttribute('aria-pressed',String(feedback.enabled));};sound.onclick=()=>{feedback.toggle();soundLabel();feedback.play('read');};soundLabel();panel.addEventListener('pointerdown',feedback.unlock);panel.addEventListener('keydown',feedback.unlock);
+  document.body.append(panel);history=mountHistory?.(finish);render();void store.sync(true);search.focus({preventScroll:true});return panel;
+ }
+--- a/js/services/phone-camera.js
++++ b/js/services/phone-camera.js
+@@ -3,10 +3,12 @@
+  const response=await fetch('/api/v1/sync/phone-camera'+(id?'/'+encodeURIComponent(id):'')+(method==='GET'?'?after='+after:''),{method,credentials:'same-origin',cache:'no-store',keepalive:body?.action==='stop',signal:AbortSignal.timeout(12000),headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+  if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||'Нет связи с камерой');error.status=response.status;throw error;}return response.json();
+ }
+-export function receivePhoneCamera({session,request=phoneCameraRequest,onStream,onStatus=()=>{},onFrame=()=>{}}){
+- let stopped=false,timer,seq=0,stream=null,failures=0;const canvas=document.createElement('canvas');
++export function receivePhoneCamera({session,request=phoneCameraRequest,onStream,onStatus=()=>{},onFrame=()=>{},onCode=()=>{},onNext=()=>{},onSelection=()=>{}}){
++ let stopped=false,timer,seq=0,stream=null,failures=0,codeSeq=0,nextSeq=0,revision=-1;const canvas=document.createElement('canvas');
+  const tick=async()=>{if(stopped)return;
+   try{const reply=await request('GET',session.id,null,seq);if(stopped)return;
++   if(reply.selectionRevision!==revision){revision=reply.selectionRevision;onSelection();}
++   if(reply.nextSeq>nextSeq){nextSeq=reply.nextSeq;onNext();}if(reply.codeSeq>codeSeq){codeSeq=reply.codeSeq;onCode(reply.code);}
+    if(reply.frame){const image=new Image();image.src=reply.frame;await image.decode();if(stopped)return;canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;canvas.getContext('2d').drawImage(image,0,0);if(!stream){stream=canvas.captureStream(10);onStream(stream);}seq=reply.seq;onFrame();onStatus('Камера телефона · изображение поступает');}
+    else onStatus(reply.connected?(Date.now()/1000-reply.lastFrame<3?'Камера телефона · изображение поступает':'Телефон подключён · включите камеру на телефоне'):'Откройте страницу камеры на телефоне и введите код');failures=0;
+   }catch(error){if(stopped)return;if([401,403,410].includes(error.status)){onStatus(error.message);stop();return;}onStatus('Нет связи с телефоном · повторяем подключение…');failures++;}
+@@ -14,5 +16,6 @@
+  };
+  const stop=()=>{if(stopped)return;stopped=true;clearTimeout(timer);stream?.getTracks().forEach(t=>t.stop());void request('POST',session.id,{action:'stop'}).catch(()=>{});};
+  const notice=value=>void request('POST',session.id,{action:'notice',notice:value}).catch(()=>{});
+- void tick();return {stop,notice};
++ const offer=body=>void request('POST',session.id,{action:'offer',...body}).catch(error=>onStatus(error.message));
++ void tick();return {stop,notice,offer};
+ }
+--- a/js/ui/phone-camera-sender.js
++++ b/js/ui/phone-camera-sender.js
+@@ -1,14 +1,16 @@
++import {createPhonePrintPicker} from './phone-print-picker.js';
+ import {bindTapFocus} from '../services/camera-focus.js';
+ const form=document.querySelector('#pair'),video=document.querySelector('#video'),status=document.querySelector('#status'),live=document.querySelector('#live'),device=document.querySelector('#device'),stopButton=document.querySelector('#stop'),resume=document.querySelector('#resume');
+ let focusUntil=0;
+ const tapFocus=bindTapFocus(video,{getTrack:()=>stream?.getVideoTracks()[0],onStatus:message=>{focusUntil=Date.now()+1800;status.textContent=message;}});
+ let session=null,stream=null,timer=null,generation=0,wake=null;
++const picker=createPhonePrintPicker({getSession:()=>session,onStatus:message=>{focusUntil=Date.now()+2200;status.textContent=message;},onNext:()=>{}});
+ const say=message=>status.textContent=message;
+-function stop(message='Передача остановлена.'){generation++;clearTimeout(timer);stream?.getTracks().forEach(track=>track.stop());stream=null;video.srcObject=null;void wake?.release().catch(()=>{});wake=null;resume.hidden=!session;stopButton.disabled=true;say(message);}
++function stop(message='Передача остановлена.'){picker.stop();generation++;clearTimeout(timer);stream?.getTracks().forEach(track=>track.stop());stream=null;video.srcObject=null;void wake?.release().catch(()=>{});wake=null;resume.hidden=!session;stopButton.disabled=true;say(message);}
+ async function start(deviceId=''){
+  stop('Открываем камеру…');const token=generation;
+  try{const acquired=await navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}},audio:false});if(token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;tapFocus.reset();video.srcObject=stream;live.hidden=false;form.hidden=true;await video.play();if(token!==generation)return;
+-  const cameras=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');if(token!==generation)return;device.replaceChildren(...cameras.map((d,i)=>new Option(d.label||`Камера ${i+1}`,d.deviceId)));device.value=stream.getVideoTracks()[0]?.getSettings().deviceId||cameras[0]?.deviceId||'';stopButton.disabled=false;resume.hidden=true;say('Камера включена · передаём изображение на Mac');
++  const cameras=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');if(token!==generation)return;device.replaceChildren(...cameras.map((d,i)=>new Option(d.label||`Камера ${i+1}`,d.deviceId)));device.value=stream.getVideoTracks()[0]?.getSettings().deviceId||cameras[0]?.deviceId||'';stopButton.disabled=false;resume.hidden=true;picker.start(video);say('Камера включена · передаём изображение на Mac');
+   try{const lock=await navigator.wakeLock?.request('screen');if(token!==generation)void lock?.release().catch(()=>{});else wake=lock;}catch{}
+   const canvas=document.createElement('canvas');
+   const tick=async()=>{if(token!==generation||!stream)return;
+@@ -16,13 +18,13 @@
+     const response=await fetch('/api/v1/public/camera/frame/'+session.id,{method:'POST',credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(10000),headers:{'Content-Type':'image/jpeg',Authorization:'Bearer '+session.token},body:await blob.arrayBuffer()});
+     if(token!==generation)return;
+     if(!response.ok){if([401,403,404,410].includes(response.status)){session=null;try{sessionStorage.removeItem('crm-phone-camera');}catch{}stop('Mac отключил камеру. Получите новый код подключения.');live.hidden=true;form.hidden=false;return;}throw new Error('Нет связи');}
+-    const result=await response.json();if(Date.now()>focusUntil)say(result.notice==='recognized'?'QR распознан · выберите услугу на Mac':'Передаём на Mac · наведите рамку на QR');
++    const result=await response.json();if(Date.now()>focusUntil&&document.querySelector('#picker').hidden)say(result.notice==='unknown'?'Код не найден в проекте · проверьте на Mac':result.notice==='recognized'?'QR распознан · выберите услугу здесь или на Mac':'Передаём на Mac · наведите рамку на QR');
+    }catch{if(token===generation)say('Связь прервалась · камера видна здесь, повторяем передачу…');}
+    if(token===generation&&stream)timer=setTimeout(tick,180);
+   };void tick();
+  }catch(error){if(token===generation){stop('Камера недоступна. Отключите iPhone как системную камеру Mac и разрешите камеру в браузере телефона.');live.hidden=false;form.hidden=true;}}
+ }
+-form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;say('Подключаемся к Mac…');try{const response=await fetch('/api/v1/public/camera/pair',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:new FormData(form).get('code')})});const result=await response.json();if(!response.ok)throw new Error(result.error);session={id:result.id,token:result.token};try{sessionStorage.setItem('crm-phone-camera',JSON.stringify(session));}catch{}await start();}catch(error){say(error.message);}finally{button.disabled=false;}};
+-stopButton.onclick=()=>stop();resume.onclick=()=>void start();device.onchange=()=>void start(device.value);
++form.onsubmit=async event=>{event.preventDefault();picker.unlock();const button=form.querySelector('button');button.disabled=true;say('Подключаемся к Mac…');try{const response=await fetch('/api/v1/public/camera/pair',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:new FormData(form).get('code')})});const result=await response.json();if(!response.ok)throw new Error(result.error);session={id:result.id,token:result.token};try{sessionStorage.setItem('crm-phone-camera',JSON.stringify(session));}catch{}await start();}catch(error){say(error.message);}finally{button.disabled=false;}};
++stopButton.onclick=()=>stop();resume.onclick=()=>{picker.unlock();void start();};device.onchange=()=>void start(device.value);
+ window.addEventListener('pagehide',()=>stop());document.addEventListener('visibilitychange',()=>{if(document.hidden&&stream)stop('Камера приостановлена. Вернитесь на эту страницу и нажмите «Включить камеру снова».');});
+ try{const saved=JSON.parse(sessionStorage.getItem('crm-phone-camera')||'null');if(saved?.id&&saved?.token){session=saved;live.hidden=false;form.hidden=true;resume.hidden=false;say('Соединение сохранено. Нажмите «Включить камеру снова».');}}catch{}
+--- a/camera/index.html
++++ b/camera/index.html
+@@ -1,2 +1,2 @@
+-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer"><title>Камера для Mac</title><style>
+-*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#f8fafc;font:16px system-ui,-apple-system,sans-serif}main{max-width:650px;min-height:100dvh;margin:auto;padding:max(16px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}h1{font-size:22px;margin:0}p{margin:0;line-height:1.4}label{display:block;font-size:14px}input,button,select{font:inherit;border-radius:12px;min-height:46px;width:100%;padding:10px 12px}input,select{border:1px solid #64748b;background:#1e293b;color:#fff}button{border:0;background:#2563eb;color:#fff;font-weight:650;cursor:pointer}button:disabled{opacity:.55}form{display:grid;gap:10px}input{font-size:28px;text-align:center;letter-spacing:.15em}.viewfinder{position:relative;flex:1;min-height:280px;border-radius:14px;overflow:hidden;background:#020617}.viewfinder video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain}.aim{position:absolute;width:64%;aspect-ratio:1;max-height:80%;border:2px solid #fff;border-radius:16px;left:18%;top:50%;transform:translateY(-50%);pointer-events:none}.controls{display:flex;gap:8px}.controls>*{min-width:0;flex:1}.secondary{background:#334155}.small{font-size:13px;color:#cbd5e1}#live[hidden],#pair[hidden]{display:none}#live{flex:1;display:flex;flex-direction:column;gap:10px}#status{min-height:40px;font-size:14px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}</style></head><body><main><h1>Камера для Mac</h1><p class="small">На этом экране видно, куда направлена камера. Вход в CRM не нужен.</p><form id="pair"><label for="code">Код с экрана Mac</label><input id="code" name="code" inputmode="numeric" pattern="[0-9 ]{8,9}" autocomplete="one-time-code" maxlength="9" placeholder="0000 0000" required><button type="submit">Подключить камеру</button></form><section id="live" hidden><div class="viewfinder"><video id="video" playsinline muted autoplay></video><div class="aim" aria-hidden="true"></div></div><p class="small">Наведите рамку на QR фотографии. Коснитесь изображения для фокуса. Выбор услуги выполняется на Mac.</p><div class="controls"><select id="device" aria-label="Выбор камеры"></select><button type="button" class="secondary" id="stop">Остановить</button></div><button type="button" id="resume" hidden>Включить камеру снова</button></section><p id="status" role="status" aria-live="polite">Откройте «Камера телефона» в CRM на Mac, затем введите показанный код.</p></main><script type="module" src="/js/ui/phone-camera-sender.js?v=265"></script></body></html>
++<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer"><title>Сканер печати</title><style>
++*{box-sizing:border-box}body{margin:0;background:#0f172a;color:#f8fafc;font:16px system-ui,-apple-system,sans-serif}main{max-width:650px;min-height:100dvh;margin:auto;padding:max(16px,env(safe-area-inset-top)) 14px max(16px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}h1{font-size:22px;margin:0}p{margin:0;line-height:1.4}label{display:block;font-size:14px}input,button,select{font:inherit;border-radius:12px;min-height:46px;width:100%;padding:10px 12px}input,select{border:1px solid #64748b;background:#1e293b;color:#fff}button{border:0;background:#2563eb;color:#fff;font-weight:650;cursor:pointer}button:disabled{opacity:.55}form{display:grid;gap:10px}input{font-size:28px;text-align:center;letter-spacing:.15em}.viewfinder{position:relative;flex:1;min-height:280px;border-radius:14px;overflow:hidden;background:#020617}.viewfinder video{width:100%;height:100%;position:absolute;inset:0;object-fit:contain}.aim{position:absolute;width:64%;aspect-ratio:1;max-height:80%;border:2px solid #fff;border-radius:16px;left:18%;top:50%;transform:translateY(-50%);pointer-events:none}.controls{display:flex;gap:8px}.controls>*{min-width:0;flex:1}.secondary{background:#334155}.small{font-size:13px;color:#cbd5e1}#live[hidden],#pair[hidden]{display:none}#live{flex:1;display:flex;flex-direction:column;gap:10px}#status{min-height:40px;font-size:14px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}#picker[hidden]{display:none}#picker{background:#1e293b;border:1px solid #64748b;border-radius:12px;padding:10px}.picker-head{display:flex;justify-content:space-between;gap:8px;font-size:15px}.picker-head span{white-space:nowrap;font-size:13px}#works{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}.work{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13px}.work img{width:100%;height:92px;object-fit:contain;background:#0f172a;border-radius:8px}.work button{font-size:14px;min-height:44px;padding:8px}.work strong{overflow-wrap:anywhere}.work .selected{background:#166534}body.picking .viewfinder{min-height:200px;flex:0 0 200px}summary{font-size:13px;padding:6px 0;cursor:pointer}#manual{margin-top:8px}#manual input{font-size:16px;letter-spacing:normal;text-align:left}#next{background:#334155}#status{min-height:20px}.controls{flex-wrap:wrap}.controls #device{flex:1 1 110px}.controls button{flex:1 1 75px;font-size:13px}#pair input{letter-spacing:.12em}body.picking main>p.small{display:none}body.picking #works img{height:80px}</style></head><body><main><h1>Сканер печати</h1><p class="small">Сканируйте QR и выбирайте услуги здесь. Вход в CRM не нужен.</p><form id="pair"><label for="code">Код с экрана Mac</label><input id="code" name="code" inputmode="numeric" pattern="[0-9 ]{8,9}" autocomplete="one-time-code" maxlength="9" placeholder="0000 0000" required><button type="submit">Подключить камеру</button></form><section id="live" hidden><div class="viewfinder"><video id="video" playsinline muted autoplay></video><div class="aim" aria-hidden="true"></div></div><p class="small">Наведите рамку на QR фотографии. Коснитесь изображения для фокуса. Выбор сразу появится на Mac.</p><section id="picker" hidden aria-label="Выбор услуги"><div class="picker-head"><strong id="child"></strong><span id="count"></span></div><p id="group" class="small"></p><div id="works"></div></section><button id="next" type="button" class="secondary">Следующий QR</button><details><summary>Ввести код вручную</summary><form id="manual"><input name="code" aria-label="QR или штрихкод" placeholder="QR или штрихкод" required><button>Найти</button></form></details><div class="controls"><button id="sound" type="button" class="secondary" aria-pressed="true">Звук вкл.</button><select id="device" aria-label="Выбор камеры"></select><button type="button" class="secondary" id="stop">Стоп</button></div><button type="button" id="resume" hidden>Включить камеру снова</button></section><p id="status" role="status" aria-live="polite">Откройте «Камера телефона» в CRM на Mac, затем введите показанный код.</p></main><script src="/vendor/jsQR.js"></script><script type="module" src="/js/ui/phone-camera-sender.js?v=266"></script></body></html>
+--- a/server/phone_camera.py
++++ b/server/phone_camera.py
+@@ -1,4 +1,6 @@
+-"""One-way, short-lived phone camera relay. Sender tokens never grant CRM reads."""
++"""Short-lived camera pairing with a scoped, current-child print picker."""
++import print_selection
++from types import SimpleNamespace
+ import base64,hashlib,hmac,io,json,re,secrets,time,uuid
+ from pathlib import Path
+ from urllib.parse import parse_qs
+@@ -8,6 +10,7 @@
+ def initialize(c):
+  c.executescript('''
+  CREATE TABLE IF NOT EXISTS phone_cameras(id TEXT PRIMARY KEY,owner TEXT NOT NULL,scope TEXT NOT NULL,selection_id TEXT NOT NULL,code_hash TEXT UNIQUE,code_expires REAL NOT NULL,token_hash TEXT,expires REAL NOT NULL,last_frame REAL NOT NULL DEFAULT 0,seq INTEGER NOT NULL DEFAULT 0,closed INTEGER NOT NULL DEFAULT 0,notice TEXT NOT NULL DEFAULT 'scanning');
++ CREATE TABLE IF NOT EXISTS phone_camera_ui(id TEXT PRIMARY KEY,raw TEXT NOT NULL DEFAULT '',code_seq INTEGER NOT NULL DEFAULT 0,next_seq INTEGER NOT NULL DEFAULT 0,student_id TEXT NOT NULL DEFAULT '',work_ids TEXT NOT NULL DEFAULT '[]');
+  CREATE TABLE IF NOT EXISTS phone_camera_attempts(key TEXT PRIMARY KEY,count INTEGER NOT NULL,until REAL NOT NULL);
+  ''')
+ 
+@@ -24,21 +27,31 @@
+   b=r.json();selection=a.identifier(b.get('selectionId'));parent=c.execute('SELECT * FROM print_selections WHERE id=?',(selection,)).fetchone();a.fail(not parent or parent['owner']!=u['id'],403,'Нет доступа к списку печати');a.access(c,u,parent['scope']);a.fail(parent['expires']<time.time(),410,'Список печати истёк')
+   now=time.time();path=folder(a)
+   for old in c.execute('SELECT id FROM phone_cameras WHERE expires<? OR closed=1',(now,)):(path/(old[0]+'.jpg')).unlink(missing_ok=True)
+-  c.execute('DELETE FROM phone_cameras WHERE expires<? OR closed=1',(now,))
++  c.execute('DELETE FROM phone_cameras WHERE expires<? OR closed=1',(now,));c.execute('DELETE FROM phone_camera_ui WHERE id NOT IN (SELECT id FROM phone_cameras)')
+   for old in c.execute('SELECT id FROM phone_cameras WHERE selection_id=? AND owner=?',(selection,u['id'])):(path/(old[0]+'.jpg')).unlink(missing_ok=True)
+   c.execute('UPDATE phone_cameras SET closed=1,token_hash=NULL,code_hash=NULL WHERE selection_id=? AND owner=?',(selection,u['id']))
+   sid=str(uuid.uuid4());code=str(secrets.randbelow(100_000_000)).zfill(8)
+   c.execute('INSERT INTO phone_cameras(id,owner,scope,selection_id,code_hash,code_expires,expires) VALUES(?,?,?,?,?,?,?)',(sid,u['id'],parent['scope'],selection,digest(code),now+300,now+1800))
++  c.execute('INSERT INTO phone_camera_ui(id) VALUES(?)',(sid,))
+   return {'id':sid,'code':code,'codeExpires':now+300,'cameraPath':'/camera/'}
+  a.fail(len(parts)!=3,404,'Не найдено');row=valid(c,parts[2],a);a.fail(row['owner']!=u['id'],403,'Нет доступа к камере');a.access(c,u,row['scope'])
+  if r.method=='POST':
+   body=r.json()
++  if body.get('action')=='offer':
++   student=str(body.get('studentId',''));ids=body.get('workIds',[]);a.fail(not isinstance(ids,list) or len(ids)>100)
++   snapshot=print_selection.snapshot(c,c.execute('SELECT * FROM print_selections WHERE id=?',(row['selection_id'],)).fetchone())
++   allowed=[w['id'] for w in snapshot['works'] if w['studentId']==student and (not ids or w['id'] in ids)]
++   a.fail(bool(student) and not any(s['id']==student for s in snapshot['students']),403,'Ребёнок не относится к списку')
++   c.execute('INSERT OR IGNORE INTO phone_camera_ui(id) VALUES(?)',(row['id'],));c.execute('UPDATE phone_camera_ui SET student_id=?,work_ids=? WHERE id=?',(student,json.dumps(allowed),row['id']))
++   return {'saved':True}
+   if body.get('action')=='notice':
+-   a.fail(body.get('notice') not in ('scanning','recognized'));c.execute('UPDATE phone_cameras SET notice=? WHERE id=?',(body['notice'],row['id']));return {'saved':True}
++   a.fail(body.get('notice') not in ('scanning','recognized','unknown'));c.execute('UPDATE phone_cameras SET notice=? WHERE id=?',(body['notice'],row['id']));return {'saved':True}
+   a.fail(body.get('action')!='stop');c.execute('UPDATE phone_cameras SET closed=1,token_hash=NULL,code_hash=NULL WHERE id=?',(row['id'],));(folder(a)/(row['id']+'.jpg')).unlink(missing_ok=True);return {'stopped':True}
+  a.fail(r.method!='GET',404,'Не найдено')
+  c.execute('UPDATE phone_cameras SET expires=? WHERE id=?',(time.time()+1800,row['id']))
+- result={'id':row['id'],'seq':row['seq'],'connected':bool(row['token_hash']),'lastFrame':row['last_frame']}
++ ui=c.execute('SELECT * FROM phone_camera_ui WHERE id=?',(row['id'],)).fetchone()
++ selection=c.execute('SELECT revision FROM print_selections WHERE id=?',(row['selection_id'],)).fetchone()
++ result={'selectionRevision':selection[0] if selection else 0,'code':ui['raw'] if ui else '', 'codeSeq':ui['code_seq'] if ui else 0,'nextSeq':ui['next_seq'] if ui else 0,'id':row['id'],'seq':row['seq'],'connected':bool(row['token_hash']),'lastFrame':row['last_frame']}
+  after=parse_qs(r.e.get('QUERY_STRING','')).get('after',['0'])[0];path=folder(a)/(row['id']+'.jpg')
+  if str(row['seq'])!=after and row['seq'] and path.is_file():result['frame']='data:image/jpeg;base64,'+base64.b64encode(path.read_bytes()).decode()
+  return result
+@@ -52,9 +65,10 @@
+   if not row:
+    count=attempt['count']+1 if attempt and attempt['until']>now else 1;c.execute('INSERT OR REPLACE INTO phone_camera_attempts VALUES(?,?,?)',(ip,count,now+600));c.commit();raise a.Error(404,'Код не найден или истёк. Проверьте код на Mac')
+   token=secrets.token_urlsafe(32);c.execute('UPDATE phone_cameras SET token_hash=?,code_hash=NULL WHERE id=?',(digest(token),row['id']));c.execute('DELETE FROM phone_camera_attempts WHERE key=?',(ip,));return {'id':row['id'],'token':token}
+- a.fail(len(parts)!=4 or parts[:3]!=['public','camera','frame'],404,'Не найдено');row=valid(c,parts[3],a)
++ a.fail(len(parts)!=4 or parts[:2]!=['public','camera'] or parts[2] not in ('frame','state','code','choose','next','preview'),404,'Не найдено');row=valid(c,parts[3],a)
+  token=r.e.get('HTTP_AUTHORIZATION','').removeprefix('Bearer ');a.fail(not row['token_hash'] or not hmac.compare_digest(digest(token),row['token_hash']),403,'Подключение камеры недоступно')
+  owner=c.execute('SELECT * FROM users WHERE id=? AND active=1',(row['owner'],)).fetchone();a.fail(not owner or owner['role']=='viewer',403,'Подключение отозвано');a.access(c,owner,row['scope'])
++ if parts[2]!='frame':return picker_route(r,c,row,owner,parts[2],a)
+  a.fail(time.time()-row['last_frame']<0.12,429,'Кадры поступают слишком часто')
+  try:size=int(r.e.get('CONTENT_LENGTH','0'))
+  except (TypeError,ValueError):raise a.Error(400,'Неверный размер кадра')
+@@ -74,3 +88,41 @@
+  finally:temp.unlink(missing_ok=True)
+  c.execute('UPDATE phone_cameras SET seq=seq+1,last_frame=? WHERE id=?',(time.time(),row['id']));return {'received':True,'notice':latest['notice']}
+ 
++
++def picker_state(c,row,a):
++ selection=c.execute('SELECT * FROM print_selections WHERE id=?',(row['selection_id'],)).fetchone();a.fail(not selection or selection['expires']<time.time(),410,'Список печати истёк')
++ ui=c.execute('SELECT * FROM phone_camera_ui WHERE id=?',(row['id'],)).fetchone();works=[];student=None
++ if ui and ui['student_id']:
++  student=print_selection.load(c,'students',ui['student_id']);group=print_selection.load(c,'classes',student.get('classId')) if student else None
++  a.fail(not group or group.get('projectId')!=row['scope'],403,'Ребёнок недоступен')
++  for wid in json.loads(ui['work_ids']):
++   w=print_selection.load(c,'finalWorks',wid);ref=print_selection.image_ref(w) if w else None
++   if not w or w.get('studentId')!=ui['student_id'] or not ref:continue
++   item=c.execute('SELECT * FROM print_selection_items WHERE session_id=? AND work_id=? AND selected=1',(selection['id'],wid)).fetchone()
++   works.append({'id':wid,'title':w.get('title') or 'Готовая работа','imageHash':ref['$syncBlob'],'selected':bool(item and item['image_hash']==ref['$syncBlob']),'blocked':isinstance(w.get('correction'),dict) and w['correction'].get('status')=='open'})
++  student={'name':((student.get('lastName') or '')+' '+(student.get('firstName') or '')).strip(),'group':group.get('name','')}
++ count=c.execute('SELECT COUNT(*) FROM print_selection_items WHERE session_id=? AND selected=1',(selection['id'],)).fetchone()[0]
++ return {'notice':row['notice'],'student':student,'works':works,'count':count,'revision':selection['revision'],'codeSeq':ui['code_seq'] if ui else 0,'nextSeq':ui['next_seq'] if ui else 0}
++
++def picker_route(r,c,row,owner,action,a):
++ if not c.execute('SELECT 1 FROM phone_camera_ui WHERE id=?',(row['id'],)).fetchone():
++  c.execute('INSERT INTO phone_camera_ui(id) VALUES(?)',(row['id'],))
++ if action=='code':
++  raw=r.json().get('code');a.fail(not isinstance(raw,str) or not 0<len(raw)<=4096,400,'Неверный QR')
++  c.execute('UPDATE phone_camera_ui SET raw=?,code_seq=code_seq+1 WHERE id=?',(raw,row['id']));return {'received':True}
++ if action=='next':
++  c.execute("UPDATE phone_camera_ui SET next_seq=next_seq+1,student_id='',work_ids='[]' WHERE id=?",(row['id'],));c.execute("UPDATE phone_cameras SET notice='scanning' WHERE id=?",(row['id'],));return picker_state(c,row,a)
++ state=picker_state(c,row,a)
++ if action=='state':return state
++ body=r.json();wid=body.get('workId');work=next((w for w in state['works'] if w['id']==wid),None);a.fail(not work,403,'Эта услуга не показана на телефоне')
++ if action=='preview':
++  # Reuse the private blob delivery path, including its bounded image previews.
++  import sync_api
++  forwarded=SimpleNamespace(method='GET',e={'QUERY_STRING':'preview=800'})
++  return sync_api.route(forwarded,c,owner,'/sync/blob/'+row['scope']+'/'+work['imageHash'],a)
++ a.fail(action!='choose',404,'Не найдено');a.fail(work['blocked'],409,'Сначала исправьте эту работу');a.fail(body.get('imageHash')!=work['imageHash'],409,'Фото изменилось. Обновите выбор')
++ if work['selected']:return {**state,'duplicate':True,'saved':False}
++ op=a.identifier(body.get('op'));payload={'op':op,'workId':wid,'imageHash':work['imageHash'],'selected':True,'copies':1}
++ forwarded=SimpleNamespace(method='POST',json=lambda:payload,e={})
++ print_selection.route(forwarded,c,owner,['sync','print-selections',row['selection_id']],a)
++ return {**picker_state(c,row,a),'saved':True,'duplicate':False}
