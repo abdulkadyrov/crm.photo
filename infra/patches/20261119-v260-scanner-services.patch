@@ -1,0 +1,262 @@
+--- a/index.html
++++ b/index.html
+@@ -9 +9 @@
+-    <link rel="stylesheet" href="./styles.css?v=259" />
++    <link rel="stylesheet" href="./styles.css?v=260" />
+@@ -70 +70 @@
+-    <script type="module" src="./js/core/app.js?v=259"></script>
++    <script type="module" src="./js/core/app.js?v=260"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v259";
++const CACHE_VERSION = "v260";
+@@ -77,4 +77,4 @@
+-  "./js/ui/scan-photo-viewer.js?v=259",
+-  "./js/ui/group-scan-panel.js?v=259",
+-  "./js/ui/scan-photo-viewer.js?v=259",
+-  "./js/ui/group-scan-panel.js?v=259",
++  "./js/ui/scan-photo-viewer.js?v=260",
++  "./js/ui/group-scan-panel.js?v=260",
++  "./js/ui/scan-photo-viewer.js?v=260",
++  "./js/ui/group-scan-panel.js?v=260",
+@@ -86,2 +86,2 @@
+-  "./js/services/service-positions.js?v=259",
+-  "./js/services/individual-order.js?v=259",
++  "./js/services/service-positions.js?v=260",
++  "./js/services/individual-order.js?v=260",
+@@ -89 +89 @@
+-  "./js/services/sequence-navigation.js?v=259",
++  "./js/services/sequence-navigation.js?v=260",
+@@ -91 +91 @@
+-  "./js/services/card-summary.js?v=259",
++  "./js/services/card-summary.js?v=260",
+@@ -95 +95 @@
+-  "./js/services/camera-options.js?v=259",
++  "./js/services/camera-options.js?v=260",
+@@ -101,2 +101,2 @@
+-  "./js/services/record-sync.js?v=259",
+-  "./js/services/deferred-final-work.js?v=259",
++  "./js/services/record-sync.js?v=260",
++  "./js/services/deferred-final-work.js?v=260",
+@@ -109 +109 @@
+-  "./js/services/sync-codec.js?v=259",
++  "./js/services/sync-codec.js?v=260",
+@@ -117 +117 @@
+-  "./styles.css?v=259",
++  "./styles.css?v=260",
+@@ -120 +120 @@
+-  "./js/core/app.js?v=259",
++  "./js/core/app.js?v=260",
+@@ -122,2 +122,2 @@
+-  "./js/services/card-selection.js?v=259",
+-  "./js/services/navigation-history.js?v=259",
++  "./js/services/card-selection.js?v=260",
++  "./js/services/navigation-history.js?v=260",
+@@ -125,3 +125,3 @@
+-  "./js/services/roster-filters.js?v=259",
+-  "./js/ui/scan-work-picker.js?v=259",
+-  "./js/ui/group-scan-panel.js?v=259",
++  "./js/services/roster-filters.js?v=260",
++  "./js/ui/scan-work-picker.js?v=260",
++  "./js/ui/group-scan-panel.js?v=260",
+@@ -129 +129 @@
+-  "./js/services/student-comments.js?v=259",
++  "./js/services/student-comments.js?v=260",
+@@ -132,2 +132,2 @@
+-  "./js/services/image-delivery.js?v=259",
+-  "./js/ui/scan-photo-viewer.js?v=259",
++  "./js/services/image-delivery.js?v=260",
++  "./js/ui/scan-photo-viewer.js?v=260",
+@@ -135,2 +135,2 @@
+-  "./js/ui/student-quick-actions.js?v=259",
+-  "./js/services/group-scan.js?v=259",
++  "./js/ui/student-quick-actions.js?v=260",
++  "./js/services/group-scan.js?v=260",
+@@ -139,2 +139,2 @@
+-  "./js/services/print-selection.js?v=259",
+-  "./js/ui/project-print-picker.js?v=259",
++  "./js/services/print-selection.js?v=260",
++  "./js/ui/project-print-picker.js?v=260",
+@@ -142 +142 @@
+-  "./js/services/student-stage-icons.js?v=259",
++  "./js/services/student-stage-icons.js?v=260",
+@@ -145 +145 @@
+-  "./js/ui/fulfillment-panel.js?v=259",
++  "./js/ui/fulfillment-panel.js?v=260",
+@@ -147 +147 @@
+-  "./js/services/print-order.js?v=259",
++  "./js/services/print-order.js?v=260",
+@@ -152 +152 @@
+-  "./js/services/fulfillment.js?v=259",
++  "./js/services/fulfillment.js?v=260",
+@@ -156 +156 @@
+-  "./js/core/legacy-app.js?v=259",
++  "./js/core/legacy-app.js?v=260",
+@@ -179 +179 @@
+-  "./js/ui/photo-camera.js?v=259",
++  "./js/ui/photo-camera.js?v=260",
+@@ -182 +182 @@
+-  "./js/services/teacher-broadcast.js?v=259",
++  "./js/services/teacher-broadcast.js?v=260",
+@@ -224 +224 @@
+-  "./js/services/parent-orders.js?v=259",
++  "./js/services/parent-orders.js?v=260",
+@@ -236 +236 @@
+-  "./js/services/finalwork-service.js?v=259",
++  "./js/services/finalwork-service.js?v=260",
+@@ -241 +241 @@
+-  "./js/services/export-filter-service.js?v=259",
++  "./js/services/export-filter-service.js?v=260",
+@@ -272 +272 @@
+-  "./js/services/barcode-reader.js?v=259",
++  "./js/services/barcode-reader.js?v=260",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=259");
++  await import("./legacy-app.js?v=260");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,12 +1,12 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=259";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=259";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=259";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=259";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=259";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=259";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=259";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=259";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=259";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=259";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=259";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=259";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=260";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=260";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=260";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=260";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=260";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=260";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=260";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=260";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=260";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=260";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=260";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=260";
+@@ -15,2 +15,2 @@
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=259";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=259";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=260";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=260";
+@@ -19,2 +19,2 @@
+-import {createNavigationHistory} from "../services/navigation-history.js?v=259";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=259";
++import {createNavigationHistory} from "../services/navigation-history.js?v=260";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=260";
+@@ -22 +22 @@
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=259";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=260";
+@@ -25,3 +25,3 @@
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=259";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=259";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=259";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=260";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=260";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=260";
+@@ -29,2 +29,2 @@
+-import { nextInSequence } from "../services/sequence-navigation.js?v=259";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=259";
++import { nextInSequence } from "../services/sequence-navigation.js?v=260";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=260";
+@@ -38 +38 @@
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=259";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=260";
+@@ -41,2 +41,2 @@
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=259";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=259";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=260";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=260";
+@@ -44 +44 @@
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=259";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=260";
+@@ -49 +49 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=259";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=260";
+@@ -52 +52 @@
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=259";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=260";
+@@ -54,2 +54,2 @@
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=259";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=259";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=260";
++import { printCodeLayout } from "../services/print-code-layout.js?v=260";
+@@ -78 +78 @@
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=259";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=260";
+@@ -83 +83 @@
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=259";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=260";
+@@ -9608,0 +9609 @@
++    orderedItems:student=>selectedServicesForStudent(student).map(item=>({...item,title:serviceName(catalogItemById(item.serviceId))})),
+--- a/js/ui/group-scan-panel.js
++++ b/js/ui/group-scan-panel.js
+@@ -1 +1 @@
+-import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=248';
++import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=260';
+@@ -3 +3 @@
+-import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js';
++import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js?v=260';
+@@ -6 +6 @@
+-const labels={matched:'Код распознан',foreign:'Другая группа',unknown:'Код не найден',ambiguous:'Несколько подходящих работ',inconsistent:'Ошибка привязки работы',duplicate:'Уже проверяли',correction:'Работа на исправлении',rejected:'Не совпадает / брак'};
++const labels={choose:'Выберите отсканированную работу',matched:'Код распознан',foreign:'Другая группа',unknown:'Код не найден',ambiguous:'Несколько подходящих работ',inconsistent:'Ошибка привязки работы',duplicate:'Уже проверяли',correction:'Работа на исправлении',rejected:'Не совпадает / брак'};
+@@ -8 +8 @@
+-export function openGroupScanPanel({groups,initialGroupId='',lockGroup=false,onSaveNote,onQuickAction,getData,resolve,createDetector,detectFrame,decodeFile,readSession,writeSession,images,imageOptions,onManage,mountHistory,restore}) {
++export function openGroupScanPanel({groups,initialGroupId='',lockGroup=false,onSaveNote,onQuickAction,getData,resolve,createDetector,detectFrame,decodeFile,readSession,writeSession,images,imageOptions,orderedItems,onManage,mountHistory,restore}) {
+@@ -45 +45,17 @@
+-    resultBox.innerHTML=`<article class="group-scan-result" data-verdict="${pending.status}"><h3>${esc(labels[pending.status]||'Проверьте результат')}</h3>${student?`<div class="scan-child"><img class="scan-avatar" alt="" hidden /><div><strong class="group-scan-name">${esc(fullName(student))}</strong><p>${esc(group?.name||'Группа не найдена')}</p></div></div>`:''}${work?`<p class="scan-work-title">${esc(work.title||work.fileName||'Готовая работа')}</p>`:''}<p class="scan-verdict-detail">${pending.status==='matched'?'Сравните оригинал и готовую фотографию.':pending.status==='foreign'?'Этот ребёнок не относится к выбранной группе и не будет включён в проверенные.':pending.status==='duplicate'?'Этот код уже есть в журнале. «Далее» пропустит повтор без увеличения счётчиков.':pending.status==='correction'?esc(work?.correction?.comment||'Сначала исправьте работу.'):pending.status==='unknown'?'Проверьте код и наличие карточки в CRM. Неизвестные коды не учитываются как проверенные.':pending.status==='ambiguous'?'Этот код не определяет одну фотографию. Выберите точную работу.':'Проверьте привязку фотографии к ребёнку и группе.'}</p>${pending.kind==='student'&&pending.status!=='foreign'?`<label>Что проверяем<select class="select" data-work-choice><option value="">Только ребёнка · без учёта фото</option>${possible.map(row=>`<option value="${esc(row.id)}">${esc(row.title||row.fileName||row.id)}</option>`).join('')}</select></label>`:''}${pending.kind==='ambiguous'?`<label>Выберите работу<select class="select" data-ambiguous><option value="">Выберите из списка</option>${pending.workIds.map(id=>{const row=data().works.find(w=>w.id===id),child=data().students.find(s=>s.id===row?.studentId);return `<option value="${esc(id)}">${esc(fullName(child))} · ${esc(row?.title||row?.fileName||id)}</option>`;}).join('')}</select></label>`:''}<div class="group-scan-images" data-images></div>${student&&onQuickAction?`<div class="group-scan-quick"><button class="secondary-button compact" type="button" data-quick="printed">Печать: ${work&&['printed','delivered'].includes(work.status)?'✓':'—'}</button><button class="secondary-button compact" type="button" data-quick="paid">₽ ${student.paymentStatus==='paid'?'Оплачено':'Оплата'}</button><button class="secondary-button compact" type="button" data-quick="delivered">Выдача: ${work?.status==='delivered'?'✓':'—'}</button><button class="scan-comment" type="button" data-quick="comment">${esc(studentCommentPreview(student,possible)||'Оставьте комментарий…')}</button></div>`:''}<details class="scan-check-note"><summary>Комментарий к этому фото</summary><p>Сохранится в карточке ребёнка при нажатии «Далее».</p><label><span class="sr-only">Заметка к проверке</span><input class="input" data-note maxlength="1000" placeholder="Другое лицо или дефект печати" /></label></details><div class="group-scan-result-actions">${pending.status==='matched'?'<button class="primary-button" data-accept type="button">Совпадает · Далее</button><button class="secondary-button" data-reject type="button">Брак / не похож</button>':'<button class="primary-button" data-skip type="button">Далее</button>'}${pending.status==='duplicate'&&pending.workId?'<button class="secondary-button" data-copy type="button">Это ещё один экземпляр</button>':''}</div></article>`;
++    resultBox.innerHTML=`<article class="group-scan-result" data-verdict="${pending.status}"><h3>${esc(labels[pending.status]||'Проверьте результат')}</h3>${student?`<div class="scan-child"><img class="scan-avatar" alt="" hidden /><div><strong class="group-scan-name">${esc(fullName(student))}</strong><p>${esc(group?.name||'Группа не найдена')}</p></div></div>`:''}${work?`<p class="scan-work-title">${esc(work.title||work.fileName||'Готовая работа')}</p>`:''}<p class="scan-verdict-detail">${pending.status==='choose'?'Один QR относится ко всем работам ребёнка. Выберите фото, которое держите в руках.':pending.status==='matched'?'Сравните оригинал и готовую фотографию.':pending.status==='foreign'?'Этот ребёнок не относится к выбранной группе и не будет включён в проверенные.':pending.status==='duplicate'?'Эта работа уже отсканирована в текущей проверке. Выберите другую работу или пропустите повтор. Дополнительный экземпляр учитывается только отдельно.':pending.status==='correction'?esc(work?.correction?.comment||'Сначала исправьте работу.'):pending.status==='unknown'?'Проверьте код и наличие карточки в CRM. Неизвестные коды не учитываются как проверенные.':pending.status==='ambiguous'?'Этот код не определяет одну фотографию. Выберите точную работу.':'Проверьте привязку фотографии к ребёнку и группе.'}</p>${pending.kind==='ambiguous'?`<label>Выберите работу<select class="select" data-ambiguous><option value="">Выберите из списка</option>${pending.workIds.map(id=>{const row=data().works.find(w=>w.id===id),child=data().students.find(s=>s.id===row?.studentId);return `<option value="${esc(id)}">${esc(fullName(child))} · ${esc(row?.title||row?.fileName||id)}</option>`;}).join('')}</select></label>`:''}<div class="group-scan-images" data-images></div>${student&&onQuickAction?`<div class="group-scan-quick"><button class="secondary-button compact" type="button" data-quick="printed">Печать: ${work&&['printed','delivered'].includes(work.status)?'✓':'—'}</button><button class="secondary-button compact" type="button" data-quick="paid">₽ ${student.paymentStatus==='paid'?'Оплачено':'Оплата'}</button><button class="secondary-button compact" type="button" data-quick="delivered">Выдача: ${work?.status==='delivered'?'✓':'—'}</button><button class="scan-comment" type="button" data-quick="comment">${esc(studentCommentPreview(student,possible)||'Оставьте комментарий…')}</button></div>`:''}<details class="scan-check-note"><summary>Комментарий к этому фото</summary><p>Сохранится в карточке ребёнка при нажатии «Далее».</p><label><span class="sr-only">Заметка к проверке</span><input class="input" data-note maxlength="1000" placeholder="Другое лицо или дефект печати" /></label></details><div class="group-scan-result-actions">${pending.status==='choose'?'<button class="secondary-button" data-skip type="button">Пропустить код</button>':pending.status==='matched'?'<button class="primary-button" data-accept type="button">Совпадает · Далее</button><button class="secondary-button" data-reject type="button">Брак / не похож</button>':'<button class="primary-button" data-skip type="button">Далее</button>'}${pending.status==='duplicate'&&pending.workId?'<button class="secondary-button" data-copy type="button">Это ещё один экземпляр</button>':''}</div></article>`;
++    if(student && !['foreign','inconsistent'].includes(pending.status)){
++      const ordered=orderedItems?.(student)||[];
++      const checked=possible.filter(row=>assessGroupScan({kind:'work',studentId:student.id,workId:row.id},groupSelect.value,session,data()).status==='duplicate').length;
++      const choices=document.createElement('section');choices.className='scan-service-choices';choices.setAttribute('aria-label','Работы ребёнка');
++      choices.innerHTML=`<p class="scan-service-count">Услуг в заказе: ${ordered.length || new Set(possible.map(row=>row.serviceId||row.id)).size} · Проверено работ: ${checked}/${possible.length}</p><div class="scan-service-grid">${possible.map(row=>{
++        const status=assessGroupScan({kind:'work',studentId:student.id,workId:row.id},groupSelect.value,session,data()).status;
++        return `<button type="button" class="scan-service-card" data-scan-work="${esc(row.id)}" aria-pressed="${pending.workId===row.id}" data-checked="${status==='duplicate'}"><span class="scan-service-thumb">Превью недоступно</span><strong>${esc(row.title||row.fileName||'Готовая работа')}</strong><small>${status==='duplicate'?'✓ Уже отсканировано':status==='correction'?'На исправлении':'Ещё не проверено'}</small></button>`;
++      }).join('')}</div>${ordered.filter(item=>!possible.some(row=>row.serviceId===item.serviceId)).map(item=>`<p class="scan-service-missing">${esc(item.title||'Услуга')} · результат ещё не добавлен</p>`).join('')}`;
++      resultBox.querySelector('[data-images]').before(choices);
++      for(const button of choices.querySelectorAll('[data-scan-work]')){
++        const workId=button.dataset.scanWork;
++        const item=images?.({kind:'work',studentId:student.id,workId})?.[1]?.[1];
++        if(item){const image=document.createElement('img');image.alt='';image.loading='lazy';image.decoding='async';image.src=item instanceof Blob?URL.createObjectURL(item):String(item).replace(/(\/api\/v1\/sync\/blob\/[^?]+)(?:\?.*)?$/, '$1?preview=800');if(item instanceof Blob)imageUrls.push(image.src);const thumb=button.querySelector('.scan-service-thumb');image.onerror=()=>{image.remove();thumb.textContent='Превью не загрузилось';};thumb.replaceChildren(image);}
++        button.onclick=()=>{const note=resultBox.querySelector('[data-note]').value;showResult({kind:'work',studentId:student.id,workId});const input=resultBox.querySelector('[data-note]');input.value=note;if(note)input.closest('details').open=true;resultBox.querySelector(`[data-scan-work="${CSS.escape(workId)}"]`)?.focus({preventScroll:true});};
++      }
++    }
+@@ -47 +63,2 @@
+-    const originals=imageOptions?.(pending)||[];
++    if(pending.status==='choose')resultBox.querySelector('[data-images]').hidden=true;
++    const originals=pending.status==='choose'?[]:imageOptions?.(pending)||[];
+@@ -51 +67,0 @@
+-    resultBox.querySelector('[data-work-choice]')?.addEventListener('change',event=>{if(event.target.value)showResult({kind:'work',studentId:student.id,workId:event.target.value});});
+@@ -63 +79 @@
+-    summaryBox.innerHTML=`<h3>Список и итоги</h3>${pending?'<p>Последний код ещё не подтверждён. Нажмите «Продолжить», чтобы завершить его проверку.</p>':''}<div class="scan-summary-counts"><div>Дети<strong>${stats.children}/${children().length}</strong></div><div>Работы<strong>${stats.works}</strong></div><div>Копии<strong>${stats.copies}</strong></div></div><details class="scan-summary-info"><summary>О проверке</summary><p>Сканирований: ${stats.attempts}. Повторов: ${stats.duplicates}. Статусы печати, выдачи и оплаты меняются отдельным действием.</p></details><div class="group-scan-summary-tools"><button class="secondary-button compact" data-all type="button">Выбрать всех</button><button class="secondary-button compact" data-none type="button">Снять выбор</button><button class="secondary-button compact" data-reset type="button">Сбросить проверку</button></div><div class="group-scan-checked">${stats.studentIds.map(id=>{const child=data().students.find(s=>s.id===id),events=session.events.filter(e=>e.accepted&&e.studentId===id),workIds=[...new Set(events.map(e=>e.workId).filter(Boolean))],printed=workIds.filter(wid=>['printed','delivered'].includes(data().works.find(w=>w.id===wid)?.status));return `<label><input type="checkbox" data-selected="${esc(id)}" ${selected.has(id)?'checked':''} /><span><strong>${esc(fullName(child)||'Карточка удалена')}</strong><small>${workIds.length} работ · ${events.filter(e=>e.workId).length} копий · печать ${printed.length}</small></span></label>`;}).join('')||'<p>Проверенных детей пока нет.</p>'}</div><div class="scan-summary-actions"><button class="primary-button" data-manage type="button">Изменить статусы выбранных</button><button class="secondary-button" data-manage-all type="button">Все работы</button></div><p data-summary-message role="status"></p><details><summary>Не проверены · ${stats.missing.length}</summary><ul>${stats.missing.map(student=>`<li>${esc(fullName(student))}</li>`).join('')}</ul></details><details><summary>Ошибки, пропуски и повторы · ${session.events.filter(e=>!e.accepted||e.extraCopy).length}</summary><ul>${session.events.filter(e=>!e.accepted||e.extraCopy).map(event=>`<li>${esc(labels[event.status]||event.status)} · ${esc(fullName(data().students.find(s=>s.id===event.studentId))||'Неизвестный код')}${event.extraCopy?' · дополнительный экземпляр':''}${event.comment?` · ${esc(event.comment)}`:''}</li>`).join('')}</ul></details><details><summary>Предыдущие проверки на этом устройстве · ${archived.length}</summary>${archived.map(old=>{const report=scanSessionSummary(old,children());return `<details><summary>${esc(new Date(old.createdAt).toLocaleString('ru-RU'))} · детей ${report.children} · фото ${report.copies}</summary><ul>${report.studentIds.map(id=>`<li>${esc(fullName(data().students.find(student=>student.id===id))||'Карточка удалена')}</li>`).join('')}</ul></details>`;}).join('')}</details><details><summary>Заметки этой проверки · ${session.events.filter(event=>event.comment).length}</summary><ul>${session.events.filter(event=>event.comment).map(event=>`<li>${esc(fullName(data().students.find(student=>student.id===event.studentId)))} · ${esc(event.comment)}</li>`).join("")}</ul></details><details class="group-scan-new"><summary>Начать новую проверку</summary><p>Текущая проверка останется в истории этого устройства.</p><button class="secondary-button" data-new type="button">Новая проверка этой группы</button></details>`;
++    summaryBox.innerHTML=`<h3>Список и итоги</h3>${pending?'<p>Последний код ещё не подтверждён. Нажмите «Продолжить», чтобы завершить его проверку.</p>':''}<div class="scan-summary-counts"><div>Дети<strong>${stats.children}/${children().length}</strong></div><div>Работы<strong>${stats.works}</strong></div><div>Копии<strong>${stats.copies}</strong></div></div><details class="scan-summary-info"><summary>О проверке</summary><p>Сканирований: ${stats.attempts}. Повторов: ${stats.duplicates}. Статусы печати, выдачи и оплаты меняются отдельным действием.</p></details><div class="group-scan-summary-tools"><button class="secondary-button compact" data-all type="button">Выбрать всех</button><button class="secondary-button compact" data-none type="button">Снять выбор</button><button class="secondary-button compact" data-reset type="button">Сбросить проверку</button></div><div class="group-scan-checked">${stats.studentIds.map(id=>{const child=data().students.find(s=>s.id===id),events=session.events.filter(e=>e.accepted&&e.studentId===id),workIds=[...new Set(events.map(e=>e.workId).filter(Boolean))],printed=workIds.filter(wid=>['printed','delivered'].includes(data().works.find(w=>w.id===wid)?.status));return `<label><input type="checkbox" data-selected="${esc(id)}" ${selected.has(id)?'checked':''} /><span><strong>${esc(fullName(child)||'Карточка удалена')}</strong><small>${workIds.length} работ · ${events.filter(e=>e.workId).length} копий · печать ${printed.length}</small><small>${workIds.map(wid=>esc(data().works.find(w=>w.id===wid)?.title||'Готовая работа')).join(' · ')}</small></span></label>`;}).join('')||'<p>Проверенных детей пока нет.</p>'}</div><div class="scan-summary-actions"><button class="primary-button" data-manage type="button">Изменить статусы выбранных</button><button class="secondary-button" data-manage-all type="button">Все работы</button></div><p data-summary-message role="status"></p><details><summary>Не проверены · ${stats.missing.length}</summary><ul>${stats.missing.map(student=>`<li>${esc(fullName(student))}</li>`).join('')}</ul></details><details><summary>Ошибки, пропуски и повторы · ${session.events.filter(e=>!e.accepted||e.extraCopy).length}</summary><ul>${session.events.filter(e=>!e.accepted||e.extraCopy).map(event=>`<li>${esc(labels[event.status]||event.status)} · ${esc(fullName(data().students.find(s=>s.id===event.studentId))||'Неизвестный код')}${event.extraCopy?' · дополнительный экземпляр':''}${event.comment?` · ${esc(event.comment)}`:''}</li>`).join('')}</ul></details><details><summary>Предыдущие проверки на этом устройстве · ${archived.length}</summary>${archived.map(old=>{const report=scanSessionSummary(old,children());return `<details><summary>${esc(new Date(old.createdAt).toLocaleString('ru-RU'))} · детей ${report.children} · фото ${report.copies}</summary><ul>${report.studentIds.map(id=>`<li>${esc(fullName(data().students.find(student=>student.id===id))||'Карточка удалена')}</li>`).join('')}</ul></details>`;}).join('')}</details><details><summary>Заметки этой проверки · ${session.events.filter(event=>event.comment).length}</summary><ul>${session.events.filter(event=>event.comment).map(event=>`<li>${esc(fullName(data().students.find(student=>student.id===event.studentId)))} · ${esc(event.comment)}</li>`).join("")}</ul></details><details class="group-scan-new"><summary>Начать новую проверку</summary><p>Текущая проверка останется в истории этого устройства.</p><button class="secondary-button" data-new type="button">Новая проверка этой группы</button></details>`;
+--- a/js/services/group-scan.js
++++ b/js/services/group-scan.js
+@@ -27 +27 @@
+-  if(target.kind==='student'){const candidates=works.filter(row=>row.studentId===student.id);if(candidates.length===1)return assessGroupScan({kind:'work',studentId:student.id,workId:candidates[0].id},groupId,session,{students,works});}
++  if(target.kind==='student'){const candidates=works.filter(row=>row.studentId===student.id);if(candidates.length===1)return assessGroupScan({kind:'work',studentId:student.id,workId:candidates[0].id},groupId,session,{students,works});if(candidates.length>1)return {...target,status:'choose',workId:undefined};}
+--- a/styles.css
++++ b/styles.css
+@@ -7618,0 +7619,12 @@
++
++/* Per-work confirmation for a shared child QR. */
++.scan-service-count { font-size:12px; margin:8px 0; }
++.scan-service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
++.scan-service-card { display:flex; flex-direction:column; gap:5px; min-width:0; padding:8px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--text); text-align:left; cursor:pointer; }
++.scan-service-card[aria-pressed="true"] { border:2px solid var(--primary); padding:7px; }
++.scan-service-card:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
++.scan-service-card strong { font-size:12px; line-height:1.35; overflow-wrap:anywhere; }
++.scan-service-card small { font-size:11px; line-height:1.3; }
++.scan-service-thumb { display:flex; align-items:center; justify-content:center; width:100%; height:90px; border-radius:6px; background:var(--card-strong); font-size:11px; }
++.scan-service-thumb img { width:100%; height:100%; object-fit:contain; border-radius:6px; }
++.scan-service-missing { font-size:12px; margin:8px 0; overflow-wrap:anywhere; }
