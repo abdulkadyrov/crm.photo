@@ -1,3 +1,4 @@
+import phone_camera
 from types import SimpleNamespace
 import scan_sessions
 import print_selection
@@ -20,6 +21,7 @@ def initialize(c):
  ''')
  scan_sessions.initialize(c)
  print_selection.initialize(c)
+ phone_camera.initialize(c)
 
 def merge(base,local,remote,path=''):
  """Merge disjoint edits; conflicting values remain untouched until explicit review."""
@@ -135,6 +137,7 @@ class BlobFile:
 def route(r,c,u,path,a):
  parts=path.strip('/').split('/');kind=parts[1] if len(parts)>1 else ''
  if kind=='scans' and len(parts)==2:return scan_sessions.route(r,c,u,a)
+ if kind=='phone-camera':return phone_camera.host_route(r,c,u,parts,a)
  if kind=='print-selections':return print_selection.route(r,c,u,parts,a)
  if kind=='record' and len(parts)==4 and r.method=='GET':
   store=parts[2];a.fail(store!='media',404,'Не найдено');rid=a.identifier(parts[3])

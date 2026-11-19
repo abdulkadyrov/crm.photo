@@ -1,3 +1,4 @@
+import phone_camera
 """Private CRM accounts and immutable project transfers. Run behind Caddy/Gunicorn."""
 from types import SimpleNamespace
 import parent_orders
@@ -150,7 +151,7 @@ class Request:
     def route(self):
         if self.method not in ('GET','HEAD'):
             origin=self.e.get('HTTP_ORIGIN')
-            allowed={parent_orders.ORIGIN} if self.path.startswith('/api/v1/public/') else {ORIGIN,parent_orders.ORIGIN} if self.path in ('/api/v1/login','/api/v1/logout') or self.path.startswith('/api/v1/studio/') else {ORIGIN}
+            allowed={ORIGIN} if self.path.startswith('/api/v1/public/camera/') else {parent_orders.ORIGIN} if self.path.startswith('/api/v1/public/') else {ORIGIN,parent_orders.ORIGIN} if self.path in ('/api/v1/login','/api/v1/logout') or self.path.startswith('/api/v1/studio/') else {ORIGIN}
             fail(origin not in allowed,403,'Недопустимый источник запроса')
         path=self.path.removeprefix('/api/v1')
         if path.startswith('/public/media/') and self.method=='GET':
@@ -161,6 +162,8 @@ class Request:
             return Media(target)
         if path=='/health' and self.method=='GET': return {'ok':True}
         with db() as c:
+            if path.startswith('/public/camera/'):
+                return phone_camera.public_route(self,c,path,SimpleNamespace(**globals()))
             if path.startswith('/public/'):
                 return parent_orders.route(self,c,None,path,SimpleNamespace(**globals()))
             if path=='/login' and self.method=='POST':

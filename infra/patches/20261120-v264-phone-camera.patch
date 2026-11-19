@@ -1,0 +1,453 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=263" />
++    <link rel="stylesheet" href="./styles.css?v=264" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=263"></script>
++    <script type="module" src="./js/core/app.js?v=264"></script>
+   </body>
+ </html>
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=263");
++  await import("./legacy-app.js?v=264");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,37 +1,37 @@
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=263';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=263';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=263';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=264';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=264';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=264';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=263";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=263";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=263";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=263";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=263";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=263";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=263";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=263";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=263";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=263";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=263";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=263";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=264";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=264";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=264";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=264";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=264";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=264";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=264";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=264";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=264";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=264";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=264";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=264";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=263";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=263";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=264";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=264";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=263";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=263";
++import {createNavigationHistory} from "../services/navigation-history.js?v=264";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=264";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=263";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=264";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=263";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=263";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=263";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=264";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=264";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=264";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=263";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=263";
++import { nextInSequence } from "../services/sequence-navigation.js?v=264";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=264";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -39,24 +39,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=263";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=264";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=263";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=263";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=264";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=264";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=263";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=264";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=263";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=264";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=263";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=264";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=263";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=263";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=264";
++import { printCodeLayout } from "../services/print-code-layout.js?v=264";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -79,12 +79,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=263";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=264";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=263";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=264";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+--- a/js/ui/selective-print-panel.js
++++ b/js/ui/selective-print-panel.js
+@@ -1,3 +1,4 @@
++import {phoneCameraRequest,receivePhoneCamera} from '../services/phone-camera.js';
+ import {createPrintSelectionStore,searchPrintStudents,resolveSelectiveCode,selectedPrintWorks} from '../services/selective-print.js';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ export function openSelectivePrintPanel({id,companion=false,request,storage=localStorage,storageKey,qrImage,parseWork,studentTokens,createDetector,detectFrame,decodeFile,onReview,mountHistory,restore}){
+@@ -5,10 +6,10 @@
+  const panel=document.createElement('div');panel.className='qr-panel-backdrop selective-print-backdrop';
+  const link=new URL(location.origin+location.pathname);link.searchParams.set('printSelection',id);
+  panel.innerHTML=`<section class="qr-panel selective-print-panel" role="dialog" aria-modal="true" aria-label="Выборочная печать" tabindex="-1"><style>
+- .selective-print-panel{width:min(720px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden;color:var(--text)}
+- .selective-print-panel h2{font-size:18px;margin:0}.selective-print-panel p{margin:0;font-size:12px}.sp-head,.sp-tools,.sp-row,.sp-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sp-head{justify-content:space-between}.sp-head button{min-height:40px;width:40px;flex:none;padding:6px;font-size:22px}.sp-body{overflow:auto;min-height:0;flex:1}.sp-search{width:100%;min-height:44px}.sp-tools>*{flex:1;min-width:0;min-height:40px;font-size:13px;padding:8px}.sp-video{width:100%;height:180px;object-fit:cover;border-radius:10px;background:var(--card-strong)}.sp-camera{margin:8px 0}.sp-connection{padding:8px;border:1px solid var(--line);border-radius:10px}.sp-connection summary{font-size:13px;cursor:pointer}.sp-connection img{display:block;width:170px;height:170px;margin:8px auto}.sp-connection input{width:100%;font-size:12px}.sp-child{padding:10px 0;border-bottom:1px solid var(--line)}.sp-child h3{margin:0 0 3px;font-size:14px;overflow-wrap:anywhere}.sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.sp-card{border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;display:flex;flex-direction:column;gap:5px;background:var(--card)}.sp-card img{height:84px;object-fit:contain;width:100%;background:var(--card-strong);border-radius:6px}.sp-card strong{font-size:12px;overflow-wrap:anywhere}.sp-card small{font-size:11px}.sp-card button{min-height:40px;font-size:12px;padding:7px}.sp-card[data-selected=true]{border-color:var(--primary)}.sp-footer{flex:none;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}.sp-footer button{min-height:42px;font-size:13px}.sp-status{font-size:12px;min-height:16px}.sp-panel-tabs{display:flex;gap:6px}.sp-panel-tabs button{flex:1;min-height:40px;font-size:13px}.sp-panel-tabs [aria-pressed=true]{border-color:var(--primary)}.sp-card label{font-size:12px}.sp-card input[type=number]{width:65px;min-height:36px}.sp-empty{padding:20px 0}.sp-notice{padding:8px;background:var(--card-strong);border-radius:8px;font-size:12px}.sp-file{display:flex;align-items:center;justify-content:center;cursor:pointer}
+- </style><header class="sp-head"><h2>${companion?'Выбор для Mac':'Выборочная печать'}</h2><button class="secondary-button compact" type="button" data-close aria-label="Закрыть">×</button></header><p data-title></p><details class="sp-connection" ${companion?'':'open'}><summary>Подключить iPhone · общий список</summary><p>Откройте QR на iPhone и войдите в тот же аккаунт CRM. Выбор появится здесь.</p><img src="${esc(qrImage(link.href))}" alt="QR для подключения телефона" /><input class="input" data-link readonly aria-label="Ссылка для телефона" value="${esc(link.href)}" /><button class="secondary-button compact" type="button" data-copy-link>Скопировать ссылку</button></details><input class="input sp-search" type="search" data-search placeholder="Фамилия или имя" aria-label="Поиск по фамилии или имени" autocomplete="off" /><div class="sp-tools"><button class="secondary-button" type="button" data-camera>Камера</button><label class="secondary-button sp-file">Фото QR<input type="file" accept="image/*" capture="environment" data-file hidden /></label><button class="secondary-button" type="button" data-refresh>Обновить</button></div><div class="sp-camera" hidden><video class="sp-video" playsinline muted></video><div class="sp-row"><select class="select" data-device aria-label="Выбор камеры"></select><button class="secondary-button compact" type="button" data-stop>Выключить</button></div></div><div class="sp-panel-tabs"><button class="secondary-button" data-tab="add" type="button" aria-pressed="true">Добавить</button><button class="secondary-button" data-tab="selected" type="button" aria-pressed="false">Выбрано · 0</button></div><p class="sp-notice" data-notice hidden role="status"></p><div class="sp-body" data-body></div><details><summary style="font-size:12px">Ввести QR / штрихкод вручную</summary><form class="sp-row" data-manual><input class="input" name="code" aria-label="Код фотографии" required /><button class="secondary-button compact" type="submit">Найти</button></form></details><footer class="sp-footer"><p class="sp-status" data-status role="status"></p><button class="primary-button" data-review type="button" disabled>${companion?'Выбор завершён':'Проверить · печать / PDF'}</button></footer></section>`;
+- let paired=false,mode='add',target=null,closed=false,stream=null,frame=0,generation=0,lastRaw='',emptyFrames=0,history,busy=false,lastSignature='';
++ .selective-print-panel{width:min(720px,calc(100vw - 16px));max-height:calc(100dvh - 16px);padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto;color:var(--text)}
++ .selective-print-panel h2{font-size:18px;margin:0}.selective-print-panel p{margin:0;font-size:12px}.sp-head,.sp-tools,.sp-row,.sp-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sp-head{justify-content:space-between}.sp-head button{min-height:40px;width:40px;flex:none;padding:6px;font-size:22px}.selective-print-panel>*{flex-shrink:0}.sp-body{min-height:0;flex:0 0 auto}.sp-search{width:100%;min-height:44px}.sp-tools>*{flex:1;min-width:0;min-height:40px;font-size:13px;padding:8px}.sp-video{width:100%;height:180px;object-fit:cover;border-radius:10px;background:var(--card-strong)}.sp-camera{margin:8px 0}.sp-connection{padding:8px;border:1px solid var(--line);border-radius:10px}.sp-connection summary{font-size:13px;cursor:pointer}.sp-connection img{display:block;width:170px;height:170px;margin:8px auto}.sp-connection input{width:100%;font-size:12px}.sp-child{padding:10px 0;border-bottom:1px solid var(--line)}.sp-child h3{margin:0 0 3px;font-size:14px;overflow-wrap:anywhere}.sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.sp-card{border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0;display:flex;flex-direction:column;gap:5px;background:var(--card)}.sp-card img{height:84px;object-fit:contain;width:100%;background:var(--card-strong);border-radius:6px}.sp-card strong{font-size:12px;overflow-wrap:anywhere}.sp-card small{font-size:11px}.sp-card button{min-height:40px;font-size:12px;padding:7px}.sp-card[data-selected=true]{border-color:var(--primary)}.sp-footer{flex:none;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}.sp-footer button{min-height:42px;font-size:13px}.sp-status{font-size:12px;min-height:16px}.sp-panel-tabs{display:flex;gap:6px}.sp-panel-tabs button{flex:1;min-height:40px;font-size:13px}.sp-panel-tabs [aria-pressed=true]{border-color:var(--primary)}.sp-card label{font-size:12px}.sp-card input[type=number]{width:65px;min-height:36px}.sp-empty{padding:20px 0}.sp-notice{padding:8px;background:var(--card-strong);border-radius:8px;font-size:12px}.sp-file{display:flex;align-items:center;justify-content:center;cursor:pointer}
++ </style><header class="sp-head"><h2>${companion?'Выбор для Mac':'Выборочная печать'}</h2><button class="secondary-button compact" type="button" data-close aria-label="Закрыть">×</button></header><p data-title></p><details class="sp-connection" ><summary>Выбор на другом устройстве · с входом в CRM</summary><p>Откройте QR на iPhone и войдите в тот же аккаунт CRM. Выбор появится здесь.</p><img src="${esc(qrImage(link.href))}" alt="QR для подключения телефона" /><input class="input" data-link readonly aria-label="Ссылка для телефона" value="${esc(link.href)}" /><button class="secondary-button compact" type="button" data-copy-link>Скопировать ссылку</button></details><input class="input sp-search" type="search" data-search placeholder="Фамилия или имя" aria-label="Поиск по фамилии или имени" autocomplete="off" /><div class="sp-tools"><button class="secondary-button" type="button" data-camera>Камера Mac</button>${!companion?'<button class="secondary-button" type="button" data-phone-camera>Камера телефона</button>':''}<label class="secondary-button sp-file">Фото QR<input type="file" accept="image/*" capture="environment" data-file hidden /></label><button class="secondary-button" type="button" data-refresh>Обновить</button></div><aside class="sp-notice" data-phone-connection hidden><p>Разблокируйте телефон и откройте <a href="/camera/" target="_blank" rel="noopener" data-camera-url></a></p><p>Введите код: <strong data-phone-code style="font-size:24px;letter-spacing:.12em"></strong></p><p data-phone-status role="status">Ожидаем телефон…</p><button class="secondary-button compact" type="button" data-phone-disconnect>Отключить телефон</button></aside><div class="sp-camera" hidden><video class="sp-video" playsinline muted></video><div class="sp-row"><select class="select" data-device aria-label="Выбор камеры"></select><button class="secondary-button compact" type="button" data-stop>Выключить</button></div></div><div class="sp-panel-tabs"><button class="secondary-button" data-tab="add" type="button" aria-pressed="true">Добавить</button><button class="secondary-button" data-tab="selected" type="button" aria-pressed="false">Выбрано · 0</button></div><p class="sp-notice" data-notice hidden role="status"></p><div class="sp-body" data-body></div><details><summary style="font-size:12px">Ввести QR / штрихкод вручную</summary><form class="sp-row" data-manual><input class="input" name="code" aria-label="Код фотографии" required /><button class="secondary-button compact" type="submit">Найти</button></form></details><footer class="sp-footer"><p class="sp-status" data-status role="status"></p><button class="primary-button" data-review type="button" disabled>${companion?'Выбор завершён':'Проверить · печать / PDF'}</button></footer></section>`;
++ let remoteCamera=null;let paired=false,mode='add',target=null,closed=false,stream=null,frame=0,generation=0,lastRaw='',emptyFrames=0,history,busy=false,lastSignature='';
+  const body=panel.querySelector('[data-body]'),notice=panel.querySelector('[data-notice]'),search=panel.querySelector('[data-search]');
+  const showNotice=text=>{notice.hidden=!text;notice.textContent=text;};
+  const store=createPrintSelectionStore({id,request,storage,key:storageKey,changed:(snapshot,message,pending)=>{
+@@ -35,28 +36,43 @@
+   for(const button of body.querySelectorAll('[data-add]'))button.onclick=()=>{const work=store.snapshot.works.find(w=>w.id===button.dataset.add),item=store.snapshot.items.find(i=>i.workId===work.id);if(item&&!item.stale&&!item.blocked){showNotice('Эта услуга уже в списке. Повторный QR не добавляет ещё один экземпляр.');return;}change(work,true);};
+   for(const button of body.querySelectorAll('[data-remove]'))button.onclick=()=>change(store.snapshot.works.find(w=>w.id===button.dataset.remove),false);
+   for(const input of body.querySelectorAll('[data-copies]'))input.onchange=()=>{const count=Number(input.value);if(!Number.isInteger(count)||count<1||count>99){input.reportValidity();return;}change(store.snapshot.works.find(w=>w.id===input.dataset.copies),true,count);};
+-  body.querySelector('[data-next]')?.addEventListener('click',()=>{target=null;showNotice('');render();search.focus({preventScroll:true});});body.scrollTop=scroll;
++  body.querySelector('[data-next]')?.addEventListener('click',()=>{target=null;remoteCamera?.notice('scanning');showNotice('');render();search.focus({preventScroll:true});});body.scrollTop=scroll;
+  }
+  function change(work,selected,copies=1){try{store.select(work,selected,copies);showNotice(selected?'Добавлено для печати · '+work.title:'Убрано из списка');}catch{showNotice('Не удалось сохранить выбор на устройстве. Освободите место и повторите.');}}
+- function code(raw){const snapshot=store.snapshot;if(!snapshot)return showNotice('Дождитесь загрузки проекта.');const result=resolveSelectiveCode(raw,snapshot,{parseWork,studentTokens});if(result.kind==='unknown')return showNotice('Код не найден в этом проекте. Найдите ребёнка по фамилии.');stop();target=result;mode='add';search.value='';tabs();showNotice('Выберите услугу на фотографии.');render();}
++ function code(raw){const snapshot=store.snapshot;if(!snapshot)return showNotice('Дождитесь загрузки проекта.');const result=resolveSelectiveCode(raw,snapshot,{parseWork,studentTokens});if(result.kind==='unknown')return showNotice('Код не найден в этом проекте. Найдите ребёнка по фамилии.');if(remoteCamera)remoteCamera.notice('recognized');else stop();target=result;mode='add';search.value='';tabs();showNotice('Выберите услугу на фотографии.');render();}
+  const tabs=()=>{for(const button of panel.querySelectorAll('[data-tab]'))button.setAttribute('aria-pressed',String(button.dataset.tab===mode));};
+  for(const button of panel.querySelectorAll('[data-tab]'))button.onclick=()=>{mode=button.dataset.tab;tabs();render();};
+  search.oninput=()=>{panel.querySelector('.sp-connection').open=false;target=null;showNotice('');render();};
+  panel.querySelector('[data-manual]').onsubmit=event=>{event.preventDefault();code(new FormData(event.target).get('code'));event.target.reset();};
+  panel.querySelector('[data-file]').onchange=async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{const raw=await decodeFile(file);if(!closed)raw?code(raw):showNotice('QR не распознан. Снимите код крупнее или используйте поиск.');}catch{showNotice('Не удалось прочитать QR. Используйте поиск по фамилии.');}};
+- function stop(){generation++;cancelAnimationFrame(frame);stream?.getTracks().forEach(t=>t.stop());stream=null;panel.querySelector('.sp-camera').hidden=true;}
++ function stop(){remoteCamera?.stop();remoteCamera=null;panel.querySelector('[data-phone-connection]').hidden=true;generation++;cancelAnimationFrame(frame);stream?.getTracks().forEach(t=>t.stop());stream=null;panel.querySelector('.sp-camera').hidden=true;}
++ function watch(detector,token){const video=panel.querySelector('video');const canvas=document.createElement('canvas');let previous=0;const tick=async time=>{if(closed||token!==generation||!stream)return;if(!target&&mode==='add'&&!search.value&&time-previous>350){previous=time;const raw=await detectFrame(video,detector,canvas).catch(()=>'');if(closed||token!==generation)return;if(!raw){if(++emptyFrames>=2)lastRaw='';}else{emptyFrames=0;if(raw!==lastRaw){lastRaw=raw;code(raw);}}}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);}
+  async function start(deviceId=''){
+   panel.querySelector('.sp-connection').open=false;target=null;mode='add';search.value='';lastRaw='';emptyFrames=0;tabs();showNotice('Наведите камеру на QR фотографии.');render();stop();const token=generation;
+-  try{const detector=await createDetector(),acquired=await navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}},audio:false});if(closed||token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;const video=panel.querySelector('video');video.srcObject=stream;panel.querySelector('.sp-camera').hidden=false;await video.play();
+-   const select=panel.querySelector('[data-device]'),devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');select.replaceChildren(...devices.map((d,i)=>new Option(d.label||`Камера ${i+1}`,d.deviceId)));select.value=stream.getVideoTracks()[0]?.getSettings().deviceId||'';
+-   const canvas=document.createElement('canvas');let previous=0;const tick=async time=>{if(closed||token!==generation||!stream)return;if(!target&&mode==='add'&&!search.value&&time-previous>350){previous=time;const raw=await detectFrame(video,detector,canvas).catch(()=>'');if(closed||token!==generation)return;if(!raw){if(++emptyFrames>=2)lastRaw='';}else{emptyFrames=0;if(raw!==lastRaw){lastRaw=raw;code(raw);}}}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
++  try{const detector=await createDetector(),acquired=await navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}},audio:false});if(closed||token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;const video=panel.querySelector('video');video.style.objectFit='cover';video.srcObject=stream;panel.querySelector('.sp-camera').hidden=false;await video.play();
++   panel.querySelector('[data-device]').hidden=false;const select=panel.querySelector('[data-device]'),devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');select.replaceChildren(...devices.map((d,i)=>new Option(d.label||`Камера ${i+1}`,d.deviceId)));select.value=stream.getVideoTracks()[0]?.getSettings().deviceId||'';
++   watch(detector,token);
+   }catch{stop();showNotice('Камера недоступна. Разрешите доступ или используйте фото QR / поиск.');}
+  }
++ async function connectPhone(){
++  stop();target=null;mode='add';search.value='';lastRaw='';tabs();render();panel.querySelector('.sp-connection').open=false;const token=generation,button=panel.querySelector('[data-phone-camera]');if(button)button.disabled=true;
++  try{
++   const session=await phoneCameraRequest('POST','',{selectionId:id});if(closed||token!==generation){void phoneCameraRequest('POST',session.id,{action:'stop'}).catch(()=>{});return;}
++   const detector=await createDetector();if(closed||token!==generation){void phoneCameraRequest('POST',session.id,{action:'stop'}).catch(()=>{});return;}
++   panel.querySelector('[data-phone-connection]').hidden=false;const url=panel.querySelector('[data-camera-url]');url.href=new URL('/camera/',location.origin).href;url.textContent=location.host+'/camera';panel.querySelector('[data-phone-code]').textContent=session.code.slice(0,4)+' '+session.code.slice(4);
++   remoteCamera=receivePhoneCamera({session,onStatus:message=>{if(!closed&&token===generation)panel.querySelector('[data-phone-status]').textContent=message;},onStream:async acquired=>{
++    if(closed||token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;const video=panel.querySelector('video');video.style.objectFit='contain';video.srcObject=stream;panel.querySelector('.sp-camera').hidden=false;panel.querySelector('[data-device]').hidden=true;
++    try{await video.play();if(!closed&&token===generation)watch(detector,token);}catch{showNotice('Не удалось открыть изображение камеры. Подключите телефон заново.');}
++   }});
++  }catch(error){showNotice(error.message);}finally{if(button?.isConnected)button.disabled=false;}
++ }
++ panel.querySelector('[data-phone-camera]')?.addEventListener('click',()=>void connectPhone());panel.querySelector('[data-phone-disconnect]').onclick=()=>{stop();showNotice('Телефон отключён.');};
+  panel.querySelector('[data-camera]').onclick=()=>void start();panel.querySelector('[data-stop]').onclick=stop;panel.querySelector('[data-device]').onchange=event=>void start(event.target.value);
+  panel.querySelector('[data-refresh]').onclick=()=>void store.sync(true);panel.querySelector('[data-copy-link]').onclick=async()=>{try{await navigator.clipboard.writeText(link.href);showNotice('Ссылка скопирована. Откройте её на iPhone.');}catch{panel.querySelector('[data-link]').select();showNotice('Скопируйте выделенную ссылку и откройте на iPhone.');}};
+  panel.querySelector('[data-review]').onclick=async()=>{if(companion){store.ready();return;}busy=true;panel.querySelector('[data-review]').disabled=true;try{await store.sync(true);if(store.pending)throw new Error('Дождитесь сохранения списка в облаке.');const snapshot=store.snapshot;selectedPrintWorks(snapshot);if(!closed)await onReview(snapshot,()=>!closed);}catch(error){showNotice(error.message);}finally{busy=false;panel.querySelector('[data-review]').disabled=!store.snapshot?.items.length||!!store.pending||store.snapshot?.items.some(i=>i.stale||i.blocked);}};
++ const leaveCamera=()=>stop();window.addEventListener('pagehide',leaveCamera);
+  const reconnect=()=>void store.sync(true);window.addEventListener('online',reconnect);window.addEventListener('focus',reconnect);
+- const finish=()=>{if(closed)return;closed=true;stop();store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
++ const finish=()=>{if(closed)return;closed=true;stop();window.removeEventListener('pagehide',leaveCamera);store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
+  const close=()=>history?history.close():finish();panel.querySelector('[data-close]').onclick=close;panel.onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}if(event.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,summary,a')].filter(n=>!n.disabled&&n.getClientRects().length);if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===nodes.at(-1)){event.preventDefault();nodes[0]?.focus();}}};
+  document.body.append(panel);history=mountHistory?.(finish);render();void store.sync(true);search.focus({preventScroll:true});return panel;
+ }
+--- a/server/app.py
++++ b/server/app.py
+@@ -1,3 +1,4 @@
++import phone_camera
+ import storage_inventory
+ """Private CRM accounts and immutable project transfers. Run behind Caddy/Gunicorn."""
+ from types import SimpleNamespace
+@@ -150,7 +151,7 @@
+     def route(self):
+         if self.method not in ('GET','HEAD'):
+             origin=self.e.get('HTTP_ORIGIN')
+-            allowed={parent_orders.ORIGIN} if self.path.startswith('/api/v1/public/') else {ORIGIN,parent_orders.ORIGIN} if self.path in ('/api/v1/login','/api/v1/logout') or self.path.startswith('/api/v1/studio/') else {ORIGIN}
++            allowed={ORIGIN} if self.path.startswith('/api/v1/public/camera/') else {parent_orders.ORIGIN} if self.path.startswith('/api/v1/public/') else {ORIGIN,parent_orders.ORIGIN} if self.path in ('/api/v1/login','/api/v1/logout') or self.path.startswith('/api/v1/studio/') else {ORIGIN}
+             fail(origin not in allowed,403,'Недопустимый источник запроса')
+         path=self.path.removeprefix('/api/v1')
+         if path.startswith('/public/media/') and self.method=='GET':
+@@ -161,6 +162,8 @@
+             return Media(target)
+         if path=='/health' and self.method=='GET': return {'ok':True}
+         with db() as c:
++            if path.startswith('/public/camera/'):
++                return phone_camera.public_route(self,c,path,SimpleNamespace(**globals()))
+             if path.startswith('/public/'):
+                 return parent_orders.route(self,c,None,path,SimpleNamespace(**globals()))
+             if path=='/login' and self.method=='POST':
+--- a/server/sync_api.py
++++ b/server/sync_api.py
+@@ -1,3 +1,4 @@
++import phone_camera
+ from types import SimpleNamespace
+ import scan_sessions
+ import print_selection
+@@ -20,6 +21,7 @@
+  ''')
+  scan_sessions.initialize(c)
+  print_selection.initialize(c)
++ phone_camera.initialize(c)
+ 
+ def merge(base,local,remote,path=''):
+  """Merge disjoint edits; conflicting values remain untouched until explicit review."""
+@@ -138,6 +140,7 @@
+ def route(r,c,u,path,a):
+  parts=path.strip('/').split('/');kind=parts[1] if len(parts)>1 else ''
+  if kind=='scans' and len(parts)==2:return scan_sessions.route(r,c,u,a)
++ if kind=='phone-camera':return phone_camera.host_route(r,c,u,parts,a)
+  if kind=='print-selections':return print_selection.route(r,c,u,parts,a)
+  if kind=='record' and len(parts)==4 and r.method=='GET':
+   store=parts[2];a.fail(store not in ('media','finalWorks'),404,'Не найдено');rid=a.identifier(parts[3])
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v263";
++const CACHE_VERSION = "v264";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,39 +74,39 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=263",
+-  "./js/ui/group-scan-panel.js?v=263",
+-  "./js/ui/scan-photo-viewer.js?v=263",
+-  "./js/ui/group-scan-panel.js?v=263",
++  "./js/ui/scan-photo-viewer.js?v=264",
++  "./js/ui/group-scan-panel.js?v=264",
++  "./js/ui/scan-photo-viewer.js?v=264",
++  "./js/ui/group-scan-panel.js?v=264",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=263",
+-  "./js/services/individual-order.js?v=263",
++  "./js/services/service-positions.js?v=264",
++  "./js/services/individual-order.js?v=264",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=263",
++  "./js/services/sequence-navigation.js?v=264",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=263",
++  "./js/services/card-summary.js?v=264",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=263",
++  "./js/services/camera-options.js?v=264",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=263",
+-  "./js/services/deferred-final-work.js?v=263",
++  "./js/services/record-sync.js?v=264",
++  "./js/services/deferred-final-work.js?v=264",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=263",
++  "./js/services/sync-codec.js?v=264",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -114,49 +114,52 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=263",
++  "./styles.css?v=264",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=263",
++  "./js/core/app.js?v=264",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=263",
+-  "./js/services/navigation-history.js?v=263",
++  "./js/services/card-selection.js?v=264",
++  "./js/services/navigation-history.js?v=264",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=263",
+-  "./js/ui/scan-work-picker.js?v=263",
+-  "./js/ui/group-scan-panel.js?v=263",
++  "./js/services/roster-filters.js?v=264",
++  "./js/ui/scan-work-picker.js?v=264",
++  "./js/ui/group-scan-panel.js?v=264",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=263",
++  "./js/services/student-comments.js?v=264",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=263",
+-  "./js/ui/scan-photo-viewer.js?v=263",
++  "./js/services/image-delivery.js?v=264",
++  "./js/ui/scan-photo-viewer.js?v=264",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=263",
+-  "./js/services/group-scan.js?v=263",
++  "./js/ui/student-quick-actions.js?v=264",
++  "./js/services/group-scan.js?v=264",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=263",
+-  "./js/ui/project-print-picker.js?v=263",
++  "./js/services/print-selection.js?v=264",
++  "./js/ui/project-print-picker.js?v=264",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=263",
++  "./js/services/student-stage-icons.js?v=264",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=263",
++  "./js/ui/fulfillment-panel.js?v=264",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=263",
++  "./js/services/print-order.js?v=264",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+   "./js/services/scan-cloud.js",
+   "./js/services/selective-print.js",
+   "./js/ui/selective-print-panel.js",
++  "./js/services/phone-camera.js",
++  "./js/ui/phone-camera-sender.js",
++  "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=263",
++  "./js/services/fulfillment.js?v=264",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=263",
++  "./js/core/legacy-app.js?v=264",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -179,10 +182,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=263",
++  "./js/ui/photo-camera.js?v=264",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=263",
++  "./js/services/teacher-broadcast.js?v=264",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -224,7 +227,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=263",
++  "./js/services/parent-orders.js?v=264",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -236,12 +239,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=263",
++  "./js/services/finalwork-service.js?v=264",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=263",
++  "./js/services/export-filter-service.js?v=264",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -272,7 +275,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=263",
++  "./js/services/barcode-reader.js?v=264",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+@@ -305,6 +308,9 @@
+ self.addEventListener("fetch", (event) => {
+   if (event.request.method !== "GET") return;
+   const url = new URL(event.request.url);
++  if(url.origin===location.origin&&(url.pathname==='/camera'||url.pathname.startsWith('/camera/'))){
++    event.respondWith(fetch(event.request).then(async response=>{if(response.ok){const cache=await caches.open(CACHE_NAME);await cache.put(event.request,response.clone());}return response;}).catch(async()=>await caches.match(event.request)||new Response('<!doctype html><meta charset="utf-8"><p>Для камеры телефона нужен интернет. Подключитесь к сети и обновите страницу.</p>',{headers:{'Content-Type':'text/html; charset=utf-8'}})));return;
++  }
+   if (!url.pathname.startsWith('/api/')) {
+     event.respondWith((async () => {
+       const media = await caches.open('vakha-catalog-media-v1');

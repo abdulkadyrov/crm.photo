@@ -16,4 +16,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: python3 -m pip install "Pillow>=12.0,<14"
       - run: python3 -m unittest discover -s tests/server -v
