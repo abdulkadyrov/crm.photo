@@ -1,0 +1,314 @@
+--- a/index.html
++++ b/index.html
+@@ -9 +9 @@
+-    <link rel="stylesheet" href="./styles.css?v=261" />
++    <link rel="stylesheet" href="./styles.css?v=262" />
+@@ -70 +70 @@
+-    <script type="module" src="./js/core/app.js?v=261"></script>
++    <script type="module" src="./js/core/app.js?v=262"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v261";
++const CACHE_VERSION = "v262";
+@@ -77,4 +77,4 @@
+-  "./js/ui/scan-photo-viewer.js?v=261",
+-  "./js/ui/group-scan-panel.js?v=261",
+-  "./js/ui/scan-photo-viewer.js?v=261",
+-  "./js/ui/group-scan-panel.js?v=261",
++  "./js/ui/scan-photo-viewer.js?v=262",
++  "./js/ui/group-scan-panel.js?v=262",
++  "./js/ui/scan-photo-viewer.js?v=262",
++  "./js/ui/group-scan-panel.js?v=262",
+@@ -86,2 +86,2 @@
+-  "./js/services/service-positions.js?v=261",
+-  "./js/services/individual-order.js?v=261",
++  "./js/services/service-positions.js?v=262",
++  "./js/services/individual-order.js?v=262",
+@@ -89 +89 @@
+-  "./js/services/sequence-navigation.js?v=261",
++  "./js/services/sequence-navigation.js?v=262",
+@@ -91 +91 @@
+-  "./js/services/card-summary.js?v=261",
++  "./js/services/card-summary.js?v=262",
+@@ -95 +95 @@
+-  "./js/services/camera-options.js?v=261",
++  "./js/services/camera-options.js?v=262",
+@@ -101,2 +101,2 @@
+-  "./js/services/record-sync.js?v=261",
+-  "./js/services/deferred-final-work.js?v=261",
++  "./js/services/record-sync.js?v=262",
++  "./js/services/deferred-final-work.js?v=262",
+@@ -109 +109 @@
+-  "./js/services/sync-codec.js?v=261",
++  "./js/services/sync-codec.js?v=262",
+@@ -117 +117 @@
+-  "./styles.css?v=261",
++  "./styles.css?v=262",
+@@ -120 +120 @@
+-  "./js/core/app.js?v=261",
++  "./js/core/app.js?v=262",
+@@ -122,2 +122,2 @@
+-  "./js/services/card-selection.js?v=261",
+-  "./js/services/navigation-history.js?v=261",
++  "./js/services/card-selection.js?v=262",
++  "./js/services/navigation-history.js?v=262",
+@@ -125,3 +125,3 @@
+-  "./js/services/roster-filters.js?v=261",
+-  "./js/ui/scan-work-picker.js?v=261",
+-  "./js/ui/group-scan-panel.js?v=261",
++  "./js/services/roster-filters.js?v=262",
++  "./js/ui/scan-work-picker.js?v=262",
++  "./js/ui/group-scan-panel.js?v=262",
+@@ -129 +129 @@
+-  "./js/services/student-comments.js?v=261",
++  "./js/services/student-comments.js?v=262",
+@@ -132,2 +132,2 @@
+-  "./js/services/image-delivery.js?v=261",
+-  "./js/ui/scan-photo-viewer.js?v=261",
++  "./js/services/image-delivery.js?v=262",
++  "./js/ui/scan-photo-viewer.js?v=262",
+@@ -135,2 +135,2 @@
+-  "./js/ui/student-quick-actions.js?v=261",
+-  "./js/services/group-scan.js?v=261",
++  "./js/ui/student-quick-actions.js?v=262",
++  "./js/services/group-scan.js?v=262",
+@@ -139,2 +139,2 @@
+-  "./js/services/print-selection.js?v=261",
+-  "./js/ui/project-print-picker.js?v=261",
++  "./js/services/print-selection.js?v=262",
++  "./js/ui/project-print-picker.js?v=262",
+@@ -142 +142 @@
+-  "./js/services/student-stage-icons.js?v=261",
++  "./js/services/student-stage-icons.js?v=262",
+@@ -145 +145 @@
+-  "./js/ui/fulfillment-panel.js?v=261",
++  "./js/ui/fulfillment-panel.js?v=262",
+@@ -147 +147 @@
+-  "./js/services/print-order.js?v=261",
++  "./js/services/print-order.js?v=262",
+@@ -151,0 +152,2 @@
++  "./js/services/selective-print.js",
++  "./js/ui/selective-print-panel.js",
+@@ -153 +155 @@
+-  "./js/services/fulfillment.js?v=261",
++  "./js/services/fulfillment.js?v=262",
+@@ -157 +159 @@
+-  "./js/core/legacy-app.js?v=261",
++  "./js/core/legacy-app.js?v=262",
+@@ -180 +182 @@
+-  "./js/ui/photo-camera.js?v=261",
++  "./js/ui/photo-camera.js?v=262",
+@@ -183 +185 @@
+-  "./js/services/teacher-broadcast.js?v=261",
++  "./js/services/teacher-broadcast.js?v=262",
+@@ -225 +227 @@
+-  "./js/services/parent-orders.js?v=261",
++  "./js/services/parent-orders.js?v=262",
+@@ -237 +239 @@
+-  "./js/services/finalwork-service.js?v=261",
++  "./js/services/finalwork-service.js?v=262",
+@@ -242 +244 @@
+-  "./js/services/export-filter-service.js?v=261",
++  "./js/services/export-filter-service.js?v=262",
+@@ -273 +275 @@
+-  "./js/services/barcode-reader.js?v=261",
++  "./js/services/barcode-reader.js?v=262",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=261");
++  await import("./legacy-app.js?v=262");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1 +1,3 @@
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=261';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=262';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=262';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=262';
+@@ -3,12 +5,12 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=261";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=261";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=261";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=261";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=261";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=261";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=261";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=261";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=261";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=261";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=261";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=261";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=262";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=262";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=262";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=262";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=262";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=262";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=262";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=262";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=262";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=262";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=262";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=262";
+@@ -17,2 +19,2 @@
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=261";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=261";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=262";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=262";
+@@ -21,2 +23,2 @@
+-import {createNavigationHistory} from "../services/navigation-history.js?v=261";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=261";
++import {createNavigationHistory} from "../services/navigation-history.js?v=262";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=262";
+@@ -24 +26 @@
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=261";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=262";
+@@ -27,3 +29,3 @@
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=261";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=261";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=261";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=262";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=262";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=262";
+@@ -31,2 +33,2 @@
+-import { nextInSequence } from "../services/sequence-navigation.js?v=261";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=261";
++import { nextInSequence } from "../services/sequence-navigation.js?v=262";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=262";
+@@ -40 +42 @@
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=261";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=262";
+@@ -43,2 +45,2 @@
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=261";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=261";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=262";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=262";
+@@ -46 +48 @@
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=261";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=262";
+@@ -51 +53 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=261";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=262";
+@@ -54 +56 @@
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=261";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=262";
+@@ -56,2 +58,2 @@
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=261";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=261";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=262";
++import { printCodeLayout } from "../services/print-code-layout.js?v=262";
+@@ -80 +82 @@
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=261";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=262";
+@@ -85 +87 @@
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=261";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=262";
+@@ -505,0 +508,2 @@
++  const printSelectionId=new URLSearchParams(location.search).get('printSelection');
++  if(printSelectionId&&/^[A-Za-z0-9_-]{1,160}$/.test(printSelectionId))void showSelectivePrint({sessionId:printSelectionId,companion:true});
+@@ -1422 +1426 @@
+-            <button data-project-print-picker="${project.id}" type="button">Печать · PDF</button><button data-export-project="${project.id}" type="button">ZIP проекта</button><button data-cloud-project="${project.id}" type="button">Отправить на сервер</button>
++            <button data-project-print-picker="${project.id}" type="button">Печать · PDF</button><button data-selective-print-project="${project.id}" type="button">Выборочная печать · телефон / сканер</button><button data-export-project="${project.id}" type="button">ZIP проекта</button><button data-cloud-project="${project.id}" type="button">Отправить на сервер</button>
+@@ -1524 +1528 @@
+-        <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button>
++        <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button><button class="secondary-button equal-button" data-selective-print-project="${activeProject}" type="button">Выборочная печать</button>
+@@ -1782 +1786 @@
+-              <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button>
++              <button data-print-final-class="${klass.id}" type="button">Печать результатов с QR</button><button data-selective-print-class="${klass.id}" type="button">Выборочная печать · телефон / сканер</button>
+@@ -5160,0 +5165 @@
++  view.querySelectorAll('[data-selective-print-project],[data-selective-print-class]').forEach(button=>button.onclick=()=>showSelectivePrint({projectId:button.dataset.selectivePrintProject,classId:button.dataset.selectivePrintClass},button));
+@@ -8139 +8144 @@
+-    openProjectPrintPicker({project,groups,students:orderedPrintStudents(groups,state.data.students,printStudentAudiences),works:printWorksForSelection().filter(work=>ids.has(work.groupId||studentById(work.studentId)?.classId)),onReview:options=>reviewFinalWorksForPrint({projectId:project.id,...options})});
++    openProjectPrintPicker({project,groups,students:orderedPrintStudents(groups,state.data.students,printStudentAudiences),works:printWorksForSelection().filter(work=>ids.has(work.groupId||studentById(work.studentId)?.classId)),onSelective:()=>showSelectivePrint({projectId:project.id}),onReview:options=>reviewFinalWorksForPrint({projectId:project.id,...options})});
+@@ -8171 +8176,25 @@
+-async function reviewFinalWorksForPrint({ classId = "", projectId = "", studentIds = null, separators = true } = {}) {
++async function showSelectivePrint({projectId='',classId='',sessionId='',companion=false}={},trigger=document.activeElement) {
++  if(!cloudRequired||!cloudAccount())return notify('Для подключения телефона войдите в облачную CRM.');
++  const accountId=cloudAccount().id,origin=captureDialogReturn(document,window,trigger);
++  const request=async(method,id,body,revision)=>{
++    if(cloudAccount()?.id!==accountId){const error=new Error('Войдите в тот же аккаунт CRM');error.status=401;throw error;}
++    const suffix=id?'/'+encodeURIComponent(id):'';
++    const response=await fetch('/api/v1/sync/print-selections'+suffix+(method==='GET'&&revision!==undefined?'?revision='+revision:''),{method,credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(20000),headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
++    if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||'Не удалось открыть список печати');error.status=response.status;throw error;}
++    return response.json();
++  };
++  if(trigger?.disabled)return;if(trigger)trigger.disabled=true;
++  try{
++    if(!sessionId){const group=classById(classId);projectId=projectId||group?.projectId;if(!projectId)throw new Error('Проект не найден');const snapshot=await request('POST','',{projectId,groupId:classId});sessionId=snapshot.id;localStorage.setItem(`crm-print-selection-v1:${accountId}:${sessionId}`,JSON.stringify({snapshot,pending:[]}));}
++    openSelectivePrintPanel({id:sessionId,companion,request,storageKey:`crm-print-selection-v1:${accountId}:${sessionId}`,qrImage:url=>`data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(url))}`,parseWork:parseFinalWorkPrintQr,studentTokens:qrPayloadCandidates,createDetector:createQrDetector,detectFrame:detectQrFromVideo,decodeFile:detectQrFromImageFile,
++      mountHistory:finish=>mountDialogHistory({id:'selective-print-'+crypto.randomUUID(),restore:finish}),restore:origin,
++      onReview:async(snapshot,isOpen)=>{
++        const selectedWorks=await loadSelectivePrintAssets(snapshot,{fetcher:(url,options)=>{if(cloudAccount()?.id!==accountId)throw new Error('Аккаунт изменился. Откройте список заново.');return fetch(url,options);}});
++        if(!isOpen())return;
++        return reviewFinalWorksForPrint({projectId:snapshot.projectId,classId:snapshot.groupId,selectedWorks,selectedStudents:snapshot.students,copyCounts:new Map(snapshot.items.map(i=>[i.workId,i.copies])),separators:false,selectionHistory:true,canOpen:isOpen});
++      }});
++  }catch(error){notify(error.message);}finally{if(trigger?.isConnected)trigger.disabled=false;}
++}
++
++async function reviewFinalWorksForPrint({ classId = "", projectId = "", studentIds = null, separators = true, selectedWorks = null, selectedStudents = null, copyCounts = null, selectionHistory = false, canOpen = ()=>true } = {}) {
++  const printStudentById=id=>selectedStudents?.find(student=>student.id===id)||studentById(id);
+@@ -8174,2 +8203,2 @@
+-  const works = orderFinalWorksForPrint(printWorksForSelection().filter(work => {
+-    const groupId = work.groupId || studentById(work.studentId)?.classId;
++  const works = orderFinalWorksForPrint((selectedWorks||printWorksForSelection()).filter(work => {
++    const groupId = work.groupId || printStudentById(work.studentId)?.classId;
+@@ -8180 +8209 @@
+-    students: state.data.students,
++    students: selectedStudents||state.data.students,
+@@ -8198 +8227 @@
+-      const signature=printAssetSignature(work,finalWorkPrintSettings(),finalWorkTextQrPayload(work));
++      const signature=printAssetSignature(work,finalWorkPrintSettings(),finalWorkTextQrPayload(work))+(selectedWorks?'|selected:'+work._selectedImageHash:'');
+@@ -8212 +8241 @@
+-      const original=await originalPhotoForPrintReview(work);
++      const original=selectedWorks?work.printOriginalBlob:await originalPhotoForPrintReview(work);
+@@ -8220,0 +8250 @@
++  if(!canOpen())return;
+@@ -8234 +8264 @@
+-      const student = studentById(work.studentId);
++      const student = printStudentById(work.studentId);
+@@ -8236 +8266 @@
+-      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" data-print-default="${isPrintSelectedByDefault(work)}" ${needsCorrection(work) ? 'data-needs-correction="true"' : ''} ${isPrintSelectedByDefault(work) ? 'checked' : ''} /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — ${escapeHtml(printStatusLabel(work))}${needsCorrection(work) ? ": " + escapeHtml(work.correction.comment) : ''}</span></label><div class="print-review-pair" style="--print-review-ratio: ${printAssets.get(work.id).orientation === "horizontal" ? "3508 / 2480" : "2480 / 3508"}"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
++      return `<article class="panel"><label class="checkbox-row"><input type="checkbox" data-review-work="${escapeAttr(work.id)}" data-print-default="${selectedWorks?!needsCorrection(work):isPrintSelectedByDefault(work)}" ${needsCorrection(work) ? 'data-needs-correction="true"' : ''} ${(selectedWorks?!needsCorrection(work):isPrintSelectedByDefault(work)) ? 'checked' : ''} /><span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""} · ${classById(work.groupId || student?.classId)?.name || ""} · ${finalWorkTitle(work)}`)} — ${escapeHtml(printStatusLabel(work))}${needsCorrection(work) ? ": " + escapeHtml(work.correction.comment) : ''}</span></label><div class="print-review-pair" style="--print-review-ratio: ${printAssets.get(work.id).orientation === "horizontal" ? "3508 / 2480" : "2480 / 3508"}"><div><h3>Оригинал</h3>${image(original, "Оригинал")}</div><div><h3>Печать A4</h3>${image(printAssets.get(work.id).jpgBlob, "Результат A4")}</div></div></article>`;
+@@ -8250,2 +8280,3 @@
+-  const close = () => {
+-    if (busy) return;
++  let reviewHistory;
++  const remove = () => {
++    if (busy&&!selectionHistory) return;
+@@ -8255,0 +8287 @@
++  const close=()=>{if(busy)return;reviewHistory?reviewHistory.close():remove();};
+@@ -8270 +8302 @@
+-  const selectedPages = () => groupedPrintPages(finalWorkSelectedPrintPages(works, printAssets, new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork))), work=>work.groupId || studentById(work.studentId)?.classId, separators);
++  const selectedPages = () => groupedPrintPages(finalWorkSelectedPrintPages(works, printAssets, new Set(inputs.filter(input => input.checked).map(input => input.dataset.reviewWork)),copyCounts), work=>work.groupId || printStudentById(work.studentId)?.classId, separators);
+@@ -8290,0 +8323 @@
++      if(selectionHistory&&!panel.isConnected)return;
+@@ -8300,0 +8334 @@
++  if(selectionHistory)reviewHistory=mountDialogHistory({id:"selected-print-review-"+crypto.randomUUID(),restore:remove});
+@@ -8305 +8339 @@
+-function finalWorkSelectedPrintPages(works, printAssets, selectedIds) {
++function finalWorkSelectedPrintPages(works, printAssets, selectedIds, copyCounts=null) {
+@@ -8309 +8343 @@
+-    const quantity = studentServiceQuantity(studentById(work.studentId), work.serviceId);
++    const quantity = copyCounts?.get(work.id)||studentServiceQuantity(studentById(work.studentId), work.serviceId);
+--- a/js/ui/project-print-picker.js
++++ b/js/ui/project-print-picker.js
+@@ -1 +1 @@
+-import { summarizePrintWorks } from "../services/print-selection.js?v=240";
++import { summarizePrintWorks } from "../services/print-selection.js?v=262";
+@@ -3 +3 @@
+-export function openProjectPrintPicker({project,groups,students,works,onReview}) {
++export function openProjectPrintPicker({project,groups,students,works,onReview,onSelective}) {
+@@ -10 +10 @@
+-  dialog.innerHTML=`<section class="qr-panel project-print-picker" role="dialog" aria-modal="true" aria-label="Печать проекта"><div class="cloud-head"><h2>Печать проекта</h2><button class="secondary-button compact" data-close type="button">Закрыть</button></div><p>${esc(project.name)}</p><div class="toolbar"><button data-all type="button" class="secondary-button compact">Выбрать ненапечатанные</button><button data-none type="button" class="secondary-button compact">Снять выбор</button></div><p data-count role="status"></p><div class="project-print-groups">${groups.map(group=>{
++  dialog.innerHTML=`<section class="qr-panel project-print-picker" role="dialog" aria-modal="true" aria-label="Печать проекта"><div class="cloud-head"><h2>Печать проекта</h2><button class="secondary-button compact" data-close type="button">Закрыть</button></div><p>${esc(project.name)}</p>${onSelective?'<button class="secondary-button" data-selective type="button">Выборочная печать · iPhone / сканер / поиск</button>':''}<div class="toolbar"><button data-all type="button" class="secondary-button compact">Выбрать ненапечатанные</button><button data-none type="button" class="secondary-button compact">Снять выбор</button></div><p data-count role="status"></p><div class="project-print-groups">${groups.map(group=>{
+@@ -14,0 +15 @@
++  dialog.querySelector('[data-selective]')?.addEventListener('click',onSelective);
+--- a/server/sync_api.py
++++ b/server/sync_api.py
+@@ -2,0 +3 @@
++import print_selection
+@@ -20,0 +22 @@
++ print_selection.initialize(c)
+@@ -138,0 +141 @@
++ if kind=='print-selections':return print_selection.route(r,c,u,parts,a)
