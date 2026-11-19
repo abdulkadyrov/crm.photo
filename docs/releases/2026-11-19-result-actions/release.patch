@@ -1,0 +1,431 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=251" />
++    <link rel="stylesheet" href="./styles.css?v=254" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=251"></script>
++    <script type="module" src="./js/core/app.js?v=254"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v251";
++const CACHE_VERSION = "v254";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,39 +74,39 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=251",
+-  "./js/ui/group-scan-panel.js?v=251",
+-  "./js/ui/scan-photo-viewer.js?v=251",
+-  "./js/ui/group-scan-panel.js?v=251",
++  "./js/ui/scan-photo-viewer.js?v=254",
++  "./js/ui/group-scan-panel.js?v=254",
++  "./js/ui/scan-photo-viewer.js?v=254",
++  "./js/ui/group-scan-panel.js?v=254",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=251",
+-  "./js/services/individual-order.js?v=251",
++  "./js/services/service-positions.js?v=254",
++  "./js/services/individual-order.js?v=254",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=251",
++  "./js/services/sequence-navigation.js?v=254",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=251",
++  "./js/services/card-summary.js?v=254",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=251",
++  "./js/services/camera-options.js?v=254",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=251",
+-  "./js/services/deferred-final-work.js?v=251",
++  "./js/services/record-sync.js?v=254",
++  "./js/services/deferred-final-work.js?v=254",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=251",
++  "./js/services/sync-codec.js?v=254",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -114,43 +114,43 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=251",
++  "./styles.css?v=254",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=251",
++  "./js/core/app.js?v=254",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=251",
+-  "./js/services/navigation-history.js?v=251",
++  "./js/services/card-selection.js?v=254",
++  "./js/services/navigation-history.js?v=254",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=251",
+-  "./js/ui/scan-work-picker.js?v=251",
+-  "./js/ui/group-scan-panel.js?v=251",
++  "./js/services/roster-filters.js?v=254",
++  "./js/ui/scan-work-picker.js?v=254",
++  "./js/ui/group-scan-panel.js?v=254",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=251",
++  "./js/services/student-comments.js?v=254",
+   "./js/core/legacy-app.js",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=251",
+-  "./js/services/group-scan.js?v=251",
++  "./js/ui/student-quick-actions.js?v=254",
++  "./js/services/group-scan.js?v=254",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=251",
+-  "./js/ui/project-print-picker.js?v=251",
++  "./js/services/print-selection.js?v=254",
++  "./js/ui/project-print-picker.js?v=254",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=251",
++  "./js/services/student-stage-icons.js?v=254",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=251",
++  "./js/ui/fulfillment-panel.js?v=254",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=251",
++  "./js/services/print-order.js?v=254",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=251",
++  "./js/services/fulfillment.js?v=254",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=251",
++  "./js/core/legacy-app.js?v=254",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -173,10 +173,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=251",
++  "./js/ui/photo-camera.js?v=254",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=251",
++  "./js/services/teacher-broadcast.js?v=254",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -218,7 +218,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=251",
++  "./js/services/parent-orders.js?v=254",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -230,12 +230,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=251",
++  "./js/services/finalwork-service.js?v=254",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=251",
++  "./js/services/export-filter-service.js?v=254",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -266,7 +266,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=251",
++  "./js/services/barcode-reader.js?v=254",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=251");
++  await import("./legacy-app.js?v=254");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,32 +1,32 @@
+-import { enhanceScanPhotoPair } from "../ui/scan-photo-viewer.js?v=251";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=251";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=251";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=251";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=251";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=251";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=251";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=251";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=251";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=251";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=251";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=254";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=254";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=254";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=254";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=254";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=254";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=254";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=254";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=254";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=254";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=254";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=251";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=251";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=254";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=254";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=251";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=251";
++import {createNavigationHistory} from "../services/navigation-history.js?v=254";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=254";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=251";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=254";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=251";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=251";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=251";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=254";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=254";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=254";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=251";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=251";
++import { nextInSequence } from "../services/sequence-navigation.js?v=254";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=254";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -34,24 +34,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=251";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=254";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=251";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=251";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=254";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=254";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=251";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=254";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=251";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=254";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=251";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=254";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=251";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=251";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=254";
++import { printCodeLayout } from "../services/print-code-layout.js?v=254";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -74,12 +74,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=251";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=254";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=251";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=254";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+@@ -1131,6 +1131,7 @@
+ }
+ 
+ function render() {
++  const openResultMenus = Array.from(view.querySelectorAll('.final-result-menu[open]')).map(menu => menu.querySelector('[data-open-final-work]')?.dataset.openFinalWork).filter(Boolean);
+   if (state.route !== "student") releaseStudentMediaPreviews();
+   const prevScrollY = window.scrollY;
+   const prevRoute = state.lastRenderedRoute;
+@@ -1150,6 +1151,9 @@
+     student: renderStudent
+   };
+   (renderers[state.route] || renderHome)();
++  view.querySelectorAll('.final-result-menu').forEach(menu => {
++    if (openResultMenus.includes(menu.querySelector('[data-open-final-work]')?.dataset.openFinalWork)) menu.open = true;
++  });
+   addContextBackButton();
+   view.focus({ preventScroll: true });
+   if (state.preserveScroll || prevRoute === state.route) window.scrollTo(0, prevScrollY);
+@@ -2673,6 +2677,8 @@
+   studentMediaPreviewUrls.clear();
+ }
+ 
++const expandedFinalResultMenus = new Set();
++
+ function finalResultCard(work) {
+   let arUrl = "";
+   try { const parsed = new URL(work.viewerUrl); if (parsed.protocol === "https:" && parsed.hostname === "khanzama.ru" && parsed.pathname.startsWith("/ar.photo/")) arUrl = parsed.href; } catch {}
+@@ -2689,15 +2695,16 @@
+         <span class="status-pill ${finalWorkStatusClass(work.status)}">${escapeHtml(finalWorkStatusLabel(work.status))}</span>
+         ${needsCorrection(work) ? `<span class="status-pill unpaid">На исправлении</span><small>${escapeHtml(work.correction.comment)}</small>` : ''}
+       </div>
+-      <div class="final-result-actions">
++      <details class="final-result-menu" data-final-result-menu="${escapeAttr(work.id)}" ${expandedFinalResultMenus.has(work.id) ? "open" : ""}><summary>Действия</summary><div class="final-result-actions">
+         <button class="secondary-button compact" data-open-final-work="${work.id}" data-final-work-view="result" type="button">Посмотреть</button>
++        <button class="secondary-button compact" data-open-final-work="${work.id}" data-final-work-view="compare" type="button">Сравнить</button>
+         <button class="secondary-button compact" data-open-fulfillment-student="${work.studentId}" type="button">Выдача / исправления</button>
+         <button class="secondary-button compact" data-download-final-work="${work.id}" type="button">Скачать</button>
+         <button class="secondary-button compact" data-publish-ar="${work.id}" type="button">${work.arStatus === "ready" ? "Обновить AR" : "Опубликовать в AR"}</button>
+         ${work.arStatus ? `<small role="status">AR: ${escapeHtml(({queued:"В очереди",processing:"Обработка",retry:"Ожидает повторной отправки",ready:"Готово"})[work.arStatus] || work.arStatus)}</small>` : ""}
+         ${arUrl ? `<a class="secondary-button compact" href="${escapeAttr(arUrl)}" target="_blank" rel="noopener noreferrer">Открыть AR</a>` : ""}
+         <button class="danger-button compact" data-delete-final-work="${work.id}" type="button">Удалить</button>
+-      </div>
++      </div></details>
+     </article>
+   `;
+ }
+@@ -5393,6 +5400,13 @@
+ }
+ 
+ function bindDetailsMenus() {
++  view.querySelectorAll('[data-final-result-menu]').forEach(menu => {
++    menu.addEventListener('toggle', () => {
++      if (!menu.isConnected) return;
++      if (menu.open) expandedFinalResultMenus.add(menu.dataset.finalResultMenu);
++      else expandedFinalResultMenus.delete(menu.dataset.finalResultMenu);
++    });
++  });
+   const menus = Array.from(view.querySelectorAll(".item-menu"));
+   menus.forEach((menu) => {
+     menu.addEventListener("click", (event) => {
+@@ -7684,10 +7698,13 @@
+ function captureFinalWorkDialogReturn(trigger, workId) {
+   const restore = captureDialogReturn(document, window, trigger);
+   const scrollY = window.scrollY;
++  const menuOpen=Boolean(trigger?.closest?.('.final-result-menu')?.open);
++  const requestedView=trigger?.dataset?.finalWorkView||'result';
+   return () => {
+     if (trigger?.isConnected) return restore();
+     window.scrollTo(0, scrollY);
+-    const replacement = document.querySelector(`[data-open-final-work="${CSS.escape(workId)}"]`);
++    const replacement = (menuOpen?document.querySelector(`.final-result-menu [data-open-final-work="${CSS.escape(workId)}"][data-final-work-view="${CSS.escape(requestedView)}"]`):null)||document.querySelector(`[data-open-final-work="${CSS.escape(workId)}"]`);
++    if(menuOpen&&replacement?.closest('.final-result-menu'))replacement.closest('.final-result-menu').open=true;
+     replacement?.focus?.({ preventScroll: true });
+   };
+ }
+@@ -7830,7 +7847,21 @@
+   apply();
+ }
+ 
++async function showFinalWorkComparison(workId,trigger=document.activeElement) {
++  const restore=captureFinalWorkDialogReturn(trigger,workId);
++  try{
++    const work=await ensureFinalWorkLoaded(workId);if(!work)return notify('Готовый результат не найден.');
++    let source=mediaById(work.sourceMediaId);
++    if(source?.blob?.$syncBlob)source=(await recordSync.loadRecord('media',source.id))?.record||source;
++    const original=source?.blob instanceof Blob?source.blob:null,result=finalWorkImageBlob(work);
++    if(!original||!result)return notify('Для сравнения нужны исходная фотография и готовый результат.');
++    const urls=[URL.createObjectURL(original),URL.createObjectURL(result)];
++    return openScanPhotoViewer({items:[{label:'Оригинал',url:urls[0]},{label:'Результат',url:urls[1]}],compare:true,mountHistory:finish=>mountDialogHistory({id:uid('result-compare'),restore:()=>{finish();urls.forEach(url=>URL.revokeObjectURL(url));restore();}})});
++  }catch(error){notify(error.message||'Не удалось открыть сравнение.');restore();}
++}
++
+ async function showFinalWorkViewer(workId, { initialView = "result", trigger = document.activeElement } = {}) {
++  if(initialView==='compare')return showFinalWorkComparison(workId,trigger);
+   const work = finalWorkById(workId);
+   if (!work) return notify("Готовый результат не найден.");
+   const restore = captureFinalWorkDialogReturn(trigger, workId);
+@@ -7874,6 +7905,7 @@
+         <span>${escapeHtml(`${student?.lastName || ""} ${student?.firstName || ""}`.trim() || "Ученик")}</span>
+         <span>${escapeHtml(serviceName(service) || titleText)}</span>
+       </div>
++      <button class="secondary-button compact" data-compare-images type="button" ${originalUrl&&resultUrl?'':'disabled'}>Сравнить · увеличение</button>
+       <div class="final-work-viewer-grid">
+         <article class="panel grid">
+           <div class="card-header">
+@@ -7935,8 +7967,9 @@
+   panel.querySelector("[data-download-final-a4-jpg]")?.addEventListener("click", () => downloadFinalWorkA4Jpg(actualWork.id));
+   panel.querySelector("[data-download-final-a4-pdf]")?.addEventListener("click", () => downloadFinalWorkA4Pdf(actualWork.id));
+   panel.querySelector("[data-print-final-work]")?.addEventListener("click", () => printFinalWork(actualWork.id));
++  panel.querySelector('[data-compare-images]').onclick=()=>openScanPhotoViewer({items:[{label:'Оригинал',url:originalUrl},{label:'Результат',url:resultUrl}],compare:true,mountHistory:finish=>mountDialogHistory({id:uid('viewer-compare'),restore:finish})});
+   panel.querySelectorAll("[data-zoom-final-image]").forEach((image) => {
+-    const openZoom = () => showImageZoom({ url: image.src, title: image.dataset.zoomTitle || image.alt || titleText, trigger: image });
++    const openZoom = () => openScanPhotoViewer({items:[{url:image.src,label:image.dataset.zoomTitle||image.alt||titleText}],mountHistory:finish=>mountDialogHistory({id:uid('result-photo'),restore:finish})});
+     image.addEventListener("click", openZoom);
+     image.addEventListener("keydown", (event) => {
+       if (event.key === "Enter" || event.key === " ") {
+--- a/styles.css
++++ b/styles.css
+@@ -7589,3 +7589,10 @@
+    remain available in the result viewer; A4 actions remain there as well. */
+ .student-detail-shell[data-student-state="student_7417d980-74be-4260-a1cf-9ca9f929cf75"] .student-detail-main > article:has(> .media-grid),
+ .student-detail-shell[data-student-state="student_7417d980-74be-4260-a1cf-9ca9f929cf75"] .student-detail-results > .final-results-panel:nth-of-type(2) { display:none !important; }
++
++/* Result cards expose a single compact action disclosure. */
++.final-result-menu { grid-column:1/-1; min-width:0; }
++.final-result-menu>summary { width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--text); font-size:13px; font-weight:650; cursor:pointer; min-height:38px; }
++.final-result-menu .final-result-actions { display:flex; flex-direction:column; gap:5px; margin-top:6px; }
++.final-result-menu .final-result-actions button,.final-result-menu .final-result-actions a { width:100%; min-height:38px; padding:8px 10px; font-size:13px; line-height:1.3; border-radius:9px; }
++.final-result-menu summary:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
