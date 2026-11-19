@@ -1,6 +1,7 @@
 import {createPrintSelectionStore,searchPrintStudents,resolveSelectiveCode,selectedPrintWorks} from '../services/selective-print.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function openSelectivePrintPanel({id,companion=false,request,storage=localStorage,storageKey,qrImage,parseWork,studentTokens,createDetector,detectFrame,decodeFile,onReview,mountHistory,restore}){
+ const sourceMenus=[...document.querySelectorAll('details.item-menu[open]')];sourceMenus.forEach(menu=>menu.open=false);
  const panel=document.createElement('div');panel.className='qr-panel-backdrop selective-print-backdrop';
  const link=new URL(location.origin+location.pathname);link.searchParams.set('printSelection',id);
  panel.innerHTML=`<section class="qr-panel selective-print-panel" role="dialog" aria-modal="true" aria-label="Выборочная печать" tabindex="-1"><style>
@@ -40,12 +41,12 @@ export function openSelectivePrintPanel({id,companion=false,request,storage=loca
  function code(raw){const snapshot=store.snapshot;if(!snapshot)return showNotice('Дождитесь загрузки проекта.');const result=resolveSelectiveCode(raw,snapshot,{parseWork,studentTokens});if(result.kind==='unknown')return showNotice('Код не найден в этом проекте. Найдите ребёнка по фамилии.');stop();target=result;mode='add';search.value='';tabs();showNotice('Выберите услугу на фотографии.');render();}
  const tabs=()=>{for(const button of panel.querySelectorAll('[data-tab]'))button.setAttribute('aria-pressed',String(button.dataset.tab===mode));};
  for(const button of panel.querySelectorAll('[data-tab]'))button.onclick=()=>{mode=button.dataset.tab;tabs();render();};
- search.oninput=()=>{target=null;showNotice('');render();};
+ search.oninput=()=>{panel.querySelector('.sp-connection').open=false;target=null;showNotice('');render();};
  panel.querySelector('[data-manual]').onsubmit=event=>{event.preventDefault();code(new FormData(event.target).get('code'));event.target.reset();};
  panel.querySelector('[data-file]').onchange=async event=>{const file=event.target.files?.[0];event.target.value='';if(!file)return;try{const raw=await decodeFile(file);if(!closed)raw?code(raw):showNotice('QR не распознан. Снимите код крупнее или используйте поиск.');}catch{showNotice('Не удалось прочитать QR. Используйте поиск по фамилии.');}};
  function stop(){generation++;cancelAnimationFrame(frame);stream?.getTracks().forEach(t=>t.stop());stream=null;panel.querySelector('.sp-camera').hidden=true;}
  async function start(deviceId=''){
-  stop();const token=generation;
+  panel.querySelector('.sp-connection').open=false;target=null;mode='add';search.value='';lastRaw='';emptyFrames=0;tabs();showNotice('Наведите камеру на QR фотографии.');render();stop();const token=generation;
   try{const detector=await createDetector(),acquired=await navigator.mediaDevices.getUserMedia({video:deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}},audio:false});if(closed||token!==generation){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;const video=panel.querySelector('video');video.srcObject=stream;panel.querySelector('.sp-camera').hidden=false;await video.play();
    const select=panel.querySelector('[data-device]'),devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');select.replaceChildren(...devices.map((d,i)=>new Option(d.label||`Камера ${i+1}`,d.deviceId)));select.value=stream.getVideoTracks()[0]?.getSettings().deviceId||'';
    const canvas=document.createElement('canvas');let previous=0;const tick=async time=>{if(closed||token!==generation||!stream)return;if(!target&&mode==='add'&&!search.value&&time-previous>350){previous=time;const raw=await detectFrame(video,detector,canvas).catch(()=>'');if(closed||token!==generation)return;if(!raw){if(++emptyFrames>=2)lastRaw='';}else{emptyFrames=0;if(raw!==lastRaw){lastRaw=raw;code(raw);}}}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
@@ -55,7 +56,7 @@ export function openSelectivePrintPanel({id,companion=false,request,storage=loca
  panel.querySelector('[data-refresh]').onclick=()=>void store.sync(true);panel.querySelector('[data-copy-link]').onclick=async()=>{try{await navigator.clipboard.writeText(link.href);showNotice('Ссылка скопирована. Откройте её на iPhone.');}catch{panel.querySelector('[data-link]').select();showNotice('Скопируйте выделенную ссылку и откройте на iPhone.');}};
  panel.querySelector('[data-review]').onclick=async()=>{if(companion){store.ready();return;}busy=true;panel.querySelector('[data-review]').disabled=true;try{await store.sync(true);if(store.pending)throw new Error('Дождитесь сохранения списка в облаке.');const snapshot=store.snapshot;selectedPrintWorks(snapshot);if(!closed)await onReview(snapshot,()=>!closed);}catch(error){showNotice(error.message);}finally{busy=false;panel.querySelector('[data-review]').disabled=!store.snapshot?.items.length||!!store.pending||store.snapshot?.items.some(i=>i.stale||i.blocked);}};
  const reconnect=()=>void store.sync(true);window.addEventListener('online',reconnect);window.addEventListener('focus',reconnect);
- const finish=()=>{if(closed)return;closed=true;stop();store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();restore?.();};
+ const finish=()=>{if(closed)return;closed=true;stop();store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
  const close=()=>history?history.close():finish();panel.querySelector('[data-close]').onclick=close;panel.onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}if(event.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,summary,a')].filter(n=>!n.disabled&&n.getClientRects().length);if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===nodes.at(-1)){event.preventDefault();nodes[0]?.focus();}}};
  document.body.append(panel);history=mountHistory?.(finish);render();void store.sync(true);search.focus({preventScroll:true});return panel;
 }

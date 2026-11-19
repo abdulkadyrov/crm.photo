@@ -1,0 +1,218 @@
+--- a/index.html
++++ b/index.html
+@@ -9 +9 @@
+-    <link rel="stylesheet" href="./styles.css?v=262" />
++    <link rel="stylesheet" href="./styles.css?v=263" />
+@@ -70 +70 @@
+-    <script type="module" src="./js/core/app.js?v=262"></script>
++    <script type="module" src="./js/core/app.js?v=263"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v262";
++const CACHE_VERSION = "v263";
+@@ -77,4 +77,4 @@
+-  "./js/ui/scan-photo-viewer.js?v=262",
+-  "./js/ui/group-scan-panel.js?v=262",
+-  "./js/ui/scan-photo-viewer.js?v=262",
+-  "./js/ui/group-scan-panel.js?v=262",
++  "./js/ui/scan-photo-viewer.js?v=263",
++  "./js/ui/group-scan-panel.js?v=263",
++  "./js/ui/scan-photo-viewer.js?v=263",
++  "./js/ui/group-scan-panel.js?v=263",
+@@ -86,2 +86,2 @@
+-  "./js/services/service-positions.js?v=262",
+-  "./js/services/individual-order.js?v=262",
++  "./js/services/service-positions.js?v=263",
++  "./js/services/individual-order.js?v=263",
+@@ -89 +89 @@
+-  "./js/services/sequence-navigation.js?v=262",
++  "./js/services/sequence-navigation.js?v=263",
+@@ -91 +91 @@
+-  "./js/services/card-summary.js?v=262",
++  "./js/services/card-summary.js?v=263",
+@@ -95 +95 @@
+-  "./js/services/camera-options.js?v=262",
++  "./js/services/camera-options.js?v=263",
+@@ -101,2 +101,2 @@
+-  "./js/services/record-sync.js?v=262",
+-  "./js/services/deferred-final-work.js?v=262",
++  "./js/services/record-sync.js?v=263",
++  "./js/services/deferred-final-work.js?v=263",
+@@ -109 +109 @@
+-  "./js/services/sync-codec.js?v=262",
++  "./js/services/sync-codec.js?v=263",
+@@ -117 +117 @@
+-  "./styles.css?v=262",
++  "./styles.css?v=263",
+@@ -120 +120 @@
+-  "./js/core/app.js?v=262",
++  "./js/core/app.js?v=263",
+@@ -122,2 +122,2 @@
+-  "./js/services/card-selection.js?v=262",
+-  "./js/services/navigation-history.js?v=262",
++  "./js/services/card-selection.js?v=263",
++  "./js/services/navigation-history.js?v=263",
+@@ -125,3 +125,3 @@
+-  "./js/services/roster-filters.js?v=262",
+-  "./js/ui/scan-work-picker.js?v=262",
+-  "./js/ui/group-scan-panel.js?v=262",
++  "./js/services/roster-filters.js?v=263",
++  "./js/ui/scan-work-picker.js?v=263",
++  "./js/ui/group-scan-panel.js?v=263",
+@@ -129 +129 @@
+-  "./js/services/student-comments.js?v=262",
++  "./js/services/student-comments.js?v=263",
+@@ -132,2 +132,2 @@
+-  "./js/services/image-delivery.js?v=262",
+-  "./js/ui/scan-photo-viewer.js?v=262",
++  "./js/services/image-delivery.js?v=263",
++  "./js/ui/scan-photo-viewer.js?v=263",
+@@ -135,2 +135,2 @@
+-  "./js/ui/student-quick-actions.js?v=262",
+-  "./js/services/group-scan.js?v=262",
++  "./js/ui/student-quick-actions.js?v=263",
++  "./js/services/group-scan.js?v=263",
+@@ -139,2 +139,2 @@
+-  "./js/services/print-selection.js?v=262",
+-  "./js/ui/project-print-picker.js?v=262",
++  "./js/services/print-selection.js?v=263",
++  "./js/ui/project-print-picker.js?v=263",
+@@ -142 +142 @@
+-  "./js/services/student-stage-icons.js?v=262",
++  "./js/services/student-stage-icons.js?v=263",
+@@ -145 +145 @@
+-  "./js/ui/fulfillment-panel.js?v=262",
++  "./js/ui/fulfillment-panel.js?v=263",
+@@ -147 +147 @@
+-  "./js/services/print-order.js?v=262",
++  "./js/services/print-order.js?v=263",
+@@ -155 +155 @@
+-  "./js/services/fulfillment.js?v=262",
++  "./js/services/fulfillment.js?v=263",
+@@ -159 +159 @@
+-  "./js/core/legacy-app.js?v=262",
++  "./js/core/legacy-app.js?v=263",
+@@ -182 +182 @@
+-  "./js/ui/photo-camera.js?v=262",
++  "./js/ui/photo-camera.js?v=263",
+@@ -185 +185 @@
+-  "./js/services/teacher-broadcast.js?v=262",
++  "./js/services/teacher-broadcast.js?v=263",
+@@ -227 +227 @@
+-  "./js/services/parent-orders.js?v=262",
++  "./js/services/parent-orders.js?v=263",
+@@ -239 +239 @@
+-  "./js/services/finalwork-service.js?v=262",
++  "./js/services/finalwork-service.js?v=263",
+@@ -244 +244 @@
+-  "./js/services/export-filter-service.js?v=262",
++  "./js/services/export-filter-service.js?v=263",
+@@ -275 +275 @@
+-  "./js/services/barcode-reader.js?v=262",
++  "./js/services/barcode-reader.js?v=263",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=262");
++  await import("./legacy-app.js?v=263");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,3 +1,3 @@
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=262';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=262';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=262';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=263';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=263';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=263';
+@@ -5,12 +5,12 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=262";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=262";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=262";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=262";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=262";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=262";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=262";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=262";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=262";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=262";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=262";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=262";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=263";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=263";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=263";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=263";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=263";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=263";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=263";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=263";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=263";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=263";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=263";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=263";
+@@ -19,2 +19,2 @@
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=262";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=262";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=263";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=263";
+@@ -23,2 +23,2 @@
+-import {createNavigationHistory} from "../services/navigation-history.js?v=262";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=262";
++import {createNavigationHistory} from "../services/navigation-history.js?v=263";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=263";
+@@ -26 +26 @@
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=262";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=263";
+@@ -29,3 +29,3 @@
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=262";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=262";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=262";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=263";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=263";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=263";
+@@ -33,2 +33,2 @@
+-import { nextInSequence } from "../services/sequence-navigation.js?v=262";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=262";
++import { nextInSequence } from "../services/sequence-navigation.js?v=263";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=263";
+@@ -42 +42 @@
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=262";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=263";
+@@ -45,2 +45,2 @@
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=262";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=262";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=263";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=263";
+@@ -48 +48 @@
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=262";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=263";
+@@ -53 +53 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=262";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=263";
+@@ -56 +56 @@
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=262";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=263";
+@@ -58,2 +58,2 @@
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=262";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=262";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=263";
++import { printCodeLayout } from "../services/print-code-layout.js?v=263";
+@@ -82 +82 @@
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=262";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=263";
+@@ -87 +87 @@
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=262";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=263";
+--- a/js/ui/selective-print-panel.js
++++ b/js/ui/selective-print-panel.js
+@@ -3,0 +4 @@
++ const sourceMenus=[...document.querySelectorAll('details.item-menu[open]')];sourceMenus.forEach(menu=>menu.open=false);
+@@ -43 +44 @@
+- search.oninput=()=>{target=null;showNotice('');render();};
++ search.oninput=()=>{panel.querySelector('.sp-connection').open=false;target=null;showNotice('');render();};
+@@ -48 +49 @@
+-  stop();const token=generation;
++  panel.querySelector('.sp-connection').open=false;target=null;mode='add';search.value='';lastRaw='';emptyFrames=0;tabs();showNotice('Наведите камеру на QR фотографии.');render();stop();const token=generation;
+@@ -58 +59 @@
+- const finish=()=>{if(closed)return;closed=true;stop();store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();restore?.();};
++ const finish=()=>{if(closed)return;closed=true;stop();store.stop();window.removeEventListener('online',reconnect);window.removeEventListener('focus',reconnect);panel.remove();sourceMenus.forEach(menu=>{if(menu.isConnected)menu.open=true;});restore?.();};
