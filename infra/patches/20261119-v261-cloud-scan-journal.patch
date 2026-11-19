@@ -1,0 +1,290 @@
+--- a/index.html
++++ b/index.html
+@@ -9 +9 @@
+-    <link rel="stylesheet" href="./styles.css?v=260" />
++    <link rel="stylesheet" href="./styles.css?v=261" />
+@@ -70 +70 @@
+-    <script type="module" src="./js/core/app.js?v=260"></script>
++    <script type="module" src="./js/core/app.js?v=261"></script>
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=260");
++  await import("./legacy-app.js?v=261");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,12 +1,14 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=260";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=260";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=260";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=260";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=260";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=260";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=260";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=260";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=260";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=260";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=260";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=260";
++import { createCloudScanStore } from '../services/scan-cloud.js?v=261';
++let groupScanCloudStore=null,groupScanCloudScope='';
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=261";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=261";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=261";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=261";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=261";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=261";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=261";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=261";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=261";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=261";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=261";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=261";
+@@ -15,2 +17,2 @@
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=260";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=260";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=261";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=261";
+@@ -19,2 +21,2 @@
+-import {createNavigationHistory} from "../services/navigation-history.js?v=260";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=260";
++import {createNavigationHistory} from "../services/navigation-history.js?v=261";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=261";
+@@ -22 +24 @@
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=260";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=261";
+@@ -25,3 +27,3 @@
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=260";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=260";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=260";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=261";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=261";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=261";
+@@ -29,2 +31,2 @@
+-import { nextInSequence } from "../services/sequence-navigation.js?v=260";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=260";
++import { nextInSequence } from "../services/sequence-navigation.js?v=261";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=261";
+@@ -38 +40 @@
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=260";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=261";
+@@ -41,2 +43,2 @@
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=260";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=260";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=261";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=261";
+@@ -44 +46 @@
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=260";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=261";
+@@ -49 +51 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=260";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=261";
+@@ -52 +54 @@
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=260";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=261";
+@@ -54,2 +56,2 @@
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=260";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=260";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=261";
++import { printCodeLayout } from "../services/print-code-layout.js?v=261";
+@@ -78 +80 @@
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=260";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=261";
+@@ -83 +85 @@
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=260";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=261";
+@@ -603,0 +606 @@
++  try { cloudScanJournal()?.migrate(); } catch(error) { console.error('Не удалось открыть облачный журнал проверки',error); }
+@@ -9324,0 +9328,15 @@
++function cloudScanJournal() {
++  const account=cloudAccount();
++  if(!cloudRequired||!account){groupScanCloudStore?.stop();groupScanCloudStore=null;groupScanCloudScope='';return null;}
++  if(groupScanCloudScope===account.id&&groupScanCloudStore)return groupScanCloudStore;
++  groupScanCloudStore?.stop();const scope=account.id;groupScanCloudScope=scope;
++  groupScanCloudStore=createCloudScanStore({storage:localStorage,key:`crm-scan-cloud-v1:${scope}`,legacyKey:id=>`crm-group-scan-v1:${scope}:${id}`,getData:()=>({students:state.data.students,groups:state.data.classes}),
++    request:async(method,body,after=0)=>{
++      if(cloudAccount()?.id!==scope){const error=new Error('Аккаунт изменился');error.status=401;throw error;}
++      const response=await fetch('/api/v1/sync/scans'+(method==='GET'?`?after=${after}`:''),{method,credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(20000),headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
++      if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||'Ошибка облачной проверки');error.status=response.status;throw error;}
++      return response.json();
++    }});
++  groupScanCloudStore.start();return groupScanCloudStore;
++}
++
+@@ -9598 +9616,2 @@
+-  return openGroupScanPanel({groups,initialGroupId:groupId||'*',lockGroup:Boolean(groupId),getData,onSaveNote:async(target,text,noteId)=>{
++  const scanSync=cloudScanJournal();
++  return openGroupScanPanel({groups,initialGroupId:groupId||'*',lockGroup:Boolean(groupId),getData,scanSync,onSaveNote:async(target,text,noteId)=>{
+@@ -9607,2 +9626,2 @@
+-    readSession:(id,archive=false)=>JSON.parse(localStorage.getItem(key(id)+(archive?':history':''))||'null'),
+-    writeSession:(id,session,archive=false)=>{if(archive){const old=JSON.parse(localStorage.getItem(key(id)+':history')||'[]');localStorage.setItem(key(id)+':history',JSON.stringify([...old,session].slice(-5)));}else localStorage.setItem(key(id),JSON.stringify(session));},
++    readSession:(id,archive=false)=>scanSync?scanSync.read(id,archive):JSON.parse(localStorage.getItem(key(id)+(archive?':history':''))||'null'),
++    writeSession:(id,session,archive=false)=>{if(scanSync)return scanSync.write(id,session,archive);if(archive){const old=JSON.parse(localStorage.getItem(key(id)+':history')||'[]');localStorage.setItem(key(id)+':history',JSON.stringify([...old,session].slice(-5)));}else localStorage.setItem(key(id),JSON.stringify(session));},
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v260";
++const CACHE_VERSION = "v261";
+@@ -77,4 +77,4 @@
+-  "./js/ui/scan-photo-viewer.js?v=260",
+-  "./js/ui/group-scan-panel.js?v=260",
+-  "./js/ui/scan-photo-viewer.js?v=260",
+-  "./js/ui/group-scan-panel.js?v=260",
++  "./js/ui/scan-photo-viewer.js?v=261",
++  "./js/ui/group-scan-panel.js?v=261",
++  "./js/ui/scan-photo-viewer.js?v=261",
++  "./js/ui/group-scan-panel.js?v=261",
+@@ -86,2 +86,2 @@
+-  "./js/services/service-positions.js?v=260",
+-  "./js/services/individual-order.js?v=260",
++  "./js/services/service-positions.js?v=261",
++  "./js/services/individual-order.js?v=261",
+@@ -89 +89 @@
+-  "./js/services/sequence-navigation.js?v=260",
++  "./js/services/sequence-navigation.js?v=261",
+@@ -91 +91 @@
+-  "./js/services/card-summary.js?v=260",
++  "./js/services/card-summary.js?v=261",
+@@ -95 +95 @@
+-  "./js/services/camera-options.js?v=260",
++  "./js/services/camera-options.js?v=261",
+@@ -101,2 +101,2 @@
+-  "./js/services/record-sync.js?v=260",
+-  "./js/services/deferred-final-work.js?v=260",
++  "./js/services/record-sync.js?v=261",
++  "./js/services/deferred-final-work.js?v=261",
+@@ -109 +109 @@
+-  "./js/services/sync-codec.js?v=260",
++  "./js/services/sync-codec.js?v=261",
+@@ -117 +117 @@
+-  "./styles.css?v=260",
++  "./styles.css?v=261",
+@@ -120 +120 @@
+-  "./js/core/app.js?v=260",
++  "./js/core/app.js?v=261",
+@@ -122,2 +122,2 @@
+-  "./js/services/card-selection.js?v=260",
+-  "./js/services/navigation-history.js?v=260",
++  "./js/services/card-selection.js?v=261",
++  "./js/services/navigation-history.js?v=261",
+@@ -125,3 +125,3 @@
+-  "./js/services/roster-filters.js?v=260",
+-  "./js/ui/scan-work-picker.js?v=260",
+-  "./js/ui/group-scan-panel.js?v=260",
++  "./js/services/roster-filters.js?v=261",
++  "./js/ui/scan-work-picker.js?v=261",
++  "./js/ui/group-scan-panel.js?v=261",
+@@ -129 +129 @@
+-  "./js/services/student-comments.js?v=260",
++  "./js/services/student-comments.js?v=261",
+@@ -132,2 +132,2 @@
+-  "./js/services/image-delivery.js?v=260",
+-  "./js/ui/scan-photo-viewer.js?v=260",
++  "./js/services/image-delivery.js?v=261",
++  "./js/ui/scan-photo-viewer.js?v=261",
+@@ -135,2 +135,2 @@
+-  "./js/ui/student-quick-actions.js?v=260",
+-  "./js/services/group-scan.js?v=260",
++  "./js/ui/student-quick-actions.js?v=261",
++  "./js/services/group-scan.js?v=261",
+@@ -139,2 +139,2 @@
+-  "./js/services/print-selection.js?v=260",
+-  "./js/ui/project-print-picker.js?v=260",
++  "./js/services/print-selection.js?v=261",
++  "./js/ui/project-print-picker.js?v=261",
+@@ -142 +142 @@
+-  "./js/services/student-stage-icons.js?v=260",
++  "./js/services/student-stage-icons.js?v=261",
+@@ -145 +145 @@
+-  "./js/ui/fulfillment-panel.js?v=260",
++  "./js/ui/fulfillment-panel.js?v=261",
+@@ -147 +147 @@
+-  "./js/services/print-order.js?v=260",
++  "./js/services/print-order.js?v=261",
+@@ -150,0 +151 @@
++  "./js/services/scan-cloud.js",
+@@ -152 +153 @@
+-  "./js/services/fulfillment.js?v=260",
++  "./js/services/fulfillment.js?v=261",
+@@ -156 +157 @@
+-  "./js/core/legacy-app.js?v=260",
++  "./js/core/legacy-app.js?v=261",
+@@ -179 +180 @@
+-  "./js/ui/photo-camera.js?v=260",
++  "./js/ui/photo-camera.js?v=261",
+@@ -182 +183 @@
+-  "./js/services/teacher-broadcast.js?v=260",
++  "./js/services/teacher-broadcast.js?v=261",
+@@ -224 +225 @@
+-  "./js/services/parent-orders.js?v=260",
++  "./js/services/parent-orders.js?v=261",
+@@ -236 +237 @@
+-  "./js/services/finalwork-service.js?v=260",
++  "./js/services/finalwork-service.js?v=261",
+@@ -241 +242 @@
+-  "./js/services/export-filter-service.js?v=260",
++  "./js/services/export-filter-service.js?v=261",
+@@ -272 +273 @@
+-  "./js/services/barcode-reader.js?v=260",
++  "./js/services/barcode-reader.js?v=261",
+--- a/js/ui/group-scan-panel.js
++++ b/js/ui/group-scan-panel.js
+@@ -1 +1 @@
+-import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=260';
++import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=261';
+@@ -3 +3 @@
+-import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js?v=260';
++import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js?v=261';
+@@ -8 +8 @@
+-export function openGroupScanPanel({groups,initialGroupId='',lockGroup=false,onSaveNote,onQuickAction,getData,resolve,createDetector,detectFrame,decodeFile,readSession,writeSession,images,imageOptions,orderedItems,onManage,mountHistory,restore}) {
++export function openGroupScanPanel({groups,initialGroupId='',lockGroup=false,onSaveNote,onQuickAction,getData,resolve,createDetector,detectFrame,decodeFile,readSession,writeSession,images,imageOptions,orderedItems,onManage,mountHistory,restore,scanSync}) {
+@@ -10 +10 @@
+-  panel.innerHTML=`<section class="group-scan-panel scan-reference" data-state="capture" role="dialog" aria-modal="true" aria-labelledby="group-scan-title" tabindex="-1"><header class="group-scan-head"><h2 id="group-scan-title">QR-сканер</h2><button class="scan-close" data-close type="button" aria-label="Закрыть сканер">×</button></header><label class="group-scan-group"><span class="sr-only">Проверяем группу</span><select class="select" data-group aria-label="Проверяем группу">${!lockGroup?'<option value="*">Все группы</option>':''}${groups.map(group=>`<option value="${esc(group.id)}">${esc(group.label||group.name)}</option>`).join('')}</select></label><div class="group-scan-body"><div data-capture><div class="group-scan-tools"><button class="primary-button" data-camera type="button">Камера</button><label class="secondary-button" tabindex="0" data-file-label>Фото кода<input type="file" accept="image/*" data-file hidden /></label></div><div class="group-scan-camera"><video playsinline muted hidden></video><div class="scan-target" aria-hidden="true"></div><p data-camera-hint>Наведите камеру на QR<br>или штрихкод фотографии</p><button class="scan-camera-stop" data-stop type="button" hidden>Выключить</button></div><p data-camera-message role="status"></p></div><div data-result hidden></div><div data-summary hidden></div></div><footer class="group-scan-footer"><div class="scan-footer-row"><p data-count role="status"></p><button class="primary-button compact" data-show-summary type="button">Список и итоги</button><button class="secondary-button compact" data-resume type="button" hidden>К сканеру</button></div><details class="group-scan-manual-disclosure"><summary>Ввести код вручную</summary><form class="group-scan-manual" data-manual><label><span class="sr-only">Код / ID</span><input class="input" name="code" aria-label="Код / ID" autocomplete="off" placeholder="QR, штрихкод или ID" required /></label><button class="secondary-button" type="submit">Проверить</button></form></details></footer></section>`;
++  panel.innerHTML=`<section class="group-scan-panel scan-reference" data-state="capture" role="dialog" aria-modal="true" aria-labelledby="group-scan-title" tabindex="-1"><header class="group-scan-head"><h2 id="group-scan-title">QR-сканер</h2><button class="scan-close" data-close type="button" aria-label="Закрыть сканер">×</button></header><label class="group-scan-group"><span class="sr-only">Проверяем группу</span><select class="select" data-group aria-label="Проверяем группу">${!lockGroup?'<option value="*">Все группы</option>':''}${groups.map(group=>`<option value="${esc(group.id)}">${esc(group.label||group.name)}</option>`).join('')}</select></label><div class="group-scan-body"><div data-capture><div class="group-scan-tools"><button class="primary-button" data-camera type="button">Камера</button><label class="secondary-button" tabindex="0" data-file-label>Фото кода<input type="file" accept="image/*" data-file hidden /></label></div><div class="group-scan-camera"><video playsinline muted hidden></video><div class="scan-target" aria-hidden="true"></div><p data-camera-hint>Наведите камеру на QR<br>или штрихкод фотографии</p><button class="scan-camera-stop" data-stop type="button" hidden>Выключить</button></div><p data-camera-message role="status"></p></div><div data-result hidden></div><div data-summary hidden></div></div><footer class="group-scan-footer"><p data-cloud-scan-status role="status" style="font-size:12px;margin:0 0 6px" hidden></p><div class="scan-footer-row"><p data-count role="status"></p><button class="primary-button compact" data-show-summary type="button">Список и итоги</button><button class="secondary-button compact" data-resume type="button" hidden>К сканеру</button></div><details class="group-scan-manual-disclosure"><summary>Ввести код вручную</summary><form class="group-scan-manual" data-manual><label><span class="sr-only">Код / ID</span><input class="input" name="code" aria-label="Код / ID" autocomplete="off" placeholder="QR, штрихкод или ID" required /></label><button class="secondary-button" type="submit">Проверить</button></form></details></footer></section>`;
+@@ -18 +18 @@
+-  const persist=()=>{try{writeSession(groupSelect.value,session);}catch{panel.querySelector('[data-camera-message]').textContent='Не удалось сохранить журнал на устройстве. Не закрывайте проверку до завершения.';}};
++  const persist=()=>{try{writeSession(groupSelect.value,session);return true;}catch{panel.querySelector('[data-camera-message]').textContent='Не удалось сохранить журнал на устройстве. Не закрывайте проверку до завершения.';return false;}};
+@@ -70 +70 @@
+-    const advance=async(accept=false,extraCopy=false)=>{if(advancing)return;advancing=true;const controls=[...panel.querySelectorAll('button,input,select')].map(el=>({el,disabled:el.disabled}));controls.forEach(({el})=>el.disabled=true);try{const comment=resultBox.querySelector('[data-note]').value.trim();if(comment){if(!onSaveNote)throw new Error('Сохранение комментария недоступно. Оставьте комментарий через карточку ребёнка.');await onSaveNote({...pending},comment,noteId);}}catch(error){advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector('[data-camera-message]').textContent='Комментарий не сохранён: '+error.message;return;}session=appendScanEvent(session,pending,{accept,extraCopy,comment:resultBox.querySelector('[data-note]').value});if(accept)selected.add(pending.studentId);persist();pending=null;resultBox.hidden=true;panel.querySelector('.group-scan-panel').dataset.state='capture';panel.querySelector('[data-manual]').hidden=false;panel.querySelector('[name=code]').value='';updateCounts();panel.querySelector('[data-camera-message]').textContent=accept?'Записано. Уберите этот код из кадра и покажите следующий.':'Пропущено. Покажите следующий код.';advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector(stream?'[data-show-summary]':'[name=code]').focus({preventScroll:true});releaseImages();};
++    const advance=async(accept=false,extraCopy=false)=>{if(advancing)return;advancing=true;const controls=[...panel.querySelectorAll('button,input,select')].map(el=>({el,disabled:el.disabled}));controls.forEach(({el})=>el.disabled=true);try{const comment=resultBox.querySelector('[data-note]').value.trim();if(comment){if(!onSaveNote)throw new Error('Сохранение комментария недоступно. Оставьте комментарий через карточку ребёнка.');await onSaveNote({...pending},comment,noteId);}}catch(error){advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector('[data-camera-message]').textContent='Комментарий не сохранён: '+error.message;return;}const previous=session;session=appendScanEvent(session,pending,{accept,extraCopy,comment:resultBox.querySelector('[data-note]').value});if(!persist()){session=previous;advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);return;}if(accept)selected.add(pending.studentId);pending=null;resultBox.hidden=true;panel.querySelector('.group-scan-panel').dataset.state='capture';panel.querySelector('[data-manual]').hidden=false;panel.querySelector('[name=code]').value='';updateCounts();panel.querySelector('[data-camera-message]').textContent=accept?'Записано. Уберите этот код из кадра и покажите следующий.':'Пропущено. Покажите следующий код.';advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector(stream?'[data-show-summary]':'[name=code]').focus({preventScroll:true});releaseImages();};
+@@ -79 +79 @@
+-    summaryBox.innerHTML=`<h3>Список и итоги</h3>${pending?'<p>Последний код ещё не подтверждён. Нажмите «Продолжить», чтобы завершить его проверку.</p>':''}<div class="scan-summary-counts"><div>Дети<strong>${stats.children}/${children().length}</strong></div><div>Работы<strong>${stats.works}</strong></div><div>Копии<strong>${stats.copies}</strong></div></div><details class="scan-summary-info"><summary>О проверке</summary><p>Сканирований: ${stats.attempts}. Повторов: ${stats.duplicates}. Статусы печати, выдачи и оплаты меняются отдельным действием.</p></details><div class="group-scan-summary-tools"><button class="secondary-button compact" data-all type="button">Выбрать всех</button><button class="secondary-button compact" data-none type="button">Снять выбор</button><button class="secondary-button compact" data-reset type="button">Сбросить проверку</button></div><div class="group-scan-checked">${stats.studentIds.map(id=>{const child=data().students.find(s=>s.id===id),events=session.events.filter(e=>e.accepted&&e.studentId===id),workIds=[...new Set(events.map(e=>e.workId).filter(Boolean))],printed=workIds.filter(wid=>['printed','delivered'].includes(data().works.find(w=>w.id===wid)?.status));return `<label><input type="checkbox" data-selected="${esc(id)}" ${selected.has(id)?'checked':''} /><span><strong>${esc(fullName(child)||'Карточка удалена')}</strong><small>${workIds.length} работ · ${events.filter(e=>e.workId).length} копий · печать ${printed.length}</small><small>${workIds.map(wid=>esc(data().works.find(w=>w.id===wid)?.title||'Готовая работа')).join(' · ')}</small></span></label>`;}).join('')||'<p>Проверенных детей пока нет.</p>'}</div><div class="scan-summary-actions"><button class="primary-button" data-manage type="button">Изменить статусы выбранных</button><button class="secondary-button" data-manage-all type="button">Все работы</button></div><p data-summary-message role="status"></p><details><summary>Не проверены · ${stats.missing.length}</summary><ul>${stats.missing.map(student=>`<li>${esc(fullName(student))}</li>`).join('')}</ul></details><details><summary>Ошибки, пропуски и повторы · ${session.events.filter(e=>!e.accepted||e.extraCopy).length}</summary><ul>${session.events.filter(e=>!e.accepted||e.extraCopy).map(event=>`<li>${esc(labels[event.status]||event.status)} · ${esc(fullName(data().students.find(s=>s.id===event.studentId))||'Неизвестный код')}${event.extraCopy?' · дополнительный экземпляр':''}${event.comment?` · ${esc(event.comment)}`:''}</li>`).join('')}</ul></details><details><summary>Предыдущие проверки на этом устройстве · ${archived.length}</summary>${archived.map(old=>{const report=scanSessionSummary(old,children());return `<details><summary>${esc(new Date(old.createdAt).toLocaleString('ru-RU'))} · детей ${report.children} · фото ${report.copies}</summary><ul>${report.studentIds.map(id=>`<li>${esc(fullName(data().students.find(student=>student.id===id))||'Карточка удалена')}</li>`).join('')}</ul></details>`;}).join('')}</details><details><summary>Заметки этой проверки · ${session.events.filter(event=>event.comment).length}</summary><ul>${session.events.filter(event=>event.comment).map(event=>`<li>${esc(fullName(data().students.find(student=>student.id===event.studentId)))} · ${esc(event.comment)}</li>`).join("")}</ul></details><details class="group-scan-new"><summary>Начать новую проверку</summary><p>Текущая проверка останется в истории этого устройства.</p><button class="secondary-button" data-new type="button">Новая проверка этой группы</button></details>`;
++    summaryBox.innerHTML=`<h3>Список и итоги</h3>${pending?'<p>Последний код ещё не подтверждён. Нажмите «Продолжить», чтобы завершить его проверку.</p>':''}<div class="scan-summary-counts"><div>Дети<strong>${stats.children}/${children().length}</strong></div><div>Работы<strong>${stats.works}</strong></div><div>Копии<strong>${stats.copies}</strong></div></div><details class="scan-summary-info"><summary>О проверке</summary><p>Сканирований: ${stats.attempts}. Повторов: ${stats.duplicates}. Статусы печати, выдачи и оплаты меняются отдельным действием.</p></details><div class="group-scan-summary-tools"><button class="secondary-button compact" data-all type="button">Выбрать всех</button><button class="secondary-button compact" data-none type="button">Снять выбор</button><button class="secondary-button compact" data-reset type="button">Сбросить проверку</button></div><div class="group-scan-checked">${stats.studentIds.map(id=>{const child=data().students.find(s=>s.id===id),events=session.events.filter(e=>e.accepted&&e.studentId===id),workIds=[...new Set(events.map(e=>e.workId).filter(Boolean))],printed=workIds.filter(wid=>['printed','delivered'].includes(data().works.find(w=>w.id===wid)?.status));return `<label><input type="checkbox" data-selected="${esc(id)}" ${selected.has(id)?'checked':''} /><span><strong>${esc(fullName(child)||'Карточка удалена')}</strong><small>${workIds.length} работ · ${events.filter(e=>e.workId).length} копий · печать ${printed.length}</small><small>${workIds.map(wid=>esc(data().works.find(w=>w.id===wid)?.title||'Готовая работа')).join(' · ')}</small></span></label>`;}).join('')||'<p>Проверенных детей пока нет.</p>'}</div><div class="scan-summary-actions"><button class="primary-button" data-manage type="button">Изменить статусы выбранных</button><button class="secondary-button" data-manage-all type="button">Все работы</button></div><p data-summary-message role="status"></p><details><summary>Не проверены · ${stats.missing.length}</summary><ul>${stats.missing.map(student=>`<li>${esc(fullName(student))}</li>`).join('')}</ul></details><details><summary>Ошибки, пропуски и повторы · ${session.events.filter(e=>!e.accepted||e.extraCopy).length}</summary><ul>${session.events.filter(e=>!e.accepted||e.extraCopy).map(event=>`<li>${esc(labels[event.status]||event.status)} · ${esc(fullName(data().students.find(s=>s.id===event.studentId))||'Неизвестный код')}${event.extraCopy?' · дополнительный экземпляр':''}${event.comment?` · ${esc(event.comment)}`:''}</li>`).join('')}</ul></details><details><summary>Предыдущие проверки · ${archived.length}</summary>${archived.map(old=>{const report=scanSessionSummary(old,children());return `<details><summary>${esc(new Date(old.createdAt).toLocaleString('ru-RU'))} · детей ${report.children} · фото ${report.copies}</summary><ul>${report.studentIds.map(id=>`<li>${esc(fullName(data().students.find(student=>student.id===id))||'Карточка удалена')}</li>`).join('')}</ul></details>`;}).join('')}</details><details><summary>Заметки этой проверки · ${session.events.filter(event=>event.comment).length}</summary><ul>${session.events.filter(event=>event.comment).map(event=>`<li>${esc(fullName(data().students.find(student=>student.id===event.studentId)))} · ${esc(event.comment)}</li>`).join("")}</ul></details><details class="group-scan-new"><summary>Начать новую проверку</summary><p>${scanSync?'Текущая проверка останется в истории. Новая проверка начнётся на всех подключённых устройствах.':'Текущая проверка останется в истории этого устройства.'}</p><button class="secondary-button" data-new type="button">Новая проверка этой группы</button></details>`;
+@@ -85 +85 @@
+-    const resetCheck=()=>{
++    const resetCheck=async()=>{
+@@ -87,2 +87,2 @@
+-      try{if(session.events.length)writeSession(groupSelect.value,session,true);writeSession(groupSelect.value,fresh);}catch{summaryBox.querySelector('[data-summary-message]').textContent='Не удалось сбросить проверку. Текущий список сохранён; освободите место на устройстве и повторите.';return;}
+-      session=fresh;selected.clear();pending=null;lastRaw='';emptyFrames=0;releaseImages();resultBox.hidden=true;panel.querySelector('[data-manual]').hidden=false;panel.querySelector('[name=code]').value='';showSummary();summaryBox.querySelector('[data-summary-message]').textContent='Список и счётчики сброшены. Предыдущая проверка — в истории. Статусы фотографий не менялись.';
++      try{if(session.events.length)writeSession(groupSelect.value,session,true);if(scanSync){await scanSync.reset(groupSelect.value);}else writeSession(groupSelect.value,fresh);}catch{summaryBox.querySelector('[data-summary-message]').textContent='Не удалось сбросить проверку. Текущий список сохранён; освободите место на устройстве и повторите.';return;}
++      session=scanSync?readSession(groupSelect.value):fresh;selected.clear();pending=null;lastRaw='';emptyFrames=0;releaseImages();resultBox.hidden=true;panel.querySelector('[data-manual]').hidden=false;panel.querySelector('[name=code]').value='';showSummary();summaryBox.querySelector('[data-summary-message]').textContent='Список и счётчики сброшены. Предыдущая проверка — в истории. Статусы фотографий не менялись.';
+@@ -97,0 +98,10 @@
++  const cloudRefresh=()=>{
++    if(closed||resultBox.querySelector('button:disabled'))return;
++    const previousIds=new Set(scanSessionSummary(session,children()).studentIds);
++    session=readSession(groupSelect.value);
++    for(const id of scanSessionSummary(session,children()).studentIds)if(!previousIds.has(id))selected.add(id);
++    if(summaryMode)showSummary({preserveScroll:true});
++    else if(pending){const noteFocused=document.activeElement===resultBox.querySelector('[data-note]'),selectionStart=resultBox.querySelector('[data-note]')?.selectionStart;const note=resultBox.querySelector('[data-note]')?.value||'',sourceId=resultBox.querySelector('[aria-label="Оригинал для сравнения"]')?.value||'',scroll=panel.querySelector('.group-scan-body').scrollTop;const target={...pending};showResult(target,sourceId);const input=resultBox.querySelector('[data-note]');if(input){input.value=note;if(note)input.closest('details').open=true;if(noteFocused){input.focus({preventScroll:true});input.setSelectionRange(selectionStart,selectionStart);}}panel.querySelector('.group-scan-body').scrollTop=scroll;}
++    updateCounts();
++  };
++  let unsubscribeCloud,unsubscribeStatus;
+@@ -99 +109 @@
+-  const finish=()=>{if(closed)return;closed=true;stopCamera();releaseImages();persist();window.removeEventListener('pagehide',pageHide);panel.remove();restore?.();};
++  const finish=()=>{if(closed)return;closed=true;stopCamera();releaseImages();persist();unsubscribeCloud?.();unsubscribeStatus?.();window.removeEventListener('pagehide',pageHide);panel.remove();restore?.();};
+@@ -102 +112 @@
+-  document.body.append(panel);history=mountHistory?.(finish);loadSession();panel.querySelector(lockGroup?'[data-camera]':'[data-group]').focus({preventScroll:true});return panel;
++  document.body.append(panel);history=mountHistory?.(finish);loadSession();if(scanSync){unsubscribeCloud=scanSync.subscribe(cloudRefresh);unsubscribeStatus=scanSync.subscribeStatus(message=>{const label=panel.querySelector('[data-cloud-scan-status]');label.hidden=false;label.textContent=message;});void scanSync.sync();}panel.querySelector(lockGroup?'[data-camera]':'[data-group]').focus({preventScroll:true});return panel;
+--- a/js/services/group-scan.js
++++ b/js/services/group-scan.js
+@@ -39 +39 @@
+-  const event={id:`${session.id}:${session.events.length+1}`,studentId:result.studentId||'',workId:result.workId||'',version:result.version||0,status:result.status,accepted:accept,extraCopy,comment:String(comment).trim().slice(0,1000),at:now};
++  const event={id:crypto.randomUUID(),studentId:result.studentId||'',workId:result.workId||'',version:result.version||0,status:result.status,accepted:accept,extraCopy,comment:String(comment).trim().slice(0,1000),at:now};
+--- a/server/sync_api.py
++++ b/server/sync_api.py
+@@ -1,0 +2 @@
++import scan_sessions
+@@ -18,0 +20 @@
++ scan_sessions.initialize(c)
+@@ -135,0 +138 @@
++ if kind=='scans' and len(parts)==2:return scan_sessions.route(r,c,u,a)

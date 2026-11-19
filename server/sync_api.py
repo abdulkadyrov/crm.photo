@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+import scan_sessions
 """Durable, idempotent record synchronization with three-way merges and private blobs."""
 import hashlib,json,os,re,secrets,shutil,tempfile,time
 from pathlib import Path
@@ -16,6 +17,7 @@ def initialize(c):
  CREATE TABLE IF NOT EXISTS sync_receipts(actor TEXT NOT NULL,op TEXT NOT NULL,hash TEXT NOT NULL,result TEXT NOT NULL,PRIMARY KEY(actor,op));
  CREATE TABLE IF NOT EXISTS sync_blobs(scope TEXT NOT NULL,digest TEXT NOT NULL,size INTEGER NOT NULL,actor TEXT NOT NULL,PRIMARY KEY(scope,digest));
  ''')
+ scan_sessions.initialize(c)
 
 def merge(base,local,remote,path=''):
  """Merge disjoint edits; conflicting values remain untouched until explicit review."""
@@ -130,6 +132,7 @@ class BlobFile:
 
 def route(r,c,u,path,a):
  parts=path.strip('/').split('/');kind=parts[1] if len(parts)>1 else ''
+ if kind=='scans' and len(parts)==2:return scan_sessions.route(r,c,u,a)
  if kind=='record' and len(parts)==4 and r.method=='GET':
   store=parts[2];a.fail(store!='media',404,'Не найдено');rid=a.identifier(parts[3])
   row=record(c,store,rid);a.fail(not row or row['data'] is None,404,'Исходник не найден')

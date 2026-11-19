@@ -36,7 +36,7 @@ export function assessGroupScan(target, groupId, session, {students,works}) {
 export function appendScanEvent(session, result, {accept=false,extraCopy=false,comment='',now=new Date().toISOString()}={}) {
   if (accept && !['matched','duplicate'].includes(result.status)) throw new Error('Этот результат нельзя включить в проверенные.');
   if (accept && result.status==='duplicate' && !extraCopy) throw new Error('Повторный экземпляр нужно подтвердить отдельно.');
-  const event={id:`${session.id}:${session.events.length+1}`,studentId:result.studentId||'',workId:result.workId||'',version:result.version||0,status:result.status,accepted:accept,extraCopy,comment:String(comment).trim().slice(0,1000),at:now};
+  const event={id:crypto.randomUUID(),studentId:result.studentId||'',workId:result.workId||'',version:result.version||0,status:result.status,accepted:accept,extraCopy,comment:String(comment).trim().slice(0,1000),at:now};
   return {...session,updatedAt:now,events:[...session.events,event]};
 }
 
