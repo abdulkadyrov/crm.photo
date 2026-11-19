@@ -1,0 +1,389 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=254" />
++    <link rel="stylesheet" href="./styles.css?v=256" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=254"></script>
++    <script type="module" src="./js/core/app.js?v=256"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v254";
++const CACHE_VERSION = "v256";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,39 +74,39 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=254",
+-  "./js/ui/group-scan-panel.js?v=254",
+-  "./js/ui/scan-photo-viewer.js?v=254",
+-  "./js/ui/group-scan-panel.js?v=254",
++  "./js/ui/scan-photo-viewer.js?v=256",
++  "./js/ui/group-scan-panel.js?v=256",
++  "./js/ui/scan-photo-viewer.js?v=256",
++  "./js/ui/group-scan-panel.js?v=256",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=254",
+-  "./js/services/individual-order.js?v=254",
++  "./js/services/service-positions.js?v=256",
++  "./js/services/individual-order.js?v=256",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=254",
++  "./js/services/sequence-navigation.js?v=256",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=254",
++  "./js/services/card-summary.js?v=256",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=254",
++  "./js/services/camera-options.js?v=256",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=254",
+-  "./js/services/deferred-final-work.js?v=254",
++  "./js/services/record-sync.js?v=256",
++  "./js/services/deferred-final-work.js?v=256",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=254",
++  "./js/services/sync-codec.js?v=256",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -114,43 +114,43 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=254",
++  "./styles.css?v=256",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=254",
++  "./js/core/app.js?v=256",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=254",
+-  "./js/services/navigation-history.js?v=254",
++  "./js/services/card-selection.js?v=256",
++  "./js/services/navigation-history.js?v=256",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=254",
+-  "./js/ui/scan-work-picker.js?v=254",
+-  "./js/ui/group-scan-panel.js?v=254",
++  "./js/services/roster-filters.js?v=256",
++  "./js/ui/scan-work-picker.js?v=256",
++  "./js/ui/group-scan-panel.js?v=256",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=254",
++  "./js/services/student-comments.js?v=256",
+   "./js/core/legacy-app.js",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=254",
+-  "./js/services/group-scan.js?v=254",
++  "./js/ui/student-quick-actions.js?v=256",
++  "./js/services/group-scan.js?v=256",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=254",
+-  "./js/ui/project-print-picker.js?v=254",
++  "./js/services/print-selection.js?v=256",
++  "./js/ui/project-print-picker.js?v=256",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=254",
++  "./js/services/student-stage-icons.js?v=256",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=254",
++  "./js/ui/fulfillment-panel.js?v=256",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=254",
++  "./js/services/print-order.js?v=256",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=254",
++  "./js/services/fulfillment.js?v=256",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=254",
++  "./js/core/legacy-app.js?v=256",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -173,10 +173,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=254",
++  "./js/ui/photo-camera.js?v=256",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=254",
++  "./js/services/teacher-broadcast.js?v=256",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -218,7 +218,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=254",
++  "./js/services/parent-orders.js?v=256",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -230,12 +230,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=254",
++  "./js/services/finalwork-service.js?v=256",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=254",
++  "./js/services/export-filter-service.js?v=256",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -266,7 +266,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=254",
++  "./js/services/barcode-reader.js?v=256",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/styles.css
++++ b/styles.css
+@@ -7596,3 +7596,18 @@
+ .final-result-menu .final-result-actions { display:flex; flex-direction:column; gap:5px; margin-top:6px; }
+ .final-result-menu .final-result-actions button,.final-result-menu .final-result-actions a { width:100%; min-height:38px; padding:8px 10px; font-size:13px; line-height:1.3; border-radius:9px; }
+ .final-result-menu summary:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
++
++/* Sheet selection stays outside printable content. */
++.print-page-selection { display:grid; gap:6px; font-size:13px; min-width:0; }
++.print-page-tools { display:flex; flex-wrap:wrap; gap:6px; }
++.print-page-tools button { min-height:36px; padding:7px 10px; font-size:12px; }
++.print-page-selection summary { cursor:pointer; padding:7px 0; font-weight:650; }
++.print-page-options { max-height:145px; overflow:auto; display:grid; gap:4px; padding:3px 0; }
++.print-page-options label { display:flex; align-items:center; gap:8px; min-height:36px; font-size:12px; }
++.print-page-options span { overflow-wrap:anywhere; }
++.print-page-options input { flex-shrink:0; width:18px; height:18px; }
++
++.photo-print-preview .print-preview-panel { grid-template-rows:auto auto minmax(0,1fr) auto auto; }
++.photo-print-preview .print-page-tools { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
++.photo-print-preview .print-page-tools button { width:100%; min-width:0; min-height:34px; padding:6px 4px; font-size:11px; line-height:1.2; }
++@media(max-width:600px) { .photo-print-preview .print-page-options { max-height:100px; } }
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=254");
++  await import("./legacy-app.js?v=256");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,32 +1,32 @@
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=254";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=254";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=254";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=254";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=254";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=254";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=254";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=254";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=254";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=254";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=254";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=256";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=256";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=256";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=256";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=256";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=256";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=256";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=256";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=256";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=256";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=256";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=254";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=254";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=256";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=256";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=254";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=254";
++import {createNavigationHistory} from "../services/navigation-history.js?v=256";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=256";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=254";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=256";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=254";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=254";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=254";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=256";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=256";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=256";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=254";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=254";
++import { nextInSequence } from "../services/sequence-navigation.js?v=256";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=256";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -34,24 +34,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=254";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=256";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=254";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=254";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=256";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=256";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=254";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=256";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=254";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=256";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=254";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=256";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=254";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=254";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=256";
++import { printCodeLayout } from "../services/print-code-layout.js?v=256";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -74,12 +74,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=254";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=256";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=254";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=256";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+@@ -8255,7 +8255,8 @@
+       body { background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+       .photo-page { page: portrait; width: 210mm; height: 297mm; margin: 0; break-inside: avoid; break-after: page; }
+       .photo-page.landscape { page: landscape; width: 297mm; height: 210mm; }
+-      .photo-page:last-child { break-after: auto; }
++      .photo-page:last-child, .photo-page.is-last-selected { break-after: auto; }
++      .photo-page[hidden] { display: none !important; }
+     }
+   </style></head><body>${pages.map(page => `<div class="photo-page ${page.orientation === "horizontal" ? "landscape" : "portrait"}">${page.blank ? "" : `<img src="${escapeAttr(page.url)}" alt="${escapeAttr(page.title)}">`}</div>`).join("")}</body></html>`;
+ }
+@@ -8272,16 +8273,43 @@
+   preview.classList.add("photo-print-preview");
+   const frame = preview.querySelector("iframe");
+   const print = preview.querySelector("[data-print-preview]");
+-  print.textContent = "Печатать";
+-  print.disabled = true;
++  let imagesReady = false;
++  const selected = new Set(renderedPages.map((_, index) => index));
++  const selection = document.createElement('div');
++  selection.className = 'print-page-selection';
++  selection.innerHTML = `<div class="print-page-tools"><button class="secondary-button compact" data-print-all type="button">Все</button><button class="secondary-button compact" data-print-no-blanks type="button">Убрать пустые</button><button class="secondary-button compact" data-print-none type="button">Снять выбор</button></div><details><summary data-print-selection-count></summary><div class="print-page-options">${renderedPages.map((page, index) => `<label><input type="checkbox" data-print-page="${index}" checked><span>Лист ${index + 1} · ${page.blank ? 'Пустой' : escapeHtml(page.title)}</span></label>`).join('')}</div></details>`;
++  frame.before(selection);
+   const hint = document.createElement("p");
+   hint.className = "muted photo-print-hint";
+   hint.textContent = "A4 · 100% · без полей · колонтитулы выключены · порядок страниц: прямой (с первой)";
+   print.parentNode.before(hint);
++  const update = () => {
++    const count = selected.size;
++    selection.querySelector('[data-print-selection-count]').textContent = `Листы: ${count} из ${renderedPages.length} · выбрать`;
++    selection.querySelectorAll('[data-print-page]').forEach(input => { input.checked = selected.has(Number(input.dataset.printPage)); });
++    const sheetNodes = [...(frame.contentDocument?.querySelectorAll('.photo-page') || [])];
++    const last = Math.max(-1, ...selected);
++    sheetNodes.forEach((node, index) => { node.hidden = !selected.has(index); node.classList.toggle('is-last-selected', index === last); });
++    print.textContent = count ? `Печатать · ${count} лист.` : 'Выберите листы';
++    print.disabled = !imagesReady || !count;
++    selection.querySelector('[data-print-no-blanks]').disabled = !renderedPages.some((page,index) => page.blank && selected.has(index));
++  };
++  selection.addEventListener('change', event => {
++    const input = event.target.closest('[data-print-page]');
++    if (!input) return;
++    const index = Number(input.dataset.printPage);
++    if (input.checked) selected.add(index); else selected.delete(index);
++    update();
++  });
++  selection.querySelector('[data-print-all]').onclick = () => { renderedPages.forEach((_, index) => selected.add(index)); update(); };
++  selection.querySelector('[data-print-none]').onclick = () => { selected.clear(); update(); };
++  selection.querySelector('[data-print-no-blanks]').onclick = () => { renderedPages.forEach((page, index) => { if (page.blank) selected.delete(index); }); update(); };
++  update();
+   const ready = async () => {
+     try {
+       await Promise.all([...frame.contentDocument.images].map(image => image.decode()));
+-      print.disabled = false;
++      imagesReady = true;
++      update();
+     } catch { hint.textContent = "Не удалось загрузить фото. Закройте просмотр и попробуйте ещё раз."; }
+   };
+   frame.addEventListener("load", ready, { once: true });
+@@ -8295,7 +8323,7 @@
+   preview.addEventListener("keydown", event => {
+     if (event.key === "Escape") { event.stopPropagation(); close(); }
+     if (event.key === "Tab") {
+-      const controls = [...preview.querySelectorAll('button:not(:disabled), iframe')];
++      const controls = [...preview.querySelectorAll('button:not(:disabled), summary, input:not(:disabled), iframe')];
+       const first = controls[0], last = controls.at(-1);
+       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
