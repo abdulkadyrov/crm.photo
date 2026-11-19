@@ -28,7 +28,7 @@ export function createCameraFocus({getTrack,getSupported=()=>navigator.mediaDevi
   tap(selected){if(disposed||!getTrack())return Promise.resolve();point=selected;const track=getTrack();onStatus('Фокусируемся…');
    pending=pending.catch(()=>{}).then(()=>request(track,selected));return pending.then(targeted=>{if(!disposed&&getTrack()===track)onStatus(targeted?'Запрос фокусировки отправлен':'Автофокус · выбор точки недоступен в этом браузере');}).catch(error=>{if(!disposed)onStatus(error.message);});
   },
-  async prepare(){const track=getTrack();if(disposed||!track)throw new Error('Камера выключена');onStatus('Фокусировка перед снимком · держите камеру неподвижно');await pending;await request(track,point);await sleep(500);if(disposed||track!==getTrack()||track.readyState==='ended')throw new Error('Камера переключена или выключена');},
+  async prepare(){const track=getTrack();if(disposed||!track)throw new Error('Камера выключена');onStatus('Фокусировка перед снимком · держите камеру неподвижно');await pending.catch(()=>{});await request(track,point);await sleep(500);if(disposed||track!==getTrack()||track.readyState==='ended')throw new Error('Камера переключена или выключена');},
   reset(){point=null;pending=Promise.resolve();},dispose(){disposed=true;}
  };
 }

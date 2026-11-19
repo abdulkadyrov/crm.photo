@@ -29,3 +29,9 @@ test('focus updates retain camera zoom, torch and requested preview resolution',
  await createCameraFocus({getTrack:()=>track,getSupported:()=>({pointsOfInterest:true})}).tap({x:.4,y:.6});
  assert.deepEqual(applied,{width:{ideal:2560},frameRate:{ideal:30},advanced:[{torch:true,zoom:2},{focusMode:'continuous',pointsOfInterest:[{x:.4,y:.6}]}]});
 });
+
+test('a failed tap request can be retried by the next shutter press',async()=>{
+ let calls=0;const track={readyState:'live',getCapabilities:()=>({focusMode:['single-shot']}),applyConstraints:async()=>{if(++calls===1)throw new Error('temporary camera error');}};
+ const focus=createCameraFocus({getTrack:()=>track,getSupported:()=>({pointsOfInterest:true}),sleep:async()=>{}});
+ await focus.tap({x:.5,y:.5});await focus.prepare();assert.equal(calls,2);
+});
