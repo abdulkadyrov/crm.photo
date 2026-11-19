@@ -1,0 +1,420 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=257" />
++    <link rel="stylesheet" href="./styles.css?v=258" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=257"></script>
++    <script type="module" src="./js/core/app.js?v=258"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v257";
++const CACHE_VERSION = "v258";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,39 +74,39 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=257",
+-  "./js/ui/group-scan-panel.js?v=257",
+-  "./js/ui/scan-photo-viewer.js?v=257",
+-  "./js/ui/group-scan-panel.js?v=257",
++  "./js/ui/scan-photo-viewer.js?v=258",
++  "./js/ui/group-scan-panel.js?v=258",
++  "./js/ui/scan-photo-viewer.js?v=258",
++  "./js/ui/group-scan-panel.js?v=258",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=257",
+-  "./js/services/individual-order.js?v=257",
++  "./js/services/service-positions.js?v=258",
++  "./js/services/individual-order.js?v=258",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=257",
++  "./js/services/sequence-navigation.js?v=258",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=257",
++  "./js/services/card-summary.js?v=258",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=257",
++  "./js/services/camera-options.js?v=258",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=257",
+-  "./js/services/deferred-final-work.js?v=257",
++  "./js/services/record-sync.js?v=258",
++  "./js/services/deferred-final-work.js?v=258",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=257",
++  "./js/services/sync-codec.js?v=258",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -114,46 +114,46 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=257",
++  "./styles.css?v=258",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=257",
++  "./js/core/app.js?v=258",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=257",
+-  "./js/services/navigation-history.js?v=257",
++  "./js/services/card-selection.js?v=258",
++  "./js/services/navigation-history.js?v=258",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=257",
+-  "./js/ui/scan-work-picker.js?v=257",
+-  "./js/ui/group-scan-panel.js?v=257",
++  "./js/services/roster-filters.js?v=258",
++  "./js/ui/scan-work-picker.js?v=258",
++  "./js/ui/group-scan-panel.js?v=258",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=257",
++  "./js/services/student-comments.js?v=258",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=257",
+-  "./js/ui/scan-photo-viewer.js?v=257",
++  "./js/services/image-delivery.js?v=258",
++  "./js/ui/scan-photo-viewer.js?v=258",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=257",
+-  "./js/services/group-scan.js?v=257",
++  "./js/ui/student-quick-actions.js?v=258",
++  "./js/services/group-scan.js?v=258",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=257",
+-  "./js/ui/project-print-picker.js?v=257",
++  "./js/services/print-selection.js?v=258",
++  "./js/ui/project-print-picker.js?v=258",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=257",
++  "./js/services/student-stage-icons.js?v=258",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=257",
++  "./js/ui/fulfillment-panel.js?v=258",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=257",
++  "./js/services/print-order.js?v=258",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=257",
++  "./js/services/fulfillment.js?v=258",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=257",
++  "./js/core/legacy-app.js?v=258",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -176,10 +176,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=257",
++  "./js/ui/photo-camera.js?v=258",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=257",
++  "./js/services/teacher-broadcast.js?v=258",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -221,7 +221,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=257",
++  "./js/services/parent-orders.js?v=258",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -233,12 +233,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=257",
++  "./js/services/finalwork-service.js?v=258",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=257",
++  "./js/services/export-filter-service.js?v=258",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -269,7 +269,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=257",
++  "./js/services/barcode-reader.js?v=258",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=257");
++  await import("./legacy-app.js?v=258");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,33 +1,33 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=257";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=257";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=256";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=256";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=256";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=256";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=256";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=256";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=256";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=256";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=256";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=256";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=258";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=258";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=258";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=258";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=258";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=258";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=258";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=258";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=258";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=258";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=258";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=258";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=256";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=256";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=258";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=258";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=256";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=256";
++import {createNavigationHistory} from "../services/navigation-history.js?v=258";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=258";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=256";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=258";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=256";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=256";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=256";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=258";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=258";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=258";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=256";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=256";
++import { nextInSequence } from "../services/sequence-navigation.js?v=258";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=258";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -35,24 +35,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=256";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=258";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=256";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=256";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=258";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=258";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=256";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=258";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=256";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=258";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=256";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=258";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=256";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=256";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=258";
++import { printCodeLayout } from "../services/print-code-layout.js?v=258";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -75,12 +75,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=256";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=258";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=256";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=258";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+@@ -2275,6 +2275,33 @@
+   return nextInSequence(groups.flatMap(group => group.letters.flatMap(([, rows]) => rows)), student.id, direction);
+ }
+ 
++const studentOriginalLoads = new Map();
++function originalLoadText(studentId) {
++  const job=studentOriginalLoads.get(studentId);
++  if(job?.running)return `Загружаем оригиналы: ${job.loaded || 0} из ${job.total || '…'}`;
++  if(job?.errors?.length)return 'Часть оригиналов не загрузилась. Проверьте интернет и повторите.';
++  return '';
++}
++async function ensureStudentOriginals(studentId, force=false) {
++  if(!cloudRequired||!recordSync?.loadStudentMedia)return;
++  const previous=studentOriginalLoads.get(studentId);
++  if(previous?.running||(!force&&previous&&Date.now()-previous.at<30000))return;
++  const student=studentById(studentId),scope=classById(student?.classId)?.projectId;
++  if(!scope)return;
++  const job={running:true,at:Date.now(),loaded:0,total:0,errors:[]};studentOriginalLoads.set(studentId,job);
++  const showProgress=()=>{
++    if(state.route!=='student'||state.studentId!==studentId)return;
++    const node=view.querySelector('[data-original-load-status]');if(node)node.textContent=originalLoadText(studentId);
++  };
++  showProgress();
++  try{Object.assign(job,await recordSync.loadStudentMedia(studentId,{scope,onProgress:progress=>{Object.assign(job,progress);showProgress();}}));}
++  catch(error){job.errors=[{message:error.message}];}
++  finally{
++    job.running=false;job.at=Date.now();await refreshData();
++    if(state.route==='student'&&state.studentId===studentId&&canApplyRemoteChanges(document))render();else showProgress();
++  }
++}
++
+ function renderStudent() {
+   const previousShell = view.querySelector('.student-detail-shell');
+   const preserveServiceState = previousShell?.dataset.studentState === state.studentId;
+@@ -2363,8 +2390,10 @@
+             <h2 class="card-title">Оригиналы</h2>
+             <button class="secondary-button" data-export-student="${student.id}" type="button">Экспорт</button>
+           </div>
++          <p class="muted" data-original-load-status role="status">${escapeHtml(originalLoadText(student.id))}</p>
++          ${studentOriginalLoads.get(student.id)?.errors?.length ? `<button class="secondary-button compact" data-retry-originals="${escapeAttr(student.id)}" type="button">Повторить загрузку оригиналов</button>` : ''}
+           <div class="media-grid">
+-            ${media.map(mediaTile).join("")}
++            ${media.filter(item => item.blob instanceof Blob).map(mediaTile).join("")}
+           </div>
+         </article>
+         <div class="grid student-detail-results student-detail-section ${activeStudentDetailTab === "media" ? "is-active" : ""}" data-student-detail-section="media">
+@@ -4874,6 +4903,8 @@
+     });
+   });
+   bindStudentDetailScrollSpy();
++  view.querySelector('[data-retry-originals]')?.addEventListener('click',event=>void ensureStudentOriginals(event.currentTarget.dataset.retryOriginals,true));
++  if(state.route==='student')void ensureStudentOriginals(state.studentId);
+   view.querySelectorAll("[data-ar-project], [data-ar-group]").forEach(button=>button.onclick=()=>publishScopeAR(button.dataset.arProject,button.dataset.arGroup));
+   view.querySelectorAll("[data-publish-ar]").forEach(button => button.onclick = () => publishFinalWorkAR(button.dataset.publishAr));
+   view.querySelectorAll("[data-position-copy], [data-position-media], [data-position-remove]").forEach(button => button.onclick = () => editServicePosition(button));
+--- a/js/services/record-sync.js
++++ b/js/services/record-sync.js
+@@ -349,6 +349,46 @@
+   await sync();
+  }
+ 
++ async function loadStudentMedia(studentId,{scope,onProgress=()=>{}}={}){
++  if(!enabled||!account()||!scope)return {loaded:0,total:0,errors:[]};
++  const actor=actorKey(),report={loaded:0,total:0,errors:[]};
++  const reply=await json(`/sync/photo-index/${encodeURIComponent(scope)}`);
++  if(actor!==actorKey())throw new Error('Аккаунт изменился. Откройте карточку заново.');
++  const ids=[...new Set((reply.photos||[]).filter(photo=>photo.studentId===studentId).map(photo=>photo.id))];
++  report.total=ids.length;onProgress({...report});
++  let next=0;
++  await Promise.all(Array.from({length:Math.min(2,ids.length)},async()=>{
++   while(next<ids.length){
++    const id=ids[next++];
++    try{
++     const pending=await get('syncQueue',keyOf('media',id));
++     if(pending)continue;
++     const local=await get('media',id);
++     if(!(local?.blob instanceof Blob)){
++      const loaded=await loadRecord('media',id);
++      if(!loaded||loaded.record?.studentId!==studentId||!(loaded.record?.blob instanceof Blob))throw new Error('Исходник не найден');
++      if(actor!==actorKey())throw new Error('Аккаунт изменился');
++      const tx=db.transaction(['media','syncQueue'],'readwrite'),saved=done(tx);
++      tx.objectStore('syncQueue').get(keyOf('media',id)).onsuccess=event=>{
++       if(event.target.result)return;
++       tx.objectStore('media').get(id).onsuccess=current=>{
++        // Do not replace a photo edited locally or received while its bytes downloaded.
++        if(current.target.result?.blob instanceof Blob)return;
++        if(JSON.stringify(current.target.result??null)!==JSON.stringify(local??null))return;
++        tx.objectStore('media').put(loaded.record);
++       };
++      };
++      await saved;
++     }
++     report.loaded++;
++    }catch(error){report.errors.push({id,message:error.message});}
++    finally{onProgress({...report,errors:[...report.errors]});}
++   }
++  }));
++  if(actor!==actorKey())throw new Error('Аккаунт изменился. Откройте карточку заново.');
++  return report;
++ }
++
+  async function loadRecord(store,id,{fields}={}){
+   let wire=await get(store,id),scope;
+   if(!wire&&enabled&&store==='media') {const remote=await json(`/sync/record/media/${encodeURIComponent(id)}`);wire=remote.record;scope=remote.scope;}
+@@ -357,5 +397,5 @@
+   const hydration=fields ? Object.fromEntries(Object.entries(wire).filter(([key])=>key==='id'||fields.includes(key))) : wire;
+   return {wire,record:await unpack(hydration,scope,wire)};
+  }
+- return {loadRecord,photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
++ return {loadStudentMedia,loadRecord,photoIndex,writeBatch,resolveConflict:resolve,put:(store,value,expected)=>writeBatch([{store,value,expected}]).then(()=>value),del:(store,id,expected)=>writeBatch([{store,id,value:null,expected}]),clear,start,sync,show,setDatabase:next=>{db=next;}};
+ }

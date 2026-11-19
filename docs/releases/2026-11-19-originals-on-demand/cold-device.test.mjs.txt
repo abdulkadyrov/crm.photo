@@ -1,0 +1,18 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+import {resolve} from 'node:path';
+import {indexedDB} from 'fake-indexeddb';
+import {SYNC_STORES,SYNC_LOCAL_STORES,sha256} from '../../js/services/sync-codec.js';
+let source=await readFile(new URL('./stage/js/services/record-sync.js',import.meta.url),'utf8');
+source=source.replace(/(['"])\.\/([^'"]+)\1/g,(_,q,p)=>q+pathToFileURL(resolve(p.startsWith('deferred-final-work')?'tmp/original-load-20261119':'js/services',p.split('?')[0])).href+q);
+const {createRecordSync}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const request=r=>new Promise((ok,no)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);});
+async function setup(){const r=indexedDB.open(crypto.randomUUID(),1);r.onupgradeneeded=()=>{for(const s of [...SYNC_STORES,...SYNC_LOCAL_STORES])r.result.createObjectStore(s,{keyPath:'id'});};const db=await request(r);let failures=new Set(),downloads=0;const photo=new Blob(['original camera bytes'],{type:'image/jpeg'}),hash=await sha256(photo);const rows=[1,2].map(i=>({id:'m'+i,studentId:'child',type:'photo',blob:{$syncBlob:hash,size:photo.size,type:photo.type}}));
+ globalThis.fetch=async url=>{const path=new URL(url,'https://crm.khanzama.ru').pathname;const json=v=>new Response(JSON.stringify(v),{headers:{'Content-Type':'application/json'}});if(path.includes('/photo-index/'))return json({photos:rows.map(r=>({id:r.id,studentId:r.studentId}))});if(path.includes('/record/media/')){const id=path.split('/').at(-1);if(failures.has(id))return new Response('Unavailable',{status:503});return json({record:rows.find(r=>r.id===id),scope:'p'});}if(path.includes('/sync/blob/')){downloads++;return new Response(photo);}throw new Error(path);};
+ const client=createRecordSync({db,user:{id:'owner',role:'admin'},enabled:true,onRemote:async()=>{},notify:()=>{}});return {db,client,failures,downloads:()=>downloads,photo};}
+const get=(db,s,id)=>request(db.transaction(s).objectStore(s).get(id));
+test('cold device loads only opened child originals, persists bytes without outgoing edits, reuses cache',async()=>{const {db,client,downloads,photo}=await setup();const progress=[];const loaded=await client.loadStudentMedia('child',{scope:'p',onProgress:p=>progress.push(p.loaded)});assert.equal(loaded.loaded,2);assert.deepEqual(loaded.errors,[]);assert.equal(await (await get(db,'media','m1')).blob.text(),await photo.text());assert.equal(await request(db.transaction('syncQueue').objectStore('syncQueue').count()),0);assert.equal(downloads(),1,'equal blobs coalesce');await client.loadStudentMedia('child',{scope:'p'});assert.equal(downloads(),1);assert.ok(progress.includes(2));db.close();});
+test('one failed original does not block other photos and can be retried',async()=>{const {db,client,failures}=await setup();failures.add('m1');let r=await client.loadStudentMedia('child',{scope:'p'});assert.equal(r.loaded,1);assert.equal(r.errors.length,1);assert.ok((await get(db,'media','m2')).blob instanceof Blob);failures.clear();r=await client.loadStudentMedia('child',{scope:'p'});assert.equal(r.loaded,2);assert.equal(r.errors.length,0);db.close();});
+test('pending local deletion is not resurrected by a server photo index',async()=>{const {db,client}=await setup();await request(db.transaction('syncQueue','readwrite').objectStore('syncQueue').put({id:'media:m1',deleted:true}));await client.loadStudentMedia('child',{scope:'p'});assert.equal(await get(db,'media','m1'),undefined);assert.ok((await get(db,'media','m2')).blob instanceof Blob);db.close();});
