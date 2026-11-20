@@ -1,0 +1,214 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=270" />
++    <link rel="stylesheet" href="./styles.css?v=271" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=270"></script>
++    <script type="module" src="./js/core/app.js?v=271"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v270";
++const CACHE_VERSION = "v271";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,37 +74,37 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=270",
+-  "./js/ui/group-scan-panel.js?v=270",
++  "./js/ui/scan-photo-viewer.js?v=271",
++  "./js/ui/group-scan-panel.js?v=271",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=270",
+-  "./js/services/individual-order.js?v=270",
++  "./js/services/service-positions.js?v=271",
++  "./js/services/individual-order.js?v=271",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=270",
++  "./js/services/sequence-navigation.js?v=271",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=270",
++  "./js/services/card-summary.js?v=271",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=270",
++  "./js/services/camera-options.js?v=271",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=270",
+-  "./js/services/deferred-final-work.js?v=270",
++  "./js/services/record-sync.js?v=271",
++  "./js/services/deferred-final-work.js?v=271",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=270",
++  "./js/services/sync-codec.js?v=271",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -112,35 +112,35 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=270",
++  "./styles.css?v=271",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=270",
++  "./js/core/app.js?v=271",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=270",
+-  "./js/services/navigation-history.js?v=270",
++  "./js/services/card-selection.js?v=271",
++  "./js/services/navigation-history.js?v=271",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=270",
+-  "./js/ui/scan-work-picker.js?v=270",
++  "./js/services/roster-filters.js?v=271",
++  "./js/ui/scan-work-picker.js?v=271",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=270",
++  "./js/services/student-comments.js?v=271",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=270",
++  "./js/services/image-delivery.js?v=271",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=270",
+-  "./js/services/group-scan.js?v=270",
++  "./js/ui/student-quick-actions.js?v=271",
++  "./js/services/group-scan.js?v=271",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=270",
+-  "./js/ui/project-print-picker.js?v=270",
++  "./js/services/print-selection.js?v=271",
++  "./js/ui/project-print-picker.js?v=271",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=270",
++  "./js/services/student-stage-icons.js?v=271",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=270",
++  "./js/ui/fulfillment-panel.js?v=271",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=270",
++  "./js/services/print-order.js?v=271",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -156,11 +156,11 @@
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=270",
++  "./js/services/fulfillment.js?v=271",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=270",
++  "./js/core/legacy-app.js?v=271",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -183,10 +183,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=270",
++  "./js/ui/photo-camera.js?v=271",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=270",
++  "./js/services/teacher-broadcast.js?v=271",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -228,7 +228,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=270",
++  "./js/services/parent-orders.js?v=271",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -240,12 +240,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=270",
++  "./js/services/finalwork-service.js?v=271",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=270",
++  "./js/services/export-filter-service.js?v=271",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -276,7 +276,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=270",
++  "./js/services/barcode-reader.js?v=271",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=270");
++  await import("./legacy-app.js?v=271");
+ }
+ 
+ bootstrap();
+--- a/styles.css
++++ b/styles.css
+@@ -7663,3 +7663,13 @@
+ .scan-reference .scan-action-dock .group-scan-result-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .scan-reference .scan-action-dock .group-scan-result-actions button{width:100%;min-width:0;padding:9px 6px;font-size:13px;line-height:1.25}
+ .scan-reference .scan-action-dock .group-scan-result-actions button:only-child{grid-column:1/-1}
++
++/* Floating review decisions: reject left, confirm right. */
++.scan-reference .group-scan-footer{position:relative}
++.scan-reference .scan-action-dock{position:absolute;left:12px;right:12px;bottom:100%;z-index:3;margin:0;padding:0 0 8px;background:transparent}
++.scan-reference .group-scan-body:has(+.group-scan-footer .scan-action-dock:not([hidden])){padding-bottom:90px}
++.scan-reference .scan-action-dock .group-scan-result-actions{padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--card,#fff);box-shadow:0 5px 18px #0000001a;transform:translateY(-6px);margin:0}
++.scan-reference .scan-action-dock [data-reject]{grid-column:1;grid-row:1}
++.scan-reference .scan-action-dock [data-accept]{grid-column:2;grid-row:1}
++.scan-reference .scan-action-dock .group-scan-result-actions button{border-radius:12px;min-height:46px}
++.scan-reference .group-scan-footer:has(.scan-action-dock:not([hidden])){border-top:0;background:transparent}
