@@ -7,8 +7,9 @@ import {createSyncBlobCache} from './sync-blob-cache.js';
 import {captureDialogReturn} from './dialog-return.js';
 export {SYNC_LOCAL_STORES};
 export function canApplyRemoteChanges(doc) {
- if(doc.querySelector('dialog[open]:not(.sync-dialog), [role="dialog"]:not(.sync-dialog), input:focus, textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
- return !Array.from(doc.querySelectorAll('video')).some(video=>!video.paused&&!video.ended);
+ if(doc.querySelector('dialog[open]:not(.sync-dialog), [role="dialog"]:not(.sync-dialog):not(.group-scan-panel), input:focus:not([type="search"]):not([data-search]):not([data-note]):not([name="code"]), textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
+ if(Array.from(doc.querySelectorAll('.group-scan-panel [data-note]')).some(input=>input.value?.trim()))return false;
+ return !Array.from(doc.querySelectorAll('video')).some(video=>!video.paused&&!video.ended&&!video.closest?.('.group-scan-panel'));
 }
 const keyOf=(store,id)=>store+':'+id;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

@@ -1,0 +1,485 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=268" />
++    <link rel="stylesheet" href="./styles.css?v=269" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +67,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=268"></script>
++    <script type="module" src="./js/core/app.js?v=269"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v268";
++const CACHE_VERSION = "v269";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,37 +74,37 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=268",
+-  "./js/ui/group-scan-panel.js?v=268",
++  "./js/ui/scan-photo-viewer.js?v=269",
++  "./js/ui/group-scan-panel.js?v=269",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=268",
+-  "./js/services/individual-order.js?v=268",
++  "./js/services/service-positions.js?v=269",
++  "./js/services/individual-order.js?v=269",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=268",
++  "./js/services/sequence-navigation.js?v=269",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=268",
++  "./js/services/card-summary.js?v=269",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=268",
++  "./js/services/camera-options.js?v=269",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=268",
+-  "./js/services/deferred-final-work.js?v=268",
++  "./js/services/record-sync.js?v=269",
++  "./js/services/deferred-final-work.js?v=269",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=268",
++  "./js/services/sync-codec.js?v=269",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -112,35 +112,35 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=268",
++  "./styles.css?v=269",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=268",
++  "./js/core/app.js?v=269",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=268",
+-  "./js/services/navigation-history.js?v=268",
++  "./js/services/card-selection.js?v=269",
++  "./js/services/navigation-history.js?v=269",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=268",
+-  "./js/ui/scan-work-picker.js?v=268",
++  "./js/services/roster-filters.js?v=269",
++  "./js/ui/scan-work-picker.js?v=269",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=268",
++  "./js/services/student-comments.js?v=269",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=268",
++  "./js/services/image-delivery.js?v=269",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=268",
+-  "./js/services/group-scan.js?v=268",
++  "./js/ui/student-quick-actions.js?v=269",
++  "./js/services/group-scan.js?v=269",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=268",
+-  "./js/ui/project-print-picker.js?v=268",
++  "./js/services/print-selection.js?v=269",
++  "./js/ui/project-print-picker.js?v=269",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=268",
++  "./js/services/student-stage-icons.js?v=269",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=268",
++  "./js/ui/fulfillment-panel.js?v=269",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=268",
++  "./js/services/print-order.js?v=269",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -156,11 +156,11 @@
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=268",
++  "./js/services/fulfillment.js?v=269",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=268",
++  "./js/core/legacy-app.js?v=269",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -183,10 +183,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=268",
++  "./js/ui/photo-camera.js?v=269",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=268",
++  "./js/services/teacher-broadcast.js?v=269",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -228,7 +228,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=268",
++  "./js/services/parent-orders.js?v=269",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -240,12 +240,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=268",
++  "./js/services/finalwork-service.js?v=269",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=268",
++  "./js/services/export-filter-service.js?v=269",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -276,7 +276,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=268",
++  "./js/services/barcode-reader.js?v=269",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=268");
++  await import("./legacy-app.js?v=269");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,39 +1,39 @@
+ import {fulfillmentUnitPrice} from '../services/fulfillment-pricing.js';
+ import {serviceFilterChoices} from '../services/service-filter.js';
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=268';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=268';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=268';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=269';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=269';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=269';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=268";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=268";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=268";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=268";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=268";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=268";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=268";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=268";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=268";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=268";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=268";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=268";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=269";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=269";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=269";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=269";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=269";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=269";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=269";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=269";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=269";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=269";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=269";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=269";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=268";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=268";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=269";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=269";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=268";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=268";
++import {createNavigationHistory} from "../services/navigation-history.js?v=269";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=269";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=268";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=269";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=268";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=268";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=268";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=269";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=269";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=269";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=268";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=268";
++import { nextInSequence } from "../services/sequence-navigation.js?v=269";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=269";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -41,24 +41,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=268";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=269";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=268";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=268";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=269";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=269";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=268";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=269";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=268";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=269";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=268";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=269";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=268";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=268";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=269";
++import { printCodeLayout } from "../services/print-code-layout.js?v=269";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -81,12 +81,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=268";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=269";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=268";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=269";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+--- a/styles.css
++++ b/styles.css
+@@ -7628,3 +7628,33 @@
+ .scan-service-thumb { display:flex; align-items:center; justify-content:center; width:100%; height:90px; border-radius:6px; background:var(--card-strong); font-size:11px; }
+ .scan-service-thumb img { width:100%; height:100%; object-fit:contain; border-radius:6px; }
+ .scan-service-missing { font-size:12px; margin:8px 0; overflow-wrap:anywhere; }
++
++/* Compact scanner review: actions stay outside the independently scrolling body. */
++.group-scan-panel.scan-reference { border-radius:20px; box-shadow:0 12px 36px #0002; }
++.scan-reference .group-scan-head { padding:12px 14px; }
++.scan-reference .group-scan-head h2 { font-size:18px; letter-spacing:-.02em; }
++.scan-reference .group-scan-result { padding:4px 0 8px; }
++.scan-reference .group-scan-name { font-size:18px; }
++.scan-reference .group-scan-images { gap:8px; margin:8px 0; }
++.scan-reference .group-scan-images img { height:clamp(130px,24dvh,210px); }
++.scan-reference .group-scan-footer { flex:none; padding:8px 14px max(8px,env(safe-area-inset-bottom)); background:var(--card,#fff); }
++.scan-reference .scan-action-dock .group-scan-result-actions { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px; }
++.scan-reference .scan-action-dock button { flex:1 1 120px; width:auto; min-height:46px; border-radius:12px; }
++.scan-reference .scan-action-dock [data-accept],.scan-reference .scan-action-dock [data-skip] { flex-basis:100%; }
++.scan-reference details { padding:7px 0; }
++.scan-reference summary { min-height:34px; padding:6px 0; font-size:13px; }
++@media(max-width:640px){.group-scan-panel.scan-reference{border-radius:0;height:100dvh;max-height:100dvh}.scan-reference .group-scan-body{padding:0 12px}.scan-reference .group-scan-footer{padding-left:12px;padding-right:12px}}
++.sync-dialog { border-radius:20px; box-shadow:0 12px 36px #0002; }
++.sync-dialog .sync-panel-head { gap:12px; padding:14px 16px; }
++.sync-dialog .sync-panel-head h2 { font-size:19px; letter-spacing:-.02em; }
++.sync-dialog .sync-panel-head small { font-size:12px; line-height:1.4; }
++.sync-dialog .sync-panel-summary { padding:12px 16px; }
++.sync-dialog .sync-panel-hero h3 { font-size:17px; line-height:1.25; }
++.sync-dialog .sync-panel-hero p { font-size:13px; line-height:1.45; }
++.sync-dialog .sync-help summary,.sync-dialog .sync-pending summary { min-height:44px; font-size:14px; }
++.sync-dialog .sync-panel-action { position:sticky;bottom:0;background:var(--card,#fff);padding:10px 16px max(10px,env(safe-area-inset-bottom));z-index:2; }
++.sync-dialog .sync-panel-action button { min-height:44px;border-radius:12px; }
++@media(max-width:640px){.sync-dialog{max-height:calc(100dvh - 16px);width:calc(100vw - 16px);margin:auto;padding:0}.sync-dialog .sync-panel-locations>div{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
++.group-scan-panel.scan-reference,.sync-dialog{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
++@media(max-width:640px){.group-scan-panel.scan-reference{height:var(--scanner-height,100dvh);max-height:var(--scanner-height,100dvh)}}
++.sync-dialog .sync-panel-action{top:0;bottom:auto;border-bottom:1px solid var(--line);}
+--- a/js/ui/group-scan-panel.js
++++ b/js/ui/group-scan-panel.js
+@@ -1,7 +1,7 @@
+ import {bindTapFocus} from '../services/camera-focus.js';
+-import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=261';
++import { enhanceScanPhotoPair } from './scan-photo-viewer.js?v=269';
+ import { studentCommentPreview } from '../services/student-comments.js';
+-import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js?v=261';
++import { assessGroupScan, appendScanEvent, scanSessionSummary } from '../services/group-scan.js?v=269';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const fullName=student=>`${student?.lastName||''} ${student?.firstName||''}`.trim();
+ const labels={choose:'Выберите отсканированную работу',matched:'Код распознан',foreign:'Другая группа',unknown:'Код не найден',ambiguous:'Несколько подходящих работ',inconsistent:'Ошибка привязки работы',duplicate:'Уже проверяли',correction:'Работа на исправлении',rejected:'Не совпадает / брак'};
+@@ -15,11 +15,13 @@
+   if(lockGroup){panel.querySelector('.group-scan-group').hidden=true;panel.querySelector('#group-scan-title').textContent='Сканер · '+(groups.find(group=>group.id===initialGroupId)?.name||'Группа');}
+   let session,stream=null,detector=null,frame=0,generation=0,closed=false,starting=false,readingFile=false,pending=null,lastRaw='',emptyFrames=0,summaryMode=false,history,selected=new Set(),imageUrls=[];
+   const tapFocus=bindTapFocus(video,{getTrack:()=>stream?.getVideoTracks()[0],onStatus:message=>panel.querySelector('[data-camera-message]').textContent=message});
++  const fitViewport=()=>panel.style.setProperty('--scanner-height',(window.visualViewport?.height||window.innerHeight)+'px');fitViewport();window.visualViewport?.addEventListener('resize',fitViewport);
++  const dock=document.createElement('div');dock.className='scan-action-dock';dock.hidden=true;panel.querySelector('.group-scan-footer').prepend(dock);
+   const data=()=>getData();
+   const children=()=>data().students.filter(student=>groupSelect.value==='*'||student.classId===groupSelect.value);
+   const persist=()=>{try{writeSession(groupSelect.value,session);return true;}catch{panel.querySelector('[data-camera-message]').textContent='Не удалось сохранить журнал на устройстве. Не закрывайте проверку до завершения.';return false;}};
+   const releaseImages=()=>{for(const url of imageUrls)URL.revokeObjectURL(url);imageUrls=[];};
+-  const loadSession=()=>{let saved;try{saved=readSession(groupSelect.value);}catch{}session=saved?.groupId===groupSelect.value&&Array.isArray(saved.events)?saved:{id:crypto.randomUUID(),groupId:groupSelect.value,createdAt:new Date().toISOString(),events:[]};selected=new Set(scanSessionSummary(session,children()).studentIds);pending=null;resultBox.hidden=true;updateCounts();};
++  const loadSession=()=>{let saved;try{saved=readSession(groupSelect.value);}catch{}session=saved?.groupId===groupSelect.value&&Array.isArray(saved.events)?saved:{id:crypto.randomUUID(),groupId:groupSelect.value,createdAt:new Date().toISOString(),events:[]};selected=new Set(scanSessionSummary(session,children()).studentIds);pending=null;dock.hidden=true;dock.replaceChildren();resultBox.hidden=true;updateCounts();};
+   function updateCounts(){const stats=scanSessionSummary(session,children());const count=panel.querySelector('[data-count]');count.textContent=`Дети ${stats.children}/${children().length} · Фото ${stats.copies}`;count.title=`Работ ${stats.works} · Отклонено ${stats.rejected} · Повторов ${stats.duplicates}`;}
+   function stopCamera(){tapFocus.reset();generation++;starting=false;cancelAnimationFrame(frame);frame=0;stream?.getTracks().forEach(track=>track.stop());stream=null;video.srcObject=null;video.hidden=true;panel.querySelector('[data-camera-hint]').hidden=false;panel.querySelector('[data-stop]').hidden=true;panel.querySelector('[data-camera]').textContent='Камера';panel.querySelector('[data-camera]').disabled=false;}
+   async function startCamera(){
+@@ -41,6 +43,7 @@
+     finally{starting=false;if(!stream)panel.querySelector('[data-camera]').disabled=false;}
+   }
+   function showResult(target,sourceId=""){
++    dock.replaceChildren();dock.hidden=true;
+     releaseImages();pending=assessGroupScan(target,groupSelect.value,session,data());
+     const student=data().students.find(row=>row.id===pending.studentId),work=data().works.find(row=>row.id===pending.workId),group=groups.find(row=>row.id===student?.classId),possible=data().works.filter(row=>row.studentId===student?.id);
+     resultBox.hidden=false;panel.querySelector('.group-scan-panel').dataset.state='result';panel.querySelector('[data-manual]').hidden=true;
+@@ -69,13 +72,14 @@
+     for(const button of resultBox.querySelectorAll('[data-quick]'))button.onclick=()=>{const target={...pending},note=resultBox.querySelector('[data-note]').value;onQuickAction(student.id,button.dataset.quick,button,()=>{showResult(target,sourceId);resultBox.querySelector('[data-note]').value=note;});};
+     resultBox.querySelector('[data-ambiguous]')?.addEventListener('change',event=>{const row=data().works.find(work=>work.id===event.target.value);if(row)showResult({kind:'work',studentId:row.studentId,workId:row.id});});
+     let advancing=false;const noteId=crypto.randomUUID();
+-    const advance=async(accept=false,extraCopy=false)=>{if(advancing)return;advancing=true;const controls=[...panel.querySelectorAll('button,input,select')].map(el=>({el,disabled:el.disabled}));controls.forEach(({el})=>el.disabled=true);try{const comment=resultBox.querySelector('[data-note]').value.trim();if(comment){if(!onSaveNote)throw new Error('Сохранение комментария недоступно. Оставьте комментарий через карточку ребёнка.');await onSaveNote({...pending},comment,noteId);}}catch(error){advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector('[data-camera-message]').textContent='Комментарий не сохранён: '+error.message;return;}const previous=session;session=appendScanEvent(session,pending,{accept,extraCopy,comment:resultBox.querySelector('[data-note]').value});if(!persist()){session=previous;advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);return;}if(accept)selected.add(pending.studentId);pending=null;resultBox.hidden=true;panel.querySelector('.group-scan-panel').dataset.state='capture';panel.querySelector('[data-manual]').hidden=false;panel.querySelector('[name=code]').value='';updateCounts();panel.querySelector('[data-camera-message]').textContent=accept?'Записано. Уберите этот код из кадра и покажите следующий.':'Пропущено. Покажите следующий код.';advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector(stream?'[data-show-summary]':'[name=code]').focus({preventScroll:true});releaseImages();};
+-    resultBox.querySelector('[data-accept]')?.addEventListener('click',()=>advance(true));resultBox.querySelector('[data-copy]')?.addEventListener('click',()=>advance(true,true));resultBox.querySelector('[data-skip]')?.addEventListener('click',()=>advance());resultBox.querySelector('[data-reject]')?.addEventListener('click',()=>{pending={...pending,status:'rejected'};advance();});
+-    resultBox.querySelector('[data-accept],[data-skip]')?.focus({preventScroll:true});resultBox.scrollIntoView({block:'nearest'});
++    const advance=async(accept=false,extraCopy=false)=>{if(advancing)return;advancing=true;const controls=[...panel.querySelectorAll('button,input,select')].map(el=>({el,disabled:el.disabled}));controls.forEach(({el})=>el.disabled=true);try{const comment=resultBox.querySelector('[data-note]').value.trim();if(comment){if(!onSaveNote)throw new Error('Сохранение комментария недоступно. Оставьте комментарий через карточку ребёнка.');await onSaveNote({...pending},comment,noteId);}}catch(error){advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector('[data-camera-message]').textContent='Комментарий не сохранён: '+error.message;return;}const previous=session;session=appendScanEvent(session,pending,{accept,extraCopy,comment:resultBox.querySelector('[data-note]').value});if(!persist()){session=previous;advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);return;}if(accept)selected.add(pending.studentId);pending=null;dock.hidden=true;dock.replaceChildren();resultBox.hidden=true;panel.querySelector('.group-scan-panel').dataset.state='capture';panel.querySelector('[data-manual]').hidden=false;panel.querySelector('[name=code]').value='';updateCounts();panel.querySelector('[data-camera-message]').textContent=accept?'Записано. Уберите этот код из кадра и покажите следующий.':'Пропущено. Покажите следующий код.';advancing=false;controls.forEach(({el,disabled})=>el.disabled=disabled);panel.querySelector(stream?'[data-show-summary]':'[name=code]').focus({preventScroll:true});releaseImages();};
++    const actions=resultBox.querySelector('.group-scan-result-actions');if(actions){dock.append(actions);dock.hidden=false;}
++    panel.querySelector('[data-accept]')?.addEventListener('click',()=>advance(true));panel.querySelector('[data-copy]')?.addEventListener('click',()=>advance(true,true));panel.querySelector('[data-skip]')?.addEventListener('click',()=>advance());panel.querySelector('[data-reject]')?.addEventListener('click',()=>{pending={...pending,status:'rejected'};advance();});
++    panel.querySelector('[data-accept],[data-skip]')?.focus({preventScroll:true});resultBox.scrollIntoView({block:'nearest'});
+   }
+   function showSummary({preserveScroll=false}={}){
+     const scrollTop=panel.querySelector('.group-scan-body').scrollTop;
+-    stopCamera();summaryMode=true;panel.querySelector('.group-scan-panel').dataset.state='summary';panel.querySelector('[data-capture]').hidden=true;resultBox.hidden=true;summaryBox.hidden=false;panel.querySelector('[data-show-summary]').hidden=true;panel.querySelector('[data-resume]').hidden=false;
++    stopCamera();summaryMode=true;dock.hidden=true;panel.querySelector('.group-scan-panel').dataset.state='summary';panel.querySelector('[data-capture]').hidden=true;resultBox.hidden=true;summaryBox.hidden=false;panel.querySelector('[data-show-summary]').hidden=true;panel.querySelector('[data-resume]').hidden=false;
+     const stats=scanSessionSummary(session,children());
+     let archived=[];try{const stored=readSession(groupSelect.value,true);if(Array.isArray(stored))archived=stored;}catch{}
+     summaryBox.innerHTML=`<h3>Список и итоги</h3>${pending?'<p>Последний код ещё не подтверждён. Нажмите «Продолжить», чтобы завершить его проверку.</p>':''}<div class="scan-summary-counts"><div>Дети<strong>${stats.children}/${children().length}</strong></div><div>Работы<strong>${stats.works}</strong></div><div>Копии<strong>${stats.copies}</strong></div></div><details class="scan-summary-info"><summary>О проверке</summary><p>Сканирований: ${stats.attempts}. Повторов: ${stats.duplicates}. Статусы печати, выдачи и оплаты меняются отдельным действием.</p></details><div class="group-scan-summary-tools"><button class="secondary-button compact" data-all type="button">Выбрать всех</button><button class="secondary-button compact" data-none type="button">Снять выбор</button><button class="secondary-button compact" data-reset type="button">Сбросить проверку</button></div><div class="group-scan-checked">${stats.studentIds.map(id=>{const child=data().students.find(s=>s.id===id),events=session.events.filter(e=>e.accepted&&e.studentId===id),workIds=[...new Set(events.map(e=>e.workId).filter(Boolean))],printed=workIds.filter(wid=>['printed','delivered'].includes(data().works.find(w=>w.id===wid)?.status));return `<label><input type="checkbox" data-selected="${esc(id)}" ${selected.has(id)?'checked':''} /><span><strong>${esc(fullName(child)||'Карточка удалена')}</strong><small>${workIds.length} работ · ${events.filter(e=>e.workId).length} копий · печать ${printed.length}</small><small>${workIds.map(wid=>esc(data().works.find(w=>w.id===wid)?.title||'Готовая работа')).join(' · ')}</small></span></label>`;}).join('')||'<p>Проверенных детей пока нет.</p>'}</div><div class="scan-summary-actions"><button class="primary-button" data-manage type="button">Изменить статусы выбранных</button><button class="secondary-button" data-manage-all type="button">Все работы</button></div><p data-summary-message role="status"></p><details><summary>Не проверены · ${stats.missing.length}</summary><ul>${stats.missing.map(student=>`<li>${esc(fullName(student))}</li>`).join('')}</ul></details><details><summary>Ошибки, пропуски и повторы · ${session.events.filter(e=>!e.accepted||e.extraCopy).length}</summary><ul>${session.events.filter(e=>!e.accepted||e.extraCopy).map(event=>`<li>${esc(labels[event.status]||event.status)} · ${esc(fullName(data().students.find(s=>s.id===event.studentId))||'Неизвестный код')}${event.extraCopy?' · дополнительный экземпляр':''}${event.comment?` · ${esc(event.comment)}`:''}</li>`).join('')}</ul></details><details><summary>Предыдущие проверки · ${archived.length}</summary>${archived.map(old=>{const report=scanSessionSummary(old,children());return `<details><summary>${esc(new Date(old.createdAt).toLocaleString('ru-RU'))} · детей ${report.children} · фото ${report.copies}</summary><ul>${report.studentIds.map(id=>`<li>${esc(fullName(data().students.find(student=>student.id===id))||'Карточка удалена')}</li>`).join('')}</ul></details>`;}).join('')}</details><details><summary>Заметки этой проверки · ${session.events.filter(event=>event.comment).length}</summary><ul>${session.events.filter(event=>event.comment).map(event=>`<li>${esc(fullName(data().students.find(student=>student.id===event.studentId)))} · ${esc(event.comment)}</li>`).join("")}</ul></details><details class="group-scan-new"><summary>Начать новую проверку</summary><p>${scanSync?'Текущая проверка останется в истории. Новая проверка начнётся на всех подключённых устройствах.':'Текущая проверка останется в истории этого устройства.'}</p><button class="secondary-button" data-new type="button">Новая проверка этой группы</button></details>`;
+@@ -91,14 +95,14 @@
+     };
+     summaryBox.querySelector('[data-new]').onclick=resetCheck;summaryBox.querySelector('[data-reset]').onclick=resetCheck;update();updateCounts();panel.querySelector('.group-scan-body').scrollTop=preserveScroll?scrollTop:0;
+   }
+-  function resume(){summaryMode=false;panel.querySelector('.group-scan-panel').dataset.state=pending?'result':'capture';summaryBox.hidden=true;panel.querySelector('[data-capture]').hidden=false;resultBox.hidden=!pending;panel.querySelector('[data-manual]').hidden=!!pending;panel.querySelector('[data-show-summary]').hidden=false;panel.querySelector('[data-resume]').hidden=true;updateCounts();}
++  function resume(){summaryMode=false;dock.hidden=!pending;panel.querySelector('.group-scan-panel').dataset.state=pending?'result':'capture';summaryBox.hidden=true;panel.querySelector('[data-capture]').hidden=false;resultBox.hidden=!pending;panel.querySelector('[data-manual]').hidden=!!pending;panel.querySelector('[data-show-summary]').hidden=false;panel.querySelector('[data-resume]').hidden=true;updateCounts();}
+   panel.querySelector('[data-camera]').onclick=startCamera;panel.querySelector('[data-stop]').onclick=stopCamera;panel.querySelector('[data-show-summary]').onclick=showSummary;panel.querySelector('[data-resume]').onclick=resume;
+   panel.querySelector('[data-manual]').onsubmit=event=>{event.preventDefault();if(!pending)showResult(resolve(new FormData(event.target).get('code')));};
+   panel.querySelector('[data-file-label]').onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();panel.querySelector('[data-file]').click();}};
+   panel.querySelector('[data-file]').onchange=async event=>{const file=event.target.files?.[0];event.target.value='';if(!file||pending||readingFile)return;readingFile=true;const token=generation;panel.querySelector('[data-camera-message]').textContent='Читаем код с фотографии…';try{const raw=await decodeFile(file);if(!closed&&token===generation){raw?showResult(resolve(raw)):panel.querySelector('[data-camera-message]').textContent='Код не распознан. Снимите его крупнее без бликов или введите вручную.';}}catch{if(!closed)panel.querySelector('[data-camera-message]').textContent='Не удалось прочитать фото кода.';}finally{readingFile=false;}};
+   groupSelect.onchange=()=>{stopCamera();releaseImages();loadSession();resume();};
+   const cloudRefresh=()=>{
+-    if(closed||resultBox.querySelector('button:disabled'))return;
++    if(closed||panel.querySelector('.scan-action-dock button:disabled'))return;
+     const previousIds=new Set(scanSessionSummary(session,children()).studentIds);
+     session=readSession(groupSelect.value);
+     for(const id of scanSessionSummary(session,children()).studentIds)if(!previousIds.has(id))selected.add(id);
+@@ -108,7 +112,7 @@
+   };
+   let unsubscribeCloud,unsubscribeStatus;
+   const pageHide=()=>{stopCamera();persist();};window.addEventListener('pagehide',pageHide);
+-  const finish=()=>{if(closed)return;closed=true;tapFocus.dispose();stopCamera();releaseImages();persist();unsubscribeCloud?.();unsubscribeStatus?.();window.removeEventListener('pagehide',pageHide);panel.remove();restore?.();};
++  const finish=()=>{if(closed)return;closed=true;window.visualViewport?.removeEventListener('resize',fitViewport);tapFocus.dispose();stopCamera();releaseImages();persist();unsubscribeCloud?.();unsubscribeStatus?.();window.removeEventListener('pagehide',pageHide);panel.remove();restore?.();};
+   panel.querySelector('[data-close]').onclick=()=>history?history.close():finish();
+   panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();history?history.close():finish();}if(event.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,summary,[tabindex="0"]')].filter(el=>!el.disabled&&el.getClientRects().length);if(event.shiftKey&&document.activeElement===nodes[0]){event.preventDefault();nodes.at(-1)?.focus();}else if(!event.shiftKey&&document.activeElement===nodes.at(-1)){event.preventDefault();nodes[0]?.focus();}}});
+   document.body.append(panel);history=mountHistory?.(finish);loadSession();if(scanSync){unsubscribeCloud=scanSync.subscribe(cloudRefresh);unsubscribeStatus=scanSync.subscribeStatus(message=>{const label=panel.querySelector('[data-cloud-scan-status]');label.hidden=false;label.textContent=message;});void scanSync.sync();}panel.querySelector(lockGroup?'[data-camera]':'[data-group]').focus({preventScroll:true});return panel;
+--- a/js/services/record-sync.js
++++ b/js/services/record-sync.js
+@@ -1,14 +1,15 @@
+-import {mergeDeferredRecord} from './deferred-final-work.js?v=218';
++import {mergeDeferredRecord} from './deferred-final-work.js?v=269';
+ import {mountProjectProgress} from './sync-project-progress.js';
+ import {syncTransferText} from './sync-contents.js';
+ import {syncPanelState} from './sync-panel-state.js';
+-import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js?v=222';
++import {SYNC_STORES,SYNC_LOCAL_STORES,encodeRecord,decodeRecord,sha256,rebaseLocal} from './sync-codec.js?v=269';
+ import {createSyncBlobCache} from './sync-blob-cache.js';
+ import {captureDialogReturn} from './dialog-return.js';
+ export {SYNC_LOCAL_STORES};
+ export function canApplyRemoteChanges(doc) {
+- if(doc.querySelector('dialog[open]:not(.sync-dialog), [role="dialog"]:not(.sync-dialog), input:focus, textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
+- return !Array.from(doc.querySelectorAll('video')).some(video=>!video.paused&&!video.ended);
++ if(doc.querySelector('dialog[open]:not(.sync-dialog), [role="dialog"]:not(.sync-dialog):not(.group-scan-panel), input:focus:not([type="search"]):not([data-search]):not([data-note]):not([name="code"]), textarea:focus, select:focus, form[data-sync-editing], .transfer-import-backdrop'))return false;
++ if(Array.from(doc.querySelectorAll('.group-scan-panel [data-note]')).some(input=>input.value?.trim()))return false;
++ return !Array.from(doc.querySelectorAll('video')).some(video=>!video.paused&&!video.ended&&!video.closest?.('.group-scan-panel'));
+ }
+ const keyOf=(store,id)=>store+':'+id;
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+@@ -299,17 +300,21 @@
+  }
+  async function show(trigger){
+   const restore=captureDialogReturn(document,window,trigger),dialog=document.createElement('dialog');dialog.className='cloud-dialog sync-dialog';dialog.setAttribute('aria-label','Сохранение');
+-  dialog.innerHTML='<header class="sync-panel-head"><div><h2>Сохранение</h2><small>Данные и файлы CRM</small></div><button data-close type="button" aria-label="Закрыть панель"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><section class="sync-panel-summary" data-summary aria-live="polite"></section><section class="sync-project-progress" data-project-progress></section><div class="sync-panel-action"><button class="secondary-button" data-retry type="button">Проверить обновления</button><p data-status role="status"></p></div><details class="sync-pending" data-pending><summary>Очередь отправки <span data-queue-count></span></summary><div data-list></div></details><details class="sync-help"><summary>Исправления и восстановление</summary><div data-history></div></details><details class="sync-help"><summary>Как работает сохранение</summary><p>Изменения сначала сохраняются на устройстве. При наличии интернета CRM отправляет новые изменения на сервер. Если связь прервалась, очередь остаётся на устройстве.</p><p>Копирование в S3 можно проверить в разделе «Хранилище» кабинета администратора.</p></details>';
+-
+-
++  dialog.innerHTML='<header class="sync-panel-head"><div><h2>Синхронизация</h2><small>Это устройство и сервер</small></div><button data-close type="button" aria-label="Закрыть панель"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header><section class="sync-panel-summary" data-summary aria-live="polite"></section><section class="sync-project-progress" data-project-progress></section><div class="sync-panel-action"><button class="secondary-button" data-retry type="button">Проверить обновления</button><p data-status role="status"></p></div><details class="sync-pending" data-pending><summary>Очередь отправки <span data-queue-count></span></summary><div data-list></div></details><details class="sync-help"><summary>Исправления и восстановление</summary><div data-history></div></details><details class="sync-help"><summary>Как работает сохранение</summary><p>Изменения сначала сохраняются на устройстве. При наличии интернета CRM отправляет новые изменения на сервер. Если связь прервалась, очередь остаётся на устройстве.</p><p>Копирование в S3 можно проверить в разделе «Хранилище» кабинета администратора.</p></details>';
++
++
++  dialog.querySelector('[data-summary]').after(dialog.querySelector('.sync-panel-action'));
+   document.body.append(dialog);dialog.showModal();history.pushState({...history.state,recordSyncModal:true},'');const back=()=>dialog.close();window.addEventListener('popstate',back,{once:true});
+   dialog.onclose=()=>{window.removeEventListener('popstate',back);dialog.remove();if(history.state?.recordSyncModal)history.back();restore();};dialog.querySelector('[data-close]').onclick=()=>dialog.close();
++  let rendering=false;
+   async function render(){
++   if(rendering||!dialog.open)return;rendering=true;try{
+    const queue=(await all('syncQueue')).filter(row=>row.actor===account()?.id);dialog.querySelector('[data-list]').innerHTML='';
++   const actor=account();dialog.querySelector('.sync-panel-head small').textContent=[actor?.name||actor?.login,({admin:'Администратор',manager:'Менеджер',photographer:'Фотограф',viewer:'Просмотр'})[actor?.role]].filter(Boolean).join(' · ')||'Это устройство и сервер';
+    const model=syncPanelState({queue,online:navigator.onLine,running,status});
+    dialog.dataset.syncState=model.kind;
+    const icon=model.kind==='saved'?'<path d="m6 12 4 4 8-8"/>':model.kind==='attention'?'<path d="M12 8v5m0 4h.01"/><circle cx="12" cy="12" r="9"/>':'<path d="M20 8a8 8 0 0 0-14-2L3 9m0-6v6h6M4 16a8 8 0 0 0 14 2l3-3m0 6v-6h-6"/>';
+-   dialog.querySelector('[data-summary]').innerHTML=`<div class="sync-panel-hero"><span class="sync-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><div><h3>${esc(model.title)}</h3><p>${esc(model.detail)}</p></div></div><dl class="sync-panel-locations"><div><dt>Отправка изменений</dt><dd>${queue.length?queue.length+" в очереди":running?"Проверяем":"Очередь пуста"}</dd></div><div><dt>Получение данных</dt><dd>${esc(model.server)}</dd></div></dl><p class="sync-transfer-detail">${esc(syncTransferText(activity,running))}</p>${running?`<p class="sync-transfer-detail">Записей получено: ${activity.received} · файлов: ${activity.downloaded}</p>`:""}${model.progress?`<div class="sync-panel-progress"><progress max="${model.progress.total}" value="${model.progress.current-1}" aria-label="Отправка изменений"></progress><span>Отправляем ${model.progress.current} из ${model.progress.total}</span></div>`:''}${model.pending?`<div class="sync-panel-counts"><span>Файлы <b>${model.files}</b></span><span>Карточки <b>${model.cards}</b></span></div>`:''}`;
++   dialog.querySelector('[data-summary]').innerHTML=`<div class="sync-panel-hero"><span class="sync-panel-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><div><h3>${esc(model.title)}</h3><p>${esc(model.detail)}</p></div></div><dl class="sync-panel-locations"><div><dt>Отправка изменений</dt><dd>${queue.length?queue.length+" в очереди":running?"Проверяем":"Очередь пуста"}</dd></div><div><dt>Карточки и статусы</dt><dd>${esc(model.server)}</dd></div></dl><p class="sync-transfer-detail">Фото и видео: прогресс загрузки указан отдельно по проектам ниже.</p><p class="sync-transfer-detail">${esc(syncTransferText(activity,running))}</p>${running?`<p class="sync-transfer-detail">Записей получено: ${activity.received} · файлов: ${activity.downloaded}</p>`:""}${model.progress?`<div class="sync-panel-progress"><progress max="${model.progress.total}" value="${model.progress.current-1}" aria-label="Отправка изменений"></progress><span>Отправляем ${model.progress.current} из ${model.progress.total}</span></div>`:''}${model.pending?`<div class="sync-panel-counts"><span>Файлы <b>${model.files}</b></span><span>Карточки <b>${model.cards}</b></span></div>`:''}`;
+    dialog.querySelector('[data-status]').textContent='';
+    const retryButton=dialog.querySelector('[data-retry]');retryButton.disabled=model.disabled;retryButton.textContent=model.retry;
+    const pending=dialog.querySelector('[data-pending]');pending.hidden=!queue.length;dialog.querySelector('[data-queue-count]').textContent=String(queue.length);
+@@ -336,6 +341,7 @@
+    const history=(await all('syncHistory')).sort((a,b)=>b.at-a.at).slice(0,20);const historyBox=dialog.querySelector('[data-history]');historyBox.innerHTML='';
+    for(const saved of history){const item=document.createElement('p');item.textContent=`${saved.local?.name||saved.local?.lastName||saved.recordId} · ${new Date(saved.at).toLocaleString()}`;const restoreButton=document.createElement('button');restoreButton.textContent='Восстановить сохранённую версию';restoreButton.onclick=async()=>{restoreButton.disabled=true;try{await writeBatch([{store:saved.store,id:saved.recordId,value:saved.local}]);await onRemote?.();await render();}catch(e){dialog.querySelector('[data-status]').textContent=e.message;restoreButton.disabled=false;}};item.append(restoreButton);historyBox.append(item);}
+    if(!history.length)historyBox.textContent='Пока нет сохранённых конфликтов.';
++   }finally{rendering=false;}
+   }
+   const retry=dialog.querySelector('[data-retry]');retry.onclick=async()=>{retry.disabled=true;retry.textContent='Проверяем…';try{await sync();}finally{await render();}};
+   const stopProgress=mountProjectProgress(dialog.querySelector('[data-project-progress]'),{db:()=>db,user:account,load:json});dialog.addEventListener('close',stopProgress,{once:true});

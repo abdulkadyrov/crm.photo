@@ -1,0 +1,11 @@
+# Compact standard scanner and clearer synchronization (v269)
+
+The standard phone QR scanner moves result confirmation into a fixed footer, separate from the independently scrolling comparison body. Confirmation/reject/duplicate actions use the same handlers and journal writes. Summary/resume, note drafts and cloud refresh retain the correct dock state. VisualViewport resize adjusts the scanner height for the iPhone keyboard. Compact system typography, restrained borders/shadows, safe-area padding and shorter comparison images keep frequent controls reachable without continuous animation or backdrop blur.
+
+The record synchronization gate no longer defers merely for a search field or a read-only standard scanner. A live camera in that scanner is safe because the existing onRemote handler preserves its mounted overlay; photo capture, other dialogs, ordinary video playback, explicit editing and a nonempty scanner note still block applying remote changes. The existing server /me account-role check, scoped project access, pending-operation merge and verified blob cache stay in place. This does not grant new roles or bypass authorization.
+
+The synchronization panel separates sending changes from receiving cards/statuses, identifies the active account role, points to actual per-project photo/video progress, places Retry before the long project list, and prevents overlapping asynchronous panel renders. Metadata completion does not claim that every original is stored on this device.
+
+The adjacent production overlay targets v268. Only the receive gate is applied to the older clean-main source; the overlay preserves newer production media/cache/UI paths. Deploy the seven staged frontend files as an immutable release, then switch the symlink. No API or database migration. Physical installed-iPhone storage contents still require device verification.
+
+Validation: 312 clean-main JavaScript tests; Chromium/WebKit at 319×617 prove Next is initially visible, body scrolling does not move it, and confirmation persists. Scope tests verify that a note draft still blocks applying changes, while the standard scanner camera permits it. No current-device claim of complete file download is made.
