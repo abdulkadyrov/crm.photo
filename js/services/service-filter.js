@@ -1,0 +1,3 @@
+export function serviceFilterChoices(students,orderedItems){const items=new Map();for(const student of students)for(const entry of orderedItems(student)||[]){const id=String(entry.serviceId||entry.id||'');if(id&&!items.has(id))items.set(id,{id,title:entry.title||entry.name||id});}return [...items.values()].sort((a,b)=>a.title.localeCompare(b.title,'ru'));}
+export function filterServiceEntries(entries,ids=[]){return ids.length?entries.filter(e=>ids.includes(String(e.serviceId||e.id))):entries;}
+export function matchesServiceFilter(entries,ids=[]){return !ids.length||filterServiceEntries(entries,ids).length>0;}
