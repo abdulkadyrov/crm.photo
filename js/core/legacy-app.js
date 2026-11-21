@@ -1,3 +1,5 @@
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js';
+let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
 import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=229";
@@ -580,11 +582,28 @@ function clearStore(storeName) {
   return recordSync.clear(storeName);
 }
 
+function workflowTasksWorkspace(){
+  if(workflowWorkspace)return workflowWorkspace;
+  workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,
+    mountHistory:finish=>mountDialogHistory({id:'workflow-'+crypto.randomUUID(),restore:finish}),
+    readSessions:()=>{const journal=typeof cloudScanJournal==='function'?cloudScanJournal():null;if(journal)return [journal.read('*')];const scope=cloudAccount()?.id||state.currentOperatorId||'local';return ['*',...state.data.classes.map(c=>c.id)].flatMap(id=>{try{const value=JSON.parse(localStorage.getItem('crm-group-scan-v1:'+scope+':'+id)||'null');return value?[value]:[];}catch{return [];}});},
+    openTask:task=>{
+      if(task.action==='sort_sources')return workflowTasksWorkspace().edit(task);
+      navigate('student',{studentId:task.studentId});
+      if(['redo','review'].includes(task.action)&&task.workId)return (typeof showFinalWorkComparison==='function'?showFinalWorkComparison(task.workId):showFinalWorkViewer(task.workId,{initialView:'compare'}).then(()=>document.querySelector('.final-work-viewer-backdrop'))).then(panel=>{if(!panel||!['admin','manager'].includes(cloudAccount()?.role||'admin'))return;const actions=document.createElement('div');actions.className='workflow-review-decisions';actions.innerHTML='<button type="button" data-task-reject>Брак / не похож</button><button type="button" data-task-approve>Совпадает</button>';(panel.querySelector('.qr-panel')||panel).append(actions);actions.querySelector('[data-task-approve]').onclick=async()=>{const work=finalWorkById(task.workId);if(!work||work.correction?.status==='open')return notify('Сначала закройте замечание к исправленной работе.');await workflowTasksWorkspace().approveWork(work);notify('Сходство подтверждено');panel.querySelector('[data-close],[data-close-final-work-viewer]')?.click();};actions.querySelector('[data-task-reject]').onclick=async()=>{const work=finalWorkById(task.workId);if(!work)return;await put('finalWorks',stampUpdated({...work,correction:{status:'open',reason:'likeness',comment:'Не похож: отмечено при проверке результата',createdAt:now(),updatedAt:now()}}));await refreshData();notify('Добавлена задача на исправление');panel.querySelector('[data-close],[data-close-final-work-viewer]')?.click();};});
+      if(task.action==='generate')return showMontagePanel(task.studentId,task.serviceId,task.sourceId);
+      if(task.action==='print')return reviewFinalWorksForPrint({studentIds:[task.studentId],selectedWorks:state.data.finalWorks.filter(w=>w.id===task.workId)});
+      if(['deliver','payment'].includes(task.action)&&typeof showFulfillmentPanel==='function')return showFulfillmentPanel('student',task.studentId);
+    }});
+  return workflowWorkspace;
+}
+
 async function refreshData() {
   const entries = await Promise.all(STORE_NAMES.map((name) => getAll(name)));
   STORE_NAMES.forEach((name, index) => {
     state.data[name] = entries[index];
   });
+  workflowTasksWorkspace().refresh();
 }
 
 function normalizeCurrentOperator() {
@@ -1058,6 +1077,7 @@ function routeSnapshot() {
     albumClassId: state.albumClassId,
     albumTab: state.albumTab,
     directoryQueries: [...studentDirectoryQueries],
+    workflowFilters: workflowWorkspace?.filters(),
     scrollY: window.scrollY,
     scrollX: window.scrollX,
     openDetails: [...view.querySelectorAll('details')].flatMap((node,index)=>node.open ? [index] : []),
@@ -1080,7 +1100,8 @@ function restoreRouteSnapshot(target) {
   cancelRouteScrollRestore();
   if (!target?.route) return;
   stopQrStream();
-  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,openDetails,innerScroll,...route} = target;
+  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,workflowFilters,openDetails,innerScroll,...route} = target;
+  if(workflowFilters)workflowTasksWorkspace().restoreFilters(workflowFilters);
   if (directoryQueries) {studentDirectoryQueries.clear();for (const [key,value] of directoryQueries) studentDirectoryQueries.set(key,value);}
   Object.assign(state,route);
   rememberSelectedCard();
@@ -1115,6 +1136,7 @@ function render() {
   const prevRoute = state.lastRenderedRoute;
   const renderers = {
     home: renderHome,
+    tasks: ()=>workflowTasksWorkspace().renderPage(),
     search: renderSearch,
     scan: renderScan,
     classes: renderClasses,
@@ -1134,6 +1156,9 @@ function render() {
   if (state.preserveScroll || prevRoute === state.route) window.scrollTo(0, prevScrollY);
   state.preserveScroll = false;
   state.lastRenderedRoute = state.route;
+  workflowTasksWorkspace().mountShell();
+  if(state.route==='student')workflowTasksWorkspace().mountCard(state.studentId);
+  if(state.route==='home'&&!view.querySelector('[data-open-workflow]')){const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='secondary-button workflow-home-shortcut';shortcut.dataset.openWorkflow='';shortcut.textContent='Задачи и напоминания';shortcut.onclick=()=>navigate('tasks');view.querySelector('.home-toolbar')?.append(shortcut);}
 }
 
 function addContextBackButton() {
@@ -7482,6 +7507,8 @@ async function createFinalWorkRecord(input) {
     mergedPrintImage: mergedAsset.blob,
     qrData,
     finalImageVersion: 5,
+    workflowVersion: id,
+    workflowReview: {required:true},
     sourceMediaId: input.sourceMediaId || "",
     referenceMediaId: input.referenceMediaId || "",
     resultMediaId: input.resultMediaId || "",
@@ -9123,6 +9150,7 @@ async function persistStudentMedia(file, target, id) {
     const fileName = safeFileName(`${klass?.name || "class"}_${student.lastName}_${student.firstName}_${target.orderType}${seriesSuffix}.${ext}`);
     const operatorId = currentOperatorIdForAction();
     const mediaRecord = {
+      ...workflowTasksWorkspace().captureMetadata(target),
       id,
       studentId: student.id,
       type,
@@ -9130,7 +9158,7 @@ async function persistStudentMedia(file, target, id) {
       orderType: target.orderType,
       createdBy: operatorId,
       importedBy: target.source === "device_import" ? operatorId : undefined,
-      capturedBy: target.source === "capture" ? operatorId : undefined,
+      capturedBy: target.source === "capture" ? (cloudAccount()?.id || operatorId) : undefined,
       createdAt: now(),
       blob: file
     };

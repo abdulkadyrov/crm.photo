@@ -1,0 +1,860 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,8 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=271" />
++    <link rel="stylesheet" href="./styles.css?v=272" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -67,6 +68,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=271"></script>
++    <script type="module" src="./js/core/app.js?v=272"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v271";
++const CACHE_VERSION = "v272";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,37 +74,42 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/ui/scan-photo-viewer.js?v=271",
+-  "./js/ui/group-scan-panel.js?v=271",
++  "./css/workflow-tasks.css",
++  "./js/ui/workflow-workspace.js",
++  "./js/ui/workflow-tasks.js",
++  "./js/services/workflow-task-store.js",
++  "./js/services/workflow-tasks.js",
++  "./js/ui/scan-photo-viewer.js?v=272",
++  "./js/ui/group-scan-panel.js?v=272",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=271",
+-  "./js/services/individual-order.js?v=271",
++  "./js/services/service-positions.js?v=272",
++  "./js/services/individual-order.js?v=272",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=271",
++  "./js/services/sequence-navigation.js?v=272",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=271",
++  "./js/services/card-summary.js?v=272",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=271",
++  "./js/services/camera-options.js?v=272",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=271",
+-  "./js/services/deferred-final-work.js?v=271",
++  "./js/services/record-sync.js?v=272",
++  "./js/services/deferred-final-work.js?v=272",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=271",
++  "./js/services/sync-codec.js?v=272",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -112,35 +117,35 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=271",
++  "./styles.css?v=272",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=271",
++  "./js/core/app.js?v=272",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=271",
+-  "./js/services/navigation-history.js?v=271",
++  "./js/services/card-selection.js?v=272",
++  "./js/services/navigation-history.js?v=272",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=271",
+-  "./js/ui/scan-work-picker.js?v=271",
++  "./js/services/roster-filters.js?v=272",
++  "./js/ui/scan-work-picker.js?v=272",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=271",
++  "./js/services/student-comments.js?v=272",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=271",
++  "./js/services/image-delivery.js?v=272",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=271",
+-  "./js/services/group-scan.js?v=271",
++  "./js/ui/student-quick-actions.js?v=272",
++  "./js/services/group-scan.js?v=272",
+ 
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=271",
+-  "./js/ui/project-print-picker.js?v=271",
++  "./js/services/print-selection.js?v=272",
++  "./js/ui/project-print-picker.js?v=272",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=271",
++  "./js/services/student-stage-icons.js?v=272",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=271",
++  "./js/ui/fulfillment-panel.js?v=272",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=271",
++  "./js/services/print-order.js?v=272",
+ 
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -156,11 +161,11 @@
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=271",
++  "./js/services/fulfillment.js?v=272",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=271",
++  "./js/core/legacy-app.js?v=272",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -183,10 +188,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=271",
++  "./js/ui/photo-camera.js?v=272",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=271",
++  "./js/services/teacher-broadcast.js?v=272",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -228,7 +233,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=271",
++  "./js/services/parent-orders.js?v=272",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -240,12 +245,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=271",
++  "./js/services/finalwork-service.js?v=272",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=271",
++  "./js/services/export-filter-service.js?v=272",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -276,7 +281,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=271",
++  "./js/services/barcode-reader.js?v=272",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=271");
++  await import("./legacy-app.js?v=272");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,3 +1,5 @@
++import {createWorkflowWorkspace} from '../ui/workflow-workspace.js';
++let workflowWorkspace=null;
+ import {fulfillmentUnitPrice} from '../services/fulfillment-pricing.js';
+ import {serviceFilterChoices} from '../services/service-filter.js';
+ import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=269';
+@@ -611,11 +613,28 @@
+ }
+   try { cloudScanJournal()?.migrate(); } catch(error) { console.error('Не удалось открыть облачный журнал проверки',error); }
+ 
++function workflowTasksWorkspace(){
++  if(workflowWorkspace)return workflowWorkspace;
++  workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,
++    mountHistory:finish=>mountDialogHistory({id:'workflow-'+crypto.randomUUID(),restore:finish}),
++    readSessions:()=>{const journal=typeof cloudScanJournal==='function'?cloudScanJournal():null;if(journal)return [journal.read('*')];const scope=cloudAccount()?.id||state.currentOperatorId||'local';return ['*',...state.data.classes.map(c=>c.id)].flatMap(id=>{try{const value=JSON.parse(localStorage.getItem('crm-group-scan-v1:'+scope+':'+id)||'null');return value?[value]:[];}catch{return [];}});},
++    openTask:task=>{
++      if(task.action==='sort_sources')return workflowTasksWorkspace().edit(task);
++      navigate('student',{studentId:task.studentId});
++      if(['redo','review'].includes(task.action)&&task.workId)return (typeof showFinalWorkComparison==='function'?showFinalWorkComparison(task.workId):showFinalWorkViewer(task.workId,{initialView:'compare'}).then(()=>document.querySelector('.final-work-viewer-backdrop'))).then(panel=>{if(!panel||!['admin','manager'].includes(cloudAccount()?.role||'admin'))return;const actions=document.createElement('div');actions.className='workflow-review-decisions';actions.innerHTML='<button type="button" data-task-reject>Брак / не похож</button><button type="button" data-task-approve>Совпадает</button>';(panel.querySelector('.qr-panel')||panel).append(actions);actions.querySelector('[data-task-approve]').onclick=async()=>{const work=finalWorkById(task.workId);if(!work||work.correction?.status==='open')return notify('Сначала закройте замечание к исправленной работе.');await workflowTasksWorkspace().approveWork(work);notify('Сходство подтверждено');panel.querySelector('[data-close],[data-close-final-work-viewer]')?.click();};actions.querySelector('[data-task-reject]').onclick=async()=>{const work=finalWorkById(task.workId);if(!work)return;await put('finalWorks',stampUpdated({...work,correction:{status:'open',reason:'likeness',comment:'Не похож: отмечено при проверке результата',createdAt:now(),updatedAt:now()}}));await refreshData();notify('Добавлена задача на исправление');panel.querySelector('[data-close],[data-close-final-work-viewer]')?.click();};});
++      if(task.action==='generate')return showMontagePanel(task.studentId,task.serviceId,task.sourceId);
++      if(task.action==='print')return reviewFinalWorksForPrint({studentIds:[task.studentId],selectedWorks:state.data.finalWorks.filter(w=>w.id===task.workId)});
++      if(['deliver','payment'].includes(task.action)&&typeof showFulfillmentPanel==='function')return showFulfillmentPanel('student',task.studentId);
++    }});
++  return workflowWorkspace;
++}
++
+ async function refreshData() {
+   const entries = await Promise.all(STORE_NAMES.map((name) => getAll(name)));
+   STORE_NAMES.forEach((name, index) => {
+     state.data[name] = entries[index];
+   });
++  workflowTasksWorkspace().refresh();
+ }
+ 
+ function normalizeCurrentOperator() {
+@@ -1089,6 +1108,7 @@
+     albumClassId: state.albumClassId,
+     albumTab: state.albumTab,
+     directoryQueries: [...studentDirectoryQueries],
++    workflowFilters: workflowWorkspace?.filters(),
+     scrollY: window.scrollY,
+     scrollX: window.scrollX,
+     openDetails: [...view.querySelectorAll('details')].flatMap((node,index)=>node.open ? [index] : []),
+@@ -1111,7 +1131,8 @@
+   cancelRouteScrollRestore();
+   if (!target?.route) return;
+   stopQrStream();
+-  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,openDetails,innerScroll,...route} = target;
++  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,workflowFilters,openDetails,innerScroll,...route} = target;
++  if(workflowFilters)workflowTasksWorkspace().restoreFilters(workflowFilters);
+   if (directoryQueries) {studentDirectoryQueries.clear();for (const [key,value] of directoryQueries) studentDirectoryQueries.set(key,value);}
+   Object.assign(state,route);
+   rememberSelectedCard();
+@@ -1147,6 +1168,7 @@
+   const prevRoute = state.lastRenderedRoute;
+   const renderers = {
+     home: renderHome,
++    tasks: ()=>workflowTasksWorkspace().renderPage(),
+     search: renderSearch,
+     scan: renderScan,
+     classes: renderClasses,
+@@ -1169,6 +1191,9 @@
+   if (state.preserveScroll || prevRoute === state.route) window.scrollTo(0, prevScrollY);
+   state.preserveScroll = false;
+   state.lastRenderedRoute = state.route;
++  workflowTasksWorkspace().mountShell();
++  if(state.route==='student')workflowTasksWorkspace().mountCard(state.studentId);
++  if(state.route==='home'&&!view.querySelector('[data-open-workflow]')){const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='secondary-button workflow-home-shortcut';shortcut.dataset.openWorkflow='';shortcut.textContent='Задачи и напоминания';shortcut.onclick=()=>navigate('tasks');view.querySelector('.home-toolbar')?.append(shortcut);}
+ }
+ 
+ function addContextBackButton() {
+@@ -7575,6 +7600,8 @@
+     mergedPrintImage: mergedAsset.blob,
+     qrData,
+     finalImageVersion: 8,
++    workflowVersion: id,
++    workflowReview: {required:true},
+     sourceMediaId: input.sourceMediaId || "",
+     referenceMediaId: input.referenceMediaId || "",
+     resultMediaId: input.resultMediaId || "",
+@@ -9392,6 +9419,7 @@
+     const fileName = safeFileName(`${klass?.name || "class"}_${student.lastName}_${student.firstName}_${target.orderType}${seriesSuffix}.${ext}`);
+     const operatorId = currentOperatorIdForAction();
+     const mediaRecord = {
++      ...workflowTasksWorkspace().captureMetadata(target),
+       id,
+       studentId: student.id,
+       type,
+@@ -9399,7 +9427,7 @@
+       orderType: target.orderType,
+       createdBy: operatorId,
+       importedBy: target.source === "device_import" ? operatorId : undefined,
+-      capturedBy: target.source === "capture" ? operatorId : undefined,
++      capturedBy: target.source === "capture" ? (cloudAccount()?.id || operatorId) : undefined,
+       createdAt: now(),
+       blob: file
+     };
+@@ -9664,7 +9692,9 @@
+     resolve:raw=>resolveScanTarget(raw,{...getData(),parseWork:parseFinalWorkPrintQr,studentTokens:qrPayloadCandidates,textMatches:finalWorkMatchesTextPayload,viewerUrl:finalWorkArViewerUrl}),
+     createDetector:createQrDetector,detectFrame:detectQrFromVideo,decodeFile:detectQrFromImageFile,
+     readSession:(id,archive=false)=>scanSync?scanSync.read(id,archive):JSON.parse(localStorage.getItem(key(id)+(archive?':history':''))||'null'),
+-    writeSession:(id,session,archive=false)=>{if(scanSync)return scanSync.write(id,session,archive);if(archive){const old=JSON.parse(localStorage.getItem(key(id)+':history')||'[]');localStorage.setItem(key(id)+':history',JSON.stringify([...old,session].slice(-5)));}else localStorage.setItem(key(id),JSON.stringify(session));},
++    writeSession:(id,session,archive=false)=>{
++      if(!archive){let previous;try{previous=scanSync?scanSync.read(id):JSON.parse(localStorage.getItem(key(id))||'null');}catch{}const known=new Set((previous?.events||[]).map(e=>e.id));for(const event of session.events||[]){if(known.has(event.id))continue;const work=finalWorkById(event.workId);if(work&&Number(event.version||0)===Number(work.finalImageVersion||0)){if(event.accepted)void workflowTasksWorkspace().approveWork(work).catch(error=>notify(error.message));else if(event.status==='rejected')void put('finalWorks',stampUpdated(correctionUpdate(work,{reason:'likeness',comment:'Не похож: отмечено в QR-проверке'},now()))).then(refreshData).catch(error=>notify(error.message));}}}
++      if(scanSync)return scanSync.write(id,session,archive);if(archive){const old=JSON.parse(localStorage.getItem(key(id)+':history')||'[]');localStorage.setItem(key(id)+':history',JSON.stringify([...old,session].slice(-5)));}else localStorage.setItem(key(id),JSON.stringify(session));},
+     orderedItems:student=>selectedServicesForStudent(student).map(item=>({...item,title:serviceName(catalogItemById(item.serviceId))})),
+     imageOptions:target=>mediaByStudent(target.studentId).filter(item=>['photo','image'].includes(item.type)).map((item,index)=>({id:item.id,label:`Фото ${index+1} · ${item.createdAt?new Date(item.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):item.fileName||'Оригинал'}`,selected:item.id===finalWorkById(target.workId)?.sourceMediaId})),
+     images:(target,sourceId)=>{
+--- a/server/app.py
++++ b/server/app.py
+@@ -4,6 +4,7 @@
+ from types import SimpleNamespace
+ import parent_orders
+ import sync_api
++import workflow_tasks
+ import admin_api
+ import studio_api
+ import ar_jobs
+@@ -44,6 +45,7 @@
+         ''')
+         parent_orders.initialize(c)
+         sync_api.initialize(c)
++        workflow_tasks.initialize(c)
+         ar_jobs.initialize(c)
+ 
+ @contextmanager
+@@ -188,6 +190,7 @@
+                 self.headers.append(('Set-Cookie',f'{COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800'))
+                 audit(c,u,'login'); return public_user(c,u)
+             u=self.user(c)
++            if path=='/workflow-tasks': return workflow_tasks.route(self,c,u,SimpleNamespace(**globals()))
+             if path.startswith('/studio/'):
+                 return studio_api.route(self,c,u,path,SimpleNamespace(**globals()))
+             if path.startswith('/ar/jobs/'):
+--- /dev/null
++++ b/js/services/workflow-tasks.js
+@@ -0,0 +1,159 @@
++// Read-only workflow projection. No status, fulfilment history or deadline is inferred by writing records.
++export const WORKFLOW_TASK_ACTIONS = Object.freeze({
++  capture: 'Доснять', generate: 'Сгенерировать', redo: 'Переделать', review: 'Проверить',
++  print: 'Напечатать', deliver: 'Отдать', payment: 'Проверить оплату', sort_sources: 'Разобрать новые фотографии'
++});
++export const TASK_ACTION_LABELS = WORKFLOW_TASK_ACTIONS;
++const list = value => Array.isArray(value) ? value : [];
++const str = value => value == null ? '' : String(value);
++const time = value => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
++const idPart = value => encodeURIComponent(str(value));
++function isOverdue(value, timestamp) {
++  if (!time(value)) return false;
++  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
++    const date = new Date(timestamp), today = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
++    return value < today;
++  }
++  return time(value) < timestamp;
++}
++export const workflowTaskScopeKey = (studentId, serviceId) => `${str(studentId)}::${str(serviceId)}`;
++
++// finalImageVersion describes the QR/print format in legacy records, not an image revision.
++export function workflowWorkRevision(work) {
++  if (!work) return 'source';
++  const revision = work.workflowVersion || work.contentVersion || work.imageRevision || work.montageRevision;
++  return [work.id, revision || work.resultMediaId || work.generatedAt || work.createdAt || 'legacy'].map(idPart).join('@');
++}
++
++function overrideFor(overrides, scopeKey, studentId, serviceId) {
++  if (overrides instanceof Map) return overrides.get(scopeKey) || {};
++  if (Array.isArray(overrides)) return overrides.find(row => row.scopeKey === scopeKey || (str(row.studentId) === str(studentId) && str(row.serviceId) === str(serviceId))) || {};
++  return overrides?.[scopeKey] || {};
++}
++function serviceSelections(student) {
++  const selected = list(student.selectedServices).filter(row => row?.serviceId || row?.id);
++  const entries = selected.length ? selected : (list(student.catalogIds).length ? student.catalogIds : [student.catalogId]).filter(Boolean).map(serviceId => ({ serviceId }));
++  const result = new Map();
++  for (const row of entries) {
++    const serviceId = str(row.serviceId || row.id);
++    if (!result.has(serviceId)) result.set(serviceId, { ...row, serviceId, mediaIds: [...new Set(list(row.mediaIds))] });
++    else result.get(serviceId).mediaIds.push(...list(row.mediaIds));
++  }
++  return [...result.values()];
++}
++function sourceMatches(media, serviceId, entry, orderItems) {
++  if (list(entry.mediaIds).includes(media.id)) return true;
++  if (str(media.serviceId) === serviceId || str(media.orderType) === serviceId || str(media.orderType).startsWith(`${serviceId}__`)) return true;
++  return orderItems.some(row => (str(row.serviceId) === serviceId || str(row.type) === serviceId || str(row.type).startsWith(`${serviceId}__`)) && list(row.fileIds).includes(media.id));
++}
++function isSource(media) {
++  return media && !media.deletedAt && !media.isResult && media.purpose !== 'result' && !['result', 'final', 'animation', 'video'].includes(media.type);
++}
++function received(media) { return !['pending', 'uploading', 'failed', 'incomplete'].includes(media.uploadStatus || media.transferStatus) && media.received !== false; }
++function latest(rows) { return [...rows].sort((a,b) => time(b.generatedAt || b.createdAt) - time(a.generatedAt || a.createdAt) || str(b.id).localeCompare(str(a.id)))[0]; }
++function sourceDate(source) { return source?.capturedAt || (source?.capturedBy ? source?.createdAt : '') || ''; }
++export function workflowLatestScanEvent(work, sessions = []) {
++  if (!work) return null;
++  const revision=workflowWorkRevision(work);
++  return list(sessions).flatMap(session=>list(session.events)).filter(event=>event.workId===work.id && Number(event.version||0)===Number(work.finalImageVersion||0) && (!event.workflowRevision||event.workflowRevision===revision) && (!work.workflowReview?.required||!event.at||time(event.at)>=time(work.generatedAt||work.createdAt))).sort((a,b)=>time(b.at)-time(a.at)).find(event=>event.accepted||event.status==='rejected') || null;
++}
++function isApproved(work, revision, override, scanEvent) {
++  if (!work) return false;
++  // Fulfilled legacy images remain fulfilled; never turn the whole archive into a review queue.
++  if (['printed','delivered'].includes(work.status) && !work.workflowReview?.required) return true;
++  if (override.approvedRevision === revision || work.workflowReview?.approvedRevision === revision) return true;
++  if (work.workflowReview?.required) return false;
++  if (work.reviewStatus === 'approved' || work.approval?.status === 'approved') return true;
++  return !!scanEvent?.accepted;
++}
++function knownPrice(student, serviceId, entry, catalog) {
++  const saved = student.parentPrices?.[serviceId]?.price;
++  const raw = typeof saved === 'number' ? saved : entry.unitPrice ?? catalog?.price;
++  if (raw === '' || raw == null) return null;
++  const price = typeof raw === 'number' ? raw : Number(str(raw).replace(/\s+/g,'').replace(',','.'));
++  return Number.isFinite(price) && price >= 0 ? price : null;
++}
++function operatorName(data, source) {
++  const id = source?.capturedBy || source?.operatorId || source?.createdBy || '';
++  const operator = [...list(data.operators), ...list(data.users)].find(row => row.id === id);
++  return source?.operatorName || operator?.name || operator?.displayName || '';
++}
++function overrideDue(override, entry, student) { return override.dueAt || entry.promisedAt || entry.dueAt || student.promisedAt || ''; }
++
++export function deriveWorkflowTasks(data = {}, { now = new Date(), role = 'admin', userId = '', overrides = {} } = {}) {
++  const tasks = [], projects = new Map(list(data.projects).map(row => [row.id,row])), classes = new Map(list(data.classes).map(row => [row.id,row]));
++  const catalog = new Map(list(data.catalog).map(row => [str(row.id),row]));
++  const timestamp = now instanceof Date ? now.getTime() : time(now);
++  const byStudent = rows => { const map=new Map();for (const row of rows) {const records=map.get(row.studentId)||[];records.push(row);map.set(row.studentId,records);}return map;};
++  const workIndex=byStudent(list(data.finalWorks || data.works).filter(row=>!row.deletedAt&&!row.archived&&!row.supersededBy));
++  const mediaIndex=byStudent(list(data.media).filter(isSource));
++  const orderIndex=new Map(list(data.orders).map(row=>[row.studentId,row]));
++  const scansByWork=new Map();for(const session of list(data.scanSessions || data.sessions))for(const event of list(session.events)){const events=scansByWork.get(event.workId)||[];events.push(event);scansByWork.set(event.workId,events);}
++  for (const student of list(data.students)) {
++    if (student.deletedAt) continue;
++    const klass = classes.get(student.classId), project = projects.get(klass?.projectId || student.projectId);
++    const childWorks = workIndex.get(student.id)||[];
++    const childMedia = mediaIndex.get(student.id)||[];
++    const order = orderIndex.get(student.id), orderItems = list(order?.items);
++    const selections = serviceSelections(student);
++    for (const item of orderItems) {
++      const serviceId = str(item.serviceId || str(item.type).split('__')[0]);
++      if (catalog.has(serviceId) && !selections.some(row=>row.serviceId === serviceId)) selections.push({serviceId,mediaIds:list(item.fileIds)});
++    }
++    // Existing results without a surviving catalog selection still need handout/correction handling.
++    for (const work of childWorks) if (work.serviceId && !selections.some(row => row.serviceId === str(work.serviceId))) selections.push({serviceId:str(work.serviceId)});
++    for (const entry of selections) {
++      const serviceId = entry.serviceId, scopeKey = workflowTaskScopeKey(student.id,serviceId), override = overrideFor(overrides,scopeKey,student.id,serviceId);
++      const service = catalog.get(serviceId), work = latest(childWorks.filter(row => str(row.serviceId) === serviceId)), revision = workflowWorkRevision(work);
++      const scanEvent=workflowLatestScanEvent(work,[{events:scansByWork.get(work?.id)||[]}]);
++      const matching = childMedia.filter(row => sourceMatches(row,serviceId,entry,orderItems));
++      // Shared photo is a safe fallback only for one selected service, or the explicit final-work source.
++      for (const sourceId of [work?.sourceMediaId,override.sourceMediaId].filter(Boolean)) if (!matching.some(row => row.id === sourceId)) matching.push(...childMedia.filter(row => row.id === sourceId));
++      if (selections.length === 1) for (const row of childMedia.filter(row => !row.serviceId && !str(row.orderType).includes('__'))) if (!matching.some(item => item.id === row.id)) matching.push(row);
++      const pendingReshoot = (override.requestedAction || override.action)==='capture' ? latest(matching.filter(row=>received(row)&&time(row.capturedAt||row.createdAt)>time(override.requestedAt)&&!['additional_reference','reference'].includes(row.capturePurpose||row.purpose))) : null;
++      const source = pendingReshoot || matching.find(row => row.id === override.sourceMediaId) || latest(matching.filter(received));
++      const dueAt = overrideDue(override,entry,student), assigneeId = override.assigneeId || entry.assigneeId || '';
++      const common = { scopeKey, projectId: project?.id || klass?.projectId || student.projectId || '', classId: student.classId || '', studentId:student.id, serviceId,
++        studentName:[student.lastName,student.firstName].filter(Boolean).join(' ') || student.name || 'Ребёнок', serviceName:service?.name || service?.title || work?.title || serviceId,
++        projectName:project?.name || 'Проект', className:klass?.name || 'Группа', workId:work?.id || '', sourceId:source?.id || '', version:revision,
++        capturedAt:sourceDate(source), receivedAt:source?.receivedAt || source?.importedAt || '', operatorId:source?.capturedBy || source?.operatorId || source?.createdBy || '', operatorName:operatorName(data,source),
++        dueAt, assigneeId, snoozedUntil:override.snoozedUntil || '', overdue:isOverdue(dueAt,timestamp), reason:'', automatic:true };
++      const add = (action,reason,extra={}) => {
++        if (role === 'photographer' && (!['capture','sort_sources'].includes(action) || !userId || assigneeId !== userId && common.operatorId !== userId)) return;
++        const task={...common,...extra,id:`${scopeKey}::${idPart(revision)}::${action}`,action,title:WORKFLOW_TASK_ACTIONS[action],reason};
++        const specific = overrides instanceof Map ? overrides.get(task.id) : !Array.isArray(overrides) ? overrides?.[task.id] : null;
++        if (specific) Object.assign(task,{dueAt:specific.dueAt ?? task.dueAt,assigneeId:specific.assigneeId ?? task.assigneeId,snoozedUntil:specific.snoozedUntil ?? task.snoozedUntil});
++        tasks.push(task);
++      };
++      const requested = override.requestedAction || override.action;
++      const freshForRequest = source && time(override.requestedAt) && time(source.capturedAt || source.createdAt) > time(override.requestedAt) && source.id !== override.previousSourceId;
++      if (requested === 'capture' && !freshForRequest) add('capture',override.reason || 'Назначена пересъёмка');
++      else if (work?.correction?.status === 'open') add('redo',work.correction.comment || 'Открыто замечание к результату');
++      else if (scanEvent?.status === 'rejected') add('redo',scanEvent.comment || 'Брак / не похож — отмечено при проверке QR');
++      else if (!work) {
++        if (!source || !received(source)) add('capture',matching.some(row=>!received(row)) ? 'Исходные файлы ещё передаются' : 'Нет исходной фотографии для услуги');
++        else add('generate','Исходная фотография получена, результат ещё не сохранён');
++      } else {
++        const approved = isApproved(work,revision,override,scanEvent);
++        const fulfilledVersion = work.workflowFulfillment?.version;
++        const staleFulfillment = fulfilledVersion && fulfilledVersion !== revision;
++        const reviewRequired = !approved && (work.workflowReview?.required || work.correction?.status === 'resolved');
++        const sourcePurpose = source?.capturePurpose || source?.purpose || (source?.id === override.sourceMediaId ? override.sourcePurpose : '');
++        const replacementSource = source && source.id !== work.sourceMediaId && ['reshoot','correction','new_service','new-service'].includes(sourcePurpose) && (source.id === override.sourceMediaId || time(source.receivedAt || source.createdAt || source.capturedAt) > time(work.generatedAt || work.createdAt));
++        if (replacementSource || requested === 'capture' && freshForRequest && source.id !== work.sourceMediaId) add(sourcePurpose === 'correction' ? 'redo' : 'generate','Новый исходник получен: подготовьте новую версию результата');
++        else if (!approved || reviewRequired) add('review',work.correction?.status === 'resolved' ? 'Исправленный результат ожидает проверки' : 'Результат ожидает проверки сходства');
++        else if (staleFulfillment || !['printed','delivered'].includes(work.status)) add('print','Текущая версия готова к печати');
++        else if (work.status !== 'delivered') add('deliver','Фотография напечатана и ожидает выдачи');
++        const knownSourceIds = new Set([work.sourceMediaId,work.referenceMediaId,...list(override.reviewedSourceIds)].filter(Boolean));
++        const unassigned = entry === selections[0] ? childMedia.filter(row => !row.serviceId && !row.orderType) : [];
++        const additional = [...new Map([...matching,...unassigned].map(row=>[row.id,row])).values()].filter(row => !knownSourceIds.has(row.id) && received(row) && time(row.capturedAt || row.createdAt) > time(work.generatedAt || work.createdAt) && !row.capturePurpose && !row.purpose);
++        if (additional.length) add('sort_sources','У готовой работы появились новые фотографии: укажите их назначение',{sourceId:latest(additional).id,sourceIds:additional.map(row=>row.id),capturedAt:sourceDate(latest(additional)),operatorName:operatorName(data,latest(additional))});
++        const unitPrice = knownPrice(student,serviceId,entry,service);
++        const paymentDue = override.paymentCheck === true || entry.paymentCheck === true || !!dueAt || !!student.nextVisitAt || !!project?.nextVisitAt;
++        if (['admin','owner'].includes(role) && ['printed','delivered'].includes(work.status) && unitPrice > 0 && student.paymentStatus !== 'paid' && paymentDue) add('payment','Выполненная услуга: нужно проверить оплату',{unitPrice});
++      }
++    }
++  }
++  const priority = {redo:0,capture:1,generate:2,review:3,print:4,deliver:5,payment:6,sort_sources:7};
++  return [...new Map(tasks.map(task=>[task.id,task])).values()].sort((a,b)=> (a.dueAt ? 0:1)-(b.dueAt ? 0:1) || (time(a.dueAt)||Infinity)-(time(b.dueAt)||Infinity) || priority[a.action]-priority[b.action] || a.projectName.localeCompare(b.projectName,'ru') || a.className.localeCompare(b.className,'ru') || a.studentName.localeCompare(b.studentName,'ru'));
++}
+--- /dev/null
++++ b/js/services/workflow-task-store.js
+@@ -0,0 +1,118 @@
++/** Account-scoped durable plans/outbox. Workflow completion lives in normal CRM records. */
++export function createWorkflowTaskStore({account=()=>null,enabled=()=>true,storage=globalThis.localStorage,fetch:request=globalThis.fetch?.bind(globalThis),onChange=()=>{},win=globalThis.window,now=()=>Date.now(),id=()=>globalThis.crypto.randomUUID()}={}) {
++  let identity='', cache, busy=false, destroyed=false, timer, failures=0;
++  const photoFields=new Set(['sourcePurpose','sourceMediaId','sourceReviewedAt','reviewedSourceIds','note','reason']);
++  const available=()=>typeof enabled==='function'?enabled():enabled;
++  const who=()=>typeof account==='function'?account():account;
++  const key=()=>`crm-workflow-tasks-v1:${identity}`;
++  const clone=value=>JSON.parse(JSON.stringify(value));
++  function selectAccount(){
++    const next=String(who()?.id||'local');
++    if(identity===next){scrubAccess();return;}
++    identity=next;
++    try{cache=JSON.parse(storage?.getItem(key())||'null');}catch{cache=null;}
++    if(!cache||!Array.isArray(cache.overrides)||!Array.isArray(cache.outbox))cache={overrides:[],outbox:[],events:[],lastSyncedAt:null,status:'cached',error:''};
++    cache.status=cache.outbox.some(v=>v.blocked||v.denied)?'error':cache.outbox.some(v=>v.conflict)?'conflict':cache.outbox.length?'pending':'cached';cache.error='';scrubAccess();
++  }
++  function access(){
++    const user=who()||{}, server=cache?.access?.id===identity?cache.access:null;
++    const roles=[user.role||'admin',server?.role].filter(Boolean);
++    const role=roles.includes('viewer')?'viewer':roles.includes('photographer')?'photographer':roles.includes('manager')?'manager':'admin';
++    const scopes=[user,server].filter(v=>v&&v.role!=='admin'&&Array.isArray(v.projects)).map(v=>new Set(v.projects));
++    const projects=scopes.length?[...scopes[0]].filter(id=>scopes.every(set=>set.has(id))):role==='admin'?server?.projects||user.projects||[]:[];
++    return {id:identity,role,projects};
++  }
++  function projectAllowed(projectId,permissions=access()){return permissions.role==='admin'||permissions.projects.includes(projectId);}
++  function planAllowed(record,permissions=access()){return projectAllowed(record.projectId,permissions)&&(permissions.role!=='photographer'||record.assigneeId===identity&&['capture','sort_sources'].includes(record.requestedAction));}
++  function operationAllowed(operation,permissions=access()){
++    if(permissions.role==='viewer'||!projectAllowed(operation.projectId,permissions))return false;
++    if(permissions.role==='admin')return true;
++    if(Object.hasOwn(operation.patch,'paymentCheck'))return false;
++    if(permissions.role!=='photographer')return true;
++    const record=cache.overrides.find(v=>v.scopeKey===`${operation.studentId}::${operation.serviceId}`);
++    return !!record&&planAllowed(record,permissions)&&Object.keys(operation.patch).every(key=>photoFields.has(key));
++  }
++  function scrubAccess(){
++    const permissions=access();
++    const previous=cache.accessFence,signature=JSON.stringify(permissions);
++    if(previous===signature)return;
++    cache.accessFence=signature;
++    cache.overrides=cache.overrides.filter(record=>planAllowed(record,permissions));
++    if(permissions.role!=='admin')for(const record of cache.overrides)delete record.paymentCheck;
++    const visible=new Set(cache.overrides.map(record=>record.scopeKey));
++    cache.events=(cache.events||[]).filter(event=>projectAllowed(event.projectId,permissions)&&(permissions.role!=='photographer'||visible.has(event.scopeKey)));
++    if(permissions.role!=='admin')for(const event of cache.events)if(event.patch)delete event.patch.paymentCheck;
++    cache.users=['viewer','photographer'].includes(permissions.role)?[]:(cache.users||[]).map(user=>({...user,projectIds:(user.projectIds||[]).filter(id=>projectAllowed(id,permissions))})).filter(user=>permissions.role==='admin'||user.projectIds.length);
++    for(const operation of cache.outbox)operation.blocked=!operationAllowed(operation,permissions);
++    if(cache.outbox.some(operation=>operation.blocked)){cache.status='error';cache.error='Права доступа изменились. Отложенные изменения не отправлены.';}
++    if(previous!==undefined)persist();
++  }
++  function persist(required=false){try{if(!storage?.setItem)throw new Error('storage unavailable');storage.setItem(key(),JSON.stringify(cache));}catch(error){if(required)throw error;cache.status='error';cache.error='Не удалось обновить кэш задач на устройстве';}}
++  function emit(){if(!destroyed)onChange(snapshot());}
++  function effective(){
++    const records=new Map(cache.overrides.map(v=>[v.scopeKey,v]));
++    for(const op of cache.outbox){if(op.blocked||op.denied)continue;const scopeKey=`${op.studentId}::${op.serviceId}`;const value={...records.get(scopeKey),scopeKey,studentId:op.studentId,serviceId:op.serviceId,projectId:op.projectId,...op.patch,pending:true};for(const k of Object.keys(value))if(value[k]===null)delete value[k];records.set(scopeKey,value);}
++    return [...records.values()];
++  }
++  function snapshot(){selectAccount();return clone({overrides:effective(),events:cache.events||[],users:cache.users||[],access:access(),rejected:cache.outbox.filter(op=>op.blocked||op.denied).map(op=>({scopeKey:`${op.studentId}::${op.serviceId}`,message:op.denied||'Права доступа изменились'})),pending:cache.outbox.length,lastSyncedAt:cache.lastSyncedAt,status:cache.status,error:cache.error||'',conflicts:cache.outbox.filter(op=>op.conflict).map(op=>({scopeKey:`${op.studentId}::${op.serviceId}`,local:op.patch,current:op.conflict}))});}
++  function schedule(){clearTimeout(timer);if(destroyed||!available())return;timer=setTimeout(()=>{refresh().catch(()=>{});},Math.min(60000,5000*2**Math.min(failures,4)));timer.unref?.();}
++  async function api(method,body){
++    if(!request)throw new Error('Сеть недоступна');
++    const response=await request('/api/v1/workflow-tasks',{method,credentials:'same-origin',cache:'no-store',headers:{'X-CRM-Account':identity,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),...(globalThis.AbortSignal?.timeout?{signal:AbortSignal.timeout(15000)}:{})});
++    const data=await response.json().catch(()=>({}));if(!response.ok){const error=new Error(data.error||`Ошибка сервера ${response.status}`);error.status=response.status;throw error;}if(data.access?.id&&data.access.id!==identity){const error=new Error('Аккаунт изменился. Войдите заново.');error.status=401;throw error;}return data;
++  }
++  function putRecord(record){const index=cache.overrides.findIndex(v=>v.scopeKey===record.scopeKey);if(index<0)cache.overrides.push(record);else cache.overrides[index]=record;}
++  async function flush(){
++    selectAccount();if(destroyed||busy||!available()||!who()?.id)return snapshot();
++    const session=identity;busy=true;let activeOperation;
++    try{
++      for(const operation of [...cache.outbox]){
++        if(destroyed||String(who()?.id||'local')!==session)break;
++        if(operation.blocked||operation.denied)continue;
++        if(operation.conflict||cache.outbox.some(v=>v!==operation&&v.conflict&&v.studentId===operation.studentId&&v.serviceId===operation.serviceId)){cache.status='conflict';continue;}
++        if(operation.baseRevision===undefined){operation.baseRevision=cache.overrides.find(v=>v.scopeKey===`${operation.studentId}::${operation.serviceId}`)?.revision||0;persist();}
++        activeOperation=operation;const {projectId,studentId,serviceId,op,patch,baseRevision}=operation;
++        const data=await api('PUT',{projectId,studentId,serviceId,op,patch,baseRevision});
++        if(String(who()?.id||'local')!==session)break;
++        if(data.conflict){operation.conflict=data.current||{};if(data.current)putRecord(data.current);cache.status='conflict';cache.error=data.message||'Задачу изменили на другом устройстве';persist();emit();continue;}
++        if(data.record)putRecord(data.record);
++        cache.outbox=cache.outbox.filter(v=>v.op!==operation.op);cache.lastSyncedAt=now();cache.error='';failures=0;persist();emit();
++      }
++      if(identity===session){cache.status=cache.outbox.some(v=>v.blocked||v.denied)?'error':cache.outbox.some(v=>v.conflict)?'conflict':cache.outbox.length?'pending':'online';persist();emit();}
++    }catch(error){
++      if(identity===session){if(activeOperation&&[400,403,404,409,413].includes(error.status))activeOperation.denied=error.message;cache.status=error.status===401?'auth':[400,403,404,409,413].includes(error.status)?'error':'offline';cache.error=error.message;failures++;persist();emit();}
++    }finally{busy=false;schedule();}
++    return snapshot();
++  }
++  async function refresh(){
++    selectAccount();if(destroyed||busy||!available()||!who()?.id)return snapshot();
++    const session=identity;busy=true;let refreshed=false;
++    try{
++      const data=await api('GET');if(String(who()?.id||'local')!==session)return snapshot();
++      cache.overrides=Array.isArray(data.overrides)?data.overrides:[];cache.events=Array.isArray(data.events)?data.events:[];cache.users=Array.isArray(data.users)?data.users:[];if(data.access?.id===identity)cache.access=data.access;delete cache.accessFence;scrubAccess();refreshed=true;cache.lastSyncedAt=now();cache.status=cache.outbox.some(v=>v.blocked||v.denied)?'error':cache.outbox.some(v=>v.conflict)?'conflict':cache.outbox.length?'pending':'online';if(!cache.outbox.some(v=>v.blocked||v.denied))cache.error='';failures=0;persist();emit();
++    }catch(error){if(identity===session){cache.status=error.status===401?'auth':'offline';cache.error=error.message;failures++;persist();emit();}}
++    finally{busy=false;schedule();}
++    if(refreshed&&identity===session&&cache.outbox.length)return flush();return snapshot();
++  }
++  async function update(scope,patch){
++    selectAccount();if(!scope?.projectId||!scope?.studentId||!scope?.serviceId)throw new Error('Не указана работа для задачи');
++    const operation={projectId:scope.projectId,studentId:scope.studentId,serviceId:scope.serviceId,patch:clone(patch),op:id(),baseRevision:(cache.overrides.find(v=>v.scopeKey===`${scope.studentId}::${scope.serviceId}`)?.revision||0)+cache.outbox.filter(v=>v.studentId===scope.studentId&&v.serviceId===scope.serviceId&&!v.blocked&&!v.denied).length};
++    if(!operationAllowed(operation))throw new Error('Нет доступа к изменению этой задачи');
++    cache.outbox.push(operation);cache.status='pending';cache.error='';
++    try{persist(true);}catch(error){cache.outbox.pop();throw new Error('Не удалось сохранить задачу на устройстве. Освободите место и повторите.');}
++    if(!available()||!who()?.id){
++      // Local demo/offline-only mode persists plans without pretending they reached the cloud.
++      const record={...effective().find(v=>v.scopeKey===`${scope.studentId}::${scope.serviceId}`),pending:false};putRecord(record);cache.outbox.pop();cache.status='local';persist();emit();return snapshot();
++    }
++    emit();await flush();return snapshot();
++  }
++  async function resolveConflict(scopeKey,useLocal=false){
++    selectAccount();const operations=cache.outbox.filter(v=>`${v.studentId}::${v.serviceId}`===scopeKey);
++    const conflict=operations.find(v=>v.conflict);if(!conflict)return snapshot();
++    cache.outbox=cache.outbox.filter(v=>`${v.studentId}::${v.serviceId}`!==scopeKey);
++    if(useLocal){const latest=operations.at(-1);const patch=Object.assign({},...operations.map(v=>v.patch));cache.outbox.push({projectId:latest.projectId,studentId:latest.studentId,serviceId:latest.serviceId,patch,op:id(),baseRevision:conflict.conflict.revision||0});}
++    persist();emit();return flush();
++  }
++  const online=()=>{refresh().catch(()=>{});};win?.addEventListener('online',online);
++  return {snapshot,update,refresh,flush,resolveConflict,destroy(){destroyed=true;clearTimeout(timer);win?.removeEventListener('online',online);}};
++}
+--- /dev/null
++++ b/js/ui/workflow-tasks.js
+@@ -0,0 +1,51 @@
++import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js';
++
++const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
++const dateValue = value => { const date = new Date(value); return Number.isFinite(+date) ? date : null; };
++const dayKey = value => { const date = dateValue(value); return date ? `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}` : ''; };
++const formatDate = value => dateValue(value)?.toLocaleDateString('ru-RU',{day:'numeric',month:'short'}) || '';
++const clock = value => dateValue(value)?.toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) || 'не указано';
++const initials = value => String(value || '').trim().split(/\s+/).slice(0,2).map(part=>part[0] || '').join('');
++const group = (rows,key) => {const map=new Map(); for(const row of rows){const value=row[key] || '';if(!map.has(value))map.set(value,[]);map.get(value).push(row);}return [...map.values()];};
++const paths = {
++ bell:'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
++ calendar:'M5 3v4m14-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2Z',
++ project:'M6 3h12a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 4h8m-8 4h8m-8 4h5',
++ chevron:'m8 10 4 4 4-4', arrow:'m9 5 7 7-7 7', close:'m6 6 12 12M6 18 18 6',
++ people:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m18 0v-2a4 4 0 0 0-3-3.87M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-7.87a4 4 0 0 1 0 7.75',
++ check:'m5 12 4 4L19 6', edit:'m15 4 5 5M4 20l4-1L21 6l-5-5L3 14l-1 7Z',
++ image:'M3 3h18v18H3Zm0 13 6-6 5 5 3-3 4 4M16 7h.01', print:'M6 9V3h12v6M6 18H3V9h18v9h-3M6 14h12v7H6Z'
++};
++export const workflowTaskIcon = (name,cls='') => `<svg class="wt-icon ${esc(cls)}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name] || paths.project}"/></svg>`;
++export function filterWorkflowTasks(tasks=[],filters={},now=new Date()) {
++ const today=dayKey(now), end=new Date(now);end.setDate(end.getDate()+7);const week=dayKey(end);
++ return tasks.filter(task=>{
++  if(task.snoozedUntil && +dateValue(task.snoozedUntil)>+now)return false;
++  const due=dayKey(task.dueAt), period=filters.period || 'today';
++  if(period==='today' && (!due || due>today))return false;
++  if(period==='week' && (!due || due>week))return false;
++  if(period==='undated' && due)return false;
++  return (!filters.action || filters.action==='all' || task.action===filters.action) && (!filters.assigneeId || task.assigneeId===filters.assigneeId);
++ });
++}
++export function workflowTaskCounts(tasks=[],now=new Date()) { return Object.fromEntries(['today','week','undated'].map(period=>[period,filterWorkflowTasks(tasks,{period},now).length])); }
++const badge = task => `<span class="wt-badge wt-badge--${esc(task.action)}">${esc(WORKFLOW_TASK_ACTIONS[task.action] || task.title)}</span>`;
++const due = (task,now) => task.dueAt ? `<span class="wt-due ${dayKey(task.dueAt)<dayKey(now)?'wt-overdue':''}">${workflowTaskIcon('calendar')}<span>${dayKey(task.dueAt)<dayKey(now)?'Просрочено · ':dayKey(task.dueAt)===dayKey(now)?'Сегодня · ':'До '}${esc(formatDate(task.dueAt))}</span></span>` : '';
++const actionName = task => task.action==='redo' || task.action==='review' ? 'Сравнить' : task.action==='print' ? 'В очередь' : task.action==='sort_sources' ? 'Разобрать' : 'Открыть';
++function row(task,now,canManage=true) {return `<article class="wt-row"><span class="wt-avatar" aria-hidden="true">${esc(initials(task.studentName))}</span><div class="wt-row-person"><strong>${esc(task.studentName)}</strong><span>${esc(task.serviceName)}</span></div><div class="wt-row-status">${badge(task)}<small>${esc(task.reason || 'Следующий этап работы')}</small>${task.capturedAt?`<small>Съёмка ${esc(formatDate(task.capturedAt))} · ${esc(task.operatorName || 'оператор не указан')}</small>`:''}</div><div class="wt-row-tools">${due(task,now)}<div class="wt-row-buttons"><button type="button" class="wt-button wt-button--outline" data-wt-open="${esc(task.id)}">${actionName(task)}</button>${canManage?`<button type="button" class="wt-icon-button" data-wt-edit="${esc(task.id)}" aria-label="Срок и параметры: ${esc(task.studentName)}, ${esc(task.serviceName)}">${workflowTaskIcon('edit')}</button>`:''}</div></div></article>`;}
++function freshness({online=true,updatedAt}={}) {return `<span class="wt-sync ${online?'':'wt-sync--offline'}">${online?'Сохранено онлайн':`Нет связи · данные на ${esc(clock(updatedAt))}`}</span>`;}
++function recentCaptures(tasks) {const seen=new Set();return tasks.filter(task=>{if(!task.capturedAt)return false;const key=`${task.studentId}:${task.sourceId}`;if(seen.has(key))return false;seen.add(key);return true;}).sort((a,b)=>+dateValue(b.capturedAt)-+dateValue(a.capturedAt)).slice(0,4);}
++export function renderWorkflowTasks({tasks=[],now=new Date(),filters={},online=true,updatedAt='',users=[],canManage=true,showHeading=true}={}) {
++ const selected=filterWorkflowTasks(tasks,filters,now),counts=workflowTaskCounts(tasks,now),period=filters.period || 'today';
++ const projects=group(selected,'projectId'),periodTasks=filterWorkflowTasks(tasks,{period},now),upcoming=tasks.filter(t=>t.dueAt && (!t.snoozedUntil || +dateValue(t.snoozedUntil)<=+now)).slice(0,4),captures=recentCaptures(tasks);
++ return `<section class="wt-dashboard" aria-label="Задачи">${showHeading?`<header class="wt-heading"><div><h1>Задачи</h1><p>Сегодня, ${esc(new Date(now).toLocaleDateString('ru-RU',{day:'numeric',month:'long'}))}</p>${freshness({online,updatedAt})}</div></header>`:''}<div class="wt-toolbar"><div class="wt-periods" role="group" aria-label="Период задач">${[['today','Сегодня'],['week','Неделя'],['undated','Без срока']].map(([value,label])=>`<button type="button" data-wt-period="${value}" aria-pressed="${period===value}" class="${period===value?'is-active':''}">${label} <span>${counts[value]}</span></button>`).join('')}</div><label class="wt-assignee"><span class="wt-sr-only">Ответственный</span><select data-wt-assignee aria-label="Ответственный"><option value="">Все ответственные</option>${users.map(user=>`<option value="${esc(user.id)}" ${filters.assigneeId===user.id?'selected':''}>${esc(user.name || user.displayName || user.email || user.id)}</option>`).join('')}</select></label></div><div class="wt-filters" role="group" aria-label="Действие">${[['all','Все'],...Object.entries(WORKFLOW_TASK_ACTIONS)].map(([action,label])=>`<button type="button" data-wt-action="${action}" aria-pressed="${(filters.action || 'all')===action}" class="${(filters.action || 'all')===action?'is-active':''}">${esc(action==='payment'?'Оплата':label)}${action==='all'?'':` <span>${periodTasks.filter(task=>task.action===action).length}</span>`}</button>`).join('')}</div><div class="wt-columns"><div class="wt-projects">${projects.length?projects.map((rows,index)=>`<details class="wt-project" data-project-id="${esc(rows[0].projectId)}" ${index===0?'open':''}><summary><span class="wt-project-icon">${workflowTaskIcon('project')}</span><span><strong>${esc(rows[0].projectName)}</strong><small>${new Set(rows.map(row=>row.classId)).size} групп · ${new Set(rows.map(row=>row.studentId)).size} детей · ${rows.length} задач</small></span><span class="wt-disclosure">${workflowTaskIcon('chevron')}</span></summary><div class="wt-project-body">${group(rows,'classId').map(classRows=>`<details class="wt-class" data-group-id="${esc(classRows[0].classId)}" open><summary>${workflowTaskIcon('chevron')}<strong>${esc(classRows[0].className)} · ${classRows.length} задач</strong></summary><div class="wt-class-body">${classRows.map(task=>row(task,now,canManage)).join('')}</div></details>`).join('')}</div></details>`).join(''):`<div class="wt-empty">${workflowTaskIcon('check')}<h2>${tasks.length?'В этом разделе задач нет':'Все текущие работы выполнены'}</h2><p>${tasks.length?'Выберите другой период или действие. Задачи без обещанной даты находятся в разделе «Без срока».':'Новые задачи появятся после съёмки, заказа или изменения статуса работы.'}</p></div>`}</div><aside class="wt-sidebar"><section class="wt-side-section"><h2>Ближайшее</h2>${upcoming.length?upcoming.map(task=>`<button type="button" class="wt-side-row" data-wt-open="${esc(task.id)}"><span class="wt-side-icon">${workflowTaskIcon('calendar')}</span><span><strong>${esc(formatDate(task.dueAt))} · ${esc(task.title)}</strong><small>${esc(task.projectName)} · ${esc(task.className)}</small></span>${workflowTaskIcon('arrow')}</button>`).join(''):'<p class="wt-muted">Сроки ещё не назначены</p>'}</section><section class="wt-side-section"><h2>Новые съёмки</h2>${captures.length?captures.map(task=>`<button type="button" class="wt-side-row" data-wt-open="${esc(task.id)}"><span class="wt-side-icon">${workflowTaskIcon('people')}</span><span><strong>${esc(task.operatorName || 'Оператор не указан')}</strong><small>${esc(clock(task.capturedAt))} · ${esc(task.studentName)}</small>${badge(task)}</span>${workflowTaskIcon('arrow')}</button>`).join(''):'<p class="wt-muted">Новых съёмок с указанной датой пока нет</p>'}</section></aside></div><footer class="wt-note">Задачи формируются по статусам и событиям. Дубликаты не создают новые дела.</footer></section>`;
++}
++export function bindWorkflowTasks(root,{onOpen=()=>{},onEdit=()=>{},onFilter=()=>{}}={}) {
++ const click=event=>{const button=event.target.closest('button');if(!button || !root.contains(button))return;if(button.hasAttribute('data-wt-open'))onOpen(button.dataset.wtOpen);if(button.hasAttribute('data-wt-edit'))onEdit(button.dataset.wtEdit);if(button.hasAttribute('data-wt-period'))onFilter({period:button.dataset.wtPeriod});if(button.hasAttribute('data-wt-action'))onFilter({action:button.dataset.wtAction});};
++ const change=event=>{if(event.target.matches('[data-wt-assignee]'))onFilter({assigneeId:event.target.value});};root.addEventListener('click',click);root.addEventListener('change',change);return ()=>{root.removeEventListener('click',click);root.removeEventListener('change',change);};
++}
++export function renderWorkflowBellButton({tasks=[],now=new Date()}={}) {const count=workflowTaskCounts(tasks,now).today;return `<button type="button" class="wt-bell-button" data-wt-bell aria-label="Ближайшие задачи${count?`: ${count}`:''}" aria-haspopup="dialog" aria-expanded="false">${workflowTaskIcon('bell')}${count?`<span class="wt-bell-count">${count>99?'99+':count}</span>`:''}</button>`;}
++export function renderWorkflowBell({tasks=[],now=new Date(),online=true,updatedAt=''}={}) {const reminders=filterWorkflowTasks(tasks,{period:'today'},now).slice(0,3);return `<div class="wt-bell-backdrop" data-wt-bell-dismiss></div><section class="wt-bell-panel" role="dialog" aria-modal="true" aria-label="Ближайшие задачи"><div class="wt-sheet-handle" aria-hidden="true"></div><header><div><h2>На сегодня</h2><p>${esc(new Date(now).toLocaleDateString('ru-RU',{day:'numeric',month:'long'}))}</p></div><button type="button" class="wt-icon-button" data-wt-close aria-label="Закрыть задачи">${workflowTaskIcon('close')}</button></header>${!online?freshness({online,updatedAt}):''}<div class="wt-reminders">${reminders.length?reminders.map(task=>`<button type="button" class="wt-reminder" data-wt-open="${esc(task.id)}"><span class="wt-reminder-icon wt-badge--${esc(task.action)}">${workflowTaskIcon(task.action==='print'?'print':task.action==='redo'?'image':'project')}</span><span><strong>${esc(task.title)}</strong><small>${esc(task.studentName)} · ${esc(task.serviceName)}</small><small>${esc(task.projectName)} · ${esc(task.className)}</small></span>${workflowTaskIcon('arrow')}</button>`).join(''):'<div class="wt-bell-empty"><strong>На сегодня всё</strong><p>Работы без срока доступны в общем списке задач.</p></div>'}</div><button type="button" class="wt-button wt-button--primary wt-all-tasks" data-wt-all>Все задачи</button></section>`;}
++export function bindWorkflowBell(root,{onOpen=()=>{},onAll=()=>{},onClose=()=>{}}={}) {const click=event=>{const target=event.target.closest('[data-wt-open],[data-wt-all],[data-wt-close],[data-wt-bell-dismiss]');if(!target)return;if(target.hasAttribute('data-wt-open'))onOpen(target.dataset.wtOpen);else if(target.hasAttribute('data-wt-all'))onAll();else onClose();};const key=event=>{if(event.key==='Escape')onClose();};root.addEventListener('click',click);root.addEventListener('keydown',key);return ()=>{root.removeEventListener('click',click);root.removeEventListener('keydown',key);};}
++export function renderWorkflowTaskEditor({task={},override={},users=[],canManage=true}={}) {return `<form class="wt-editor" data-wt-editor role="dialog" aria-modal="true" aria-label="Параметры задачи"><header><div><h2>Параметры задачи</h2><p>${esc(task.studentName)} · ${esc(task.serviceName)}</p></div></header>${canManage?`<label>Обещано до<input type="date" name="dueAt" value="${esc(dayKey(override.dueAt || task.dueAt))}"></label><label>Ответственный<select name="assigneeId"><option value="">Не назначен</option>${users.map(user=>`<option value="${esc(user.id)}" ${(override.assigneeId || task.assigneeId)===user.id?'selected':''}>${esc(user.name || user.displayName || user.email || user.id)}</option>`).join('')}</select></label><label>Напомнить позже<input type="date" name="snoozedUntil" value="${esc(dayKey(override.snoozedUntil || task.snoozedUntil))}"></label><label>Следующее действие<select name="requestedAction"><option value="">По статусу работы</option><option value="capture" ${override.requestedAction==='capture'?'selected':''}>Назначить пересъёмку</option></select></label><label>Комментарий<textarea name="reason" rows="2" maxlength="500" placeholder="Что нужно учесть">${esc(override.reason || '')}</textarea></label>`:'<p class="wt-muted">Параметры задачи изменяет руководитель проекта.</p>'}<div class="wt-editor-actions"><button type="button" class="wt-button wt-button--outline" data-wt-cancel>Отмена</button>${canManage?'<button type="submit" class="wt-button wt-button--primary">Сохранить</button>':''}</div><p class="wt-editor-error" role="alert" hidden></p></form>`;}
++export function bindWorkflowTaskEditor(root,{onSave=()=>{},onCancel=()=>{}}={}) {const form=root.matches?.('[data-wt-editor]')?root:root.querySelector('[data-wt-editor]');if(!form)return ()=>{};const submit=async event=>{event.preventDefault();const values=Object.fromEntries(new FormData(form));const button=form.querySelector('[type="submit"]');if(!button)return;const error=form.querySelector('.wt-editor-error');button.disabled=true;error.hidden=true;try{await onSave(values);}catch(reason){error.textContent=reason?.message || 'Не удалось сохранить. Повторите попытку.';error.hidden=false;}finally{button.disabled=false;}};const cancel=()=>onCancel();const trap=event=>{if(event.key!=='Tab')return;const controls=[...form.querySelectorAll('input,select,textarea,button')].filter(el=>!el.disabled&&!el.hidden);if(!controls.length)return;const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}};form.addEventListener('keydown',trap);form.addEventListener('submit',submit);const close=form.querySelector('[data-wt-cancel]');close?.addEventListener('click',cancel);return ()=>{form.removeEventListener('submit',submit);form.removeEventListener('keydown',trap);close?.removeEventListener('click',cancel);};}
+--- /dev/null
++++ b/js/ui/workflow-workspace.js
+@@ -0,0 +1,46 @@
++import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision} from '../services/workflow-tasks.js';
++import {createWorkflowTaskStore} from '../services/workflow-task-store.js';
++import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js';
++const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
++const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
++export function createWorkflowWorkspace({getData,account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
++ let store=null,accountKey='',snapshot={},cached=[],editor=null,bell=null,refreshing=false,pageCleanup=null;
++ let filters={period:'today',action:'all',assigneeId:''};
++ const viewer=()=>{const user=account()||{id:'local',role:'admin'};const remote=snapshot.access;return remote?.id===user.id&&remote.role?{...user,role:remote.role}:user;};
++ function ensureStore(){
++  const key=viewer().id||'local';if(store&&accountKey===key)return store;
++  store?.destroy();accountKey=key;
++  store=createWorkflowTaskStore({account:viewer,enabled,storage:localStorage,onChange:()=>{snapshot=store.snapshot();updateProjection();}});
++  snapshot=store.snapshot();void store.refresh();return store;
++ }
++ function updateProjection(){
++  const user=viewer();const data=getData();const allowed=snapshot.access?.projects;const safeData=enabled&&Array.isArray(allowed)?{...data,projects:data.projects.filter(p=>allowed.includes(p.id)),classes:data.classes.filter(c=>allowed.includes(c.projectId)),students:data.students.filter(s=>data.classes.some(c=>c.id===s.classId&&allowed.includes(c.projectId)))}:data;cached=deriveWorkflowTasks({...safeData,users:snapshot.users||[],scanSessions:readSessions()},{role:user.role||'admin',userId:user.id,overrides:snapshot.overrides||[]});
++  const button=document.querySelector('#workflow-bell');if(button){const now=Date.now(),end=new Date();end.setHours(23,59,59,999);const count=cached.filter(t=>t.dueAt&&Date.parse(t.dueAt)<=end.getTime()&&(!t.snoozedUntil||Date.parse(t.snoozedUntil)<=now)&&(!t.assigneeId||t.assigneeId===user.id)).length;button.innerHTML=bellIcon+(count?`<span class="workflow-bell-count">${count}</span>`:'');button.setAttribute('aria-label',`Задачи и напоминания${count?' · '+count:''}`);}
++  if(getRoute()==='tasks'&&!editor&&!refreshing){const root=document.querySelector('#view');const open=[...root.querySelectorAll('details')].map(x=>[x.dataset.projectId||x.dataset.groupId,x.open]);const y=window.scrollY;renderPage();for(const [key,value]of open){if(key)root.querySelectorAll('details').forEach(d=>{if((d.dataset.projectId||d.dataset.groupId)===key)d.open=value;});}window.scrollTo(0,y);}
++ }
++ function status(){return {online: snapshot.status==='synced'||snapshot.status==='online'||snapshot.status==='saved'||snapshot.status==='local',updatedAt:snapshot.updatedAt||snapshot.serverTime||snapshot.lastSyncedAt,pending:snapshot.pending||0};}
++ function mountShell(){
++  document.body.classList.toggle('workflow-task-screen',getRoute()==='tasks');
++  ensureStore();
++  if(!document.querySelector('#workflow-bell')){const button=document.createElement('button');button.id='workflow-bell';button.type='button';button.className='icon-button workflow-bell-button';button.addEventListener('click',showBell);document.querySelector('.topbar-actions')?.prepend(button);}
++  if(!document.querySelector('[data-route="tasks"]')){const button=document.createElement('button');button.type='button';button.className='nav-item workflow-desktop-nav';button.dataset.route='tasks';button.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></svg><span>Задачи</span>';button.addEventListener('click',()=>navigate('tasks'));document.querySelector('.bottom-nav [data-route="settings"]')?.before(button);}
++  document.querySelector('[data-route="tasks"]')?.classList.toggle('active',getRoute()==='tasks');updateProjection();
++ }
++ function options(){return {tasks:cached,filters,now:new Date(),...status(),users:enabled?(snapshot.users||[]):(getData().operators||[]),showHeading:false,canManage:!['photographer','viewer'].includes(viewer().role)};}
++ function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
++ async function open(value){const task=typeof value==='string'?cached.find(t=>t.id===value):value;if(!task)return;await closeBell();openTask(task);}
++ function closeBell(){if(!bell)return Promise.resolve();const current=bell;return new Promise(resolve=>{current.afterClose=resolve;if(current.history?.close)current.history.close();else current.remove();});}
++ function showBell(){if(bell)return closeBell();const trigger=document.activeElement;const node=document.createElement('div');node.className='workflow-bell-host';node.innerHTML=renderWorkflowBell(options());document.body.append(node);const current={node};const remove=()=>{node.remove();if(bell===current)bell=null;trigger?.focus({preventScroll:true});current.afterClose?.();};current.remove=remove;bell=current;current.history=mountHistory?.(remove);bindWorkflowBell(node,{onOpen:open,onAll:async()=>{await closeBell();navigate('tasks');},onClose:closeBell});node.addEventListener('click',e=>{if(e.target===node)void closeBell();});node.querySelector('button')?.focus({preventScroll:true});}
++ function overrideFor(task){return (snapshot.overrides||[]).find(x=>x.scopeKey===task.scopeKey)||{};}
++ async function edit(value){const task=typeof value==='string'?cached.find(t=>t.id===value):value;if(!task||['viewer','photographer'].includes(viewer().role))return;await closeBell();editor?.remove();const node=document.createElement('div');node.className='workflow-editor-host';node.innerHTML=renderWorkflowTaskEditor({task,override:overrideFor(task),users:(enabled?(snapshot.users||[]).filter(u=>u.projectIds?.includes(task.projectId)):(getData().operators||[])),canManage:viewer().role!=='photographer'&&viewer().role!=='viewer'});document.body.append(node);editor=node;node.setAttribute('role','dialog');node.setAttribute('aria-modal','true');node.setAttribute('aria-label','Параметры задачи');const trigger=document.activeElement;let finish;
++  const remove=()=>{node.remove();if(editor===node)editor=null;trigger?.focus({preventScroll:true});updateProjection();};
++  const close=()=>{if(finish?.close)finish.close();else remove();};finish=mountHistory?.(remove);
++  bindWorkflowTaskEditor(node,{onCancel:close,onSave:async patch=>{if(patch.requestedAction==='capture'){patch.requestedAt=new Date().toISOString();patch.previousSourceId=task.sourceId||'';}await ensureStore().update(task,patch);snapshot=store.snapshot();close();notify(snapshot.status==='online'?'Задача сохранена в облаке':snapshot.status==='conflict'?'Есть изменения на другом устройстве: выберите версию в задачах':'Задача сохранена на устройстве · ожидает облака');}});
++  const form=node.querySelector('form');if(task.action==='sort_sources'&&form){const section=document.createElement('div');section.className='workflow-source-purpose';section.innerHTML='<label>Назначение новых фотографий<select data-source-purpose><option value="additional-reference">Дополнительные материалы</option><option value="reshoot">Пересъёмка — новая генерация</option><option value="correction">Исправление результата</option></select></label><button type="button" class="secondary-button" data-apply-source>Указать назначение</button>';form.prepend(section);section.querySelector('button').onclick=async()=>{try{await ensureStore().update(task,{sourceMediaId:task.sourceId,sourcePurpose:section.querySelector('select').value,reviewedSourceIds:[...new Set([...(overrideFor(task).reviewedSourceIds||[]),...(task.sourceIds||[task.sourceId])])]});snapshot=store.snapshot();close();}catch(e){notify(e.message);}};}
++  node.addEventListener('keydown',event=>{if(event.key==='Escape')close();});node.querySelector('input,select,button')?.focus({preventScroll:true});
++ }
++ function mountCard(studentId){if(['viewer','photographer'].includes(viewer().role))return;const root=document.querySelector('.student-overview-card')||document.querySelector('.student-detail-main');if(!root)return;root.querySelector('[data-workflow-card]')?.remove();const rows=cached.filter(t=>t.studentId===studentId);const student=getData().students.find(s=>s.id===studentId);const serviceIds=[...new Set([...(student?.selectedServices||[]).map(s=>s.serviceId),...(student?.catalogIds||[]),...rows.map(t=>t.serviceId)])];if(!serviceIds.length)return;const node=document.createElement('details');node.className='workflow-card-controls';node.dataset.workflowCard='';node.innerHTML=`<summary>Задачи и сроки <span>${rows.length}</span></summary><div>${serviceIds.map(id=>{const task=rows.find(t=>t.serviceId===id)||{scopeKey:workflowTaskScopeKey(studentId,id),studentId,serviceId:id,projectId:getData().classes.find(c=>c.id===student.classId)?.projectId,classId:student.classId,studentName:[student.firstName,student.lastName].filter(Boolean).join(' '),serviceName:getData().catalog.find(s=>s.id===id)?.name||id,title:'Следующее действие'};const key=esc(id);return `<div class="workflow-card-row"><div><strong>${esc(task.serviceName)}</strong><small>${esc(task.title)}${task.dueAt?' · '+esc(task.dueAt):' · без срока'}</small></div><button type="button" class="secondary-button" data-workflow-edit="${key}">Изменить</button></div>`;}).join('')}</div>`;root.append(node);node.querySelectorAll('[data-workflow-edit]').forEach(button=>button.onclick=()=>{const id=button.dataset.workflowEdit;edit(rows.find(t=>t.serviceId===id)||{scopeKey:workflowTaskScopeKey(studentId,id),studentId,serviceId:id,projectId:getData().classes.find(c=>c.id===student.classId)?.projectId,studentName:[student.firstName,student.lastName].filter(Boolean).join(' '),serviceName:getData().catalog.find(s=>s.id===id)?.name||id,title:'Следующее действие'});});}
++ const captureBatches=new Map();function captureBatch(target){const student=getData().students.find(s=>s.id===target.studentId);const key=(student?.classId||target.studentId)+':'+(target.source||'upload')+':'+new Date().toISOString().slice(0,10);if(!captureBatches.has(key))captureBatches.set(key,crypto.randomUUID());return captureBatches.get(key);}
++ function captureMetadata(target){const candidate=String(target.serviceId||target.orderType||'').split('__')[0];const serviceId=getData().catalog.some(s=>s.id===candidate)?candidate:'';const override=(snapshot.overrides||[]).find(x=>x.studentId===target.studentId&&x.serviceId===serviceId);const purpose=target.capturePurpose||(override?.requestedAction==='capture'?'reshoot':'');return {serviceId,capturedAt:target.source==='capture'?new Date().toISOString():(target.capturedAt||''),captureBatchId:target.captureBatchId||captureBatch(target),...(purpose?{capturePurpose:purpose}:{}),operatorName:viewer().name||viewer().displayName||''};}
++ return {captureMetadata,approveWork:async work=>{const klass=getData().classes.find(c=>c.id===(work.groupId||getData().students.find(s=>s.id===work.studentId)?.classId));await ensureStore().update({studentId:work.studentId,serviceId:work.serviceId,projectId:work.projectId||klass?.projectId},{approvedRevision:workflowWorkRevision(work)});snapshot=store.snapshot();updateProjection();},refresh(){ensureStore();snapshot=store.snapshot();updateProjection();},mountShell,renderPage,mountCard,edit,approve:async task=>{await ensureStore().update(task,{approvedRevision:task.version});snapshot=store.snapshot();updateProjection();},snapshot:()=>snapshot,filters:()=>({...filters}),restoreFilters:value=>{filters={...filters,...value};},stop(){store?.destroy();}};
++}
+--- /dev/null
++++ b/css/workflow-tasks.css
+@@ -0,0 +1,11 @@
++/* Workflow surfaces extend the existing CRM system font and theme tokens. */
++.wt-dashboard{color:var(--text,#111827);font:inherit;padding:4px 0 12px;min-width:0}.wt-dashboard *,.wt-bell-panel *,.wt-editor *{box-sizing:border-box}.wt-icon{width:20px;height:20px;flex:none;vertical-align:middle}.wt-heading{display:flex;align-items:center;justify-content:space-between;margin:0 0 24px}.wt-heading h1{font-size:26px;line-height:1.2;letter-spacing:-.025em;margin:0 0 4px;font-weight:750}.wt-heading p,.wt-bell-panel header p{color:var(--muted,#626b7b);margin:0 0 8px;font-size:14px}.wt-sync{display:inline-flex;border:1px solid var(--line,#e2e5ed);border-radius:99px;padding:5px 14px;background:var(--card,#fff);font-size:12px;font-weight:650;line-height:1.3}.wt-sync--offline{background:#fff4d8;color:#7e4b00}.wt-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}.wt-periods{display:flex;border:1px solid var(--line,#e1e4ec);border-radius:18px;background:var(--card,#fff);overflow:hidden;padding:2px}.wt-periods button,.wt-filters button{font:inherit;color:var(--text,#111827);background:transparent;border:0;cursor:pointer;white-space:nowrap}.wt-periods button{font-size:14px;font-weight:650;padding:10px 24px;border-radius:16px;min-height:40px}.wt-periods button+button{border-left:1px solid var(--line,#e2e5ed)}.wt-periods button.is-active{color:#fff;background:var(--primary,#315ee8);border-color:transparent}.wt-periods span,.wt-filters span{margin-left:3px;font-variant-numeric:tabular-nums}.wt-assignee select{font:inherit;font-size:12px;background:var(--card,#fff);color:var(--text);border:1px solid var(--line);border-radius:12px;max-width:210px;padding:9px 26px 9px 11px}.wt-filters{display:flex;gap:10px;overflow-x:auto;padding:1px 1px 7px;margin-bottom:20px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}.wt-filters button{border:1px solid var(--line,#e1e4ec);background:var(--card,#fff);font-size:12px;line-height:1.3;font-weight:600;border-radius:99px;padding:7px 15px;min-height:34px}.wt-filters button.is-active{color:#08752a;background:#e6f8eb;border-color:#86cf9b}.wt-columns{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}.wt-projects{display:grid;gap:12px;min-width:0}.wt-project,.wt-side-section{border-radius:18px;background:var(--card,#fff);box-shadow:0 2px 9px rgba(35,47,79,.055);border:1px solid var(--line,#e5e7ee);min-width:0}.wt-project summary,.wt-class summary{display:flex;align-items:center;cursor:pointer;list-style:none}.wt-project summary::-webkit-details-marker,.wt-class summary::-webkit-details-marker{display:none}.wt-project>summary{gap:14px;padding:16px}.wt-project>summary>span:nth-child(2){flex:1;min-width:0}.wt-project>summary strong{display:block;font-size:17px;font-weight:720;line-height:1.3}.wt-project>summary small{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:2px}.wt-project-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:var(--primary,#315ee8);color:#fff;flex:none}.wt-disclosure{width:32px;height:32px;border:1px solid var(--line);border-radius:11px;display:grid;place-items:center;flex:none}.wt-project[open]>.wt-project-body{display:block}.wt-project[open]>summary .wt-disclosure .wt-icon{transform:rotate(180deg)}.wt-project-body{padding:2px 12px 12px}.wt-class>summary{gap:12px;background:var(--card-strong,#f2f3f8);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:8px}.wt-class>summary .wt-icon{width:18px;height:18px}.wt-class:not([open])>summary .wt-icon{transform:rotate(-90deg)}.wt-class+.wt-class{margin-top:12px}.wt-class-body{display:grid;gap:0}.wt-row{display:grid;grid-template-columns:42px minmax(110px,.9fr) minmax(130px,1.1fr) auto;gap:12px;align-items:center;border:1px solid var(--line,#e8eaf0);border-radius:15px;padding:14px 12px;min-width:0}.wt-row+.wt-row{margin-top:-1px}.wt-avatar{width:42px;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--primary-soft,#e8edff);color:#3957a0;font-weight:650;font-size:15px}.wt-row-person{min-width:0}.wt-row-person strong,.wt-row-person>span{display:block;line-height:1.35;overflow-wrap:anywhere}.wt-row-person strong{font-size:14px;font-weight:700}.wt-row-person>span{color:var(--muted);font-size:13px;margin-top:2px}.wt-row-status{min-width:0}.wt-row-status small{display:block;color:var(--muted);font-size:12px;line-height:1.4;margin-top:5px;overflow-wrap:anywhere}.wt-badge{display:inline-flex;max-width:100%;align-items:center;padding:4px 11px;border-radius:99px;font-size:12px;line-height:1.15;font-weight:650;background:var(--primary-soft,#e5ebff);color:#1746cd}.wt-badge--redo,.wt-badge--sort_sources{background:#fff0c9;color:#894a00}.wt-badge--print,.wt-badge--deliver{background:#e0f7e8;color:#08772b}.wt-badge--capture{background:#efe8ff;color:#6740a1}.wt-badge--payment{background:#fff0d6;color:#895000}.wt-row-tools{display:grid;justify-items:end;gap:8px}.wt-due{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}.wt-due .wt-icon{width:15px;height:15px}.wt-overdue{color:#b04a16}.wt-row-buttons{display:flex;align-items:center;gap:5px}.wt-button,.wt-icon-button,.wt-side-row,.wt-reminder,.wt-bell-button{font:inherit;cursor:pointer}.wt-button{border:1px solid transparent;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:650;line-height:1.2;min-height:36px}.wt-button--outline{border-color:#bbc9ff;color:var(--primary,#315ee8);background:var(--card,#fff)}.wt-button--primary{background:var(--primary,#315ee8);color:#fff}.wt-icon-button{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);color:var(--muted);padding:6px;flex:none}.wt-icon-button .wt-icon{width:17px;height:17px}.wt-sidebar{display:grid;gap:14px}.wt-side-section{padding:16px}.wt-side-section h2{font-size:18px;letter-spacing:-.025em;line-height:1.2;margin:0 0 12px}.wt-side-row{width:100%;text-align:left;display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line,#eceef3);border-radius:13px;background:var(--card,#fff);color:var(--text);padding:12px 10px;margin-top:6px;min-width:0}.wt-side-row>span:nth-child(2){min-width:0;flex:1}.wt-side-row strong,.wt-side-row small{display:block;overflow-wrap:anywhere}.wt-side-row strong{font-size:13px;font-weight:650;line-height:1.3}.wt-side-row small{font-size:12px;color:var(--muted);line-height:1.4;margin:2px 0 5px}.wt-side-row>.wt-icon{width:15px;height:15px;align-self:center;color:var(--muted)}.wt-side-icon{width:30px;height:30px;display:grid;place-items:center;color:var(--primary);flex:none}.wt-muted{font-size:13px;color:var(--muted);line-height:1.45;margin:0}.wt-note{border-top:1px solid var(--line);margin-top:28px;padding:14px 8px 0;color:var(--muted);font-size:12px;line-height:1.5}.wt-empty{text-align:center;background:var(--card);border-radius:18px;padding:34px 22px}.wt-empty>.wt-icon{color:var(--primary);width:32px;height:32px}.wt-empty h2{font-size:17px;margin:12px 0 6px}.wt-empty p{font-size:13px;color:var(--muted);line-height:1.5;max-width:40ch;margin:auto}.wt-bell-button{position:relative;display:grid;place-items:center;width:40px;height:40px;padding:9px;background:var(--card,#fff);border:1px solid var(--line,#e3e6ed);border-radius:50%;color:var(--text);flex:none}.wt-bell-count{position:absolute;right:-3px;top:-5px;min-width:19px;height:19px;padding:0 4px;border-radius:99px;background:var(--primary,#315ee8);color:#fff;font-size:11px;line-height:19px;font-weight:700}.wt-bell-backdrop{position:fixed;inset:0;z-index:1198;background:transparent}.wt-bell-panel{position:fixed;z-index:1199;top:84px;right:20px;width:370px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 110px);overflow-y:auto;background:var(--card,#fff);color:var(--text);border-radius:19px;padding:16px;box-shadow:0 12px 36px rgba(28,39,70,.16);font:inherit}.wt-bell-panel header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.wt-bell-panel h2{font-size:19px;letter-spacing:-.025em;margin:0 0 3px}.wt-bell-panel header p{font-size:12px}.wt-reminders{display:grid}.wt-reminder{display:flex;align-items:center;gap:11px;width:100%;text-align:left;color:var(--text);padding:12px 9px;background:var(--card,#fff);border:1px solid var(--line,#eceef3);border-radius:13px;min-height:76px}.wt-reminder+.wt-reminder{margin-top:-1px}.wt-reminder-icon{display:grid;place-items:center;width:34px;height:36px;border-radius:10px;flex:none}.wt-reminder>span:nth-child(2){flex:1;min-width:0}.wt-reminder strong{display:block;font-size:13px;font-weight:700;line-height:1.25}.wt-reminder small{display:block;font-size:11px;line-height:1.4;color:var(--muted);margin-top:2px}.wt-reminder>.wt-icon{width:15px;height:15px;color:var(--muted)}.wt-all-tasks{width:100%;margin-top:13px;font-size:13px;min-height:40px}.wt-bell-empty{padding:18px 8px;font-size:14px}.wt-bell-empty p{font-size:12px;line-height:1.5;color:var(--muted);margin:6px 0 0}.wt-sheet-handle{display:none}.wt-editor{font:inherit;color:var(--text);display:grid;gap:12px;min-width:0}.wt-editor header h2{font-size:19px;letter-spacing:-.02em;margin:0 0 4px}.wt-editor header p{font-size:13px;line-height:1.4;color:var(--muted);margin:0 0 4px}.wt-editor label{font-size:12px;font-weight:600;display:grid;gap:5px;min-width:0}.wt-editor input,.wt-editor select,.wt-editor textarea{font:inherit;font-size:14px;width:100%;min-width:0;max-width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--text);caret-color:var(--primary)}.wt-editor textarea{resize:vertical}.wt-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}.wt-editor-error{font-size:12px;color:#ad2c24;margin:0}.wt-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.wt-dashboard button:focus-visible,.wt-dashboard select:focus-visible,.wt-dashboard summary:focus-visible,.wt-bell-panel button:focus-visible,.wt-bell-button:focus-visible,.wt-editor :is(input,select,textarea,button):focus-visible{outline:2px solid var(--primary);outline-offset:3px}.wt-dashboard button:hover,.wt-bell-panel button:hover{filter:brightness(.98)}.wt-dashboard button:disabled,.wt-editor button:disabled{opacity:.55;cursor:wait}.wt-dashboard ::selection,.wt-editor ::selection{background:var(--primary-soft);color:var(--text)}
++@media(min-width:1100px){.wt-dashboard{padding:8px 6px 14px}.wt-columns{grid-template-columns:minmax(0,1fr) 300px}}
++@media(max-width:1099px){.wt-columns{grid-template-columns:minmax(0,1fr)}.wt-sidebar{grid-template-columns:1fr 1fr}.wt-row{grid-template-columns:40px minmax(100px,1fr) minmax(120px,1fr) auto;gap:10px}}
++@media(max-width:600px){.wt-dashboard{padding:0}.wt-heading{margin-bottom:16px}.wt-heading h1{font-size:23px}.wt-heading p{font-size:12px}.wt-sync{font-size:11px;padding:4px 12px}.wt-toolbar{gap:8px;margin-bottom:12px}.wt-periods{width:100%;border-radius:15px}.wt-periods button{flex:1;padding:8px 4px;font-size:12px;min-height:34px;border-radius:13px}.wt-assignee{width:100%}.wt-assignee select{max-width:100%;font-size:12px;padding:7px 24px 7px 10px}.wt-filters{gap:8px;margin-bottom:12px;padding-bottom:5px}.wt-filters button{font-size:11px;padding:6px 12px;min-height:30px}.wt-columns{gap:12px}.wt-project{border-radius:16px}.wt-project>summary{gap:10px;padding:11px}.wt-project>summary strong{font-size:14px}.wt-project>summary small{font-size:10px}.wt-project-icon{width:35px;height:35px;border-radius:11px}.wt-project-icon .wt-icon{width:18px;height:18px}.wt-disclosure{width:29px;height:29px;border-radius:9px}.wt-project-body{padding:0 8px 8px}.wt-class>summary{font-size:12px;gap:8px;padding:8px 9px;margin-bottom:4px;border-radius:10px}.wt-row{grid-template-columns:32px minmax(0,1fr) auto;gap:3px 9px;padding:10px 8px;align-items:start;border-radius:12px}.wt-avatar{grid-column:1;grid-row:1 / 3;width:32px;height:34px;border-radius:9px;font-size:12px}.wt-row-person{grid-column:2;grid-row:1}.wt-row-person strong{font-size:12px;line-height:1.25}.wt-row-person>span{font-size:11px;line-height:1.3;margin-top:2px}.wt-row-status{grid-column:2 / 4;grid-row:2;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding-right:78px;position:relative;min-height:32px}.wt-row-status .wt-badge{order:2}.wt-row-status small{font-size:10px;line-height:1.3;margin:0}.wt-row-tools{grid-column:3;grid-row:1 / 3;align-self:stretch;justify-content:end;justify-items:end;gap:7px;max-width:100px;z-index:1}.wt-row-tools .wt-due{max-width:100px;white-space:normal;font-size:9px;gap:3px;line-height:1.2}.wt-row-tools .wt-due .wt-icon{width:13px;height:13px}.wt-row-buttons{align-self:end;gap:3px}.wt-row-buttons .wt-button{font-size:10px;padding:6px 8px;min-height:30px;border-radius:9px}.wt-row-buttons .wt-icon-button{width:25px;height:30px;padding:4px;border-radius:8px}.wt-row-buttons .wt-icon-button .wt-icon{width:14px;height:14px}.wt-badge{font-size:10px;padding:3px 9px}.wt-sidebar{grid-template-columns:1fr;gap:12px}.wt-side-section{padding:12px;border-radius:16px}.wt-side-section h2{font-size:16px;margin-bottom:8px}.wt-side-row{padding:9px 8px;gap:9px}.wt-side-row strong{font-size:12px}.wt-side-row small{font-size:11px}.wt-note{margin-top:18px;font-size:11px;padding:12px 3px 0}.wt-bell-backdrop{background:rgba(26,35,60,.18)}.wt-bell-panel{top:auto;right:0;bottom:calc(var(--nav-h,72px) + env(safe-area-inset-bottom,0px));width:100%;max-width:none;max-height:calc(100dvh - var(--nav-h,72px) - 35px);border-radius:25px 25px 0 0;padding:10px 12px 17px;box-shadow:0 -6px 30px rgba(28,39,70,.12)}.wt-sheet-handle{display:block;width:38px;height:5px;margin:0 auto 13px;border-radius:99px;background:#b9becf}.wt-bell-panel header{padding:0 6px;margin-bottom:11px}.wt-bell-panel h2{font-size:20px}.wt-reminder{padding:12px 9px;min-height:79px}.wt-reminder strong{font-size:13px}.wt-reminder small{font-size:11px}.wt-editor input,.wt-editor select,.wt-editor textarea{font-size:16px}}
++@media(prefers-reduced-motion:reduce){.wt-dashboard *,.wt-bell-panel *{scroll-behavior:auto!important}}
++[data-theme="dark"] .wt-badge--redo,[data-theme="dark"] .wt-badge--sort_sources{background:#4b3513;color:#ffdc8f}[data-theme="dark"] .wt-badge--print,[data-theme="dark"] .wt-badge--deliver{background:#183e2a;color:#91e8ae}[data-theme="dark"] .wt-badge--capture{background:#36274d;color:#d7baff}[data-theme="dark"] .wt-badge--payment{background:#493315;color:#ffdc91}[data-theme="dark"] .wt-filters button.is-active{background:#173b27;border-color:#337e4d;color:#8ee7aa}[data-theme="dark"] .wt-avatar{color:#b8ccff}[data-theme="dark"] .wt-overdue{color:#ffb28a}[data-theme="dark"] .wt-button--outline{border-color:#4865a1}
++.workflow-editor-host{position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:20px;background:rgba(26,35,60,.3);overflow-y:auto}.workflow-editor-host>.wt-editor{width:440px;max-width:100%;max-height:calc(100dvh - 40px);overflow-y:auto;border-radius:20px;padding:22px;background:var(--card,#fff);box-shadow:0 14px 46px rgba(20,31,58,.2)}.workflow-source-purpose{padding-bottom:13px;border-bottom:1px solid var(--line);display:grid;gap:8px}.workflow-source-purpose button{justify-self:start;font-size:12px}.workflow-bell-button{position:relative;flex:none}.workflow-bell-button svg{height:21px;width:21px}.workflow-bell-count{position:absolute;right:-3px;top:-4px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;font-size:10px;font-weight:700;line-height:18px;background:var(--primary,#315ee8);color:#fff;border-radius:99px}.workflow-card-controls{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}.workflow-card-controls>summary{cursor:pointer;font-size:14px;font-weight:650;display:flex;align-items:center;justify-content:space-between;list-style:none}.workflow-card-controls>summary::-webkit-details-marker{display:none}.workflow-card-controls>summary>span{font-size:12px;border-radius:99px;color:var(--primary);background:var(--primary-soft);padding:3px 9px}.workflow-card-controls>summary:after{content:' ';width:8px;height:8px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg);margin:0 5px 3px 12px}.workflow-card-controls[open]>summary:after{transform:rotate(225deg);margin-top:5px}.workflow-card-controls>div{margin-top:8px}.workflow-card-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.workflow-card-row>div{flex:1;min-width:0}.workflow-card-row strong,.workflow-card-row small{display:block;line-height:1.4;overflow-wrap:anywhere}.workflow-card-row strong{font-size:13px;font-weight:650}.workflow-card-row small{font-size:11px;color:var(--muted);margin-top:2px}.workflow-card-row button{min-height:32px;font-size:11px;padding:6px 10px;flex:none}.workflow-desktop-nav{display:none!important}@media(min-width:900px){.workflow-desktop-nav{display:flex!important}}@media(max-width:600px){.workflow-editor-host{padding:12px;align-items:center}.workflow-editor-host>.wt-editor{max-height:calc(100dvh - 24px);padding:18px 14px;border-radius:18px}.workflow-card-row{gap:7px}.workflow-card-row button{font-size:10px;padding:6px 8px}}
++@media(max-width:600px){.wt-row-status{padding-right:0}.wt-row-status small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.wt-row-status small+small{-webkit-line-clamp:1}.wt-row-status .wt-badge{max-width:calc(100% - 110px);margin-top:2px;white-space:normal}.wt-sidebar .wt-side-section:first-child{display:none}}
++.wt-sync-status{font-size:12px;font-weight:600;margin:0 0 14px;color:var(--muted)}.wt-sync-conflict{padding:14px;background:var(--card);border-radius:14px;margin-bottom:14px}.wt-sync-conflict p{font-size:13px}.wt-sync-conflict button{font:inherit;padding:8px;margin-right:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--primary)}.workflow-review-decisions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 12px max(12px,env(safe-area-inset-bottom))}.workflow-review-decisions [data-task-approve]{background:#315ee8;border-color:#315ee8}.workflow-desktop-nav svg{width:24px;height:24px}@media(min-width:900px){.bottom-nav{grid-template-rows:repeat(6,72px)}}
++.workflow-task-screen .topbar-copy h1{font-size:26px;line-height:1.2}.workflow-task-screen .topbar-copy .eyebrow{margin-top:4px;font-size:14px;font-weight:500;color:var(--muted)}.workflow-task-screen .shell-summary:empty{display:none}.workflow-task-screen .topbar-actions{padding-top:0;align-self:center}.workflow-task-screen .topbar-copy{padding-bottom:0}.workflow-task-screen .topbar{padding-bottom:16px}.workflow-task-screen .wt-sync-status{display:table;padding:5px 14px;background:var(--card);border:1px solid var(--line);border-radius:99px;font-weight:650;color:var(--text);font-size:12px}.workflow-task-screen .view{padding-top:16px}@media(max-width:600px){.workflow-task-screen .topbar-copy h1{font-size:23px}.workflow-task-screen .topbar-copy .eyebrow{font-size:12px}.workflow-task-screen .topbar{padding-bottom:12px}.workflow-task-screen .view{padding-top:12px}}
+--- /dev/null
++++ b/server/workflow_tasks.py
+@@ -0,0 +1,117 @@
++"""Private workflow plans. Actual completion remains derived from CRM records."""
++import hashlib,json,re,time
++from datetime import date,datetime,timezone
++
++FIELDS={'dueAt','assigneeId','snoozedUntil','requestedAction','requestedAt','previousSourceId','approvedRevision','reviewedSourceIds','paymentCheck','sourcePurpose','sourceMediaId','sourceReviewedAt','note','reason'}
++PHOTOGRAPHER_FIELDS={'sourcePurpose','sourceMediaId','sourceReviewedAt','reviewedSourceIds','note','reason'}
++CAPTURE_ACTIONS={'capture','sort_sources'}
++
++def initialize(c):
++ c.executescript('''
++ CREATE TABLE IF NOT EXISTS workflow_task_plans(scope_key TEXT PRIMARY KEY,project_id TEXT NOT NULL,student_id TEXT NOT NULL,service_id TEXT NOT NULL,data TEXT NOT NULL,revision INTEGER NOT NULL,updated_at REAL NOT NULL,updated_by TEXT NOT NULL);
++ CREATE INDEX IF NOT EXISTS workflow_task_project ON workflow_task_plans(project_id);
++ CREATE TABLE IF NOT EXISTS workflow_task_events(seq INTEGER PRIMARY KEY AUTOINCREMENT,scope_key TEXT NOT NULL,project_id TEXT NOT NULL,actor TEXT NOT NULL,at REAL NOT NULL,patch TEXT NOT NULL,revision INTEGER NOT NULL);
++ CREATE INDEX IF NOT EXISTS workflow_task_event_project ON workflow_task_events(project_id,seq);
++ CREATE TABLE IF NOT EXISTS workflow_task_receipts(actor TEXT NOT NULL,op TEXT NOT NULL,hash TEXT NOT NULL,scope_key TEXT NOT NULL,PRIMARY KEY(actor,op));
++ ''')
++ensure_schema=initialize
++
++def load(c,store,rid):
++ row=c.execute('SELECT scope,data FROM sync_records WHERE store=? AND id=?',(store,rid)).fetchone()
++ return (row['scope'],json.loads(row['data'])) if row and row['data'] else None
++
++def plan(row):
++ return {**json.loads(row['data']),'scopeKey':row['scope_key'],'projectId':row['project_id'],'studentId':row['student_id'],'serviceId':row['service_id'],'revision':row['revision'],'updatedAt':datetime.fromtimestamp(row['updated_at'],timezone.utc).isoformat(),'updatedBy':row['updated_by']}
++
++def photo_visible(data,u):
++ return data.get('assigneeId')==u['id'] and data.get('requestedAction') in CAPTURE_ACTIONS
++
++def public_plan(row,u):
++ item=plan(row)
++ if u['role']=='photographer' and not photo_visible(item,u):return None
++ if u['role']!='admin':item.pop('paymentCheck',None)
++ return item
++
++def validate_patch(a,c,u,scope,student_id,patch):
++ a.fail(not isinstance(patch,dict) or not patch or bool(set(patch)-FIELDS),400,'Некорректные поля задачи')
++ for key,value in patch.items():
++  if value is None:continue
++  if key=='reviewedSourceIds':
++   a.fail(not isinstance(value,list) or len(value)>500 or any(not isinstance(v,str) or len(v)>160 for v in value),400,'Некорректный список фотографий')
++  elif key=='paymentCheck':a.fail(type(value) is not bool)
++  else:a.fail(not isinstance(value,str) or len(value)>(1000 if key in ('note','reason') else 200))
++  if key in ('dueAt','snoozedUntil','requestedAt','sourceReviewedAt') and value:
++   try:datetime.fromisoformat(value.replace('Z','+00:00')) if 'T' in value else date.fromisoformat(value)
++   except (ValueError,AttributeError):raise a.Error(400,'Некорректная дата')
++  if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources'))
++  if key=='sourcePurpose':a.fail(value not in ('','new-service','reshoot','correction','additional-reference','additional_reference','new_service','new','additional'))
++  if key=='assigneeId' and value:
++   user=c.execute('SELECT id,role,active FROM users WHERE id=?',(value,)).fetchone();a.fail(not user or not user['active'] or user['role']=='viewer',400,'Ответственный недоступен')
++   a.fail(user['role']!='admin' and not c.execute('SELECT 1 FROM memberships WHERE user_id=? AND project_id=?',(value,scope)).fetchone(),403,'Ответственному не назначен этот проект')
++  if key in ('sourceMediaId','previousSourceId') and value:
++   media=load(c,'media',value)
++   a.fail(not media and key=='sourceMediaId',425,'Сначала отправьте исходную фотографию на сервер')
++   a.fail(media and (media[0]!=scope or media[1].get('studentId')!=student_id),403,'Исходник относится к другому ребёнку')
++ a.fail(u['role']=='photographer' and bool(set(patch)-PHOTOGRAPHER_FIELDS),403,'Фотограф отмечает только назначенную съёмку')
++ # Managers already receive finance-stripped records in the existing CRM.
++ a.fail(u['role']!='admin' and 'paymentCheck' in patch,403,'Проверка оплаты доступна администратору')
++
++def route(r,c,u,a):
++ expected=getattr(r,'e',{}).get('HTTP_X_CRM_ACCOUNT')
++ a.fail(expected and expected!=u['id'],409,'Аккаунт изменился. Обновите страницу перед сохранением задачи.')
++ if r.method=='GET':
++  projects={row[0] for row in c.execute('SELECT id FROM projects')} if u['role']=='admin' else {row[0] for row in c.execute('SELECT project_id FROM memberships WHERE user_id=?',(u['id'],))}
++  clause='' if u['role']=='admin' else ' AND EXISTS(SELECT 1 FROM memberships m WHERE m.project_id=p.project_id AND m.user_id=?)'
++  params=() if u['role']=='admin' else (u['id'],)
++  rows=c.execute('SELECT p.* FROM workflow_task_plans p JOIN projects pr ON pr.id=p.project_id WHERE 1=1'+clause+' ORDER BY p.updated_at,p.scope_key',params)
++  overrides=[item for row in rows if (item:=public_plan(row,u)) is not None]
++  event_clause=clause;event_params=params
++  if u['role']=='photographer':
++   event_clause+=" AND json_extract(p.data,'$.assigneeId')=? AND json_extract(p.data,'$.requestedAction') IN ('capture','sort_sources')";event_params+=(u['id'],)
++  events=[]
++  # Scope authorization precedes LIMIT, so other projects cannot starve this feed.
++  query='SELECT e.* FROM workflow_task_events e JOIN workflow_task_plans p ON p.scope_key=e.scope_key JOIN projects pr ON pr.id=p.project_id WHERE e.project_id=p.project_id'+event_clause+' ORDER BY e.seq DESC LIMIT 1000'
++  for row in c.execute(query,event_params):
++   patch=json.loads(row['patch'])
++   if u['role']!='admin':patch.pop('paymentCheck',None)
++   events.append({'seq':row['seq'],'scopeKey':row['scope_key'],'projectId':row['project_id'],'actor':row['actor'],'at':row['at'],'patch':patch,'revision':row['revision']})
++  users=[]
++  if u['role'] in ('admin','manager'):
++   memberships={}
++   for member in c.execute('SELECT user_id,project_id FROM memberships'):memberships.setdefault(member['user_id'],set()).add(member['project_id'])
++   for user in c.execute("SELECT id,name,role FROM users WHERE active=1 AND role!='viewer'"):
++    shared=projects if user['role']=='admin' else projects & memberships.get(user['id'],set())
++    if shared:users.append({'id':user['id'],'name':user['name'],'role':user['role'],'projectIds':sorted(shared)})
++  return {'overrides':overrides,'events':events,'users':users,'access':{'id':u['id'],'role':u['role'],'projects':sorted(projects)},'serverTime':time.time()}
++ a.fail(r.method!='PUT',404,'Не найдено');a.fail(u['role']=='viewer',403,'Просмотр не позволяет менять задачи')
++ b=r.json(128*1024);student_id=a.identifier(b.get('studentId'));service_id=a.identifier(b.get('serviceId'));scope=a.identifier(b.get('projectId'));op=a.identifier(b.get('op'));base=b.get('baseRevision');patch=b.get('patch')
++ a.fail(type(base) is not int or base<0);a.access(c,u,scope)
++ student=load(c,'students',student_id);a.fail(not student,425,'Сначала отправьте карточку ребёнка на сервер');a.fail(student[0]!=scope,403,'Ребёнок относится к другому проекту')
++ s=student[1];services=set(s.get('catalogIds') or []);services.update(e.get('serviceId') for e in s.get('selectedServices',[]) if isinstance(e,dict));services.add(s.get('catalogId'))
++ for order_row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='orders' AND data IS NOT NULL",(scope,)):
++  order=json.loads(order_row[0])
++  if order.get('studentId')==student_id:
++   services.update(order.get('catalogIds') or []);services.add(order.get('catalogId'));services.update(item.get('serviceId') or str(item.get('type','')).split('__')[0] for item in order.get('items',[]) if isinstance(item,dict))
++ has_work=any(json.loads(row[0]).get('studentId')==student_id and json.loads(row[0]).get('serviceId')==service_id for row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='finalWorks' AND data IS NOT NULL",(scope,)))
++ a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
++ validate_patch(a,c,u,scope,student_id,patch);key=student_id+'::'+service_id
++ c.execute('BEGIN IMMEDIATE')
++ row=c.execute('SELECT * FROM workflow_task_plans WHERE scope_key=?',(key,)).fetchone();current=plan(row) if row else None
++ a.fail(row and row['project_id']!=scope,409,'Проект ребёнка изменился. Обновите задачи.')
++ if u['role']=='photographer':a.fail(not current or not photo_visible(current,u),403,'Съёмка не назначена вам')
++ digest=hashlib.sha256(json.dumps(b,sort_keys=True,separators=(',',':')).encode()).hexdigest()
++ receipt=c.execute('SELECT * FROM workflow_task_receipts WHERE actor=? AND op=?',(u['id'],op)).fetchone()
++ if receipt:
++  a.fail(receipt['hash']!=digest,409,'Код действия уже использован')
++  return {'saved':True,'duplicate':True,'record':public_plan(row,u),'serverTime':time.time()}
++ revision=row['revision'] if row else 0
++ if base!=revision:return {'conflict':True,'current':public_plan(row,u) if row else None,'serverTime':time.time(),'message':'Задачу изменили на другом устройстве. Проверьте изменения.'}
++ data=json.loads(row['data']) if row else {}
++ for k,v in patch.items():
++  if v is None:data.pop(k,None)
++  else:data[k]=v
++ now=time.time();revision+=1
++ c.execute('INSERT INTO workflow_task_plans VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(scope_key) DO UPDATE SET data=excluded.data,revision=excluded.revision,updated_at=excluded.updated_at,updated_by=excluded.updated_by',(key,scope,student_id,service_id,json.dumps(data,ensure_ascii=False),revision,now,u['id']))
++ c.execute('INSERT INTO workflow_task_events(scope_key,project_id,actor,at,patch,revision) VALUES(?,?,?,?,?,?)',(key,scope,u['id'],now,json.dumps(patch,ensure_ascii=False),revision))
++ c.execute('INSERT INTO workflow_task_receipts VALUES(?,?,?,?)',(u['id'],op,digest,key))
++ return {'saved':True,'record':public_plan(c.execute('SELECT * FROM workflow_task_plans WHERE scope_key=?',(key,)).fetchone(),u),'serverTime':now}

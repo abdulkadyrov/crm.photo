@@ -3,6 +3,7 @@ import phone_camera
 from types import SimpleNamespace
 import parent_orders
 import sync_api
+import workflow_tasks
 import admin_api
 import storage_inventory
 import studio_api
@@ -44,6 +45,7 @@ def initialize():
         ''')
         parent_orders.initialize(c)
         sync_api.initialize(c)
+        workflow_tasks.initialize(c)
         ar_jobs.initialize(c)
 
 @contextmanager
@@ -188,6 +190,7 @@ class Request:
                 self.headers.append(('Set-Cookie',f'{COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800'))
                 audit(c,u,'login'); return public_user(c,u)
             u=self.user(c)
+            if path=='/workflow-tasks': return workflow_tasks.route(self,c,u,SimpleNamespace(**globals()))
             if path.startswith('/studio/'):
                 return studio_api.route(self,c,u,path,SimpleNamespace(**globals()))
             if path.startswith('/ar/jobs/'):
