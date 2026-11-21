@@ -3,7 +3,7 @@ const root=process.argv[2]||'.';
 const file=path.join(root,'js/core/legacy-app.js');let s=fs.readFileSync(file,'utf8');
 function replace(a,b){if(!s.includes(a))throw new Error('Missing integration anchor: '+a.slice(0,95));s=s.replace(a,b);}
 if(!s.includes('createWorkflowWorkspace')){
- s=`import {createWorkflowWorkspace} from '../ui/workflow-workspace.js';\nlet workflowWorkspace=null;\n`+s;
+ s=`import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=273';\nlet workflowWorkspace=null;\n`+s;
  replace('async function refreshData() {',`function workflowTasksWorkspace(){
   if(workflowWorkspace)return workflowWorkspace;
   workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,

@@ -1,36 +1,18 @@
 --- a/index.html
 +++ b/index.html
-@@ -6,7 +6,8 @@
-     <meta name="theme-color" content="#2563EB" />
-     <title>Vakha Studio</title>
-     <link rel="manifest" href="./manifest.webmanifest" />
+@@ -9 +9,2 @@
 -    <link rel="stylesheet" href="./styles.css?v=271" />
 +    <link rel="stylesheet" href="./styles.css?v=272" />
 +    <link rel="stylesheet" href="./css/workflow-tasks.css" />
-   </head>
-   <body>
-     <div id="app" class="app-shell">
-@@ -67,6 +68,6 @@
-     <script src="./vendor/jsQR.js"></script>
-     <script src="./vendor/zxing.min.js"></script>
-     <script src="./vendor/JsBarcode.code128.min.js"></script>
+@@ -70 +71 @@
 -    <script type="module" src="./js/core/app.js?v=271"></script>
 +    <script type="module" src="./js/core/app.js?v=272"></script>
-   </body>
- </html>
 --- a/sw.js
 +++ b/sw.js
-@@ -1,5 +1,5 @@
- const CACHE_PREFIX = "vakha-studio-cache-";
+@@ -2 +2 @@
 -const CACHE_VERSION = "v271";
 +const CACHE_VERSION = "v272";
- const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
- const CHILD_TEMPLATE_PREVIEWS = [
-   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
-@@ -74,37 +74,42 @@
-   "./assets/reference-poses/girl-interview-desk.jpg"
- ];
- const APP_SHELL = [
+@@ -77,2 +77,7 @@
 -  "./js/ui/scan-photo-viewer.js?v=271",
 -  "./js/ui/group-scan-panel.js?v=271",
 +  "./css/workflow-tasks.css",
@@ -40,180 +22,104 @@
 +  "./js/services/workflow-tasks.js",
 +  "./js/ui/scan-photo-viewer.js?v=272",
 +  "./js/ui/group-scan-panel.js?v=272",
-  "./js/services/print-asset-cache.js",
-  "./js/ui/project-print-picker.js",
-  "./js/services/print-group-pages.js",
-   "./js/services/camera-capture.js",
-   "./js/services/ar-publication-state.js",
+@@ -84,2 +89,2 @@
 -  "./js/services/service-positions.js?v=271",
 -  "./js/services/individual-order.js?v=271",
 +  "./js/services/service-positions.js?v=272",
 +  "./js/services/individual-order.js?v=272",
-   "./js/services/sequence-navigation.js",
+@@ -87 +92 @@
 -  "./js/services/sequence-navigation.js?v=271",
 +  "./js/services/sequence-navigation.js?v=272",
-   "./js/services/card-summary.js",
+@@ -89 +94 @@
 -  "./js/services/card-summary.js?v=271",
 +  "./js/services/card-summary.js?v=272",
-   "./js/services/blob-zip.js",
-   "./js/services/student-directory.js",
-   "./js/services/camera-options.js",
+@@ -93 +98 @@
 -  "./js/services/camera-options.js?v=271",
 +  "./js/services/camera-options.js?v=272",
-   "./assets/ui/student-avatar.svg",
-   "./js/services/school-demo.js",
-   "./js/services/local-portraits.js",
-   "./js/ui/local-portraits-panel.js",
-   "./js/services/record-sync.js",
+@@ -99,2 +104,2 @@
 -  "./js/services/record-sync.js?v=271",
 -  "./js/services/deferred-final-work.js?v=271",
 +  "./js/services/record-sync.js?v=272",
 +  "./js/services/deferred-final-work.js?v=272",
-   "./js/services/sync-panel-state.js",
-   "./js/services/sync-contents.js",
-   "./js/services/sync-project-progress.js",
-   "./js/services/storage-browser.js",
-   "./js/services/sync-blob-cache.js",
-   "./js/services/sync-codec.js",
+@@ -107 +112 @@
 -  "./js/services/sync-codec.js?v=271",
 +  "./js/services/sync-codec.js?v=272",
-   "./vendor/noble-hashes/sha2.js",
-   "./vendor/noble-hashes/_md.js",
-   "./vendor/noble-hashes/_u64.js",
-@@ -112,35 +117,35 @@
-   "./",
-   "./index.html",
-   "./styles.css",
+@@ -115 +120 @@
 -  "./styles.css?v=271",
 +  "./styles.css?v=272",
-   "./app.js",
-   "./js/core/app.js",
+@@ -118 +123 @@
 -  "./js/core/app.js?v=271",
 +  "./js/core/app.js?v=272",
-   "./js/core/bootstrap.js",
+@@ -120,2 +125,2 @@
 -  "./js/services/card-selection.js?v=271",
 -  "./js/services/navigation-history.js?v=271",
 +  "./js/services/card-selection.js?v=272",
 +  "./js/services/navigation-history.js?v=272",
-   "./js/services/roster-filters.js",
+@@ -123,2 +128,2 @@
 -  "./js/services/roster-filters.js?v=271",
 -  "./js/ui/scan-work-picker.js?v=271",
 +  "./js/services/roster-filters.js?v=272",
 +  "./js/ui/scan-work-picker.js?v=272",
-   "./js/services/student-comments.js",
+@@ -126 +131 @@
 -  "./js/services/student-comments.js?v=271",
 +  "./js/services/student-comments.js?v=272",
-   "./js/core/legacy-app.js",
-   "./js/services/image-delivery.js",
+@@ -129 +134 @@
 -  "./js/services/image-delivery.js?v=271",
 +  "./js/services/image-delivery.js?v=272",
-   "./js/ui/student-quick-actions.js",
+@@ -131,2 +136,2 @@
 -  "./js/ui/student-quick-actions.js?v=271",
 -  "./js/services/group-scan.js?v=271",
 +  "./js/ui/student-quick-actions.js?v=272",
 +  "./js/services/group-scan.js?v=272",
- 
-   "./js/services/print-selection.js",
+@@ -135,2 +140,2 @@
 -  "./js/services/print-selection.js?v=271",
 -  "./js/ui/project-print-picker.js?v=271",
 +  "./js/services/print-selection.js?v=272",
 +  "./js/ui/project-print-picker.js?v=272",
-   "./js/services/student-stage-icons.js",
+@@ -138 +143 @@
 -  "./js/services/student-stage-icons.js?v=271",
 +  "./js/services/student-stage-icons.js?v=272",
-   "./js/ui/scan-work-picker.js",
-   "./js/services/fulfillment-sorting.js",
+@@ -141 +146 @@
 -  "./js/ui/fulfillment-panel.js?v=271",
 +  "./js/ui/fulfillment-panel.js?v=272",
-   "./js/services/print-order.js",
+@@ -143 +148 @@
 -  "./js/services/print-order.js?v=271",
 +  "./js/services/print-order.js?v=272",
- 
-   "./js/services/fulfillment-cards.js",
-   "./js/services/group-scan.js",
-@@ -156,11 +161,11 @@
-   "./js/ui/phone-camera-sender.js",
-   "./camera/index.html",
-   "./js/ui/group-scan-panel.js",
+@@ -159 +164 @@
 -  "./js/services/fulfillment.js?v=271",
 +  "./js/services/fulfillment.js?v=272",
- 
-   "./js/services/fulfillment.js",
-   "./js/ui/fulfillment-panel.js",
+@@ -163 +168 @@
 -  "./js/core/legacy-app.js?v=271",
 +  "./js/core/legacy-app.js?v=272",
-   "./js/core/router.js",
-   "./js/core/state.js",
-   "./js/core/events.js",
-@@ -183,10 +188,10 @@
-   "./js/services/catalog-themes.js",
-   "./js/services/shooting-roster.js",
-   "./js/ui/photo-camera.js",
+@@ -186 +191 @@
 -  "./js/ui/photo-camera.js?v=271",
 +  "./js/ui/photo-camera.js?v=272",
-   "./js/services/camera-framing.js",
-   "./js/services/teacher-broadcast.js",
+@@ -189 +194 @@
 -  "./js/services/teacher-broadcast.js?v=271",
 +  "./js/services/teacher-broadcast.js?v=272",
-   "./js/services/class-links-transfer.js",
-   "./js/services/class-link-cache.js",
-   "./assets/class-photo/class-photo-a4.png",
-@@ -228,7 +233,7 @@
-   "./js/modules/checklist.js",
-   "./js/modules/public-catalog.js",
-   "./js/services/cloud-workspace.js",
+@@ -231 +236 @@
 -  "./js/services/parent-orders.js?v=271",
 +  "./js/services/parent-orders.js?v=272",
-   "./js/services/parent-order-model.js",
-   "./js/services/dialog-return.js",
-   "./js/services/qr-service.js",
-@@ -240,12 +245,12 @@
-   "./js/services/export-service.js",
-   "./js/services/album-service.js",
-   "./js/services/finalwork-service.js",
+@@ -243 +248 @@
 -  "./js/services/finalwork-service.js?v=271",
 +  "./js/services/finalwork-service.js?v=272",
-   "./js/services/archive-service.js",
-   "./js/services/backup-service.js",
-   "./js/services/conflict-service.js",
-   "./js/services/export-filter-service.js",
+@@ -248 +253 @@
 -  "./js/services/export-filter-service.js?v=271",
 +  "./js/services/export-filter-service.js?v=272",
-   "./js/services/file-system-service.js",
-   "./js/services/integrity-service.js",
-   "./js/services/import-preflight-service.js",
-@@ -276,7 +281,7 @@
-   "./vendor/jsQR.js",
-   "./vendor/zxing.min.js",
-   "./js/services/barcode-reader.js",
+@@ -279 +284 @@
 -  "./js/services/barcode-reader.js?v=271",
 +  "./js/services/barcode-reader.js?v=272",
-   "./vendor/JsBarcode.code128.min.js",
-   "./js/services/print-code-layout.js",
-   "./js/services/portrait-identity-policy.js",
 --- a/js/core/app.js
 +++ b/js/core/app.js
-@@ -8,7 +8,7 @@
-   state.appVersion = APP_VERSION;
-   state.router = router;
- 
+@@ -11 +11 @@
 -  await import("./legacy-app.js?v=271");
 +  await import("./legacy-app.js?v=272");
- }
- 
- bootstrap();
 --- a/js/core/legacy-app.js
 +++ b/js/core/legacy-app.js
-@@ -1,3 +1,5 @@
+@@ -0,0 +1,2 @@
 +import {createWorkflowWorkspace} from '../ui/workflow-workspace.js';
 +let workflowWorkspace=null;
- import {fulfillmentUnitPrice} from '../services/fulfillment-pricing.js';
- import {serviceFilterChoices} from '../services/service-filter.js';
- import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=269';
-@@ -611,11 +613,28 @@
- }
-   try { cloudScanJournal()?.migrate(); } catch(error) { console.error('Не удалось открыть облачный журнал проверки',error); }
- 
+@@ -613,0 +616,16 @@
 +function workflowTasksWorkspace(){
 +  if(workflowWorkspace)return workflowWorkspace;
 +  workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,
@@ -230,114 +136,41 @@
 +  return workflowWorkspace;
 +}
 +
- async function refreshData() {
-   const entries = await Promise.all(STORE_NAMES.map((name) => getAll(name)));
-   STORE_NAMES.forEach((name, index) => {
-     state.data[name] = entries[index];
-   });
+@@ -618,0 +637 @@
 +  workflowTasksWorkspace().refresh();
- }
- 
- function normalizeCurrentOperator() {
-@@ -1089,6 +1108,7 @@
-     albumClassId: state.albumClassId,
-     albumTab: state.albumTab,
-     directoryQueries: [...studentDirectoryQueries],
+@@ -1091,0 +1111 @@
 +    workflowFilters: workflowWorkspace?.filters(),
-     scrollY: window.scrollY,
-     scrollX: window.scrollX,
-     openDetails: [...view.querySelectorAll('details')].flatMap((node,index)=>node.open ? [index] : []),
-@@ -1111,7 +1131,8 @@
-   cancelRouteScrollRestore();
-   if (!target?.route) return;
-   stopQrStream();
+@@ -1114 +1134,2 @@
 -  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,openDetails,innerScroll,...route} = target;
 +  const {scrollY,scrollX,rosterDetails,rosterFocus,rosterLetter,directoryQueries,workflowFilters,openDetails,innerScroll,...route} = target;
 +  if(workflowFilters)workflowTasksWorkspace().restoreFilters(workflowFilters);
-   if (directoryQueries) {studentDirectoryQueries.clear();for (const [key,value] of directoryQueries) studentDirectoryQueries.set(key,value);}
-   Object.assign(state,route);
-   rememberSelectedCard();
-@@ -1147,6 +1168,7 @@
-   const prevRoute = state.lastRenderedRoute;
-   const renderers = {
-     home: renderHome,
+@@ -1149,0 +1171 @@
 +    tasks: ()=>workflowTasksWorkspace().renderPage(),
-     search: renderSearch,
-     scan: renderScan,
-     classes: renderClasses,
-@@ -1169,6 +1191,9 @@
-   if (state.preserveScroll || prevRoute === state.route) window.scrollTo(0, prevScrollY);
-   state.preserveScroll = false;
-   state.lastRenderedRoute = state.route;
+@@ -1171,0 +1194,3 @@
 +  workflowTasksWorkspace().mountShell();
 +  if(state.route==='student')workflowTasksWorkspace().mountCard(state.studentId);
 +  if(state.route==='home'&&!view.querySelector('[data-open-workflow]')){const shortcut=document.createElement('button');shortcut.type='button';shortcut.className='secondary-button workflow-home-shortcut';shortcut.dataset.openWorkflow='';shortcut.textContent='Задачи и напоминания';shortcut.onclick=()=>navigate('tasks');view.querySelector('.home-toolbar')?.append(shortcut);}
- }
- 
- function addContextBackButton() {
-@@ -7575,6 +7600,8 @@
-     mergedPrintImage: mergedAsset.blob,
-     qrData,
-     finalImageVersion: 8,
+@@ -7577,0 +7603,2 @@
 +    workflowVersion: id,
 +    workflowReview: {required:true},
-     sourceMediaId: input.sourceMediaId || "",
-     referenceMediaId: input.referenceMediaId || "",
-     resultMediaId: input.resultMediaId || "",
-@@ -9392,6 +9419,7 @@
-     const fileName = safeFileName(`${klass?.name || "class"}_${student.lastName}_${student.firstName}_${target.orderType}${seriesSuffix}.${ext}`);
-     const operatorId = currentOperatorIdForAction();
-     const mediaRecord = {
+@@ -9394,0 +9422 @@
 +      ...workflowTasksWorkspace().captureMetadata(target),
-       id,
-       studentId: student.id,
-       type,
-@@ -9399,7 +9427,7 @@
-       orderType: target.orderType,
-       createdBy: operatorId,
-       importedBy: target.source === "device_import" ? operatorId : undefined,
+@@ -9402 +9430 @@
 -      capturedBy: target.source === "capture" ? operatorId : undefined,
 +      capturedBy: target.source === "capture" ? (cloudAccount()?.id || operatorId) : undefined,
-       createdAt: now(),
-       blob: file
-     };
-@@ -9664,7 +9692,9 @@
-     resolve:raw=>resolveScanTarget(raw,{...getData(),parseWork:parseFinalWorkPrintQr,studentTokens:qrPayloadCandidates,textMatches:finalWorkMatchesTextPayload,viewerUrl:finalWorkArViewerUrl}),
-     createDetector:createQrDetector,detectFrame:detectQrFromVideo,decodeFile:detectQrFromImageFile,
-     readSession:(id,archive=false)=>scanSync?scanSync.read(id,archive):JSON.parse(localStorage.getItem(key(id)+(archive?':history':''))||'null'),
+@@ -9667 +9695,3 @@
 -    writeSession:(id,session,archive=false)=>{if(scanSync)return scanSync.write(id,session,archive);if(archive){const old=JSON.parse(localStorage.getItem(key(id)+':history')||'[]');localStorage.setItem(key(id)+':history',JSON.stringify([...old,session].slice(-5)));}else localStorage.setItem(key(id),JSON.stringify(session));},
 +    writeSession:(id,session,archive=false)=>{
 +      if(!archive){let previous;try{previous=scanSync?scanSync.read(id):JSON.parse(localStorage.getItem(key(id))||'null');}catch{}const known=new Set((previous?.events||[]).map(e=>e.id));for(const event of session.events||[]){if(known.has(event.id))continue;const work=finalWorkById(event.workId);if(work&&Number(event.version||0)===Number(work.finalImageVersion||0)){if(event.accepted)void workflowTasksWorkspace().approveWork(work).catch(error=>notify(error.message));else if(event.status==='rejected')void put('finalWorks',stampUpdated(correctionUpdate(work,{reason:'likeness',comment:'Не похож: отмечено в QR-проверке'},now()))).then(refreshData).catch(error=>notify(error.message));}}}
 +      if(scanSync)return scanSync.write(id,session,archive);if(archive){const old=JSON.parse(localStorage.getItem(key(id)+':history')||'[]');localStorage.setItem(key(id)+':history',JSON.stringify([...old,session].slice(-5)));}else localStorage.setItem(key(id),JSON.stringify(session));},
-     orderedItems:student=>selectedServicesForStudent(student).map(item=>({...item,title:serviceName(catalogItemById(item.serviceId))})),
-     imageOptions:target=>mediaByStudent(target.studentId).filter(item=>['photo','image'].includes(item.type)).map((item,index)=>({id:item.id,label:`Фото ${index+1} · ${item.createdAt?new Date(item.createdAt).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):item.fileName||'Оригинал'}`,selected:item.id===finalWorkById(target.workId)?.sourceMediaId})),
-     images:(target,sourceId)=>{
 --- a/server/app.py
 +++ b/server/app.py
-@@ -4,6 +4,7 @@
- from types import SimpleNamespace
- import parent_orders
- import sync_api
+@@ -6,0 +7 @@
 +import workflow_tasks
- import admin_api
- import studio_api
- import ar_jobs
-@@ -44,6 +45,7 @@
-         ''')
-         parent_orders.initialize(c)
-         sync_api.initialize(c)
+@@ -46,0 +48 @@
 +        workflow_tasks.initialize(c)
-         ar_jobs.initialize(c)
- 
- @contextmanager
-@@ -188,6 +190,7 @@
-                 self.headers.append(('Set-Cookie',f'{COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=604800'))
-                 audit(c,u,'login'); return public_user(c,u)
-             u=self.user(c)
+@@ -190,0 +193 @@
 +            if path=='/workflow-tasks': return workflow_tasks.route(self,c,u,SimpleNamespace(**globals()))
-             if path.startswith('/studio/'):
-                 return studio_api.route(self,c,u,path,SimpleNamespace(**globals()))
-             if path.startswith('/ar/jobs/'):
 --- /dev/null
 +++ b/js/services/workflow-tasks.js
 @@ -0,0 +1,159 @@

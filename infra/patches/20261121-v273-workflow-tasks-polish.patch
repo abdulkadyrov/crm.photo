@@ -1,0 +1,158 @@
+--- a/index.html
++++ b/index.html
+@@ -9,2 +9,2 @@
+-    <link rel="stylesheet" href="./styles.css?v=272" />
+-    <link rel="stylesheet" href="./css/workflow-tasks.css" />
++    <link rel="stylesheet" href="./styles.css?v=273" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css?v=273" />
+@@ -71 +71 @@
+-    <script type="module" src="./js/core/app.js?v=272"></script>
++    <script type="module" src="./js/core/app.js?v=273"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v272";
++const CACHE_VERSION = "v273";
+@@ -77,7 +77,7 @@
+-  "./css/workflow-tasks.css",
+-  "./js/ui/workflow-workspace.js",
+-  "./js/ui/workflow-tasks.js",
+-  "./js/services/workflow-task-store.js",
+-  "./js/services/workflow-tasks.js",
+-  "./js/ui/scan-photo-viewer.js?v=272",
+-  "./js/ui/group-scan-panel.js?v=272",
++  "./css/workflow-tasks.css?v=273",
++  "./js/ui/workflow-workspace.js?v=273",
++  "./js/ui/workflow-tasks.js?v=273",
++  "./js/services/workflow-task-store.js?v=273",
++  "./js/services/workflow-tasks.js?v=273",
++  "./js/ui/scan-photo-viewer.js?v=273",
++  "./js/ui/group-scan-panel.js?v=273",
+@@ -89,2 +89,2 @@
+-  "./js/services/service-positions.js?v=272",
+-  "./js/services/individual-order.js?v=272",
++  "./js/services/service-positions.js?v=273",
++  "./js/services/individual-order.js?v=273",
+@@ -92 +92 @@
+-  "./js/services/sequence-navigation.js?v=272",
++  "./js/services/sequence-navigation.js?v=273",
+@@ -94 +94 @@
+-  "./js/services/card-summary.js?v=272",
++  "./js/services/card-summary.js?v=273",
+@@ -98 +98 @@
+-  "./js/services/camera-options.js?v=272",
++  "./js/services/camera-options.js?v=273",
+@@ -104,2 +104,2 @@
+-  "./js/services/record-sync.js?v=272",
+-  "./js/services/deferred-final-work.js?v=272",
++  "./js/services/record-sync.js?v=273",
++  "./js/services/deferred-final-work.js?v=273",
+@@ -112 +112 @@
+-  "./js/services/sync-codec.js?v=272",
++  "./js/services/sync-codec.js?v=273",
+@@ -120 +120 @@
+-  "./styles.css?v=272",
++  "./styles.css?v=273",
+@@ -123 +123 @@
+-  "./js/core/app.js?v=272",
++  "./js/core/app.js?v=273",
+@@ -125,2 +125,2 @@
+-  "./js/services/card-selection.js?v=272",
+-  "./js/services/navigation-history.js?v=272",
++  "./js/services/card-selection.js?v=273",
++  "./js/services/navigation-history.js?v=273",
+@@ -128,2 +128,2 @@
+-  "./js/services/roster-filters.js?v=272",
+-  "./js/ui/scan-work-picker.js?v=272",
++  "./js/services/roster-filters.js?v=273",
++  "./js/ui/scan-work-picker.js?v=273",
+@@ -131 +131 @@
+-  "./js/services/student-comments.js?v=272",
++  "./js/services/student-comments.js?v=273",
+@@ -134 +134 @@
+-  "./js/services/image-delivery.js?v=272",
++  "./js/services/image-delivery.js?v=273",
+@@ -136,2 +136,2 @@
+-  "./js/ui/student-quick-actions.js?v=272",
+-  "./js/services/group-scan.js?v=272",
++  "./js/ui/student-quick-actions.js?v=273",
++  "./js/services/group-scan.js?v=273",
+@@ -140,2 +140,2 @@
+-  "./js/services/print-selection.js?v=272",
+-  "./js/ui/project-print-picker.js?v=272",
++  "./js/services/print-selection.js?v=273",
++  "./js/ui/project-print-picker.js?v=273",
+@@ -143 +143 @@
+-  "./js/services/student-stage-icons.js?v=272",
++  "./js/services/student-stage-icons.js?v=273",
+@@ -146 +146 @@
+-  "./js/ui/fulfillment-panel.js?v=272",
++  "./js/ui/fulfillment-panel.js?v=273",
+@@ -148 +148 @@
+-  "./js/services/print-order.js?v=272",
++  "./js/services/print-order.js?v=273",
+@@ -164 +164 @@
+-  "./js/services/fulfillment.js?v=272",
++  "./js/services/fulfillment.js?v=273",
+@@ -168 +168 @@
+-  "./js/core/legacy-app.js?v=272",
++  "./js/core/legacy-app.js?v=273",
+@@ -191 +191 @@
+-  "./js/ui/photo-camera.js?v=272",
++  "./js/ui/photo-camera.js?v=273",
+@@ -194 +194 @@
+-  "./js/services/teacher-broadcast.js?v=272",
++  "./js/services/teacher-broadcast.js?v=273",
+@@ -236 +236 @@
+-  "./js/services/parent-orders.js?v=272",
++  "./js/services/parent-orders.js?v=273",
+@@ -248 +248 @@
+-  "./js/services/finalwork-service.js?v=272",
++  "./js/services/finalwork-service.js?v=273",
+@@ -253 +253 @@
+-  "./js/services/export-filter-service.js?v=272",
++  "./js/services/export-filter-service.js?v=273",
+@@ -284 +284 @@
+-  "./js/services/barcode-reader.js?v=272",
++  "./js/services/barcode-reader.js?v=273",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=272");
++  await import("./legacy-app.js?v=273");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1 +1 @@
+-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js';
++import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=273';
+--- a/js/ui/workflow-tasks.js
++++ b/js/ui/workflow-tasks.js
+@@ -1 +1 @@
+-import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js';
++import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=273';
+@@ -41 +41 @@
+- return `<section class="wt-dashboard" aria-label="Задачи">${showHeading?`<header class="wt-heading"><div><h1>Задачи</h1><p>Сегодня, ${esc(new Date(now).toLocaleDateString('ru-RU',{day:'numeric',month:'long'}))}</p>${freshness({online,updatedAt})}</div></header>`:''}<div class="wt-toolbar"><div class="wt-periods" role="group" aria-label="Период задач">${[['today','Сегодня'],['week','Неделя'],['undated','Без срока']].map(([value,label])=>`<button type="button" data-wt-period="${value}" aria-pressed="${period===value}" class="${period===value?'is-active':''}">${label} <span>${counts[value]}</span></button>`).join('')}</div><label class="wt-assignee"><span class="wt-sr-only">Ответственный</span><select data-wt-assignee aria-label="Ответственный"><option value="">Все ответственные</option>${users.map(user=>`<option value="${esc(user.id)}" ${filters.assigneeId===user.id?'selected':''}>${esc(user.name || user.displayName || user.email || user.id)}</option>`).join('')}</select></label></div><div class="wt-filters" role="group" aria-label="Действие">${[['all','Все'],...Object.entries(WORKFLOW_TASK_ACTIONS)].map(([action,label])=>`<button type="button" data-wt-action="${action}" aria-pressed="${(filters.action || 'all')===action}" class="${(filters.action || 'all')===action?'is-active':''}">${esc(action==='payment'?'Оплата':label)}${action==='all'?'':` <span>${periodTasks.filter(task=>task.action===action).length}</span>`}</button>`).join('')}</div><div class="wt-columns"><div class="wt-projects">${projects.length?projects.map((rows,index)=>`<details class="wt-project" data-project-id="${esc(rows[0].projectId)}" ${index===0?'open':''}><summary><span class="wt-project-icon">${workflowTaskIcon('project')}</span><span><strong>${esc(rows[0].projectName)}</strong><small>${new Set(rows.map(row=>row.classId)).size} групп · ${new Set(rows.map(row=>row.studentId)).size} детей · ${rows.length} задач</small></span><span class="wt-disclosure">${workflowTaskIcon('chevron')}</span></summary><div class="wt-project-body">${group(rows,'classId').map(classRows=>`<details class="wt-class" data-group-id="${esc(classRows[0].classId)}" open><summary>${workflowTaskIcon('chevron')}<strong>${esc(classRows[0].className)} · ${classRows.length} задач</strong></summary><div class="wt-class-body">${classRows.map(task=>row(task,now,canManage)).join('')}</div></details>`).join('')}</div></details>`).join(''):`<div class="wt-empty">${workflowTaskIcon('check')}<h2>${tasks.length?'В этом разделе задач нет':'Все текущие работы выполнены'}</h2><p>${tasks.length?'Выберите другой период или действие. Задачи без обещанной даты находятся в разделе «Без срока».':'Новые задачи появятся после съёмки, заказа или изменения статуса работы.'}</p></div>`}</div><aside class="wt-sidebar"><section class="wt-side-section"><h2>Ближайшее</h2>${upcoming.length?upcoming.map(task=>`<button type="button" class="wt-side-row" data-wt-open="${esc(task.id)}"><span class="wt-side-icon">${workflowTaskIcon('calendar')}</span><span><strong>${esc(formatDate(task.dueAt))} · ${esc(task.title)}</strong><small>${esc(task.projectName)} · ${esc(task.className)}</small></span>${workflowTaskIcon('arrow')}</button>`).join(''):'<p class="wt-muted">Сроки ещё не назначены</p>'}</section><section class="wt-side-section"><h2>Новые съёмки</h2>${captures.length?captures.map(task=>`<button type="button" class="wt-side-row" data-wt-open="${esc(task.id)}"><span class="wt-side-icon">${workflowTaskIcon('people')}</span><span><strong>${esc(task.operatorName || 'Оператор не указан')}</strong><small>${esc(clock(task.capturedAt))} · ${esc(task.studentName)}</small>${badge(task)}</span>${workflowTaskIcon('arrow')}</button>`).join(''):'<p class="wt-muted">Новых съёмок с указанной датой пока нет</p>'}</section></aside></div><footer class="wt-note">Задачи формируются по статусам и событиям. Дубликаты не создают новые дела.</footer></section>`;
++ return `<section class="wt-dashboard" aria-label="Задачи">${showHeading?`<header class="wt-heading"><div><h1>Задачи</h1><p>Сегодня, ${esc(new Date(now).toLocaleDateString('ru-RU',{day:'numeric',month:'long'}))}</p>${freshness({online,updatedAt})}</div></header>`:''}<div class="wt-toolbar"><div class="wt-periods" role="group" aria-label="Период задач">${[['today','Сегодня'],['week','Неделя'],['undated','Без срока']].map(([value,label])=>`<button type="button" data-wt-period="${value}" aria-pressed="${period===value}" class="${period===value?'is-active':''}">${label} <span>${counts[value]}</span></button>`).join('')}</div><label class="wt-assignee"><span class="wt-sr-only">Ответственный</span><select data-wt-assignee aria-label="Ответственный"><option value="">Все ответственные</option>${users.map(user=>`<option value="${esc(user.id)}" ${filters.assigneeId===user.id?'selected':''}>${esc(user.name || user.displayName || user.email || user.id)}</option>`).join('')}</select></label></div><div class="wt-filters" role="group" aria-label="Действие">${[['all','Все'],...Object.entries(WORKFLOW_TASK_ACTIONS)].map(([action,label])=>`<button type="button" data-wt-action="${action}" aria-pressed="${(filters.action || 'all')===action}" class="${(filters.action || 'all')===action?'is-active':''}">${esc(action==='payment'?'Оплата':label)}${action==='all'?'':` <span>${periodTasks.filter(task=>task.action===action).length}</span>`}</button>`).join('')}</div><div class="wt-columns"><div class="wt-projects">${projects.length?projects.map((rows,index)=>`<details class="wt-project" data-project-id="${esc(rows[0].projectId)}" ${index===0?'open':''}><summary><span class="wt-project-icon">${workflowTaskIcon('project')}</span><span><strong>${esc(rows[0].projectName)}</strong><small>${new Set(rows.map(row=>row.classId)).size} групп · ${new Set(rows.map(row=>row.studentId)).size} детей · ${rows.length} задач</small></span><span class="wt-disclosure">${workflowTaskIcon('chevron')}</span></summary><div class="wt-project-body">${group(rows,'classId').map((classRows,classIndex)=>`<details class="wt-class" data-group-id="${esc(classRows[0].classId)}" ${classIndex===0?'open':''}><summary>${workflowTaskIcon('chevron')}<strong>${esc(classRows[0].className)} · ${classRows.length} задач</strong></summary><div class="wt-class-body">${classRows.map(task=>row(task,now,canManage)).join('')}</div></details>`).join('')}</div></details>`).join(''):`<div class="wt-empty">${workflowTaskIcon('check')}<h2>${tasks.length?'В этом разделе задач нет':'Все текущие работы выполнены'}</h2><p>${tasks.length?'Выберите другой период или действие. Задачи без обещанной даты находятся в разделе «Без срока».':'Новые задачи появятся после съёмки, заказа или изменения статуса работы.'}</p></div>`}</div><aside class="wt-sidebar"><section class="wt-side-section"><h2>Ближайшее</h2>${upcoming.length?upcoming.map(task=>`<button type="button" class="wt-side-row" data-wt-open="${esc(task.id)}"><span class="wt-side-icon">${workflowTaskIcon('calendar')}</span><span><strong>${esc(formatDate(task.dueAt))} · ${esc(task.title)}</strong><small>${esc(task.projectName)} · ${esc(task.className)}</small></span>${workflowTaskIcon('arrow')}</button>`).join(''):'<p class="wt-muted">Сроки ещё не назначены</p>'}</section><section class="wt-side-section"><h2>Новые съёмки</h2>${captures.length?captures.map(task=>`<button type="button" class="wt-side-row" data-wt-open="${esc(task.id)}"><span class="wt-side-icon">${workflowTaskIcon('people')}</span><span><strong>${esc(task.operatorName || 'Оператор не указан')}</strong><small>${esc(clock(task.capturedAt))} · ${esc(task.studentName)}</small>${badge(task)}</span>${workflowTaskIcon('arrow')}</button>`).join(''):'<p class="wt-muted">Новых съёмок с указанной датой пока нет</p>'}</section></aside></div><footer class="wt-note">Задачи формируются по статусам и событиям. Дубликаты не создают новые дела.</footer></section>`;
+--- a/js/ui/workflow-workspace.js
++++ b/js/ui/workflow-workspace.js
+@@ -1,3 +1,3 @@
+-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision} from '../services/workflow-tasks.js';
+-import {createWorkflowTaskStore} from '../services/workflow-task-store.js';
+-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js';
++import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision} from '../services/workflow-tasks.js?v=273';
++import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=273';
++import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=273';
+@@ -19 +19,2 @@
+-  if(getRoute()==='tasks'&&!editor&&!refreshing){const root=document.querySelector('#view');const open=[...root.querySelectorAll('details')].map(x=>[x.dataset.projectId||x.dataset.groupId,x.open]);const y=window.scrollY;renderPage();for(const [key,value]of open){if(key)root.querySelectorAll('details').forEach(d=>{if((d.dataset.projectId||d.dataset.groupId)===key)d.open=value;});}window.scrollTo(0,y);}
++  if(getRoute()==='tasks'&&!editor&&!refreshing){const root=document.querySelector('#view');const open=[...root.querySelectorAll('details')].map(x=>[x.dataset.projectId||x.dataset.groupId,x.open]);const y=window.scrollY;if(root.contains(document.activeElement)&&document.activeElement?.tagName==='SELECT')return;renderPage();for(const [key,value]of open){if(key)root.querySelectorAll('details').forEach(d=>{if((d.dataset.projectId||d.dataset.groupId)===key)d.open=value;});}window.scrollTo(0,y);}
++  if(getRoute()==='student'){const id=document.querySelector('.student-detail-shell')?.dataset.studentState;if(id)mountCard(id);}
+@@ -30 +31 @@
+- function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
++ function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.error?snapshot.error:snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';if(snapshot.status!=='online'||!document.querySelector('.topbar .sync-status-button'))root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
+@@ -42 +43 @@
+- function mountCard(studentId){if(['viewer','photographer'].includes(viewer().role))return;const root=document.querySelector('.student-overview-card')||document.querySelector('.student-detail-main');if(!root)return;root.querySelector('[data-workflow-card]')?.remove();const rows=cached.filter(t=>t.studentId===studentId);const student=getData().students.find(s=>s.id===studentId);const serviceIds=[...new Set([...(student?.selectedServices||[]).map(s=>s.serviceId),...(student?.catalogIds||[]),...rows.map(t=>t.serviceId)])];if(!serviceIds.length)return;const node=document.createElement('details');node.className='workflow-card-controls';node.dataset.workflowCard='';node.innerHTML=`<summary>Задачи и сроки <span>${rows.length}</span></summary><div>${serviceIds.map(id=>{const task=rows.find(t=>t.serviceId===id)||{scopeKey:workflowTaskScopeKey(studentId,id),studentId,serviceId:id,projectId:getData().classes.find(c=>c.id===student.classId)?.projectId,classId:student.classId,studentName:[student.firstName,student.lastName].filter(Boolean).join(' '),serviceName:getData().catalog.find(s=>s.id===id)?.name||id,title:'Следующее действие'};const key=esc(id);return `<div class="workflow-card-row"><div><strong>${esc(task.serviceName)}</strong><small>${esc(task.title)}${task.dueAt?' · '+esc(task.dueAt):' · без срока'}</small></div><button type="button" class="secondary-button" data-workflow-edit="${key}">Изменить</button></div>`;}).join('')}</div>`;root.append(node);node.querySelectorAll('[data-workflow-edit]').forEach(button=>button.onclick=()=>{const id=button.dataset.workflowEdit;edit(rows.find(t=>t.serviceId===id)||{scopeKey:workflowTaskScopeKey(studentId,id),studentId,serviceId:id,projectId:getData().classes.find(c=>c.id===student.classId)?.projectId,studentName:[student.firstName,student.lastName].filter(Boolean).join(' '),serviceName:getData().catalog.find(s=>s.id===id)?.name||id,title:'Следующее действие'});});}
++ function mountCard(studentId){if(['viewer','photographer'].includes(viewer().role)){document.querySelector('[data-workflow-card]')?.remove();return;}const root=document.querySelector('.student-overview-card')||document.querySelector('.student-detail-main');if(!root)return;const wasOpen=root.querySelector('[data-workflow-card]')?.open;root.querySelector('[data-workflow-card]')?.remove();const rows=cached.filter(t=>t.studentId===studentId);const student=getData().students.find(s=>s.id===studentId);const serviceIds=[...new Set([...(student?.selectedServices||[]).map(s=>s.serviceId),...(student?.catalogIds||[]),...rows.map(t=>t.serviceId)])];if(!serviceIds.length)return;const node=document.createElement('details');node.className='workflow-card-controls';node.dataset.workflowCard='';node.open=Boolean(wasOpen);node.innerHTML=`<summary>Задачи и сроки <span>${rows.length}</span></summary><div>${serviceIds.map(id=>{const task=rows.find(t=>t.serviceId===id)||{scopeKey:workflowTaskScopeKey(studentId,id),studentId,serviceId:id,projectId:getData().classes.find(c=>c.id===student.classId)?.projectId,classId:student.classId,studentName:[student.firstName,student.lastName].filter(Boolean).join(' '),serviceName:getData().catalog.find(s=>s.id===id)?.name||id,title:'Следующее действие'};const key=esc(id);return `<div class="workflow-card-row"><div><strong>${esc(task.serviceName)}</strong><small>${esc(task.title)}${task.dueAt?' · '+esc(task.dueAt):' · без срока'}</small></div><button type="button" class="secondary-button" data-workflow-edit="${key}">Изменить</button></div>`;}).join('')}</div>`;root.append(node);node.querySelectorAll('[data-workflow-edit]').forEach(button=>button.onclick=()=>{const id=button.dataset.workflowEdit;edit(rows.find(t=>t.serviceId===id)||{scopeKey:workflowTaskScopeKey(studentId,id),studentId,serviceId:id,projectId:getData().classes.find(c=>c.id===student.classId)?.projectId,studentName:[student.firstName,student.lastName].filter(Boolean).join(' '),serviceName:getData().catalog.find(s=>s.id===id)?.name||id,title:'Следующее действие'});});}
+--- a/css/workflow-tasks.css
++++ b/css/workflow-tasks.css
+@@ -11,0 +12 @@
++@media(max-width:600px){.wt-row-status{padding-right:98px}.wt-row-status .wt-badge{max-width:100%}.wt-row-status small{width:100%}.wt-row-tools{max-width:104px}.wt-row-person{padding-right:0}}
