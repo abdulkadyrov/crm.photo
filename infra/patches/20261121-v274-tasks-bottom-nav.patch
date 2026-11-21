@@ -1,0 +1,131 @@
+--- a/index.html
++++ b/index.html
+@@ -9,2 +9,2 @@
+-    <link rel="stylesheet" href="./styles.css?v=273" />
+-    <link rel="stylesheet" href="./css/workflow-tasks.css?v=273" />
++    <link rel="stylesheet" href="./styles.css?v=274" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css?v=274" />
+@@ -71 +71 @@
+-    <script type="module" src="./js/core/app.js?v=273"></script>
++    <script type="module" src="./js/core/app.js?v=274"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v273";
++const CACHE_VERSION = "v274";
+@@ -77,7 +77,7 @@
+-  "./css/workflow-tasks.css?v=273",
+-  "./js/ui/workflow-workspace.js?v=273",
+-  "./js/ui/workflow-tasks.js?v=273",
+-  "./js/services/workflow-task-store.js?v=273",
+-  "./js/services/workflow-tasks.js?v=273",
+-  "./js/ui/scan-photo-viewer.js?v=273",
+-  "./js/ui/group-scan-panel.js?v=273",
++  "./css/workflow-tasks.css?v=274",
++  "./js/ui/workflow-workspace.js?v=274",
++  "./js/ui/workflow-tasks.js?v=274",
++  "./js/services/workflow-task-store.js?v=274",
++  "./js/services/workflow-tasks.js?v=274",
++  "./js/ui/scan-photo-viewer.js?v=274",
++  "./js/ui/group-scan-panel.js?v=274",
+@@ -89,2 +89,2 @@
+-  "./js/services/service-positions.js?v=273",
+-  "./js/services/individual-order.js?v=273",
++  "./js/services/service-positions.js?v=274",
++  "./js/services/individual-order.js?v=274",
+@@ -92 +92 @@
+-  "./js/services/sequence-navigation.js?v=273",
++  "./js/services/sequence-navigation.js?v=274",
+@@ -94 +94 @@
+-  "./js/services/card-summary.js?v=273",
++  "./js/services/card-summary.js?v=274",
+@@ -98 +98 @@
+-  "./js/services/camera-options.js?v=273",
++  "./js/services/camera-options.js?v=274",
+@@ -104,2 +104,2 @@
+-  "./js/services/record-sync.js?v=273",
+-  "./js/services/deferred-final-work.js?v=273",
++  "./js/services/record-sync.js?v=274",
++  "./js/services/deferred-final-work.js?v=274",
+@@ -112 +112 @@
+-  "./js/services/sync-codec.js?v=273",
++  "./js/services/sync-codec.js?v=274",
+@@ -120 +120 @@
+-  "./styles.css?v=273",
++  "./styles.css?v=274",
+@@ -123 +123 @@
+-  "./js/core/app.js?v=273",
++  "./js/core/app.js?v=274",
+@@ -125,2 +125,2 @@
+-  "./js/services/card-selection.js?v=273",
+-  "./js/services/navigation-history.js?v=273",
++  "./js/services/card-selection.js?v=274",
++  "./js/services/navigation-history.js?v=274",
+@@ -128,2 +128,2 @@
+-  "./js/services/roster-filters.js?v=273",
+-  "./js/ui/scan-work-picker.js?v=273",
++  "./js/services/roster-filters.js?v=274",
++  "./js/ui/scan-work-picker.js?v=274",
+@@ -131 +131 @@
+-  "./js/services/student-comments.js?v=273",
++  "./js/services/student-comments.js?v=274",
+@@ -134 +134 @@
+-  "./js/services/image-delivery.js?v=273",
++  "./js/services/image-delivery.js?v=274",
+@@ -136,2 +136,2 @@
+-  "./js/ui/student-quick-actions.js?v=273",
+-  "./js/services/group-scan.js?v=273",
++  "./js/ui/student-quick-actions.js?v=274",
++  "./js/services/group-scan.js?v=274",
+@@ -140,2 +140,2 @@
+-  "./js/services/print-selection.js?v=273",
+-  "./js/ui/project-print-picker.js?v=273",
++  "./js/services/print-selection.js?v=274",
++  "./js/ui/project-print-picker.js?v=274",
+@@ -143 +143 @@
+-  "./js/services/student-stage-icons.js?v=273",
++  "./js/services/student-stage-icons.js?v=274",
+@@ -146 +146 @@
+-  "./js/ui/fulfillment-panel.js?v=273",
++  "./js/ui/fulfillment-panel.js?v=274",
+@@ -148 +148 @@
+-  "./js/services/print-order.js?v=273",
++  "./js/services/print-order.js?v=274",
+@@ -164 +164 @@
+-  "./js/services/fulfillment.js?v=273",
++  "./js/services/fulfillment.js?v=274",
+@@ -168 +168 @@
+-  "./js/core/legacy-app.js?v=273",
++  "./js/core/legacy-app.js?v=274",
+@@ -191 +191 @@
+-  "./js/ui/photo-camera.js?v=273",
++  "./js/ui/photo-camera.js?v=274",
+@@ -194 +194 @@
+-  "./js/services/teacher-broadcast.js?v=273",
++  "./js/services/teacher-broadcast.js?v=274",
+@@ -236 +236 @@
+-  "./js/services/parent-orders.js?v=273",
++  "./js/services/parent-orders.js?v=274",
+@@ -248 +248 @@
+-  "./js/services/finalwork-service.js?v=273",
++  "./js/services/finalwork-service.js?v=274",
+@@ -253 +253 @@
+-  "./js/services/export-filter-service.js?v=273",
++  "./js/services/export-filter-service.js?v=274",
+@@ -284 +284 @@
+-  "./js/services/barcode-reader.js?v=273",
++  "./js/services/barcode-reader.js?v=274",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=273");
++  await import("./legacy-app.js?v=274");
+--- a/css/workflow-tasks.css
++++ b/css/workflow-tasks.css
+@@ -8 +8 @@
+-.workflow-editor-host{position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:20px;background:rgba(26,35,60,.3);overflow-y:auto}.workflow-editor-host>.wt-editor{width:440px;max-width:100%;max-height:calc(100dvh - 40px);overflow-y:auto;border-radius:20px;padding:22px;background:var(--card,#fff);box-shadow:0 14px 46px rgba(20,31,58,.2)}.workflow-source-purpose{padding-bottom:13px;border-bottom:1px solid var(--line);display:grid;gap:8px}.workflow-source-purpose button{justify-self:start;font-size:12px}.workflow-bell-button{position:relative;flex:none}.workflow-bell-button svg{height:21px;width:21px}.workflow-bell-count{position:absolute;right:-3px;top:-4px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;font-size:10px;font-weight:700;line-height:18px;background:var(--primary,#315ee8);color:#fff;border-radius:99px}.workflow-card-controls{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}.workflow-card-controls>summary{cursor:pointer;font-size:14px;font-weight:650;display:flex;align-items:center;justify-content:space-between;list-style:none}.workflow-card-controls>summary::-webkit-details-marker{display:none}.workflow-card-controls>summary>span{font-size:12px;border-radius:99px;color:var(--primary);background:var(--primary-soft);padding:3px 9px}.workflow-card-controls>summary:after{content:' ';width:8px;height:8px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg);margin:0 5px 3px 12px}.workflow-card-controls[open]>summary:after{transform:rotate(225deg);margin-top:5px}.workflow-card-controls>div{margin-top:8px}.workflow-card-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.workflow-card-row>div{flex:1;min-width:0}.workflow-card-row strong,.workflow-card-row small{display:block;line-height:1.4;overflow-wrap:anywhere}.workflow-card-row strong{font-size:13px;font-weight:650}.workflow-card-row small{font-size:11px;color:var(--muted);margin-top:2px}.workflow-card-row button{min-height:32px;font-size:11px;padding:6px 10px;flex:none}.workflow-desktop-nav{display:none!important}@media(min-width:900px){.workflow-desktop-nav{display:flex!important}}@media(max-width:600px){.workflow-editor-host{padding:12px;align-items:center}.workflow-editor-host>.wt-editor{max-height:calc(100dvh - 24px);padding:18px 14px;border-radius:18px}.workflow-card-row{gap:7px}.workflow-card-row button{font-size:10px;padding:6px 8px}}
++.workflow-editor-host{position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:20px;background:rgba(26,35,60,.3);overflow-y:auto}.workflow-editor-host>.wt-editor{width:440px;max-width:100%;max-height:calc(100dvh - 40px);overflow-y:auto;border-radius:20px;padding:22px;background:var(--card,#fff);box-shadow:0 14px 46px rgba(20,31,58,.2)}.workflow-source-purpose{padding-bottom:13px;border-bottom:1px solid var(--line);display:grid;gap:8px}.workflow-source-purpose button{justify-self:start;font-size:12px}.workflow-bell-button{position:relative;flex:none}.workflow-bell-button svg{height:21px;width:21px}.workflow-bell-count{position:absolute;right:-3px;top:-4px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;font-size:10px;font-weight:700;line-height:18px;background:var(--primary,#315ee8);color:#fff;border-radius:99px}.workflow-card-controls{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}.workflow-card-controls>summary{cursor:pointer;font-size:14px;font-weight:650;display:flex;align-items:center;justify-content:space-between;list-style:none}.workflow-card-controls>summary::-webkit-details-marker{display:none}.workflow-card-controls>summary>span{font-size:12px;border-radius:99px;color:var(--primary);background:var(--primary-soft);padding:3px 9px}.workflow-card-controls>summary:after{content:' ';width:8px;height:8px;border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(45deg);margin:0 5px 3px 12px}.workflow-card-controls[open]>summary:after{transform:rotate(225deg);margin-top:5px}.workflow-card-controls>div{margin-top:8px}.workflow-card-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.workflow-card-row>div{flex:1;min-width:0}.workflow-card-row strong,.workflow-card-row small{display:block;line-height:1.4;overflow-wrap:anywhere}.workflow-card-row strong{font-size:13px;font-weight:650}.workflow-card-row small{font-size:11px;color:var(--muted);margin-top:2px}.workflow-card-row button{min-height:32px;font-size:11px;padding:6px 10px;flex:none}.workflow-desktop-nav{display:flex!important}@media(max-width:600px){.workflow-editor-host{padding:12px;align-items:center}.workflow-editor-host>.wt-editor{max-height:calc(100dvh - 24px);padding:18px 14px;border-radius:18px}.workflow-card-row{gap:7px}.workflow-card-row button{font-size:10px;padding:6px 8px}}
+@@ -12,0 +13,3 @@
++
++/* Six equal destinations, including Tasks between Albums and Settings. */
++@media(max-width:899px){.bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding-left:max(4px,env(safe-area-inset-left));padding-right:max(4px,env(safe-area-inset-right))}.bottom-nav .nav-item{min-width:0;padding-left:1px;padding-right:1px;font-size:clamp(9px,2.6vw,11px);gap:5px}.bottom-nav .nav-item>span:last-child{white-space:nowrap}.bottom-nav .workflow-desktop-nav svg{width:24px;height:24px}}
