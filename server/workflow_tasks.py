@@ -2,7 +2,7 @@
 import hashlib,json,re,time
 from datetime import date,datetime,timezone
 
-FIELDS={'dueAt','assigneeId','snoozedUntil','requestedAction','requestedAt','previousSourceId','approvedRevision','reviewedSourceIds','paymentCheck','sourcePurpose','sourceMediaId','sourceReviewedAt','note','reason'}
+FIELDS={'dueAt','assigneeId','snoozedUntil','requestedAction','requestedAt','previousSourceId','approvedRevision','reviewedSourceIds','paymentCheck','sourcePurpose','sourceMediaId','sourceReviewedAt','note','reason','entityKind','classId','title','requestedRevision','approvedAt','completedAt'}
 PHOTOGRAPHER_FIELDS={'sourcePurpose','sourceMediaId','sourceReviewedAt','reviewedSourceIds','note','reason'}
 CAPTURE_ACTIONS={'capture','sort_sources'}
 
@@ -29,7 +29,9 @@ def photo_visible(data,u):
 def public_plan(row,u):
  item=plan(row)
  if u['role']=='photographer' and not photo_visible(item,u):return None
- if u['role']!='admin':item.pop('paymentCheck',None)
+ if u['role']!='admin':
+  item.pop('paymentCheck',None)
+  if item.get('requestedAction')=='payment':return None
  return item
 
 def validate_patch(a,c,u,scope,student_id,patch):
@@ -40,9 +42,12 @@ def validate_patch(a,c,u,scope,student_id,patch):
    a.fail(not isinstance(value,list) or len(value)>500 or any(not isinstance(v,str) or len(v)>160 for v in value),400,'Некорректный список фотографий')
   elif key=='paymentCheck':a.fail(type(value) is not bool)
   else:a.fail(not isinstance(value,str) or len(value)>(1000 if key in ('note','reason') else 200))
-  if key in ('dueAt','snoozedUntil','requestedAt','sourceReviewedAt') and value:
+  if key in ('dueAt','snoozedUntil','requestedAt','sourceReviewedAt','approvedAt','completedAt') and value:
    try:datetime.fromisoformat(value.replace('Z','+00:00')) if 'T' in value else date.fromisoformat(value)
    except (ValueError,AttributeError):raise a.Error(400,'Некорректная дата')
+  if key=='entityKind':a.fail(value not in ('','project'),400,'Некорректная область задачи')
+  if key=='classId' and value:
+   group=load(c,'classes',value);a.fail(not group or group[0]!=scope or group[1].get('projectId')!=scope,403,'Группа относится к другому проекту')
   if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources'))
   if key=='sourcePurpose':a.fail(value not in ('','new-service','reshoot','correction','additional-reference','additional_reference','new_service','new','additional'))
   if key=='assigneeId' and value:
@@ -54,6 +59,7 @@ def validate_patch(a,c,u,scope,student_id,patch):
    a.fail(media and (media[0]!=scope or media[1].get('studentId')!=student_id),403,'Исходник относится к другому ребёнку')
  a.fail(u['role']=='photographer' and bool(set(patch)-PHOTOGRAPHER_FIELDS),403,'Фотограф отмечает только назначенную съёмку')
  # Managers already receive finance-stripped records in the existing CRM.
+ a.fail(u['role']!='admin' and patch.get('requestedAction')=='payment',403,'Проверка оплаты доступна администратору')
  a.fail(u['role']!='admin' and 'paymentCheck' in patch,403,'Проверка оплаты доступна администратору')
 
 def route(r,c,u,a):
@@ -66,6 +72,7 @@ def route(r,c,u,a):
   rows=c.execute('SELECT p.* FROM workflow_task_plans p JOIN projects pr ON pr.id=p.project_id WHERE 1=1'+clause+' ORDER BY p.updated_at,p.scope_key',params)
   overrides=[item for row in rows if (item:=public_plan(row,u)) is not None]
   event_clause=clause;event_params=params
+  if u['role']!='admin':event_clause+=" AND COALESCE(json_extract(p.data,'$.requestedAction'),'')!='payment'"
   if u['role']=='photographer':
    event_clause+=" AND json_extract(p.data,'$.assigneeId')=? AND json_extract(p.data,'$.requestedAction') IN ('capture','sort_sources')";event_params+=(u['id'],)
   events=[]
@@ -85,15 +92,27 @@ def route(r,c,u,a):
   return {'overrides':overrides,'events':events,'users':users,'access':{'id':u['id'],'role':u['role'],'projects':sorted(projects)},'serverTime':time.time()}
  a.fail(r.method!='PUT',404,'Не найдено');a.fail(u['role']=='viewer',403,'Просмотр не позволяет менять задачи')
  b=r.json(128*1024);student_id=a.identifier(b.get('studentId'));service_id=a.identifier(b.get('serviceId'));scope=a.identifier(b.get('projectId'));op=a.identifier(b.get('op'));base=b.get('baseRevision');patch=b.get('patch')
- a.fail(type(base) is not int or base<0);a.access(c,u,scope)
- student=load(c,'students',student_id);a.fail(not student,425,'Сначала отправьте карточку ребёнка на сервер');a.fail(student[0]!=scope,403,'Ребёнок относится к другому проекту')
- s=student[1];services=set(s.get('catalogIds') or []);services.update(e.get('serviceId') for e in s.get('selectedServices',[]) if isinstance(e,dict));services.add(s.get('catalogId'))
- for order_row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='orders' AND data IS NOT NULL",(scope,)):
-  order=json.loads(order_row[0])
-  if order.get('studentId')==student_id:
-   services.update(order.get('catalogIds') or []);services.add(order.get('catalogId'));services.update(item.get('serviceId') or str(item.get('type','')).split('__')[0] for item in order.get('items',[]) if isinstance(item,dict))
- has_work=any(json.loads(row[0]).get('studentId')==student_id and json.loads(row[0]).get('serviceId')==service_id for row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='finalWorks' AND data IS NOT NULL",(scope,)))
- a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
+ a.fail(type(base) is not int or base<0);a.fail(not isinstance(patch,dict),400,'Некорректные поля задачи')
+ a.fail(u['role']=='admin' and not c.execute('SELECT 1 FROM projects WHERE id=?',(scope,)).fetchone(),425,'Сначала отправьте проект на сервер')
+ a.access(c,u,scope)
+ project_task=student_id=='project_'+scope and service_id.startswith('task_')
+ if project_task:
+  a.fail(u['role'] not in ('admin','manager'),403,'Общие задачи добавляет руководитель проекта')
+  existing=c.execute('SELECT data FROM workflow_task_plans WHERE scope_key=?',(student_id+'::'+service_id,)).fetchone()
+  kind=(patch or {}).get('entityKind') or (json.loads(existing[0]).get('entityKind') if existing else '')
+  a.fail(kind!='project',400,'Не указана область общей задачи')
+  a.fail(any(k in (patch or {}) for k in ('sourceMediaId','previousSourceId','reviewedSourceIds','approvedRevision')),400,'Общая задача не меняет материалы ребёнка')
+  a.fail((patch or {}).get('requestedAction')=='payment' and u['role']!='admin',403,'Проверка оплаты доступна администратору')
+ else:
+  a.fail((patch or {}).get('entityKind')=='project',400,'Общая задача не может заменить задачу ребёнка')
+  student=load(c,'students',student_id);a.fail(not student,425,'Сначала отправьте карточку ребёнка на сервер');a.fail(student[0]!=scope,403,'Ребёнок относится к другому проекту')
+  s=student[1];services=set(s.get('catalogIds') or []);services.update(e.get('serviceId') for e in s.get('selectedServices',[]) if isinstance(e,dict));services.add(s.get('catalogId'))
+  for order_row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='orders' AND data IS NOT NULL",(scope,)):
+   order=json.loads(order_row[0])
+   if order.get('studentId')==student_id:
+    services.update(order.get('catalogIds') or []);services.add(order.get('catalogId'));services.update(item.get('serviceId') or str(item.get('type','')).split('__')[0] for item in order.get('items',[]) if isinstance(item,dict))
+  has_work=any(json.loads(row[0]).get('studentId')==student_id and json.loads(row[0]).get('serviceId')==service_id for row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='finalWorks' AND data IS NOT NULL",(scope,)))
+  a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
  validate_patch(a,c,u,scope,student_id,patch);key=student_id+'::'+service_id
  c.execute('BEGIN IMMEDIATE')
  row=c.execute('SELECT * FROM workflow_task_plans WHERE scope_key=?',(key,)).fetchone();current=plan(row) if row else None

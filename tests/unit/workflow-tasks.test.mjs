@@ -142,3 +142,20 @@ test('reshoot assignment completes into review once a new result uses the new so
  data.finalWorks.push(work({id:'replacement',sourceMediaId:'new',createdAt:'2026-11-21T11:00:00Z',workflowReview:{required:true},workflowVersion:'replacement'}));
  assert.deepEqual(actions(data,{overrides}),['review']);
 });
+
+test('explicit generation on a fulfilled service advances to review after new result',()=>{
+ const data={projects:[{id:'p'}],classes:[{id:'g',projectId:'p'}],students:[{id:'s',classId:'g',catalogIds:['wolf']}],catalog:[{id:'wolf'}],finalWorks:[{id:'w',studentId:'s',serviceId:'wolf',status:'delivered',createdAt:'2026-11-01'}]};
+ const before=deriveWorkflowTasks(data)[0];assert.equal(before,undefined);
+ const overrides=[{scopeKey:'s::wolf',requestedAction:'generate',requestedAt:'2026-11-20',requestedRevision:workflowWorkRevision(data.finalWorks[0])}];
+ assert.equal(deriveWorkflowTasks(data,{overrides})[0].action,'generate');assert.equal(data.finalWorks[0].status,'delivered');
+ data.finalWorks.push({id:'new',studentId:'s',serviceId:'wolf',status:'ready',createdAt:'2026-11-21'});
+ assert.equal(deriveWorkflowTasks(data,{overrides})[0].action,'review');
+});
+test('project reminder exists before any child is entered and can be completed',()=>{
+ const data={projects:[{id:'p',name:'Садик'}],classes:[],students:[]};const overrides=[{scopeKey:'project_p::task_t',studentId:'project_p',serviceId:'task_t',entityKind:'project',projectId:'p',requestedAction:'capture',title:'Доснять новых детей'}];
+ assert.equal(deriveWorkflowTasks(data,{overrides})[0].title,'Доснять новых детей');overrides[0].completedAt='2026-11-21';assert.equal(deriveWorkflowTasks(data,{overrides}).length,0);
+});
+test('manual print does not change approved, printed or delivered flags',()=>{
+ const data={projects:[{id:'p'}],classes:[{id:'g',projectId:'p'}],students:[{id:'s',classId:'g',catalogId:'wolf'}],catalog:[{id:'wolf'}],finalWorks:[{id:'w',studentId:'s',serviceId:'wolf',status:'printed',createdAt:'2026-11-01',printedAt:'2026-11-02'}]};
+ const overrides=[{scopeKey:'s::wolf',requestedAction:'print',requestedAt:'2026-11-21'}];assert.equal(deriveWorkflowTasks(data,{overrides})[0].action,'print');assert.equal(data.finalWorks[0].printedAt,'2026-11-02');data.finalWorks[0].printedAt='2026-11-22';assert.equal(deriveWorkflowTasks(data,{overrides})[0].action,'deliver');
+});

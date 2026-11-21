@@ -79,3 +79,18 @@ class WorkflowTasksTest(unittest.TestCase):
  def test_account_cookie_switch_cannot_write_old_account_outbox(self):
   u=dict(self.c.execute("SELECT * FROM users WHERE id='m'").fetchone());r=SimpleNamespace(method='PUT',json=lambda limit:self.update(),e={'HTTP_X_CRM_ACCOUNT':'a'})
   self.status(409,lambda:workflow_tasks.route(r,self.c,u,self.a));self.assertEqual(self.c.execute('SELECT count(*) FROM workflow_task_plans').fetchone()[0],0)
+ def test_project_task_without_child_and_later_completion(self):
+  body=self.update({'entityKind':'project','requestedAction':'capture','title':'Доснять новых детей'},studentId='project_school',serviceId='task_visit')
+  record=self.req(body,uid='m')['record'];self.assertEqual(record['entityKind'],'project');self.assertEqual(record['title'],'Доснять новых детей')
+  self.assertEqual(len(self.req(uid='m')['overrides']),1)
+  done=self.req(self.update({'completedAt':'2026-11-21T12:00:00Z'},studentId='project_school',serviceId='task_visit',baseRevision=1),uid='m')['record'];self.assertTrue(done['completedAt'])
+ def test_project_task_acl_and_group_scope(self):
+  body=self.update({'entityKind':'project','requestedAction':'capture','title':'Съёмка'},studentId='project_school',serviceId='task_visit')
+  for uid in ['outsider','p','v']:self.status(403,lambda uid=uid:self.req(body,uid=uid))
+  self.status(400,lambda:self.req(self.update({'entityKind':'project'})))
+  self.status(403,lambda:self.req(self.update({'entityKind':'project','classId':'foreign','requestedAction':'capture'},studentId='project_school',serviceId='task_g')))
+  self.c.execute('INSERT INTO sync_records VALUES(?,?,?,?)',('classes','g','school',json.dumps({'id':'g','projectId':'school'})));self.c.commit()
+  self.assertTrue(self.req(self.update({'entityKind':'project','classId':'g','requestedAction':'capture'},studentId='project_school',serviceId='task_g'))['saved'])
+ def test_manual_finance_is_owner_only(self):
+  self.status(403,lambda:self.req(self.update({'requestedAction':'payment'}),uid='m'))
+  self.req(self.update({'requestedAction':'payment','reason':'Проверить расчёт'}));self.assertEqual(self.req(uid='m')['overrides'],[]);self.assertEqual(self.req(uid='m')['events'],[])

@@ -1,4 +1,4 @@
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=273';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=275';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;

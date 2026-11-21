@@ -3,7 +3,7 @@ const root=process.argv[2]||'.';
 const file=path.join(root,'js/core/legacy-app.js');let s=fs.readFileSync(file,'utf8');
 function replace(a,b){if(!s.includes(a))throw new Error('Missing integration anchor: '+a.slice(0,95));s=s.replace(a,b);}
 if(!s.includes('createWorkflowWorkspace')){
- s=`import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=273';\nlet workflowWorkspace=null;\n`+s;
+ s=`import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=275';\nlet workflowWorkspace=null;\n`+s;
  replace('async function refreshData() {',`function workflowTasksWorkspace(){
   if(workflowWorkspace)return workflowWorkspace;
   workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,
@@ -39,6 +39,6 @@ async function refreshData() {`);
  fs.writeFileSync(file,s);
 }
 let index=fs.readFileSync(path.join(root,'index.html'),'utf8');if(!index.includes('css/workflow-tasks.css'))index=index.replace('</head>','  <link rel="stylesheet" href="./css/workflow-tasks.css" />\n  </head>');fs.writeFileSync(path.join(root,'index.html'),index);
-let sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');const assets=['js/services/workflow-tasks.js','js/services/workflow-task-store.js','js/ui/workflow-tasks.js','js/ui/workflow-workspace.js','css/workflow-tasks.css'];const at=sw.indexOf('const APP_SHELL = [');if(at<0)throw new Error('Missing APP_SHELL');const start=at+'const APP_SHELL = ['.length;for(const asset of assets)if(!sw.includes('"./'+asset+'"'))sw=sw.slice(0,start)+'\n  "./'+asset+'",'+sw.slice(start);fs.writeFileSync(path.join(root,'sw.js'),sw);
+let sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');const assets=['js/services/workflow-tasks.js','js/services/workflow-task-store.js','js/ui/workflow-tasks.js','js/ui/workflow-workspace.js','js/ui/workflow-scope-panel.js','css/workflow-tasks.css'];const at=sw.indexOf('const APP_SHELL = [');if(at<0)throw new Error('Missing APP_SHELL');const start=at+'const APP_SHELL = ['.length;for(const asset of assets)if(!sw.includes('"./'+asset+'"'))sw=sw.slice(0,start)+'\n  "./'+asset+'",'+sw.slice(start);fs.writeFileSync(path.join(root,'sw.js'),sw);
 
 const backend=path.join(root,'server/app.py');if(fs.existsSync(backend)){let api=fs.readFileSync(backend,'utf8');if(!api.includes('import workflow_tasks'))api=api.replace('import sync_api','import sync_api\nimport workflow_tasks');if(!api.includes('workflow_tasks.initialize(c)'))api=api.replace('sync_api.initialize(c)','sync_api.initialize(c)\n        workflow_tasks.initialize(c)');if(!api.includes("if path=='/workflow-tasks':"))api=api.replace('u=self.user(c)',"u=self.user(c)\n            if path=='/workflow-tasks': return workflow_tasks.route(self,c,u,SimpleNamespace(**globals()))");fs.writeFileSync(backend,api);}
