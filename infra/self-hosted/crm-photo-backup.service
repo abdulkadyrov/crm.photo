@@ -1,11 +1,13 @@
 [Unit]
-Description=CRM Photo consistent database and archive backup
+Description=CRM Photo verified incremental private S3 backup
 [Service]
 Type=oneshot
 User=crm-photo
 Group=crm-photo
 Environment=CRM_DATA_DIR=/var/lib/crm-photo
-ExecStart=/usr/bin/python3 /opt/crm-photo/server/backup.py /var/lib/crm-photo/backups
+EnvironmentFile=/opt/crm-photo/.env.integrations
+Environment=AWS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+ExecStart=/opt/crm-photo/venv/bin/python /opt/crm-photo/server/backup_s3.py
 UMask=0077
 Nice=15
 CPUQuota=25%
