@@ -130,3 +130,5 @@
 .student-header-stages{display:flex;justify-content:flex-end;gap:4px;width:100%;grid-column:1/-1;flex-basis:100%;padding-top:5px}.student-header-stages .student-stage-icon{pointer-events:auto;display:grid;place-items:center;width:26px;height:24px;min-height:24px;padding:3px;border-radius:6px;cursor:pointer}.student-header-stages .student-stage-icon svg{width:18px;height:18px}.student-header-stages .student-stage-icon.is-done{background:#286296;color:#fff;border:1px solid #286296}.student-header-stages .student-stage-icon.is-pending{background:var(--card);color:var(--muted);border:1px solid var(--line)}
 
 .topbar:has(.student-header-stages){flex-wrap:wrap}
+
+.workflow-card-controls>summary .workflow-new-task{margin:0 12px 0 6px;min-height:30px;padding:5px 8px;font-size:11px;line-height:1.3;white-space:nowrap;flex:none}.workflow-card-controls>summary{gap:6px}
