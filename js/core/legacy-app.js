@@ -1,23 +1,23 @@
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=306';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=306';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=307';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=307';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=306";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=307";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=306";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=306";
+import {createNavigationHistory} from "../services/navigation-history.js?v=307";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=307";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=306";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=307";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=306";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=306";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=306";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=307";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=307";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=307";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=306";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=306";
+import { nextInSequence } from "../services/sequence-navigation.js?v=307";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=307";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -25,24 +25,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=306";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=307";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=306";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=306";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=307";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=307";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=306";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=307";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=306";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=307";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=306";
-import { printCodeLayout } from "../services/print-code-layout.js?v=306";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=307";
+import { printCodeLayout } from "../services/print-code-layout.js?v=307";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -65,12 +65,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=306";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=307";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=306";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=307";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -2367,8 +2367,6 @@ function renderStudent() {
           <div class="action-grid student-capture-actions">
             <button class="action-button" data-capture="photo" data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="camera"></span>Камера</button>
             <button class="action-button secondary" data-import-media data-order-type="${activeTask?.type || "portrait"}" type="button"><span data-icon="catalog"></span>Галерея</button>
-            <button class="action-button secondary" data-prepare-student="${student.id}" type="button">Подготовить работу</button>
-            <button class="action-button secondary" data-done-task="${activeTask?.type || ""}" type="button"><span data-icon="check"></span>Готово</button>
           </div>
         </article>
         <article class="panel student-detail-section ${activeStudentDetailTab === "checklist" ? "is-active" : ""}" data-student-detail-section="checklist">
