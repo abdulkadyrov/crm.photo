@@ -1,25 +1,26 @@
-import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=311';
-import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=311';
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=311';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=311';
+import {savePortraitScore,readPortraitScore} from '../services/portrait-score-store.js?v=312';
+import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=312';
+import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=312';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=312';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=312';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=311";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=312";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=311";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=311";
+import {createNavigationHistory} from "../services/navigation-history.js?v=312";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=312";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=311";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=312";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=311";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=311";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=311";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=312";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=312";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=312";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=311";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=311";
+import { nextInSequence } from "../services/sequence-navigation.js?v=312";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=312";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -27,24 +28,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=311";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=312";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=311";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=311";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=312";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=312";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=311";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=312";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=311";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=312";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=311";
-import { printCodeLayout } from "../services/print-code-layout.js?v=311";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=312";
+import { printCodeLayout } from "../services/print-code-layout.js?v=312";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -67,12 +68,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=311";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=312";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=311";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=312";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -4756,6 +4757,13 @@ function assignOperatorFields(record, operatorId, media = false) {
   return next;
 }
 
+function childPortraitScoreLabel(studentId){
+ const originals=mediaByStudent(studentId).filter(item=>!isFinalResultMedia(item)&&['photo','image'].includes(item.type));
+ const latest=new Map();for(const work of finalWorksForStudent(studentId)){const previous=latest.get(work.serviceId||work.id);if(!previous||String(work.updatedAt||work.createdAt||'')>String(previous.updatedAt||previous.createdAt||''))latest.set(work.serviceId||work.id,work);}
+ const scores=[...latest.values()].map(work=>readPortraitScore(localStorage,cloudAccount()?.id||'local',work,originals)).filter(Number.isFinite);
+ return scores.length?'Сходство: '+Math.min(...scores).toLocaleString('ru-RU')+'%'+(scores.length<latest.size?' · '+scores.length+'/'+latest.size:''):'Сходство: —';
+}
+
 function studentCard(student, { readOnly = false } = {}) {
   const klass = classById(student.classId);
   const project = projectById(klass?.projectId);
@@ -4779,8 +4787,8 @@ function studentCard(student, { readOnly = false } = {}) {
           </div>
           ${renderCardCounts(cardCounts, { includePhotos: false })}
           <details class="compact-card-details">
-            <summary>${c.doneCount}/${c.total} задач · ${c.percent}%</summary>
-            <div class="compact-card-extra">
+            <summary data-portrait-score="${escapeAttr(student.id)}">${escapeHtml(childPortraitScoreLabel(student.id))}</summary>
+            <div class="compact-card-extra"><p class="muted">${c.doneCount}/${c.total} задач · ${c.percent}% выполнено</p>
               <div class="progress"><span style="width:${c.percent}%"></span></div>
               <div class="student-statuses">
                 <span class="status-pill ${orderStatusClass(student)}">${statusDot(currentOrderStatus(student))}${orderStatusLabel(student)}</span>
@@ -8005,6 +8013,11 @@ async function showFinalWorkViewer(workId, { initialView = "result", trigger = d
   document.body.append(panel);
   disposeHistory = mountDialogHistory({ id: `final-work-${actualWork.id}`, panel, restore: removePanel });
   disposeIdentity=mountPortraitIdentityPanel({host:panel,
+    onResult:value=>{
+      const originals=mediaByStudent(actualWork.studentId).filter(item=>!isFinalResultMedia(item)&&['photo','image'].includes(item.type));
+      savePortraitScore(localStorage,cloudAccount()?.id||'local',finalWorkById(actualWork.id)||actualWork,originals,value);
+      view.querySelectorAll('[data-portrait-score]').forEach(node=>{node.textContent=childPortraitScoreLabel(node.dataset.portraitScore);});
+    },
     loadOriginals:async signal=>{
       const candidates=mediaByStudent(actualWork.studentId).filter(item=>!isFinalResultMedia(item)&&['photo','image'].includes(item.type)&&(!item.blob?.type||item.blob.type.startsWith('image/')));
       const originals=[];

@@ -1,5 +1,5 @@
-import {comparePortraitIdentity} from '../services/portrait-identity.js?v=311';
-export function mountPortraitIdentityPanel({host,loadOriginals,loadResult}){
+import {comparePortraitIdentity} from '../services/portrait-identity.js?v=312';
+export function mountPortraitIdentityPanel({host,loadOriginals,loadResult,onResult=()=>{}}){
  const controller=new AbortController(),{signal}=controller;
  const section=document.createElement('section');section.className='portrait-identity-panel';section.setAttribute('aria-label','Сходство с оригиналами');
  section.innerHTML='<div class="portrait-identity-heading"><strong>Сходство с оригиналами</strong><button type="button" class="secondary-button compact">Проверить</button></div><p role="status" aria-live="polite">Сравнение лиц выполняется на этом устройстве.</p><details hidden><summary>Подробности проверки</summary><div></div></details>';
@@ -13,6 +13,7 @@ export function mountPortraitIdentityPanel({host,loadOriginals,loadResult}){
    const result=await loadResult(signal);if(signal.aborted)return;
    const value=await comparePortraitIdentity({originals,result,signal,onProgress:p=>{if(!signal.aborted)status.textContent=p.message;}});
    if(signal.aborted)return;
+   onResult(value);
    status.textContent=value.status==='ok'?`Сходство: ${value.similarity}% · проверено оригиналов: ${value.compared} из ${value.total}`:value.explanation;
    body.replaceChildren();
    const explanation=document.createElement('p');explanation.textContent=value.explanation;body.append(explanation);
