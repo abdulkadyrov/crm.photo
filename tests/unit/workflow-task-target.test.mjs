@@ -21,3 +21,11 @@ test('target navigation has its own explicit control and does not open task edit
  const button={dataset:{wtTarget:'t'},hasAttribute:key=>key==='data-wt-target'};click({target:{closest:()=>button}});assert.deepEqual(calls,[['target','t']]);
  assert.equal(workflowTaskTargetLabel({entityKind:'project',classId:'g'}),'Открыть группу');
 });
+
+test('task editor exposes an explicit target link independently of saving',async()=>{
+ const {renderWorkflowTaskEditor,bindWorkflowTaskEditor}=await import('../../js/ui/workflow-tasks.js');
+ const html=renderWorkflowTaskEditor({task:{entityKind:'student',projectId:'p',studentId:'s',classId:'g'},override:{reason:'Несохранённый комментарий',dueAt:'2026-11-25'}});
+ assert.match(html,/data-wt-linked-target>Открыть ребёнка/);assert.match(html,/Несохранённый комментарий/);assert.match(html,/2026-11-25/);
+ let linked;const calls=[];const form={matches:()=>true,querySelector:selector=>selector==='[data-wt-linked-target]'?{addEventListener:(_,fn)=>linked=fn,removeEventListener(){}}:null,addEventListener(){},removeEventListener(){}};
+ bindWorkflowTaskEditor(form,{onTarget:()=>calls.push('target'),onSave:()=>calls.push('save')});linked();assert.deepEqual(calls,['target']);
+});

@@ -16,3 +16,13 @@ test('task target links and browser Back restore filters, expanded schools and l
  }
  workspace.stop();
 });
+
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+test('the real route snapshot captures an editor draft for return from its linked record',()=>{
+ const source=readFileSync(new URL('../../js/core/legacy-app.js',import.meta.url),'utf8');
+ const draft={accountId:'owner',task:{id:'t',projectId:'p'},values:{reason:'Ещё не сохранено',dueAt:'2026-11-25'}};
+ const context=vm.createContext({state:{route:'tasks',query:'школа',filter:'all'},view:{querySelector:()=>null,querySelectorAll:()=>[]},document:{activeElement:null},window:{scrollY:740,scrollX:0},studentDirectoryQueries:new Map(),workflowWorkspace:{filters:()=>({period:'week',projectId:'p'}),editorNavigationState:()=>draft}});
+ vm.runInContext(source.slice(source.indexOf('function routeSnapshot()'),source.indexOf('\nlet cancelRouteScrollRestore')),context);
+ const result=context.routeSnapshot();assert.deepEqual(JSON.parse(JSON.stringify(result.workflowEditor)),draft);assert.equal(result.scrollY,740);assert.equal(result.workflowFilters.period,'week');
+});
