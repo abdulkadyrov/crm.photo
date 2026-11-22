@@ -1,24 +1,25 @@
-import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=310';
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=310';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=310';
+import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=311';
+import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=311';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=311';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=311';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=310";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=311";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=310";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=310";
+import {createNavigationHistory} from "../services/navigation-history.js?v=311";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=311";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=310";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=311";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=310";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=310";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=310";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=311";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=311";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=311";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=310";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=310";
+import { nextInSequence } from "../services/sequence-navigation.js?v=311";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=311";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -26,24 +27,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=310";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=311";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=310";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=310";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=311";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=311";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=310";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=311";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=310";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=311";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=310";
-import { printCodeLayout } from "../services/print-code-layout.js?v=310";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=311";
+import { printCodeLayout } from "../services/print-code-layout.js?v=311";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -66,12 +67,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=310";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=311";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=310";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=311";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -7960,8 +7961,10 @@ async function showFinalWorkViewer(workId, { initialView = "result", trigger = d
       </div>
     </section>
   `;
+  let disposeIdentity=null;
   let disposeHistory = null;
   const removePanel = () => {
+    disposeIdentity?.();
     if (originalUrl) URL.revokeObjectURL(originalUrl);
     if (resultUrl) URL.revokeObjectURL(resultUrl);
     if (a4Url) URL.revokeObjectURL(a4Url);
@@ -8001,6 +8004,25 @@ async function showFinalWorkViewer(workId, { initialView = "result", trigger = d
   });
   document.body.append(panel);
   disposeHistory = mountDialogHistory({ id: `final-work-${actualWork.id}`, panel, restore: removePanel });
+  disposeIdentity=mountPortraitIdentityPanel({host:panel,
+    loadOriginals:async signal=>{
+      const candidates=mediaByStudent(actualWork.studentId).filter(item=>!isFinalResultMedia(item)&&['photo','image'].includes(item.type)&&(!item.blob?.type||item.blob.type.startsWith('image/')));
+      const originals=[];
+      for(const item of candidates){
+        if(signal.aborted)throw new DOMException('Проверка отменена','AbortError');
+        const blob=item.blob instanceof Blob?item.blob:(await recordSync.loadRecord('media',item.id,{fields:['blob']}))?.record?.blob;
+        if(blob instanceof Blob)originals.push(blob);
+      }
+      return originals;
+    },
+    loadResult:async signal=>{
+      if(signal.aborted)throw new DOMException('Проверка отменена','AbortError');
+      const loaded=await ensureFinalWorkLoaded(actualWork.id);
+      const blob=[loaded?.image,loaded?.mergedPrintImage,loaded?.blob].find(value=>value instanceof Blob)||mediaById(loaded?.resultMediaId)?.blob;
+      if(!(blob instanceof Blob))throw new Error('Файл готового результата не загружен. Повторите проверку.');
+      return blob;
+    }
+  });
   injectIcons();
   if (initialView === "a4") panel.querySelector(".final-work-a4-details")?.scrollIntoView({ block: "start" });
 }

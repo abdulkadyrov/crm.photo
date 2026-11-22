@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {descriptorDistance,portraitSimilarityIndex,aggregatePortraitDistances,comparePortraitIdentity} from '../../js/services/portrait-identity.js';
+test('score is measured distance, bounded and monotonic',()=>{assert.equal(descriptorDistance([1,2],[1,2]),0);assert.equal(descriptorDistance([0,0],[3,4]),5);assert.equal(portraitSimilarityIndex(0),100);assert.equal(portraitSimilarityIndex(.25),75);assert.equal(portraitSimilarityIndex(2),0);assert.throws(()=>descriptorDistance([1],[1,2]));assert.throws(()=>descriptorDistance([NaN],[1]));});
+test('aggregate uses median, not the best matching photo',()=>{assert.equal(aggregatePortraitDistances([.1,.8,.9]).rawScore,.8);assert.equal(aggregatePortraitDistances([.2,.4]).similarity,70);assert.throws(()=>aggregatePortraitDistances([]));});
+test('no originals yields unavailable, cancellation never returns a percent',async()=>{assert.equal((await comparePortraitIdentity({originals:[]})).similarity,null);const c=new AbortController();c.abort();await assert.rejects(comparePortraitIdentity({originals:[],signal:c.signal}),{name:'AbortError'});assert.equal((await comparePortraitIdentity({originals:[]})).status,'unavailable');});
