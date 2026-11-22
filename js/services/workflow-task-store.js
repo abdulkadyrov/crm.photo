@@ -1,6 +1,6 @@
 /** Account-scoped durable plans/outbox. Workflow completion lives in normal CRM records. */
 export function createWorkflowTaskStore({account=()=>null,enabled=()=>true,storage=globalThis.localStorage,fetch:request=globalThis.fetch?.bind(globalThis),onChange=()=>{},win=globalThis.window,now=()=>Date.now(),id=()=>globalThis.crypto.randomUUID()}={}) {
-  let identity='', cache, busy=false, destroyed=false, timer, failures=0;
+  let identity='', cache, busy=false, destroyed=false, timer, failures=0,lastEmitted='';
   const photoFields=new Set(['sourcePurpose','sourceMediaId','sourceReviewedAt','reviewedSourceIds','note','reason']);
   const available=()=>typeof enabled==='function'?enabled():enabled;
   const who=()=>typeof account==='function'?account():account;
@@ -48,7 +48,7 @@ export function createWorkflowTaskStore({account=()=>null,enabled=()=>true,stora
     if(previous!==undefined)persist();
   }
   function persist(required=false){try{if(!storage?.setItem)throw new Error('storage unavailable');storage.setItem(key(),JSON.stringify(cache));}catch(error){if(required)throw error;cache.status='error';cache.error='Не удалось обновить кэш задач на устройстве';}}
-  function emit(){if(!destroyed)onChange(snapshot());}
+  function emit(){if(destroyed)return;const value=snapshot(),signature=JSON.stringify({...value,lastSyncedAt:null,viewDay:new Date(now()).toLocaleDateString('sv'),expiredSnoozes:value.overrides.filter(v=>v.snoozedUntil&&Date.parse(v.snoozedUntil)<=now()).map(v=>v.scopeKey)});if(signature===lastEmitted)return;lastEmitted=signature;onChange(value);}
   function effective(){
     const records=new Map(cache.overrides.map(v=>[v.scopeKey,v]));
     for(const op of cache.outbox){if(op.blocked||op.denied)continue;const scopeKey=`${op.studentId}::${op.serviceId}`;const value={...records.get(scopeKey),scopeKey,studentId:op.studentId,serviceId:op.serviceId,projectId:op.projectId,...op.patch,pending:true};for(const k of Object.keys(value))if(value[k]===null)delete value[k];records.set(scopeKey,value);}

@@ -64,3 +64,19 @@ test('different authenticated account response is never cached under old account
   const api=server();const fetch=async(url,options)=>{assert.equal(options.headers['X-CRM-Account'],'owner');return {ok:true,json:async()=>({access:{id:'someone-else',role:'admin',projects:['other']},overrides:[{...scope,scopeKey:'secret::wolf',note:'private'}],users:[{id:'private-staff'}]})};};
   const a=store(api,storage(),{fetch});await a.refresh();assert.equal(a.snapshot().status,'auth');assert.equal(a.snapshot().overrides.length,0);assert.equal(a.snapshot().users.length,0);a.destroy();
 });
+
+test('empty background polls refresh their timestamp without notifying the UI again',async()=>{
+ const api=server();let changes=0,clock=100;const a=store(api,storage(),{onChange:()=>changes++,now:()=>++clock});
+ await a.refresh();const first=a.snapshot().lastSyncedAt;assert.equal(changes,1);
+ for(let i=0;i<6;i++)await a.refresh();assert.equal(changes,1);assert.ok(a.snapshot().lastSyncedAt>first);
+ api.records.set('child::wolf',{...scope,scopeKey:'child::wolf',revision:1,requestedAction:'capture'});await a.refresh();assert.equal(changes,2);
+ api.online=false;await a.refresh();const offline=changes;assert.equal(a.snapshot().status,'offline');await a.refresh();assert.equal(changes,offline);a.destroy();
+});
+
+test('quiet polling still wakes an expired snooze and the next calendar day',async()=>{
+ const api=server();let clock=new Date(2026,10,22,12).getTime(),changes=0;
+ api.records.set('child::wolf',{...scope,scopeKey:'child::wolf',snoozedUntil:new Date(clock+3600000).toISOString(),requestedAction:'capture'});
+ const a=store(api,storage(),{onChange:()=>changes++,now:()=>clock});await a.refresh();await a.refresh();assert.equal(changes,1);
+ clock+=7200000;await a.refresh();assert.equal(changes,2);await a.refresh();assert.equal(changes,2);
+ clock=new Date(2026,10,23,12).getTime();await a.refresh();assert.equal(changes,3);a.destroy();
+});
