@@ -1,4 +1,4 @@
-import {comparePortraitIdentity} from '../services/portrait-identity.js?v=313';
+import {comparePortraitIdentity} from '../services/portrait-identity.js?v=314';
 export function mountPortraitIdentityPanel({host,loadOriginals,loadResult,onResult=()=>{}}){
  const controller=new AbortController(),{signal}=controller;
  const section=document.createElement('section');section.className='portrait-identity-panel';section.setAttribute('aria-label','Сходство с оригиналами');
