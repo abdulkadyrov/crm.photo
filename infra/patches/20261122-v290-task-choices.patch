@@ -129,7 +129,7 @@
 -  "./js/services/group-scan.js?v=289",
 +  "./js/ui/student-quick-actions.js?v=290",
 +  "./js/services/group-scan.js?v=290",
- 
+
    "./js/services/print-selection.js",
 -  "./js/services/print-selection.js?v=289",
 -  "./js/ui/project-print-picker.js?v=289",
@@ -145,7 +145,7 @@
    "./js/services/print-order.js",
 -  "./js/services/print-order.js?v=289",
 +  "./js/services/print-order.js?v=290",
- 
+
    "./js/services/fulfillment-cards.js",
    "./js/services/group-scan.js",
 @@ -166,11 +167,11 @@
@@ -154,7 +154,7 @@
    "./js/ui/group-scan-panel.js",
 -  "./js/services/fulfillment.js?v=289",
 +  "./js/services/fulfillment.js?v=290",
- 
+
    "./js/services/fulfillment.js",
    "./js/ui/fulfillment-panel.js",
 -  "./js/core/legacy-app.js?v=289",
@@ -213,11 +213,11 @@
 @@ -8,7 +8,7 @@
    state.appVersion = APP_VERSION;
    state.router = router;
- 
+
 -  await import("./legacy-app.js?v=289");
 +  await import("./legacy-app.js?v=290");
  }
- 
+
  bootstrap();
 --- a/js/core/legacy-app.js
 +++ b/js/core/legacy-app.js
@@ -391,7 +391,7 @@
 +import {workflowChoice} from './workflow-choice.js?v=290';
 +import {workflowTaskTargetLabel} from '../services/workflow-task-target.js?v=290';
 +import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=290';
- 
+
  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
  const dateValue = value => { const date = new Date(value); return Number.isFinite(+date) ? date : null; };
 @@ -47,5 +48,5 @@
@@ -409,7 +409,7 @@
  const localDay=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 -const quickActions=[['generate','Сгенерировать'],['capture','Переснять'],['redo','Переделать'],['contact_teacher','Уточнить у учителя'],['send','Отправить'],['reminder','Напомнить']];
 +const quickActions=[['custom','Индивидуальное'],['generate','Сгенерировать'],['capture','Переснять'],['redo','Переделать'],['contact_teacher','Уточнить у учителя'],['send','Отправить'],['reminder','Напомнить']];
- 
+
  export function workflowCreationTarget(data,selection){
   const project=(data.projects||[]).find(p=>p.id===selection.projectId&&active(p));if(!project)return null;
 --- a/js/services/workflow-tasks.js
@@ -426,7 +426,7 @@
 +++ b/css/workflow-tasks.css
 @@ -32,3 +32,18 @@
  @media(max-width:360px){.wt-create-header{gap:4px;padding:8px 8px 4px}.wt-create-header h2{font-size:17px}.wt-create-body{padding:12px}.wt-create-selected{padding:0 12px 10px}.wt-create-footer{padding-left:12px;padding-right:12px}.wt-create-row strong{font-size:12px}.wt-create-actions{gap:5px}.wt-create-host .wt-create-actions button{font-size:11px;padding:8px}.wt-page-create .wt-button{font-size:12px}}
- 
+
  .wt-editor .wt-editor-target,.wt-row-person .wt-target-link{display:inline-flex;align-items:center;gap:3px;max-width:100%;min-height:28px;margin:2px 0 0;padding:3px 0;border:0;border-radius:4px;background:transparent;color:var(--primary,#245ee9);font:inherit;font-size:11px;line-height:1.3;text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:normal}.wt-editor-target .wt-icon,.wt-target-link .wt-icon{width:12px;height:12px}.wt-editor-target:hover,.wt-target-link:hover{text-decoration-thickness:2px}@media(max-width:600px){.wt-editor .wt-editor-target,.wt-row-person .wt-target-link{font-size:10px;min-height:28px}}
 +
 +/* Task choices are visible, wrap naturally, and use native radio behavior. */
