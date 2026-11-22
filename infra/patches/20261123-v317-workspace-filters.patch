@@ -1,0 +1,486 @@
+--- a/index.html
++++ b/index.html
+@@ -6,8 +6,8 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=316" />
+-    <link rel="stylesheet" href="./css/workflow-tasks.css?v=316" />
++    <link rel="stylesheet" href="./styles.css?v=317" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css?v=317" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -68,6 +68,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=316"></script>
++    <script type="module" src="./js/core/app.js?v=317"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v316";
++const CACHE_VERSION = "v317";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,53 +74,55 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/services/student-view-stability.js?v=316",
+-  "./js/services/workflow-task-target.js?v=316",
+-  "./js/ui/workflow-task-create.js?v=316",
+-  "./js/ui/task-photo-period.js?v=316",
+-  "./js/ui/workflow-scope-panel.js?v=316",
+-  "./js/ui/workflow-choice.js?v=316",
+-  "./css/workflow-tasks.css?v=316",
+-  "./js/ui/workflow-workspace.js?v=316",
+-  "./js/services/portrait-identity.js?v=316",
+-  "./js/services/portrait-score-store.js?v=316",
+-  "./js/services/portrait-check-queue.js?v=316",
+-  "./js/services/portrait-input-key.js?v=316",
+-  "./js/ui/portrait-identity-panel.js?v=316",
+-  "./js/ui/workflow-tasks.js?v=316",
+-  "./js/services/workflow-task-store.js?v=316",
+-  "./js/services/workflow-tasks.js?v=316",
+-  "./js/ui/scan-photo-viewer.js?v=316",
+-  "./js/ui/group-scan-panel.js?v=316",
++  "./js/services/student-view-stability.js?v=317",
++  "./js/services/workflow-task-target.js?v=317",
++  "./js/ui/workflow-task-create.js?v=317",
++  "./js/ui/task-photo-period.js?v=317",
++  "./js/ui/workflow-scope-panel.js?v=317",
++  "./js/ui/workflow-choice.js?v=317",
++  "./css/workflow-tasks.css?v=317",
++  "./js/ui/workflow-workspace.js?v=317",
++  "./js/services/workspace-filters.js?v=317",
++  "./js/ui/workspace-filters.js?v=317",
++  "./js/services/portrait-identity.js?v=317",
++  "./js/services/portrait-score-store.js?v=317",
++  "./js/services/portrait-check-queue.js?v=317",
++  "./js/services/portrait-input-key.js?v=317",
++  "./js/ui/portrait-identity-panel.js?v=317",
++  "./js/ui/workflow-tasks.js?v=317",
++  "./js/services/workflow-task-store.js?v=317",
++  "./js/services/workflow-tasks.js?v=317",
++  "./js/ui/scan-photo-viewer.js?v=317",
++  "./js/ui/group-scan-panel.js?v=317",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=316",
+-  "./js/services/individual-order.js?v=316",
++  "./js/services/service-positions.js?v=317",
++  "./js/services/individual-order.js?v=317",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=316",
++  "./js/services/sequence-navigation.js?v=317",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=316",
++  "./js/services/card-summary.js?v=317",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=316",
++  "./js/services/camera-options.js?v=317",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=316",
+-  "./js/services/deferred-final-work.js?v=316",
++  "./js/services/record-sync.js?v=317",
++  "./js/services/deferred-final-work.js?v=317",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=316",
++  "./js/services/sync-codec.js?v=317",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -128,35 +130,35 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=316",
++  "./styles.css?v=317",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=316",
++  "./js/core/app.js?v=317",
+   "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=316",
+-  "./js/services/navigation-history.js?v=316",
++  "./js/services/card-selection.js?v=317",
++  "./js/services/navigation-history.js?v=317",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=316",
+-  "./js/ui/scan-work-picker.js?v=316",
++  "./js/services/roster-filters.js?v=317",
++  "./js/ui/scan-work-picker.js?v=317",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=316",
++  "./js/services/student-comments.js?v=317",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=316",
++  "./js/services/image-delivery.js?v=317",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=316",
+-  "./js/services/group-scan.js?v=316",
++  "./js/ui/student-quick-actions.js?v=317",
++  "./js/services/group-scan.js?v=317",
+
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=316",
+-  "./js/ui/project-print-picker.js?v=316",
++  "./js/services/print-selection.js?v=317",
++  "./js/ui/project-print-picker.js?v=317",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=316",
++  "./js/services/student-stage-icons.js?v=317",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=316",
++  "./js/ui/fulfillment-panel.js?v=317",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=316",
++  "./js/services/print-order.js?v=317",
+
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -172,11 +174,11 @@
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=316",
++  "./js/services/fulfillment.js?v=317",
+
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=316",
++  "./js/core/legacy-app.js?v=317",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -199,10 +201,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=316",
++  "./js/ui/photo-camera.js?v=317",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=316",
++  "./js/services/teacher-broadcast.js?v=317",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -244,7 +246,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=316",
++  "./js/services/parent-orders.js?v=317",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -256,12 +258,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=316",
++  "./js/services/finalwork-service.js?v=317",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=316",
++  "./js/services/export-filter-service.js?v=317",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -292,7 +294,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=316",
++  "./js/services/barcode-reader.js?v=317",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+
+-  await import("./legacy-app.js?v=316");
++  await import("./legacy-app.js?v=317");
+ }
+
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,47 +1,47 @@
+-import {stampPortraitInput,portraitWireKey} from '../services/portrait-input-key.js?v=316';
+-import {createPortraitCheckQueue} from '../services/portrait-check-queue.js?v=316';
+-import {comparePortraitIdentity} from '../services/portrait-identity.js?v=316';
+-import {savePortraitScore,readPortraitScore,readPortraitScoreEntry,portraitScoreRevision} from '../services/portrait-score-store.js?v=316';
+-import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=316';
+-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=316';
+-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=316';
++import {stampPortraitInput,portraitWireKey} from '../services/portrait-input-key.js?v=317';
++import {createPortraitCheckQueue} from '../services/portrait-check-queue.js?v=317';
++import {comparePortraitIdentity} from '../services/portrait-identity.js?v=317';
++import {savePortraitScore,readPortraitScore,readPortraitScoreEntry,portraitScoreRevision} from '../services/portrait-score-store.js?v=317';
++import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=317';
++import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=317';
++import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=317';
+ let workflowWorkspace=null;
+ import {fulfillmentUnitPrice} from '../services/fulfillment-pricing.js';
+ import {serviceFilterChoices} from '../services/service-filter.js';
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=316';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=316';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=316';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=317';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=317';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=317';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=316";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=316";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=316";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=316";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=316";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=316";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=316";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=316";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=316";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=316";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=316";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=316";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=317";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=317";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=317";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=317";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=317";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=317";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=317";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=317";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=317";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=317";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=317";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=317";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=316";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=316";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=317";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=317";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=316";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=316";
++import {createNavigationHistory} from "../services/navigation-history.js?v=317";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=317";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=316";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=317";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=316";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=316";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=316";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=317";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=317";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=317";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=316";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=316";
++import { nextInSequence } from "../services/sequence-navigation.js?v=317";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=317";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -49,24 +49,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=316";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=317";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=316";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=316";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=317";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=317";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=316";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=317";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=316";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=317";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=316";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=317";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=316";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=316";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=317";
++import { printCodeLayout } from "../services/print-code-layout.js?v=317";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -89,12 +89,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=316";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=317";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=316";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=317";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+@@ -628,7 +628,7 @@
+
+ function workflowTasksWorkspace(){
+   if(workflowWorkspace)return workflowWorkspace;
+-  workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,getStudentPreview:id=>{const student=state.data.students.find(s=>s.id===id);return student?studentAvatarUrl(student):'';},account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,
++  workflowWorkspace=createWorkflowWorkspace({getData:()=>state.data,getPhotoIndex:()=>recordSync?.photoIndex?.()||[],getStudentPreview:id=>{const student=state.data.students.find(s=>s.id===id);return student?studentAvatarUrl(student):'';},account:cloudAccount,enabled:cloudRequired,getRoute:()=>state.route,navigate,setShell,notify,
+     mountHistory:finish=>mountDialogHistory({id:'workflow-'+crypto.randomUUID(),restore:finish}),
+     readSessions:()=>{const journal=typeof cloudScanJournal==='function'?cloudScanJournal():null;if(journal)return [journal.read('*')];const scope=cloudAccount()?.id||state.currentOperatorId||'local';return ['*',...state.data.classes.map(c=>c.id)].flatMap(id=>{try{const value=JSON.parse(localStorage.getItem('crm-group-scan-v1:'+scope+':'+id)||'null');return value?[value]:[];}catch{return [];}});},
+     openTask:task=>{
+--- a/js/ui/workflow-workspace.js
++++ b/js/ui/workflow-workspace.js
+@@ -1,13 +1,14 @@
+-import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=316';
+-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=316';
+-import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=316';
+-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=316';
+-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=316';
+-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=316';
+-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=316';
++import {mountWorkspaceFilters} from './workspace-filters.js?v=317';
++import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=317';
++import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=317';
++import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=317';
++import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=317';
++import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=317';
++import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=317';
++import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=317';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
+-export function createWorkflowWorkspace({getData,getStudentPreview=()=>'',account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
++export function createWorkflowWorkspace({getData,getStudentPreview=()=>'',getPhotoIndex=()=>[],account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
+  let store=null,accountKey='',snapshot={},cached=[],editor=null,bell=null,refreshing=false,pageCleanup=null,editorClose=null,linkedEditorReturn=null,navigatingTarget=false,renderedTaskState='';
+  const photoPeriod={kind:'results',preset:'week',...periodBounds('week'),projectId:'',open:false};
+  let periodCleanup=null;
+@@ -102,6 +103,7 @@
+     const target=card.querySelector(kind==='project'?'.list-copy':kind==='class'?'.class-main':'.student-identity')||card;target.append(tools);if(kind==='student'){const menu=card.querySelector('.student-menu .menu-panel'),add=tools.querySelector('[data-scope-add]');if(menu&&add)menu.prepend(add);}
+    }
+   }
++  mountWorkspaceFilters({root:document.querySelector('#view'),data:getData(),route:getRoute(),accountId:viewer().id,photoIndex:getPhotoIndex(),mountHistory});
+  }
+  const captureBatches=new Map();function captureBatch(target){const student=getData().students.find(s=>s.id===target.studentId);const key=(student?.classId||target.studentId)+':'+(target.source||'upload')+':'+new Date().toISOString().slice(0,10);if(!captureBatches.has(key))captureBatches.set(key,crypto.randomUUID());return captureBatches.get(key);}
+  function captureMetadata(target){const candidate=String(target.serviceId||target.orderType||'').split('__')[0];const serviceId=getData().catalog.some(s=>s.id===candidate)?candidate:'';const override=(snapshot.overrides||[]).find(x=>x.studentId===target.studentId&&x.serviceId===serviceId);const purpose=target.capturePurpose||(override?.requestedAction==='capture'?'reshoot':'');return {serviceId,capturedAt:target.source==='capture'?new Date().toISOString():(target.capturedAt||''),captureBatchId:target.captureBatchId||captureBatch(target),...(purpose?{capturePurpose:purpose}:{}),operatorName:viewer().name||viewer().displayName||''};}
+--- a/css/workflow-tasks.css
++++ b/css/workflow-tasks.css
+@@ -136,3 +136,7 @@
+ .topbar:has(.student-header-stages){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:3px;align-items:start}.topbar:has(.student-header-stages) .topbar-copy{grid-column:1;grid-row:1;min-width:0}.topbar:has(.student-header-stages) .topbar-actions{grid-column:2;grid-row:1;align-self:start;justify-self:end;display:flex;flex-wrap:nowrap;padding:0;margin:0}.topbar .student-header-stages{grid-column:1/-1;grid-row:2;padding:0;margin:0;min-height:24px}.topbar.is-collapsed:has(.student-header-stages){grid-template-columns:minmax(0,1fr) auto}.topbar.is-collapsed .student-header-stages{display:none}
+
+ .portrait-identity-panel{padding:12px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);min-width:0}.portrait-identity-heading{display:flex;gap:10px;align-items:center;justify-content:space-between}.portrait-identity-heading strong{font-size:14px;line-height:1.35}.portrait-identity-panel p{font-size:12px;line-height:1.5;overflow-wrap:anywhere;margin:8px 0 0}.portrait-identity-panel summary{font-size:12px;cursor:pointer;padding-top:8px}.portrait-identity-panel [hidden]{display:none!important}
++
++[data-uf-hidden]{display:none!important}.uf-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}.uf-bar .secondary-button{min-height:34px;font-size:12px;padding:7px 12px;border-radius:10px}.uf-bar span{font-size:11px;color:var(--muted)}.uf-reset{border:0;background:transparent;color:var(--primary);font-size:11px;min-height:32px;cursor:pointer}.uf-match{font-size:11px;color:var(--primary);margin:5px 0 0}.workflow-editor-host .uf-sheet{display:flex;flex-direction:column;width:min(460px,100%);max-height:calc(100dvh - 24px);padding:0;gap:0;overflow:hidden;border-radius:16px}.uf-sheet header{padding:14px 14px 10px;flex:none}.uf-sheet header h2{font-size:19px;margin:0}.uf-sheet header p{font-size:12px;margin:5px 0 0;color:var(--muted)}.uf-body{overflow:auto;overscroll-behavior:contain;padding:0 14px 12px;min-height:0}.uf-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.uf-field,.uf-range{min-width:0;border:0;padding:0;margin:0}.uf-field legend,.uf-range legend{font-size:12px;font-weight:650;padding:0;margin-bottom:5px}.uf-sheet .wt-action-picker summary{font-size:12px;min-height:40px;padding:8px}.uf-sheet .wt-action-picker .wt-choice-option span{font-size:12px;padding:9px 8px}.uf-services{border-bottom:1px solid var(--line);padding-bottom:10px}.uf-services>summary{cursor:pointer;font-size:13px;font-weight:650;min-height:36px;padding:8px 0}.uf-services input[type=search]{width:100%;min-width:0;min-height:36px;font-size:13px;padding:7px 9px}.uf-services [data-uf-services]{max-height:190px;overflow:auto;margin-top:6px}.uf-sheet .uf-services label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:400;min-height:36px;padding:5px 0;margin:0}.uf-sheet .uf-services input[type=checkbox]{width:18px;height:18px;min-height:18px;flex:none;margin:0;accent-color:var(--primary)}.uf-services p,.uf-note{font-size:11px;line-height:1.45;color:var(--muted);margin:7px 0}.uf-range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.uf-range label{font-size:12px}.uf-range input{width:100%;min-width:0;min-height:38px;font-size:14px;margin-top:4px}.uf-sheet footer{display:flex;justify-content:flex-end;gap:6px;padding:10px 14px;border-top:1px solid var(--line);flex:none}.uf-sheet footer button{min-height:38px;font-size:12px;padding:8px 10px}.uf-sheet [hidden]{display:none!important}.uf-sheet [data-uf-error]{color:var(--danger,#b42318);font-size:12px}.uf-sheet :is(button,input,summary):focus-visible{outline:2px solid var(--primary);outline-offset:2px}@media(max-width:360px){.uf-body{padding-left:12px;padding-right:12px}.uf-sheet footer{padding:10px 12px}.uf-fields{gap:8px}}
++
++.fulfillment-entry .uf-bar{margin:0}.fulfillment-entry>button{min-height:34px;padding:7px 10px;font-size:12px;border-radius:10px}.fulfillment-entry>span{flex-basis:100%;font-size:11px;color:var(--muted)}
+--- a/js/services/workspace-filters.js
++++ b/js/services/workspace-filters.js
+@@ -0,0 +1,31 @@
++import {studentStages} from './student-stage-icons.js';
++import {selectedServiceEntries} from './card-summary.js';
++import {readPortraitScoreEntry} from './portrait-score-store.js?v=317';
++export const workspaceFilterDefaults=()=>({serviceIds:[],shot:'',generated:'',printed:'',paid:'',delivered:'',similarity:'',min:'',max:''});
++export function workspaceFilterActive(f){return Object.entries(f).some(([k,v])=>Array.isArray(v)?v.length:v!==''&&v!=null);}
++export function studentFilterInput(data,student,{storage,accountId,photoIndex=[]}={}){
++ const originals=(data.media||[]).filter(m=>m.studentId===student.id&&!m.isFinalResult&&m.type!=='final_work'&&m.orderType!=='final_work'&&['photo','image'].includes(m.type));
++ const works=(data.finalWorks||[]).filter(w=>w.studentId===student.id);
++ const services=selectedServiceEntries(student);for(const w of works)if(w.serviceId&&!services.some(s=>s.id===w.serviceId))services.push({id:w.serviceId});
++ const photoIds=new Set([...originals,...photoIndex.filter(m=>m.studentId===student.id)].map(m=>m.id));
++ const manualStatus=[data.orders?.find(o=>o.studentId===student.id)?.status,student.orderStatus,student.status].find(s=>['printed','delivered'].includes(s))||'';
++ return {student,works,services,originals,manualStatus,photoCount:photoIds.size,storage,accountId};
++}
++export function matchesWorkspaceStudent(input,f){
++ const selected=f.serviceIds||[],services=selected.length?input.services.filter(s=>selected.includes(s.id)):input.services;
++ if(selected.length&&!services.length)return false;
++ const works=selected.length?input.works.filter(w=>selected.includes(w.serviceId)):input.works;
++ const stages=Object.fromEntries(studentStages({...input,works,services,manualStatus:input.manualStatus||''}).map(s=>[s.key,s.state]));
++ for(const key of ['shot','generated','printed','paid','delivered'])if(f[key]&&stages[key]!==f[key])return false;
++ if(f.similarity||f.min!==''&&f.min!=null||f.max!==''&&f.max!=null){
++  const latest=new Map();for(const work of works){const prev=latest.get(work.serviceId||work.id);if(!prev||String(work.updatedAt||work.createdAt||'')>String(prev.updatedAt||prev.createdAt||''))latest.set(work.serviceId||work.id,work);}
++  const entries=[...latest.values()].map(w=>input.storage?readPortraitScoreEntry(input.storage,input.accountId,w,input.originals):null);
++  const scores=entries.filter(e=>Number.isFinite(e?.similarity)).map(e=>e.similarity),failed=entries.some(e=>e&&e.similarity===null);
++  if(f.similarity==='checked'&&!scores.length)return false;
++  if(f.similarity==='unchecked'&&(scores.length||failed))return false;
++  if(f.similarity==='failed'&&!failed)return false;
++  if(f.min!==''&&f.min!=null&&(!scores.length||Math.min(...scores)<Number(f.min)))return false;
++  if(f.max!==''&&f.max!=null&&(!scores.length||Math.min(...scores)>Number(f.max)))return false;
++ }
++ return true;
++}
+--- a/js/ui/workspace-filters.js
++++ b/js/ui/workspace-filters.js
+@@ -0,0 +1,33 @@
++import {workspaceFilterDefaults,workspaceFilterActive,studentFilterInput,matchesWorkspaceStudent} from '../services/workspace-filters.js?v=317';
++const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
++const states=new Map();
++const fields=[['shot','Съёмка',[['done','Снято'],['pending','Не снято']]],['generated','Генерация',[['done','Готово'],['partial','Частично'],['pending','Не готово']]],['printed','Печать',[['done','Напечатано'],['partial','Частично'],['pending','Не напечатано']]],['paid','Оплата',[['done','Оплачено'],['pending','Не оплачено']]],['delivered','Выдача',[['done','Выдано'],['partial','Частично'],['pending','Не выдано']]],['similarity','Сходство',[['checked','Проверено'],['unchecked','Ещё не проверено'],['failed','Не удалось сравнить']]]];
++function choices(name,label,options,value){const all=[['','Все'],...options],title=all.find(([v])=>v===value)?.[1]||'Все';return `<fieldset class="uf-field"><legend>${label}</legend><details class="wt-action-picker"><summary><span>${esc(title)}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="wt-choice-options">${all.map(([v,text])=>`<label class="wt-choice-option"><input type="radio" name="${name}" value="${v}" ${value===v?'checked':''}><span>${text}</span></label>`).join('')}</div></details></fieldset>`;}
++export function mountWorkspaceFilters({root,data,route,accountId,photoIndex=[],mountHistory}){
++ if(!root?.querySelectorAll)return;
++ if(!['home','projects','classes','search'].includes(route))return;
++ const cards=[...root.querySelectorAll('article[data-open-project],article[data-open-class],article[data-open-student]')];if(!cards.length)return;
++ const key=(accountId||'local')+':'+route;let f=states.get(key)||workspaceFilterDefaults();
++ let bar=root.querySelector('[data-workspace-filters]');if(!bar){bar=document.createElement('div');bar.dataset.workspaceFilters='';bar.className='uf-bar';bar.innerHTML='<button type="button" class="secondary-button compact" data-uf-open>Фильтры</button><span data-uf-summary role="status"></span><button type="button" class="uf-reset" data-uf-reset hidden>Сбросить</button>';const entry=root.querySelector('.fulfillment-entry');if(entry)entry.insertBefore(bar,entry.querySelector(':scope > span'));else {const search=root.querySelector('input[type=search],input[placeholder*="Поиск"]');if(search)(search.closest('label')||search).after(bar);else root.prepend(bar);}}
++ const students=(data.students||[]).filter(s=>!s.deletedAt&&!s.archivedAt),inputs=new Map(students.map(s=>[s.id,studentFilterInput(data,s,{storage:localStorage,accountId,photoIndex})]));
++ const apply=()=>{const active=workspaceFilterActive(f);let shown=0,total=0;const matches=new Set(students.filter(s=>matchesWorkspaceStudent(inputs.get(s.id),f)).map(s=>s.id));
++  for(const card of cards){const ds=card.dataset;let children;if(ds.openStudent)children=students.filter(s=>s.id===ds.openStudent);else if(ds.openClass)children=students.filter(s=>s.classId===ds.openClass);else{const ids=new Set(data.classes.filter(c=>c.projectId===ds.openProject).map(c=>c.id));children=students.filter(s=>ids.has(s.classId));}
++   const count=children.filter(s=>matches.has(s.id)).length;card.toggleAttribute('data-uf-hidden',active&&!count);total++;if(!active||count)shown++;
++   let badge=card.querySelector('[data-uf-match]');if(active&&!ds.openStudent){if(!badge){badge=document.createElement('p');badge.dataset.ufMatch='';badge.className='uf-match';card.append(badge);}badge.textContent=`Подходящих детей: ${count}`;}else badge?.remove();
++  }
++  bar.querySelector('[data-uf-summary]').textContent=active?`Показано: ${shown} из ${total}`:'';bar.querySelector('[data-uf-reset]').hidden=!active;bar.querySelector('[data-uf-open]').textContent=active?'Фильтры · включены':'Фильтры';
++ };
++ bar.querySelector('[data-uf-reset]').onclick=()=>{f=workspaceFilterDefaults();states.set(key,f);apply();};
++ bar.querySelector('[data-uf-open]').onclick=()=>{
++  if(document.querySelector('[data-uf-dialog]'))return;
++  const host=document.createElement('div');host.className='workflow-editor-host';host.dataset.ufDialog='';host.innerHTML=`<form class="wt-editor uf-sheet" role="dialog" aria-modal="true" aria-labelledby="uf-title" data-sync-editing="true"><header><h2 id="uf-title">Фильтры</h2><p>Все условия применяются к одному ребёнку.</p></header><div class="uf-body"><details class="uf-services"><summary>Услуги <span data-uf-service-count></span></summary><input type="search" aria-label="Найти услугу" placeholder="Найти услугу"><div data-uf-services>${[...new Set([...inputs.values()].flatMap(i=>i.services.map(s=>s.id)))].map(id=>({id,name:data.catalog.find(s=>s.id===id)?.name||id})).sort((a,b)=>a.name.localeCompare(b.name,'ru')).map(s=>`<label data-uf-service="${esc(s.name.toLocaleLowerCase('ru'))}"><input type="checkbox" name="service" value="${esc(s.id)}" ${f.serviceIds.includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}</div><p>Можно выбрать несколько услуг.</p></details><div class="uf-fields">${fields.map(([name,label,options])=>choices(name,label,options,f[name])).join('')}</div><fieldset class="uf-range"><legend>Диапазон сходства, %</legend><label>От<input type="number" name="min" min="0" max="100" step="0.1" inputmode="decimal" placeholder="0" value="${esc(f.min)}"></label><label>До<input type="number" name="max" min="0" max="100" step="0.1" inputmode="decimal" placeholder="100" value="${esc(f.max)}"></label></fieldset><p class="uf-note">Диапазон учитывает только рассчитанные оценки. Если работ несколько, используется самая низкая оценка.</p><p data-uf-error role="alert" hidden></p></div><footer><button type="button" class="wt-button wt-button--outline" data-reset>Сбросить</button><button type="button" class="wt-button wt-button--outline" data-close>Отмена</button><button type="submit" class="wt-button wt-button--primary">Применить</button></footer></form>`;
++  document.body.append(host);const form=host.querySelector('form');let history;const remove=()=>{host.remove();bar.querySelector('[data-uf-open]')?.focus({preventScroll:true});};const close=()=>history?.close?history.close():remove();history=mountHistory?.(remove);
++  const serviceCount=()=>{form.querySelector('[data-uf-service-count]').textContent='· '+form.querySelectorAll('[name=service]:checked').length;};serviceCount();
++  form.querySelector('.uf-services input[type=search]').oninput=e=>{const q=e.target.value.toLocaleLowerCase('ru').trim();form.querySelectorAll('[data-uf-service]').forEach(n=>n.hidden=!n.dataset.ufService.includes(q));};
++  form.onchange=e=>{serviceCount();const input=e.target;if(input.type==='radio'){const details=input.closest('details');details.querySelector('summary span').textContent=input.nextElementSibling.textContent;details.open=false;details.querySelector('summary').focus({preventScroll:true});}};
++  form.querySelector('[data-close]').onclick=close;form.querySelector('[data-reset]').onclick=()=>{form.querySelectorAll('[name=service]').forEach(n=>n.checked=false);for(const [name]of fields){const input=form.querySelector(`[name="${name}"][value=""]`);input.checked=true;input.closest('details').querySelector('summary span').textContent='Все';}form.elements.min.value=form.elements.max.value='';serviceCount();};
++  form.onsubmit=e=>{e.preventDefault();const values=Object.fromEntries(new FormData(form));if(values.min!==''&&values.max!==''&&Number(values.min)>Number(values.max)){const error=form.querySelector('[data-uf-error]');error.hidden=false;error.textContent='Начало диапазона должно быть меньше его конца.';return;}f={...workspaceFilterDefaults(),...Object.fromEntries(fields.map(([name])=>[name,values[name]||''])),serviceIds:[...form.querySelectorAll('[name=service]:checked')].map(n=>n.value),min:values.min,max:values.max};states.set(key,f);apply();close();};
++  host.onclick=e=>{if(e.target===host)close();};host.onkeydown=e=>{if(e.key==='Escape'){const open=form.querySelector('details[open]');if(open){open.open=false;open.querySelector('summary').focus();e.stopPropagation();}else close();}if(e.key==='Tab'){const controls=[...form.querySelectorAll('button,input,summary')].filter(n=>!n.disabled&&!n.closest('[hidden]')&&n.getClientRects().length);if(e.shiftKey&&document.activeElement===controls[0]){e.preventDefault();controls.at(-1)?.focus();}else if(!e.shiftKey&&document.activeElement===controls.at(-1)){e.preventDefault();controls[0]?.focus();}}};form.querySelector('summary')?.focus({preventScroll:true});
++ };
++ apply();
++}

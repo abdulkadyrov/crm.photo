@@ -1,12 +1,13 @@
-import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=316';
-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=316';
-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=316';
-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=316';
-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=316';
-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=316';
+import {mountWorkspaceFilters} from './workspace-filters.js?v=317';
+import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=317';
+import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=317';
+import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=317';
+import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=317';
+import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=317';
+import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=317';
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
-export function createWorkflowWorkspace({getData,getStudentPreview=()=>'',account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
+export function createWorkflowWorkspace({getData,getStudentPreview=()=>'',getPhotoIndex=()=>[],account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
  let store=null,accountKey='',snapshot={},cached=[],editor=null,bell=null,refreshing=false,pageCleanup=null,editorClose=null,linkedEditorReturn=null,navigatingTarget=false,renderedTaskState='';
  let filters={period:'all',action:'all',assigneeId:'',projectId:'',classId:'',studentId:''};
  const viewer=()=>{const user=account()||{id:'local',role:'admin'};const remote=snapshot.access;return remote?.id===user.id&&remote.role?{...user,role:remote.role}:user;};
@@ -99,6 +100,7 @@ export function createWorkflowWorkspace({getData,getStudentPreview=()=>'',accoun
     const target=card.querySelector(kind==='project'?'.list-copy':kind==='class'?'.class-main':'.student-identity')||card;target.append(tools);if(kind==='student'){const menu=card.querySelector('.student-menu .menu-panel'),add=tools.querySelector('[data-scope-add]');if(menu&&add)menu.prepend(add);}
    }
   }
+  mountWorkspaceFilters({root:document.querySelector('#view'),data:getData(),route:getRoute(),accountId:viewer().id,photoIndex:getPhotoIndex(),mountHistory});
  }
  const captureBatches=new Map();function captureBatch(target){const student=getData().students.find(s=>s.id===target.studentId);const key=(student?.classId||target.studentId)+':'+(target.source||'upload')+':'+new Date().toISOString().slice(0,10);if(!captureBatches.has(key))captureBatches.set(key,crypto.randomUUID());return captureBatches.get(key);}
  function captureMetadata(target){const candidate=String(target.serviceId||target.orderType||'').split('__')[0];const serviceId=getData().catalog.some(s=>s.id===candidate)?candidate:'';const override=(snapshot.overrides||[]).find(x=>x.studentId===target.studentId&&x.serviceId===serviceId);const purpose=target.capturePurpose||(override?.requestedAction==='capture'?'reshoot':'');return {serviceId,capturedAt:target.source==='capture'?new Date().toISOString():(target.capturedAt||''),captureBatchId:target.captureBatchId||captureBatch(target),...(purpose?{capturePurpose:purpose}:{}),operatorName:viewer().name||viewer().displayName||''};}
