@@ -47,3 +47,16 @@
 .wt-scope-fields>.wt-choice{grid-column:1/-1}
 .wt-editor [hidden]{display:none!important}
 @media(max-width:360px){.wt-choice-option span{font-size:12px;padding:8px 10px}.wt-choice-options{gap:5px}}
+
+.wt-action-picker{min-width:0;width:100%;border:1px solid var(--line,#dce1eb);border-radius:12px;background:var(--card,#fff);overflow:hidden}
+.wt-action-picker>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 12px;list-style:none;cursor:pointer;font-size:14px;font-weight:600;line-height:1.4;color:var(--text,#152033)}
+.wt-action-picker>summary::-webkit-details-marker{display:none}
+.wt-action-picker>summary svg{width:18px;height:18px;flex:none;color:var(--muted,#586578)}
+.wt-action-picker[open]>summary{border-bottom:1px solid var(--line,#dce1eb)}
+.wt-action-picker[open]>summary svg{transform:rotate(180deg)}
+.wt-action-picker .wt-choice-options{display:grid;gap:0;padding:4px;max-height:220px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.wt-editor .wt-action-picker .wt-choice-option{display:block;width:100%}
+.wt-action-picker .wt-choice-option span{min-height:40px;border:0;border-radius:8px;font-size:13px;padding:9px 12px;justify-content:space-between;gap:12px}
+.wt-action-picker .wt-choice-option input:checked+span::after{content:'';width:6px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg);margin-right:4px;flex:none}
+.wt-action-picker .wt-choice-option:hover span{background:var(--primary-soft,#eaf0ff)}
+.wt-action-picker summary:focus-visible{outline:2px solid var(--primary,#245ee9);outline-offset:-3px}
