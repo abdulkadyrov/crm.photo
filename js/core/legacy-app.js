@@ -1,26 +1,28 @@
-import {savePortraitScore,readPortraitScore} from '../services/portrait-score-store.js?v=312';
-import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=312';
-import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=312';
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=312';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=312';
+import {createPortraitCheckQueue} from '../services/portrait-check-queue.js?v=313';
+import {comparePortraitIdentity} from '../services/portrait-identity.js?v=313';
+import {savePortraitScore,readPortraitScore,readPortraitScoreEntry,portraitScoreRevision} from '../services/portrait-score-store.js?v=313';
+import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=313';
+import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=313';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=313';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=313';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=312";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=313";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=312";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=312";
+import {createNavigationHistory} from "../services/navigation-history.js?v=313";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=313";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=312";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=313";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=312";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=312";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=312";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=313";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=313";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=313";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=312";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=312";
+import { nextInSequence } from "../services/sequence-navigation.js?v=313";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=313";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -28,24 +30,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=312";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=313";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=312";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=312";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=313";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=313";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=312";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=313";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=312";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=313";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=312";
-import { printCodeLayout } from "../services/print-code-layout.js?v=312";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=313";
+import { printCodeLayout } from "../services/print-code-layout.js?v=313";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -68,12 +70,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=312";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=313";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=312";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=313";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -4757,6 +4759,42 @@ function assignOperatorFields(record, operatorId, media = false) {
   return next;
 }
 
+const portraitRosterQueue=createPortraitCheckQueue();
+function scheduleRosterPortraitChecks(){
+ const nodes=[...view.querySelectorAll('[data-portrait-score]')],account=cloudAccount()?.id||'local';
+ if(!nodes.length){portraitRosterQueue.stop();return;}
+ const ids=nodes.map(n=>n.dataset.portraitScore),scope=account+':'+ids.join(',');
+ const paint=(id,text)=>view.querySelectorAll('[data-portrait-score]').forEach(n=>{if(n.dataset.portraitScore===id)n.textContent=text||childPortraitScoreLabel(id);});
+ const jobs=[];
+ for(const id of ids){
+  const works=finalWorksForStudent(id),originals=mediaByStudent(id).filter(m=>!isFinalResultMedia(m)&&['photo','image'].includes(m.type));
+  if(!works.length){paint(id,'Нет готовой работы');continue;}
+  const latest=new Map();for(const work of works){const prev=latest.get(work.serviceId||work.id);if(!prev||String(work.updatedAt||work.createdAt||'')>String(prev.updatedAt||prev.createdAt||''))latest.set(work.serviceId||work.id,work);}
+  for(const work of latest.values()){
+   const cached=readPortraitScoreEntry(localStorage,account,work,originals);
+   if(cached&&(Number.isFinite(cached.similarity)||Date.now()-Date.parse(cached.checkedAt)<600000)){if(cached.similarity===null)paint(id,cached.explanation?'Не удалось сравнить':'Нет оригиналов');continue;}
+   paint(id,'Сходство: в очереди');
+   jobs.push({key:portraitScoreRevision(work,originals),onError:error=>paint(id,navigator.onLine?'Проверка: повтор позже':'Проверка: нет сети'),run:async signal=>{
+    if(signal.aborted||account!==(cloudAccount()?.id||'local'))return;
+    paint(id,'Сходство: проверяю…');
+    const student=studentById(id),scopeId=classById(student?.classId)?.projectId;
+    if(recordSync?.loadStudentMedia&&scopeId){await recordSync.loadStudentMedia(id,{scope:scopeId});await refreshData();}
+    if(signal.aborted)return;
+    const currentOriginals=mediaByStudent(id).filter(m=>!isFinalResultMedia(m)&&['photo','image'].includes(m.type));const blobs=[];
+    for(const item of currentOriginals){if(signal.aborted)return;const blob=item.blob instanceof Blob?item.blob:(await recordSync.loadRecord('media',item.id,{fields:['blob']}))?.record?.blob;if(blob instanceof Blob)blobs.push(blob);}
+    if(signal.aborted)return;
+    const loaded=await ensureFinalWorkLoaded(work.id);
+    const result=[loaded?.image,loaded?.mergedPrintImage,loaded?.blob].find(v=>v instanceof Blob)||mediaById(loaded?.resultMediaId)?.blob;
+    const value=await comparePortraitIdentity({originals:blobs,result,signal});
+    if(signal.aborted||account!==(cloudAccount()?.id||'local'))return;
+    savePortraitScore(localStorage,account,finalWorkById(work.id)||work,currentOriginals,value);
+    paint(id,value.status==='ok'?null:value.explanation.includes('оригинал')?'Нет оригиналов':'Не удалось сравнить');
+   }});
+  }
+ }
+ portraitRosterQueue.schedule(scope,jobs);
+}
+
 function childPortraitScoreLabel(studentId){
  const originals=mediaByStudent(studentId).filter(item=>!isFinalResultMedia(item)&&['photo','image'].includes(item.type));
  const latest=new Map();for(const work of finalWorksForStudent(studentId)){const previous=latest.get(work.serviceId||work.id);if(!previous||String(work.updatedAt||work.createdAt||'')>String(previous.updatedAt||previous.createdAt||''))latest.set(work.serviceId||work.id,work);}
@@ -5431,6 +5469,7 @@ function bindViewActions() {
 
 let detailsMenusOutsideController=null;
 function bindDetailsMenus() {
+  setTimeout(scheduleRosterPortraitChecks,0);
   detailsMenusOutsideController?.abort();
   detailsMenusOutsideController=new AbortController();
   const signal=detailsMenusOutsideController.signal;
