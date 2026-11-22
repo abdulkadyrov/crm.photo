@@ -1,6 +1,6 @@
-import {workflowChoice,bindWorkflowChoices} from './workflow-choice.js?v=300';
-import {workflowTaskTargetLabel} from '../services/workflow-task-target.js?v=300';
-import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=300';
+import {workflowChoice,bindWorkflowChoices} from './workflow-choice.js?v=304';
+import {workflowTaskTargetLabel} from '../services/workflow-task-target.js?v=304';
+import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=304';
 
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const dateValue = value => { const date = new Date(value); return Number.isFinite(+date) ? date : null; };

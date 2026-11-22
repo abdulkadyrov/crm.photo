@@ -1,5 +1,5 @@
-import {workflowChoice,bindWorkflowChoices} from './workflow-choice.js?v=292';
-import {WORKFLOW_TASK_ACTIONS} from '../services/workflow-tasks.js?v=292';
+import {workflowChoice,bindWorkflowChoices} from './workflow-choice.js?v=304';
+import {WORKFLOW_TASK_ACTIONS} from '../services/workflow-tasks.js?v=304';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function openWorkflowScopePanel({scope,label,positions=[],users=[],canPay=false,mountHistory,onSave,onClose=()=>{}}){
  const childScope=Boolean(scope.studentId);
