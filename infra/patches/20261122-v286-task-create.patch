@@ -1,0 +1,396 @@
+--- a/index.html
++++ b/index.html
+@@ -9,2 +9,2 @@
+-    <link rel="stylesheet" href="./styles.css?v=285" />
+-    <link rel="stylesheet" href="./css/workflow-tasks.css?v=285" />
++    <link rel="stylesheet" href="./styles.css?v=286" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css?v=286" />
+@@ -71 +71 @@
+-    <script type="module" src="./js/core/app.js?v=285"></script>
++    <script type="module" src="./js/core/app.js?v=286"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v285";
++const CACHE_VERSION = "v286";
+@@ -77,9 +77,10 @@
+-  "./js/ui/task-photo-period.js?v=285",
+-  "./js/ui/workflow-scope-panel.js?v=285",
+-  "./css/workflow-tasks.css?v=285",
+-  "./js/ui/workflow-workspace.js?v=285",
+-  "./js/ui/workflow-tasks.js?v=285",
+-  "./js/services/workflow-task-store.js?v=285",
+-  "./js/services/workflow-tasks.js?v=285",
+-  "./js/ui/scan-photo-viewer.js?v=285",
+-  "./js/ui/group-scan-panel.js?v=285",
++  "./js/ui/workflow-task-create.js?v=286",
++  "./js/ui/task-photo-period.js?v=286",
++  "./js/ui/workflow-scope-panel.js?v=286",
++  "./css/workflow-tasks.css?v=286",
++  "./js/ui/workflow-workspace.js?v=286",
++  "./js/ui/workflow-tasks.js?v=286",
++  "./js/services/workflow-task-store.js?v=286",
++  "./js/services/workflow-tasks.js?v=286",
++  "./js/ui/scan-photo-viewer.js?v=286",
++  "./js/ui/group-scan-panel.js?v=286",
+@@ -91,2 +92,2 @@
+-  "./js/services/service-positions.js?v=285",
+-  "./js/services/individual-order.js?v=285",
++  "./js/services/service-positions.js?v=286",
++  "./js/services/individual-order.js?v=286",
+@@ -94 +95 @@
+-  "./js/services/sequence-navigation.js?v=285",
++  "./js/services/sequence-navigation.js?v=286",
+@@ -96 +97 @@
+-  "./js/services/card-summary.js?v=285",
++  "./js/services/card-summary.js?v=286",
+@@ -100 +101 @@
+-  "./js/services/camera-options.js?v=285",
++  "./js/services/camera-options.js?v=286",
+@@ -106,2 +107,2 @@
+-  "./js/services/record-sync.js?v=285",
+-  "./js/services/deferred-final-work.js?v=285",
++  "./js/services/record-sync.js?v=286",
++  "./js/services/deferred-final-work.js?v=286",
+@@ -114 +115 @@
+-  "./js/services/sync-codec.js?v=285",
++  "./js/services/sync-codec.js?v=286",
+@@ -122 +123 @@
+-  "./styles.css?v=285",
++  "./styles.css?v=286",
+@@ -125 +126 @@
+-  "./js/core/app.js?v=285",
++  "./js/core/app.js?v=286",
+@@ -127,2 +128,2 @@
+-  "./js/services/card-selection.js?v=285",
+-  "./js/services/navigation-history.js?v=285",
++  "./js/services/card-selection.js?v=286",
++  "./js/services/navigation-history.js?v=286",
+@@ -130,2 +131,2 @@
+-  "./js/services/roster-filters.js?v=285",
+-  "./js/ui/scan-work-picker.js?v=285",
++  "./js/services/roster-filters.js?v=286",
++  "./js/ui/scan-work-picker.js?v=286",
+@@ -133 +134 @@
+-  "./js/services/student-comments.js?v=285",
++  "./js/services/student-comments.js?v=286",
+@@ -136 +137 @@
+-  "./js/services/image-delivery.js?v=285",
++  "./js/services/image-delivery.js?v=286",
+@@ -138,2 +139,2 @@
+-  "./js/ui/student-quick-actions.js?v=285",
+-  "./js/services/group-scan.js?v=285",
++  "./js/ui/student-quick-actions.js?v=286",
++  "./js/services/group-scan.js?v=286",
+@@ -142,2 +143,2 @@
+-  "./js/services/print-selection.js?v=285",
+-  "./js/ui/project-print-picker.js?v=285",
++  "./js/services/print-selection.js?v=286",
++  "./js/ui/project-print-picker.js?v=286",
+@@ -145 +146 @@
+-  "./js/services/student-stage-icons.js?v=285",
++  "./js/services/student-stage-icons.js?v=286",
+@@ -148 +149 @@
+-  "./js/ui/fulfillment-panel.js?v=285",
++  "./js/ui/fulfillment-panel.js?v=286",
+@@ -150 +151 @@
+-  "./js/services/print-order.js?v=285",
++  "./js/services/print-order.js?v=286",
+@@ -166 +167 @@
+-  "./js/services/fulfillment.js?v=285",
++  "./js/services/fulfillment.js?v=286",
+@@ -170 +171 @@
+-  "./js/core/legacy-app.js?v=285",
++  "./js/core/legacy-app.js?v=286",
+@@ -193 +194 @@
+-  "./js/ui/photo-camera.js?v=285",
++  "./js/ui/photo-camera.js?v=286",
+@@ -196 +197 @@
+-  "./js/services/teacher-broadcast.js?v=285",
++  "./js/services/teacher-broadcast.js?v=286",
+@@ -238 +239 @@
+-  "./js/services/parent-orders.js?v=285",
++  "./js/services/parent-orders.js?v=286",
+@@ -250 +251 @@
+-  "./js/services/finalwork-service.js?v=285",
++  "./js/services/finalwork-service.js?v=286",
+@@ -255 +256 @@
+-  "./js/services/export-filter-service.js?v=285",
++  "./js/services/export-filter-service.js?v=286",
+@@ -286 +287 @@
+-  "./js/services/barcode-reader.js?v=285",
++  "./js/services/barcode-reader.js?v=286",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=285");
++  await import("./legacy-app.js?v=286");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1 +1 @@
+-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=285';
++import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=286';
+@@ -5,3 +5,3 @@
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=269';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=269';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=269';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=286';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=286';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=286';
+@@ -9,12 +9,12 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=269";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=269";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=269";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=269";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=269";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=269";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=269";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=269";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=269";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=269";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=269";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=269";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=286";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=286";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=286";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=286";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=286";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=286";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=286";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=286";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=286";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=286";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=286";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=286";
+@@ -23,2 +23,2 @@
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=269";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=269";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=286";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=286";
+@@ -27,2 +27,2 @@
+-import {createNavigationHistory} from "../services/navigation-history.js?v=269";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=269";
++import {createNavigationHistory} from "../services/navigation-history.js?v=286";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=286";
+@@ -30 +30 @@
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=269";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=286";
+@@ -33,3 +33,3 @@
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=269";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=269";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=269";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=286";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=286";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=286";
+@@ -37,2 +37,2 @@
+-import { nextInSequence } from "../services/sequence-navigation.js?v=269";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=269";
++import { nextInSequence } from "../services/sequence-navigation.js?v=286";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=286";
+@@ -46 +46 @@
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=269";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=286";
+@@ -49,2 +49,2 @@
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=269";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=269";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=286";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=286";
+@@ -52 +52 @@
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=269";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=286";
+@@ -57 +57 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=269";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=286";
+@@ -60 +60 @@
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=269";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=286";
+@@ -62,2 +62,2 @@
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=269";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=269";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=286";
++import { printCodeLayout } from "../services/print-code-layout.js?v=286";
+@@ -86 +86 @@
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=269";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=286";
+@@ -91 +91 @@
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=269";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=286";
+--- a/js/ui/workflow-workspace.js
++++ b/js/ui/workflow-workspace.js
+@@ -1,5 +1,6 @@
+-import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=285';
+-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=285';
+-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=285';
+-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=285';
+-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=285';
++import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=286';
++import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=286';
++import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=286';
++import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=286';
++import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=286';
++import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=286';
+@@ -36,2 +37,2 @@
+- function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');const existingPeriod=root.querySelector('.photo-period');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());if(existingPeriod)root.prepend(existingPeriod);else periodCleanup=mountPhotoPeriod(root,{getData,state:photoPeriod,onOpen:task=>open(task),projectOptions:options().projectOptions});if(filters.classId||filters.studentId){const student=getData().students.find(s=>s.id===filters.studentId),group=getData().classes.find(c=>c.id===filters.classId);const chip=document.createElement('div');chip.className='workflow-scope-chip';chip.innerHTML=`<span>Только: ${esc(student?[student.lastName,student.firstName].join(' '):group?.name||'выбранная группа')}</span><button type="button">Все задачи проекта</button>`;chip.querySelector('button').onclick=()=>{filters={...filters,classId:'',studentId:''};renderPage();};root.prepend(chip);}const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.error?snapshot.error:snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';if(snapshot.status!=='online'||!document.querySelector('.topbar .sync-status-button'))root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
+- async function open(value){const task=typeof value==='string'?cached.find(t=>t.id===value):value;if(!task)return;await closeBell();if(task.entityKind==='project'){if(viewer().role==='photographer')return navigate('classes',{projectId:task.projectId,classId:getData().classes.some(c=>c.id===task.classId)?task.classId:null});return edit(task);}openTask(task);}
++ function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');const existingPeriod=root.querySelector('.photo-period');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());if(existingPeriod)root.prepend(existingPeriod);else periodCleanup=mountPhotoPeriod(root,{getData,state:photoPeriod,onOpen:task=>open(task),projectOptions:options().projectOptions});if(options().canManage){const bar=document.createElement('div');bar.className='wt-page-create';bar.innerHTML='<button type="button" class="wt-button wt-button--primary" data-wt-create><svg class="wt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Создать задачу</button>';bar.querySelector('button').onclick=createTask;root.prepend(bar);}if(filters.classId||filters.studentId){const student=getData().students.find(s=>s.id===filters.studentId),group=getData().classes.find(c=>c.id===filters.classId);const chip=document.createElement('div');chip.className='workflow-scope-chip';chip.innerHTML=`<span>Только: ${esc(student?[student.lastName,student.firstName].join(' '):group?.name||'выбранная группа')}</span><button type="button">Все задачи проекта</button>`;chip.querySelector('button').onclick=()=>{filters={...filters,classId:'',studentId:''};renderPage();};root.prepend(chip);}const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.error?snapshot.error:snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';if(snapshot.status!=='online'||!document.querySelector('.topbar .sync-status-button'))root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
++ async function open(value){const task=typeof value==='string'?cached.find(t=>t.id===value):value;if(!task)return;await closeBell();if(['project','student'].includes(task.entityKind)){if(viewer().role==='photographer')return navigate('classes',{projectId:task.projectId,classId:getData().classes.some(c=>c.id===task.classId)?task.classId:null});return edit(task);}openTask(task);}
+@@ -44 +45 @@
+-  bindWorkflowTaskEditor(node,{onCancel:close,onSave:async patch=>{if(Object.hasOwn(patch,'requestedAction')&&patch.requestedAction!==(overrideFor(task).requestedAction||'')){patch.requestedAt=new Date().toISOString();if(task.entityKind!=='project'){patch.previousSourceId=task.sourceId||'';patch.requestedRevision=task.version||'source';}patch.completedAt='';}await ensureStore().update(task,patch);snapshot=store.snapshot();close();notify(snapshot.status==='online'?'Задача сохранена в облаке':snapshot.status==='conflict'?'Есть изменения на другом устройстве: выберите версию в задачах':'Задача сохранена на устройстве · ожидает облака');}});
++  bindWorkflowTaskEditor(node,{onCancel:close,onSave:async patch=>{if(Object.hasOwn(patch,'requestedAction')&&patch.requestedAction!==(overrideFor(task).requestedAction||'')){patch.requestedAt=new Date().toISOString();if(!['project','student'].includes(task.entityKind)){patch.previousSourceId=task.sourceId||'';patch.requestedRevision=task.version||'source';}patch.completedAt='';}await ensureStore().update(task,patch);snapshot=store.snapshot();close();notify(snapshot.status==='online'?'Задача сохранена в облаке':snapshot.status==='conflict'?'Есть изменения на другом устройстве: выберите версию в задачах':'Задача сохранена на устройстве · ожидает облака');}});
+@@ -49,0 +51,14 @@
++ function createTask(){
++  if(editor||['viewer','photographer'].includes(viewer().role))return;
++  ensureStore();const creatorId=viewer().id,data=getData(),allowed=new Set(options().projectOptions.map(p=>p.id));
++  let panel;panel=openWorkflowTaskCreate({data:{...data,projects:data.projects.filter(p=>allowed.has(p.id))},onClose:()=>{if(editor===panel.host)editor=null;updateProjection();document.querySelector('[data-wt-create]')?.focus({preventScroll:true});},onSave:async({target,values,serviceId})=>{
++   if(viewer().id!==creatorId)throw new Error('Аккаунт изменился. Закройте форму и создайте задачу заново.');
++   const current=workflowCreationTarget(getData(),target);if(!current)throw new Error('Проект, группа или ребёнок изменились. Выберите их заново.');
++   if(!values.title.trim())throw new Error('Напишите, что нужно сделать.');
++   const scope={projectId:current.projectId,studentId:current.studentId||'project_'+current.projectId,serviceId};
++   await ensureStore().update(scope,{entityKind:current.studentId?'student':'project',classId:current.classId,title:values.title,requestedAction:values.requestedAction,dueAt:values.dueAt,reason:values.reason,requestedAt:new Date().toISOString(),completedAt:'',snoozedUntil:''});
++   snapshot=store.snapshot();if(['error','auth','conflict'].includes(snapshot.status))throw new Error(snapshot.error||'Не удалось подтвердить сохранение. Проверьте соединение и повторите.');
++   filters={...filters,period:'all',action:'all',assigneeId:'',projectId:current.projectId,classId:current.classId,studentId:current.studentId};
++   notify(snapshot.pending?'Задача сохранена на устройстве · ожидает облака':'Задача создана');
++  }});editor=panel.host;
++ }
+@@ -77 +92 @@
+- return {assignScope,openScopeTasks,captureMetadata,approveWork:async work=>{const klass=getData().classes.find(c=>c.id===(work.groupId||getData().students.find(s=>s.id===work.studentId)?.classId));await ensureStore().update({studentId:work.studentId,serviceId:work.serviceId,projectId:work.projectId||klass?.projectId},{approvedRevision:workflowWorkRevision(work),approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},refresh(){ensureStore();snapshot=store.snapshot();updateProjection();},mountShell,renderPage,mountCard,edit,approve:async task=>{await ensureStore().update(task,{approvedRevision:task.version,approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},snapshot:()=>snapshot,filters:()=>({...filters}),restoreFilters:value=>{filters={...filters,...value};},stop(){store?.destroy();}};
++ return {createTask,assignScope,openScopeTasks,captureMetadata,approveWork:async work=>{const klass=getData().classes.find(c=>c.id===(work.groupId||getData().students.find(s=>s.id===work.studentId)?.classId));await ensureStore().update({studentId:work.studentId,serviceId:work.serviceId,projectId:work.projectId||klass?.projectId},{approvedRevision:workflowWorkRevision(work),approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},refresh(){ensureStore();snapshot=store.snapshot();updateProjection();},mountShell,renderPage,mountCard,edit,approve:async task=>{await ensureStore().update(task,{approvedRevision:task.version,approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},snapshot:()=>snapshot,filters:()=>({...filters}),restoreFilters:value=>{filters={...filters,...value};},stop(){store?.destroy();}};
+--- a/js/ui/workflow-tasks.js
++++ b/js/ui/workflow-tasks.js
+@@ -1 +1 @@
+-import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=275';
++import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=286';
+@@ -50 +50 @@
+-export function renderWorkflowTaskEditor({task={},override={},users=[],canManage=true,canPay=false}={}) {return `<form class="wt-editor" data-wt-editor role="dialog" aria-modal="true" aria-label="Параметры задачи"><header><div><h2>Параметры задачи</h2><p>${esc(task.studentName)} · ${esc(task.serviceName)}</p></div></header>${canManage?`${task.entityKind==='project'?`<label>Задача<input name="title" maxlength="180" required value="${esc(override.title||task.title)}"></label>`:''}<label>Обещано до<input type="date" name="dueAt" value="${esc(dayKey(override.dueAt || task.dueAt))}"></label><label>Ответственный<select name="assigneeId"><option value="">Не назначен</option>${users.map(user=>`<option value="${esc(user.id)}" ${(override.assigneeId || task.assigneeId)===user.id?'selected':''}>${esc(user.name || user.displayName || user.email || user.id)}</option>`).join('')}</select></label><label>Напомнить позже<input type="date" name="snoozedUntil" value="${esc(dayKey(override.snoozedUntil || task.snoozedUntil))}"></label><label>Следующее действие<select name="requestedAction"><option value="">По статусу работы</option>${Object.entries(WORKFLOW_TASK_ACTIONS).filter(([key])=>key!=='sort_sources'&&(key!=='payment'||canPay)).map(([key,label])=>`<option value="${key}" ${override.requestedAction===key?'selected':''}>${key==='capture'?'Доснять / переснять':esc(label)}</option>`).join('')}</select></label><label>Комментарий<textarea name="reason" rows="2" maxlength="500" placeholder="Что нужно учесть">${esc(override.reason || '')}</textarea></label>`:'<p class="wt-muted">Параметры задачи изменяет руководитель проекта.</p>'}<div class="wt-editor-actions"><button type="button" class="wt-button wt-button--outline" data-wt-cancel>Отмена</button>${canManage&&task.manual?`<button type="button" class="wt-button wt-button--outline" data-wt-complete>${task.entityKind==='project'?'Отметить выполненной':'Снять ручную задачу'}</button>`:''}${canManage?'<button type="submit" class="wt-button wt-button--primary">Сохранить</button>':''}</div><p class="wt-editor-error" role="alert" hidden></p></form>`;}
++export function renderWorkflowTaskEditor({task={},override={},users=[],canManage=true,canPay=false}={}) {return `<form class="wt-editor" data-wt-editor role="dialog" aria-modal="true" aria-label="Параметры задачи"><header><div><h2>Параметры задачи</h2><p>${esc(task.studentName)} · ${esc(task.serviceName)}</p></div></header>${canManage?`${['project','student'].includes(task.entityKind)?`<label>Задача<input name="title" maxlength="180" required value="${esc(override.title||task.title)}"></label>`:''}<label>Обещано до<input type="date" name="dueAt" value="${esc(dayKey(override.dueAt || task.dueAt))}"></label><label>Ответственный<select name="assigneeId"><option value="">Не назначен</option>${users.map(user=>`<option value="${esc(user.id)}" ${(override.assigneeId || task.assigneeId)===user.id?'selected':''}>${esc(user.name || user.displayName || user.email || user.id)}</option>`).join('')}</select></label><label>Напомнить позже<input type="date" name="snoozedUntil" value="${esc(dayKey(override.snoozedUntil || task.snoozedUntil))}"></label><label>Следующее действие<select name="requestedAction">${['project','student'].includes(task.entityKind)?'':'<option value="">По статусу работы</option>'}${Object.entries(WORKFLOW_TASK_ACTIONS).filter(([key])=>key!=='sort_sources'&&(key!=='payment'||canPay)).map(([key,label])=>`<option value="${key}" ${override.requestedAction===key?'selected':''}>${key==='capture'?'Доснять / переснять':esc(label)}</option>`).join('')}</select></label><label>Комментарий<textarea name="reason" rows="2" maxlength="500" placeholder="Что нужно учесть">${esc(override.reason || '')}</textarea></label>`:'<p class="wt-muted">Параметры задачи изменяет руководитель проекта.</p>'}<div class="wt-editor-actions"><button type="button" class="wt-button wt-button--outline" data-wt-cancel>Отмена</button>${canManage&&task.manual?`<button type="button" class="wt-button wt-button--outline" data-wt-complete>${['project','student'].includes(task.entityKind)?'Отметить выполненной':'Снять ручную задачу'}</button>`:''}${canManage?'<button type="submit" class="wt-button wt-button--primary">Сохранить</button>':''}</div><p class="wt-editor-error" role="alert" hidden></p></form>`;}
+--- a/js/ui/workflow-scope-panel.js
++++ b/js/ui/workflow-scope-panel.js
+@@ -1 +1 @@
+-import {WORKFLOW_TASK_ACTIONS} from '../services/workflow-tasks.js?v=275';
++import {WORKFLOW_TASK_ACTIONS} from '../services/workflow-tasks.js?v=286';
+--- /dev/null
++++ b/js/ui/workflow-task-create.js
+@@ -0,0 +1,61 @@
++const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
++const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${{close:'m6 6 12 12M6 18 18 6',back:'m14 5-7 7 7 7',arrow:'m9 5 7 7-7 7',check:'m5 12 4 4L19 6',project:'M3 7h7l2-3h9v16H3Z',group:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-7a4 4 0 0 1 0 8m4 9v-2a4 4 0 0 0-3-4',child:'M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10'}[name]}"/></svg>`;
++const active=row=>!row.deletedAt&&!row.archivedAt&&!row.archived;
++const childName=row=>[row.lastName,row.firstName].filter(Boolean).join(' ')||'Без имени';
++const localDay=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
++const quickActions=[['generate','Сгенерировать'],['capture','Переснять'],['redo','Переделать'],['contact_teacher','Уточнить у учителя'],['send','Отправить'],['reminder','Напомнить']];
++
++export function workflowCreationTarget(data,selection){
++ const project=(data.projects||[]).find(p=>p.id===selection.projectId&&active(p));if(!project)return null;
++ const group=selection.classId?(data.classes||[]).find(g=>g.id===selection.classId&&g.projectId===project.id&&active(g)):null;
++ if(selection.classId&&!group)return null;
++ const student=selection.studentId?(data.students||[]).find(s=>s.id===selection.studentId&&s.classId===group?.id&&active(s)):null;
++ if(selection.studentId&&!student)return null;
++ return {projectId:project.id,classId:group?.id||'',studentId:student?.id||'',projectName:project.name||'Проект',className:group?.name||'',studentName:student?childName(student):'',label:[project.name,group?.name,student?childName(student):''].filter(Boolean).join(' · ')};
++}
++
++/** Each picker level is a real history entry; drafts live until this flow closes. */
++export function openWorkflowTaskCreate({data={},onSave,onClose=()=>{},win=window,doc=document,id=crypto.randomUUID()}={}){
++ const trigger=doc.activeElement,originScroll=win.scrollY,origin=win.history.state;
++ const host=doc.createElement('div');host.className='workflow-editor-host wt-create-host';
++ const draft={title:'',reason:'',dueAt:'',requestedAction:'reminder'};
++ let frame={level:'projects',selection:{projectId:'',classId:'',studentId:''},query:'',scroll:0,focus:''};
++ let frames=[frame],index=0,busy=false,closed=false,closing=false,saved=false,saveKey='task_'+id;
++ const marker=()=>({id,index});
++ const historyState=()=>({...origin,crmDialog:id,workflowTaskCreate:marker()});
++ const finish=()=>{if(closed)return;closed=true;win.removeEventListener('popstate',pop);doc.removeEventListener('keydown',key,true);host.remove();win.scrollTo(0,saved?0:originScroll);trigger?.focus({preventScroll:true});onClose(saved);};
++ const close=()=>{if(busy||closing||closed)return;closing=true;if(win.history.state?.workflowTaskCreate?.id===id)win.history.go(-(index+1));else finish();};
++ const pop=event=>{if(event.state?.workflowTaskCreate?.id!==id){finish();return;}index=event.state.workflowTaskCreate.index;frame=frames[index];if(!frame){finish();return;}closing=false;render();};
++ const capture=()=>{frame.scroll=host.querySelector('[data-create-body]')?.scrollTop||0;frame.focus=doc.activeElement?.dataset?.focusKey||'';};
++ const forward=next=>{capture();frame={...next,selection:{...next.selection},query:'',scroll:0,focus:''};frames=frames.slice(0,index+1);frames.push(frame);index++;win.history.pushState(historyState(),'');render();};
++ const back=()=>{if(busy)return;if(index)win.history.back();else close();};
++ const target=()=>workflowCreationTarget(data,frame.selection);
++ const rows=()=>{const all=frame.level==='projects'?(data.projects||[]):frame.level==='groups'?(data.classes||[]).filter(g=>g.projectId===frame.selection.projectId):(data.students||[]).filter(s=>s.classId===frame.selection.classId);return all.filter(active).map(row=>({id:row.id,name:frame.level==='children'?childName(row):row.name||'Без названия',hint:frame.level==='projects'?`${(data.classes||[]).filter(g=>g.projectId===row.id&&active(g)).length} групп`:frame.level==='groups'?`${(data.students||[]).filter(s=>s.classId===row.id&&active(s)).length} детей`:''})).sort((a,b)=>a.name.localeCompare(b.name,'ru',{numeric:true}));};
++ function renderRows(){
++  const field={projects:'projectId',groups:'classId',children:'studentId'}[frame.level],kind={projects:'проект',groups:'группу',children:'ребёнка'}[frame.level];
++  const filtered=rows().filter(row=>row.name.toLocaleLowerCase('ru').includes(frame.query.toLocaleLowerCase('ru').trim()));
++  host.querySelector('[data-create-list]').innerHTML=filtered.length?filtered.map(row=>`<div class="wt-create-row ${frame.selection[field]===row.id?'is-selected':''}"><button type="button" data-select="${esc(row.id)}" data-focus-key="select-${esc(row.id)}" aria-pressed="${frame.selection[field]===row.id}" aria-label="Выбрать ${kind}: ${esc(row.name)}"><span class="wt-create-row-icon">${icon(frame.selection[field]===row.id?'check':frame.level==='projects'?'project':frame.level==='groups'?'group':'child')}</span><span><strong>${esc(row.name)}</strong>${row.hint?`<small>${esc(row.hint)}</small>`:''}</span></button>${frame.level!=='children'?`<button type="button" class="wt-create-drill" data-drill="${esc(row.id)}" data-focus-key="drill-${esc(row.id)}" aria-label="${frame.level==='projects'?'Открыть группы':'Открыть детей'}: ${esc(row.name)}">${icon('arrow')}</button>`:''}</div>`).join(''):`<p class="wt-create-empty">${frame.query?'Ничего не найдено. Измените поиск.':frame.level==='children'?'В этой группе пока нет детей. Можно создать задачу для группы.':frame.level==='groups'?'В проекте пока нет групп. Можно создать задачу для проекта.':'Нет доступных проектов.'}</p>`;
++ }
++ function select(rowId,drill=false){
++  const field={projects:'projectId',groups:'classId',children:'studentId'}[frame.level];const wasSelected=frame.selection[field]===rowId;
++  if(frame.level==='projects')frame.selection={projectId:rowId,classId:'',studentId:''};else if(frame.level==='groups')frame.selection={...frame.selection,classId:rowId,studentId:''};else frame.selection.studentId=rowId;
++  if((drill||wasSelected)&&frame.level!=='children'){forward({level:frame.level==='projects'?'groups':'children',selection:frame.selection});return;}
++  renderRows();updateSelection();host.querySelector(`[data-select="${rowId}"]`)?.focus({preventScroll:true});
++ }
++ function updateSelection(){const t=target();host.querySelector('[data-create-selected]').textContent=t?.label||'Выберите проект';const submit=host.querySelector('[data-create-next]');if(submit)submit.disabled=!t;}
++ function render(){
++  const isForm=frame.level==='form',t=target();
++  host.innerHTML=`<section class="wt-create-sheet" role="dialog" aria-modal="true" aria-labelledby="wt-create-title" data-sync-editing="true"><header class="wt-create-header"><button type="button" data-create-back class="wt-icon-button" aria-label="Назад">${icon('back')}</button><h2 id="wt-create-title">${isForm?'Новая задача':frame.level==='projects'?'Выберите проект':frame.level==='groups'?'Выберите группу':'Выберите ребёнка'}</h2><button type="button" data-create-close class="wt-icon-button" aria-label="Закрыть создание задачи">${icon('close')}</button></header><div class="wt-create-selected" data-create-selected></div><div class="wt-create-body" data-create-body>${isForm?`<form id="wt-create-form"><label>Что нужно сделать<input name="title" maxlength="180" required value="${esc(draft.title)}" placeholder="Например: договориться о съёмке" autocomplete="off"></label><div class="wt-create-actions" role="group" aria-label="Быстрые действия">${quickActions.map(([action,label])=>`<button type="button" data-quick-action="${action}" aria-pressed="${draft.requestedAction===action}">${label}</button>`).join('')}</div><label>Срок <span class="wt-create-optional">необязательно</span><input type="date" name="dueAt" value="${esc(draft.dueAt)}"></label><div class="wt-create-dates" role="group" aria-label="Быстрый срок"><button type="button" data-quick-date="today">Сегодня</button><button type="button" data-quick-date="tomorrow">Завтра</button><button type="button" data-quick-date="none">Без срока</button></div><label>Комментарий <span class="wt-create-optional">необязательно</span><textarea name="reason" rows="3" maxlength="1000" placeholder="Что важно учесть">${esc(draft.reason)}</textarea></label><p role="alert" class="wt-editor-error" hidden></p></form>`:`<p class="wt-create-hint">${frame.level==='projects'?'Выберите проект для общей задачи. Стрелка открывает группы.':frame.level==='groups'?'Можно создать задачу группе или открыть список детей.':'Выберите ребёнка. Фотографии и заказ не обязательны.'}</p><label class="wt-create-search"><span class="wt-sr-only">Поиск</span><input type="search" data-create-search placeholder="${frame.level==='children'?'Имя или фамилия':'Поиск по названию'}" value="${esc(frame.query)}" autocomplete="off"></label><div class="wt-create-list" data-create-list></div>`}</div><footer class="wt-create-footer">${isForm?'<button type="submit" form="wt-create-form" class="wt-button wt-button--primary" data-create-save>Создать задачу</button>':'<button type="button" class="wt-button wt-button--primary" data-create-next disabled>Создать задачу</button>'}</footer></section>`;
++  updateSelection();if(!isForm)renderRows();
++  const body=host.querySelector('[data-create-body]');body.scrollTop=frame.scroll;
++  const focus=frame.focus?host.querySelector(`[data-focus-key="${frame.focus}"]`):host.querySelector(isForm?'[name=title]':'[data-create-search]');
++  if(frame.focus)focus?.focus({preventScroll:true});else host.querySelector('[data-create-close]')?.focus({preventScroll:true});
++  if(isForm){const form=host.querySelector('form');form.addEventListener('input',()=>{draft.title=form.elements.title.value;draft.dueAt=form.elements.dueAt.value;draft.reason=form.elements.reason.value;});form.addEventListener('submit',save);}
++ }
++ async function save(event){event.preventDefault();if(busy)return;const form=host.querySelector('form');if(!form.reportValidity())return;const t=target();if(!t)return;const button=host.querySelector('[data-create-save]'),error=form.querySelector('[role=alert]');busy=true;error.hidden=true;button.disabled=true;button.textContent='Сохраняем…';host.querySelectorAll('button').forEach(b=>b.disabled=true);try{await onSave({target:t,values:{...draft,title:draft.title.trim()},serviceId:saveKey});saved=true;busy=false;close();}catch(e){error.textContent=e?.message||'Не удалось сохранить задачу. Повторите.';error.hidden=false;busy=false;host.querySelectorAll('button').forEach(b=>b.disabled=false);button.textContent='Создать задачу';}}
++ const click=event=>{const b=event.target.closest('button');if(!b||!host.contains(b)||busy)return;if(b.hasAttribute('data-create-close'))close();else if(b.hasAttribute('data-create-back'))back();else if(b.hasAttribute('data-select'))select(b.dataset.select);else if(b.hasAttribute('data-drill'))select(b.dataset.drill,true);else if(b.hasAttribute('data-create-next'))forward({level:'form',selection:frame.selection});else if(b.hasAttribute('data-quick-action')){const oldTitle=quickActions.find(([a])=>a===draft.requestedAction)?.[1];if(!draft.title||draft.title===oldTitle)draft.title=b.textContent;draft.requestedAction=b.dataset.quickAction;host.querySelector('[name=title]').value=draft.title;host.querySelectorAll('[data-quick-action]').forEach(x=>x.setAttribute('aria-pressed',x===b));}else if(b.hasAttribute('data-quick-date')){const date=new Date();if(b.dataset.quickDate==='tomorrow')date.setDate(date.getDate()+1);draft.dueAt=b.dataset.quickDate==='none'?'':localDay(date);host.querySelector('[name=dueAt]').value=draft.dueAt;}};
++ const input=event=>{if(event.target.matches('[data-create-search]')){frame.query=event.target.value;renderRows();}};
++ const key=event=>{if(closed)return;if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();back();}if(event.key==='Tab'){const controls=[...host.querySelectorAll('button,input,textarea')].filter(el=>!el.disabled&&!el.hidden);const first=controls[0],last=controls.at(-1);if(event.shiftKey&&doc.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&doc.activeElement===last){event.preventDefault();first?.focus();}}};
++ host.addEventListener('click',click);host.addEventListener('input',input);doc.body.append(host);win.history.pushState(historyState(),'');win.addEventListener('popstate',pop);doc.addEventListener('keydown',key,true);render();
++ return {host,close};
++}
+--- a/js/services/workflow-tasks.js
++++ b/js/services/workflow-tasks.js
+@@ -4 +4 @@
+-  print: 'Напечатать', deliver: 'Отдать', payment: 'Проверить оплату', sort_sources: 'Разобрать новые фотографии'
++  print: 'Напечатать', deliver: 'Отдать', payment: 'Проверить оплату', sort_sources: 'Разобрать новые фотографии', contact_teacher:'Уточнить у учителя', send:'Отправить', reminder:'Напомнить'
+@@ -175,2 +175,3 @@
+-  for(const plan of workflowPlanRows(overrides).filter(p=>p.entityKind==='project'&&!p.completedAt)){
+-    const project=projects.get(plan.projectId), klass=classes.get(plan.classId);
++  for(const plan of workflowPlanRows(overrides).filter(p=>['project','student'].includes(p.entityKind)&&!p.completedAt)){
++    const project=projects.get(plan.projectId), student=plan.entityKind==='student'?list(data.students).find(s=>s.id===plan.studentId&&!s.deletedAt):null, klass=classes.get(student?.classId||plan.classId);
++    if(plan.entityKind==='student'&&(!student||klass?.projectId!==project?.id))continue;
+@@ -179 +180 @@
+-    tasks.push({...plan,id:'manual::'+plan.scopeKey,action:plan.requestedAction,title:plan.title||WORKFLOW_TASK_ACTIONS[plan.requestedAction],studentName:plan.title||'Общая задача',serviceName:WORKFLOW_TASK_ACTIONS[plan.requestedAction],projectName:project.name||'Проект',className:klass?.name||'Общие задачи проекта',classId:plan.classId||'project-notes:'+project.id,automatic:false,manual:true,overdue:isOverdue(plan.dueAt,timestamp),reason:plan.reason||'',version:'manual'});
++    tasks.push({...plan,id:'manual::'+plan.scopeKey,action:plan.requestedAction,title:plan.title||WORKFLOW_TASK_ACTIONS[plan.requestedAction],studentName:student?[student.lastName,student.firstName].filter(Boolean).join(' '):plan.title||'Общая задача',serviceName:student?(plan.title||WORKFLOW_TASK_ACTIONS[plan.requestedAction]):WORKFLOW_TASK_ACTIONS[plan.requestedAction],projectName:project.name||'Проект',className:klass?.name||'Общие задачи проекта',classId:klass?.id||'project-notes:'+project.id,automatic:false,manual:true,overdue:isOverdue(plan.dueAt,timestamp),reason:plan.reason||'',version:'manual'});
+@@ -181 +182 @@
+-  const priority = {redo:0,capture:1,generate:2,review:3,print:4,deliver:5,payment:6,sort_sources:7};
++  const priority = {redo:0,capture:1,generate:2,review:3,print:4,deliver:5,payment:6,sort_sources:7,contact_teacher:8,send:9,reminder:10};
+--- a/css/workflow-tasks.css
++++ b/css/workflow-tasks.css
+@@ -20,0 +21,12 @@
++
++/* Create a personal task at any level of the project hierarchy. */
++.wt-page-create{display:flex;justify-content:flex-end;margin:0 0 12px}.wt-page-create .wt-button{gap:7px;min-height:40px;padding:9px 14px;font-size:13px}
++.wt-create-host{z-index:10020;padding:12px;background:rgba(16,24,40,.38)}
++.wt-create-host .wt-create-sheet{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;width:min(540px,100%);max-height:calc(100dvh - 24px);min-width:0;background:var(--card,#fff);color:var(--text,#152033);border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(16,24,40,.22);font-size:14px}
++.wt-create-header{display:flex;align-items:center;gap:8px;padding:12px 12px 5px}.wt-create-header h2{margin:0;flex:1;min-width:0;font-size:19px;line-height:1.3;font-weight:700}.wt-create-header .wt-icon-button{width:40px;height:40px;min-width:40px;padding:9px;border-radius:10px;flex:none}.wt-create-host svg{width:20px;height:20px;flex:none}
++.wt-create-selected{padding:0 18px 12px;font-size:12px;line-height:1.5;color:var(--muted,#586578);overflow-wrap:anywhere;border-bottom:1px solid var(--line,#dce1eb)}
++.wt-create-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px 18px;scrollbar-color:var(--line,#b8c3d5) transparent}.wt-create-hint{margin:0 0 12px;color:var(--muted,#586578);font-size:12px;line-height:1.5}.wt-create-search{display:block;margin-bottom:10px}.wt-create-host input,.wt-create-host textarea{display:block;box-sizing:border-box;min-width:0;width:100%;font:inherit;line-height:1.4;color:var(--text,#152033);background:var(--card,#fff);border:1px solid var(--line,#dce1eb);border-radius:10px;padding:10px 12px;min-height:42px;caret-color:var(--primary,#245ee9)}.wt-create-host input[type=date]{min-height:42px;max-width:100%;appearance:none}.wt-create-host input::placeholder,.wt-create-host textarea::placeholder{color:var(--muted,#586578)}.wt-create-host label{display:block;font-size:13px;font-weight:650;line-height:1.4}.wt-create-host label input,.wt-create-host label textarea{margin-top:6px;font-size:14px;font-weight:400}.wt-create-host textarea{resize:vertical;min-height:82px}.wt-create-host form{display:grid;gap:14px}.wt-create-optional{font-size:11px;font-weight:400;color:var(--muted,#586578);margin-left:4px}
++.wt-create-row{display:flex;align-items:stretch;min-width:0;border-bottom:1px solid var(--line,#dce1eb)}.wt-create-row:last-child{border-bottom:0}.wt-create-row button{display:flex;align-items:center;gap:10px;min-width:0;min-height:58px;font:inherit;text-align:left;border:0;background:transparent;color:var(--text,#152033);padding:9px 8px;cursor:pointer;border-radius:9px}.wt-create-row button[data-select]{flex:1}.wt-create-row button>span:last-child{min-width:0;flex:1}.wt-create-row strong{display:block;font-size:13px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}.wt-create-row small{display:block;margin-top:2px;color:var(--muted,#586578);font-size:11px}.wt-create-row-icon{display:grid;place-items:center;flex:none;width:30px;height:30px;color:var(--muted,#586578)}.wt-create-row.is-selected{background:var(--primary-soft,#eaf0ff);border-radius:10px}.wt-create-row.is-selected .wt-create-row-icon,.wt-create-row.is-selected strong{color:var(--primary,#245ee9)}.wt-create-row .wt-create-drill{width:44px;justify-content:center;flex:none;color:var(--primary,#245ee9)}.wt-create-row button:hover,.wt-create-actions button:hover,.wt-create-dates button:hover{background:var(--primary-soft,#eaf0ff)}
++.wt-create-actions,.wt-create-dates{display:flex;flex-wrap:wrap;gap:6px}.wt-create-host .wt-create-actions button,.wt-create-host .wt-create-dates button{font:inherit;font-size:12px;line-height:1.3;min-height:36px;padding:8px 10px;border:1px solid var(--line,#dce1eb);background:var(--card,#fff);color:var(--text,#152033);border-radius:9px;cursor:pointer;max-width:100%;overflow-wrap:anywhere}.wt-create-actions button[aria-pressed=true]{color:var(--primary,#245ee9);background:var(--primary-soft,#eaf0ff);border-color:var(--primary,#245ee9)}.wt-create-dates{margin-top:-7px}.wt-create-empty{font-size:13px;color:var(--muted,#586578);line-height:1.5;padding:20px 4px;margin:0}
++.wt-create-footer{padding:12px 18px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--line,#dce1eb);background:var(--card,#fff)}.wt-create-footer .wt-button{width:100%;min-height:44px;font-size:14px;line-height:1.4;padding:10px 12px;border-radius:10px}.wt-create-host button:disabled{opacity:.5;cursor:default}.wt-create-host :is(button,input,textarea):focus-visible{outline:2px solid var(--primary,#245ee9);outline-offset:2px}.wt-create-host ::selection{background:var(--primary-soft,#dce6ff);color:var(--text,#152033)}.wt-create-host [hidden]{display:none!important}
++@media(max-width:360px){.wt-create-header{gap:4px;padding:8px 8px 4px}.wt-create-header h2{font-size:17px}.wt-create-body{padding:12px}.wt-create-selected{padding:0 12px 10px}.wt-create-footer{padding-left:12px;padding-right:12px}.wt-create-row strong{font-size:12px}.wt-create-actions{gap:5px}.wt-create-host .wt-create-actions button{font-size:11px;padding:8px}.wt-page-create .wt-button{font-size:12px}}
+--- a/server/workflow_tasks.py
++++ b/server/workflow_tasks.py
+@@ -48 +48 @@
+-  if key=='entityKind':a.fail(value not in ('','project'),400,'Некорректная область задачи')
++  if key=='entityKind':a.fail(value not in ('','project','student'),400,'Некорректная область задачи')
+@@ -51 +51 @@
+-  if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources'))
++  if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources','contact_teacher','send','reminder'))
+@@ -97,0 +98,3 @@
++ existing_plan=c.execute('SELECT data FROM workflow_task_plans WHERE scope_key=?',(student_id+'::'+service_id,)).fetchone()
++ current_data=json.loads(existing_plan[0]) if existing_plan else {}
++ kind=patch.get('entityKind') or current_data.get('entityKind','')
+@@ -98,0 +102 @@
++ student_task=service_id.startswith('task_') and kind=='student'
+@@ -115 +119,14 @@
+-  a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
++  if student_task:
++   a.fail(u['role'] not in ('admin','manager'),403,'Задачи создаёт руководитель проекта')
++   group=load(c,'classes',s.get('classId'))
++   a.fail(not group or group[0]!=scope or group[1].get('projectId')!=scope,403,'Группа ребёнка относится к другому проекту')
++   a.fail(patch.get('classId',current_data.get('classId'))!=s.get('classId'),403,'Задача относится к другой группе')
++   a.fail(any(k in patch for k in ('sourceMediaId','previousSourceId','reviewedSourceIds','approvedRevision')),400,'Задача не меняет материалы ребёнка')
++  else:
++   a.fail(kind=='student',400,'Для задачи нужен отдельный идентификатор')
++   a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
++ if existing_plan and 'entityKind' in patch:a.fail(patch['entityKind']!=current_data.get('entityKind',''),400,'Нельзя менять область существующей задачи')
++ if student_task:
++  title=patch.get('title',current_data.get('title',''))
++  a.fail(not isinstance(title,str) or not title.strip(),400,'Напишите, что нужно сделать')
++  a.fail(not patch.get('requestedAction',current_data.get('requestedAction')),400,'Выберите действие задачи')

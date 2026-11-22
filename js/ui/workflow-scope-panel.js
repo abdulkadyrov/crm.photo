@@ -1,4 +1,4 @@
-import {WORKFLOW_TASK_ACTIONS} from '../services/workflow-tasks.js?v=275';
+import {WORKFLOW_TASK_ACTIONS} from '../services/workflow-tasks.js?v=286';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function openWorkflowScopePanel({scope,label,positions=[],users=[],canPay=false,mountHistory,onSave,onClose=()=>{}}){
  const trigger=document.activeElement,host=document.createElement('div');host.className='workflow-editor-host';

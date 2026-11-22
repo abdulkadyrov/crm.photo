@@ -1,7 +1,7 @@
 // Read-only workflow projection. No status, fulfilment history or deadline is inferred by writing records.
 export const WORKFLOW_TASK_ACTIONS = Object.freeze({
   capture: 'Доснять', generate: 'Сгенерировать', redo: 'Переделать', review: 'Проверить',
-  print: 'Напечатать', deliver: 'Отдать', payment: 'Проверить оплату', sort_sources: 'Разобрать новые фотографии'
+  print: 'Напечатать', deliver: 'Отдать', payment: 'Проверить оплату', sort_sources: 'Разобрать новые фотографии', contact_teacher:'Уточнить у учителя', send:'Отправить', reminder:'Напомнить'
 });
 export const TASK_ACTION_LABELS = WORKFLOW_TASK_ACTIONS;
 const list = value => Array.isArray(value) ? value : [];
@@ -172,13 +172,14 @@ export function deriveWorkflowTasks(data = {}, { now = new Date(), role = 'admin
       }
     }
   }
-  for(const plan of workflowPlanRows(overrides).filter(p=>p.entityKind==='project'&&!p.completedAt)){
-    const project=projects.get(plan.projectId), klass=classes.get(plan.classId);
+  for(const plan of workflowPlanRows(overrides).filter(p=>['project','student'].includes(p.entityKind)&&!p.completedAt)){
+    const project=projects.get(plan.projectId), student=plan.entityKind==='student'?list(data.students).find(s=>s.id===plan.studentId&&!s.deletedAt):null, klass=classes.get(student?.classId||plan.classId);
+    if(plan.entityKind==='student'&&(!student||klass?.projectId!==project?.id))continue;
     if(!project||plan.classId&&klass?.projectId!==project.id||!Object.hasOwn(WORKFLOW_TASK_ACTIONS,plan.requestedAction))continue;
     if(role==='photographer'&&(plan.requestedAction!=='capture'||plan.assigneeId!==userId)||plan.requestedAction==='payment'&&!['admin','owner'].includes(role))continue;
-    tasks.push({...plan,id:'manual::'+plan.scopeKey,action:plan.requestedAction,title:plan.title||WORKFLOW_TASK_ACTIONS[plan.requestedAction],studentName:plan.title||'Общая задача',serviceName:WORKFLOW_TASK_ACTIONS[plan.requestedAction],projectName:project.name||'Проект',className:klass?.name||'Общие задачи проекта',classId:plan.classId||'project-notes:'+project.id,automatic:false,manual:true,overdue:isOverdue(plan.dueAt,timestamp),reason:plan.reason||'',version:'manual'});
+    tasks.push({...plan,id:'manual::'+plan.scopeKey,action:plan.requestedAction,title:plan.title||WORKFLOW_TASK_ACTIONS[plan.requestedAction],studentName:student?[student.lastName,student.firstName].filter(Boolean).join(' '):plan.title||'Общая задача',serviceName:student?(plan.title||WORKFLOW_TASK_ACTIONS[plan.requestedAction]):WORKFLOW_TASK_ACTIONS[plan.requestedAction],projectName:project.name||'Проект',className:klass?.name||'Общие задачи проекта',classId:klass?.id||'project-notes:'+project.id,automatic:false,manual:true,overdue:isOverdue(plan.dueAt,timestamp),reason:plan.reason||'',version:'manual'});
   }
-  const priority = {redo:0,capture:1,generate:2,review:3,print:4,deliver:5,payment:6,sort_sources:7};
+  const priority = {redo:0,capture:1,generate:2,review:3,print:4,deliver:5,payment:6,sort_sources:7,contact_teacher:8,send:9,reminder:10};
   return [...new Map(tasks.map(task=>[task.id,task])).values()].sort((a,b)=> (a.dueAt ? 0:1)-(b.dueAt ? 0:1) || (time(a.dueAt)||Infinity)-(time(b.dueAt)||Infinity) || priority[a.action]-priority[b.action] || a.projectName.localeCompare(b.projectName,'ru') || a.className.localeCompare(b.className,'ru') || a.studentName.localeCompare(b.studentName,'ru'));
 }
 

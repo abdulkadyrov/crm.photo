@@ -45,10 +45,10 @@ def validate_patch(a,c,u,scope,student_id,patch):
   if key in ('dueAt','snoozedUntil','requestedAt','sourceReviewedAt','approvedAt','completedAt') and value:
    try:datetime.fromisoformat(value.replace('Z','+00:00')) if 'T' in value else date.fromisoformat(value)
    except (ValueError,AttributeError):raise a.Error(400,'Некорректная дата')
-  if key=='entityKind':a.fail(value not in ('','project'),400,'Некорректная область задачи')
+  if key=='entityKind':a.fail(value not in ('','project','student'),400,'Некорректная область задачи')
   if key=='classId' and value:
    group=load(c,'classes',value);a.fail(not group or group[0]!=scope or group[1].get('projectId')!=scope,403,'Группа относится к другому проекту')
-  if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources'))
+  if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources','contact_teacher','send','reminder'))
   if key=='sourcePurpose':a.fail(value not in ('','new-service','reshoot','correction','additional-reference','additional_reference','new_service','new','additional'))
   if key=='assigneeId' and value:
    user=c.execute('SELECT id,role,active FROM users WHERE id=?',(value,)).fetchone();a.fail(not user or not user['active'] or user['role']=='viewer',400,'Ответственный недоступен')
@@ -95,7 +95,11 @@ def route(r,c,u,a):
  a.fail(type(base) is not int or base<0);a.fail(not isinstance(patch,dict),400,'Некорректные поля задачи')
  a.fail(u['role']=='admin' and not c.execute('SELECT 1 FROM projects WHERE id=?',(scope,)).fetchone(),425,'Сначала отправьте проект на сервер')
  a.access(c,u,scope)
+ existing_plan=c.execute('SELECT data FROM workflow_task_plans WHERE scope_key=?',(student_id+'::'+service_id,)).fetchone()
+ current_data=json.loads(existing_plan[0]) if existing_plan else {}
+ kind=patch.get('entityKind') or current_data.get('entityKind','')
  project_task=student_id=='project_'+scope and service_id.startswith('task_')
+ student_task=service_id.startswith('task_') and kind=='student'
  if project_task:
   a.fail(u['role'] not in ('admin','manager'),403,'Общие задачи добавляет руководитель проекта')
   existing=c.execute('SELECT data FROM workflow_task_plans WHERE scope_key=?',(student_id+'::'+service_id,)).fetchone()
@@ -112,7 +116,20 @@ def route(r,c,u,a):
    if order.get('studentId')==student_id:
     services.update(order.get('catalogIds') or []);services.add(order.get('catalogId'));services.update(item.get('serviceId') or str(item.get('type','')).split('__')[0] for item in order.get('items',[]) if isinstance(item,dict))
   has_work=any(json.loads(row[0]).get('studentId')==student_id and json.loads(row[0]).get('serviceId')==service_id for row in c.execute("SELECT data FROM sync_records WHERE scope=? AND store='finalWorks' AND data IS NOT NULL",(scope,)))
-  a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
+  if student_task:
+   a.fail(u['role'] not in ('admin','manager'),403,'Задачи создаёт руководитель проекта')
+   group=load(c,'classes',s.get('classId'))
+   a.fail(not group or group[0]!=scope or group[1].get('projectId')!=scope,403,'Группа ребёнка относится к другому проекту')
+   a.fail(patch.get('classId',current_data.get('classId'))!=s.get('classId'),403,'Задача относится к другой группе')
+   a.fail(any(k in patch for k in ('sourceMediaId','previousSourceId','reviewedSourceIds','approvedRevision')),400,'Задача не меняет материалы ребёнка')
+  else:
+   a.fail(kind=='student',400,'Для задачи нужен отдельный идентификатор')
+   a.fail(service_id not in services and not has_work,400,'Услуга не выбрана у ребёнка')
+ if existing_plan and 'entityKind' in patch:a.fail(patch['entityKind']!=current_data.get('entityKind',''),400,'Нельзя менять область существующей задачи')
+ if student_task:
+  title=patch.get('title',current_data.get('title',''))
+  a.fail(not isinstance(title,str) or not title.strip(),400,'Напишите, что нужно сделать')
+  a.fail(not patch.get('requestedAction',current_data.get('requestedAction')),400,'Выберите действие задачи')
  validate_patch(a,c,u,scope,student_id,patch);key=student_id+'::'+service_id
  c.execute('BEGIN IMMEDIATE')
  row=c.execute('SELECT * FROM workflow_task_plans WHERE scope_key=?',(key,)).fetchone();current=plan(row) if row else None
