@@ -1,23 +1,23 @@
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=304';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=304';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=305';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=305';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=304";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=305";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=304";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=304";
+import {createNavigationHistory} from "../services/navigation-history.js?v=305";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=305";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=304";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=305";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=304";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=304";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=304";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=305";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=305";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=305";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=304";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=304";
+import { nextInSequence } from "../services/sequence-navigation.js?v=305";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=305";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -25,24 +25,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=304";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=305";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=304";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=304";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=305";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=305";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=304";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=305";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=304";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=305";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=304";
-import { printCodeLayout } from "../services/print-code-layout.js?v=304";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=305";
+import { printCodeLayout } from "../services/print-code-layout.js?v=305";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -65,12 +65,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=304";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=305";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=304";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=305";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -2282,11 +2282,11 @@ function refreshStudentFromBackground(){
  const saved=captureStudentView(view,window);state.preserveScroll=true;render();restoreStudentView(saved,view,window);return true;
 }
 function compactStudentMediaSections(){
- const sections=[...view.querySelectorAll('.student-detail-shell article.panel')].filter(panel=>['Оригиналы','Готовые работы','Печать A4'].includes(panel.querySelector(':scope > .card-header h2')?.textContent.trim()));
+ const sections=[...view.querySelectorAll('.student-detail-shell article.panel')].filter(panel=>['Чеклист','Оригиналы','Готовые работы','Печать A4'].includes(panel.querySelector(':scope > .card-header h2')?.textContent.trim()));
  sections.forEach((panel,index)=>{
   const header=panel.querySelector(':scope > .card-header'),title=header.querySelector('h2').textContent.trim();
-  const grid=panel.querySelector('.media-grid,.final-results-grid'),count=grid?.children.length||0;
-  const details=document.createElement('details');details.className='student-media-fold';details.dataset.positionState='media-fold-'+index;
+  const grid=panel.querySelector('.media-grid,.final-results-grid,.task-list'),count=grid?.children.length||0;
+  const details=document.createElement('details');details.className='student-media-fold';details.dataset.positionState='media-fold-'+title;
   const summary=document.createElement('summary'),image=grid?.querySelector('img');
   if(image){const mini=image.cloneNode(true);mini.className='student-fold-thumb';mini.alt='';summary.append(mini);}
   const text=document.createElement('span');text.className='student-fold-title';text.textContent=title;
