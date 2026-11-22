@@ -48,7 +48,7 @@ def validate_patch(a,c,u,scope,student_id,patch):
   if key=='entityKind':a.fail(value not in ('','project','student'),400,'Некорректная область задачи')
   if key=='classId' and value:
    group=load(c,'classes',value);a.fail(not group or group[0]!=scope or group[1].get('projectId')!=scope,403,'Группа относится к другому проекту')
-  if key=='requestedAction':a.fail(value not in ('','capture','generate','redo','review','print','deliver','payment','sort_sources','contact_teacher','send','reminder'))
+  if key=='requestedAction':a.fail(value not in ('','custom','capture','generate','redo','review','print','deliver','payment','sort_sources','contact_teacher','send','reminder'))
   if key=='sourcePurpose':a.fail(value not in ('','new-service','reshoot','correction','additional-reference','additional_reference','new_service','new','additional'))
   if key=='assigneeId' and value:
    user=c.execute('SELECT id,role,active FROM users WHERE id=?',(value,)).fetchone();a.fail(not user or not user['active'] or user['role']=='viewer',400,'Ответственный недоступен')

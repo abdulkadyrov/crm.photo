@@ -1,6 +1,6 @@
 // Read-only workflow projection. No status, fulfilment history or deadline is inferred by writing records.
 export const WORKFLOW_TASK_ACTIONS = Object.freeze({
-  capture: 'Доснять', generate: 'Сгенерировать', redo: 'Переделать', review: 'Проверить',
+  custom: 'Индивидуальное', capture: 'Доснять', generate: 'Сгенерировать', redo: 'Переделать', review: 'Проверить',
   print: 'Напечатать', deliver: 'Отдать', payment: 'Проверить оплату', sort_sources: 'Разобрать новые фотографии', contact_teacher:'Уточнить у учителя', send:'Отправить', reminder:'Напомнить'
 });
 export const TASK_ACTION_LABELS = WORKFLOW_TASK_ACTIONS;

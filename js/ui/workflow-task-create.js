@@ -3,7 +3,7 @@ const icon=name=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const active=row=>!row.deletedAt&&!row.archivedAt&&!row.archived;
 const childName=row=>[row.lastName,row.firstName].filter(Boolean).join(' ')||'Без имени';
 const localDay=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-const quickActions=[['generate','Сгенерировать'],['capture','Переснять'],['redo','Переделать'],['contact_teacher','Уточнить у учителя'],['send','Отправить'],['reminder','Напомнить']];
+const quickActions=[['custom','Индивидуальное'],['generate','Сгенерировать'],['capture','Переснять'],['redo','Переделать'],['contact_teacher','Уточнить у учителя'],['send','Отправить'],['reminder','Напомнить']];
 
 export function workflowCreationTarget(data,selection){
  const project=(data.projects||[]).find(p=>p.id===selection.projectId&&active(p));if(!project)return null;

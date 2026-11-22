@@ -1,9 +1,9 @@
-import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=289';
-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=289';
-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=289';
-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=289';
-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=289';
-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=289';
+import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=290';
+import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=290';
+import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=290';
+import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=290';
+import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=290';
+import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=290';
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
 export function createWorkflowWorkspace({getData,account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {

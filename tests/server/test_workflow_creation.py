@@ -21,6 +21,6 @@ class WorkflowCreationTest(unittest.TestCase):
   self.status(400,lambda:self.req(self.update({'entityKind':'student','classId':'g'},serviceId='wolf')))
   self.status(403,lambda:self.req(self.child_task(),uid='p'));self.status(403,lambda:self.req(self.child_task(),uid='v'))
  def test_reminders_and_sending_are_task_records_not_messages(self):
-  for action in ['reminder','send','contact_teacher']:
+  for action in ['reminder','send','contact_teacher','custom']:
    body=self.child_task(action);body['serviceId']='task_'+action;self.assertTrue(self.req(body)['saved'])
-  self.assertEqual(self.c.execute('SELECT count(*) FROM workflow_task_plans').fetchone()[0],3);self.assertEqual(self.c.execute('SELECT count(*) FROM sync_records').fetchone()[0],3)
+  self.assertEqual(self.c.execute('SELECT count(*) FROM workflow_task_plans').fetchone()[0],4);self.assertEqual(self.c.execute('SELECT count(*) FROM sync_records').fetchone()[0],3)

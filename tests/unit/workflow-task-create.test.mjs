@@ -17,3 +17,9 @@ test('independent child reminders coexist and complete separately without old st
  const completed=deriveWorkflowTasks(data,{role:'admin',overrides:[{...plans[0],completedAt:'2026-11-22T10:00:00Z'},plans[1]]});assert.equal(completed.length,1);assert.equal(completed[0].serviceId,'task_two');
  assert.equal(deriveWorkflowTasks({...data,projects:[{id:'other'}]},{role:'admin',overrides:plans}).length,0);
 });
+
+test('individual task remains a distinct action with its own description',()=>{
+ const data={projects:[{id:'p',name:'Школа'}],classes:[],students:[]};
+ const tasks=deriveWorkflowTasks(data,{overrides:[{scopeKey:'project_p::task_custom',studentId:'project_p',serviceId:'task_custom',entityKind:'project',projectId:'p',requestedAction:'custom',title:'Подготовить индивидуальную рамку',reason:'Согласовать цвет с родителем'}]});
+ assert.equal(tasks[0].action,'custom');assert.equal(tasks[0].title,'Подготовить индивидуальную рамку');assert.equal(tasks[0].reason,'Согласовать цвет с родителем');
+});
