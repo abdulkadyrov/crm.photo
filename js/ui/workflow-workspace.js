@@ -1,9 +1,9 @@
-import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=290';
-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=290';
-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=290';
-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=290';
-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=290';
-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=290';
+import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=291';
+import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=291';
+import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=291';
+import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=291';
+import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=291';
+import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=291';
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
 export function createWorkflowWorkspace({getData,account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
@@ -81,7 +81,7 @@ export function createWorkflowWorkspace({getData,account,enabled,getRoute,naviga
   let panel;panel=openWorkflowScopePanel({scope:normalized,label:student?[student.lastName,student.firstName].filter(Boolean).join(' '):klass?.name||project.name,positions,users:(enabled?snapshot.users||[]:data.operators||[]).filter(u=>!enabled||u.projectIds?.includes(projectId)),canPay:viewer().role==='admin',mountHistory,onClose:()=>{if(editor===panel.host)editor=null;updateProjection();},onSave:async({mode,positions:chosen,values,onProgress})=>{
     const requestedAt=new Date().toISOString();
     const common={requestedAction:values.requestedAction,...(values.dueAt?{dueAt:values.dueAt}:{}),...(values.assigneeId?{assigneeId:values.assigneeId}:{}),...(values.reason?{reason:values.reason}:{}),requestedAt,completedAt:'',snoozedUntil:''};
-    const writes=mode==='project'?[{scope:{projectId,studentId:'project_'+projectId,serviceId:'task_'+crypto.randomUUID()},patch:{...common,entityKind:'project',classId:scope.classId||'',title:values.title.trim()}}]:chosen.map(position=>({scope:position,patch:{...common,previousSourceId:position.sourceId||'',requestedRevision:position.version||'source'}}));
+    const writes=['project','student'].includes(mode)?[{scope:{projectId,studentId:mode==='student'?scope.studentId:'project_'+projectId,serviceId:'task_'+crypto.randomUUID()},patch:{...common,entityKind:mode==='student'?'student':'project',classId:klass?.id||scope.classId||'',title:values.title.trim()}}]:chosen.map(position=>({scope:position,patch:{...common,previousSourceId:position.sourceId||'',requestedRevision:position.version||'source'}}));
     let done=0;for(const write of writes){await ensureStore().update(write.scope,write.patch);snapshot=store.snapshot();done++;onProgress(done,writes.length);if(['error','auth','conflict'].includes(snapshot.status))throw new Error(snapshot.error||'Проверьте доступ и изменения с другого устройства. Уже сохранённые задачи повторно вводить не нужно.');}
     notify(snapshot.pending?'Задачи сохранены на устройстве · ожидают облака':`Назначено задач: ${done}`);
    }});editor=panel.host;
