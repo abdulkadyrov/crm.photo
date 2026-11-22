@@ -1,5 +1,5 @@
-import {comparePortraitIdentity} from '../services/portrait-identity.js?v=314';
-export function mountPortraitIdentityPanel({host,loadOriginals,loadResult,onResult=()=>{}}){
+import {comparePortraitIdentity} from '../services/portrait-identity.js?v=316';
+export function mountPortraitIdentityPanel({host,loadOriginals,loadResult,onResult=()=>{},cachedResult=null}){
  const controller=new AbortController(),{signal}=controller;
  const section=document.createElement('section');section.className='portrait-identity-panel';section.setAttribute('aria-label','Сходство с оригиналами');
  section.innerHTML='<div class="portrait-identity-heading"><strong>Сходство с оригиналами</strong><button type="button" class="secondary-button compact">Проверить</button></div><p role="status" aria-live="polite">Сравнение лиц выполняется на этом устройстве.</p><details hidden><summary>Подробности проверки</summary><div></div></details>';
@@ -24,6 +24,7 @@ export function mountPortraitIdentityPanel({host,loadOriginals,loadResult,onResu
  };
  button.onclick=run;
  // Defer until the viewer has painted; never block opening the result.
- const timer=setTimeout(run,350);
+ if(cachedResult){status.textContent=Number.isFinite(cachedResult.similarity)?`Сходство: ${cachedResult.similarity}% · сохранённая проверка`:cachedResult.explanation;button.textContent='Перепроверить';}
+ const timer=cachedResult?null:setTimeout(run,350);
  return ()=>{clearTimeout(timer);controller.abort();section.remove();};
 }

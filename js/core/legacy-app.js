@@ -1,28 +1,29 @@
-import {createPortraitCheckQueue} from '../services/portrait-check-queue.js?v=314';
-import {comparePortraitIdentity} from '../services/portrait-identity.js?v=314';
-import {savePortraitScore,readPortraitScore,readPortraitScoreEntry,portraitScoreRevision} from '../services/portrait-score-store.js?v=314';
-import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=314';
-import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=314';
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=314';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=314';
+import {stampPortraitInput,portraitWireKey} from '../services/portrait-input-key.js?v=316';
+import {createPortraitCheckQueue} from '../services/portrait-check-queue.js?v=316';
+import {comparePortraitIdentity} from '../services/portrait-identity.js?v=316';
+import {savePortraitScore,readPortraitScore,readPortraitScoreEntry,portraitScoreRevision} from '../services/portrait-score-store.js?v=316';
+import {mountPortraitIdentityPanel} from '../ui/portrait-identity-panel.js?v=316';
+import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=316';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=316';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=316';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=314";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=316";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=314";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=314";
+import {createNavigationHistory} from "../services/navigation-history.js?v=316";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=316";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=314";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=316";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=314";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=314";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=314";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=316";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=316";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=316";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=314";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=314";
+import { nextInSequence } from "../services/sequence-navigation.js?v=316";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=316";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -30,24 +31,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=314";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=316";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=314";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=314";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=316";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=316";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=314";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=316";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=314";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=316";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=314";
-import { printCodeLayout } from "../services/print-code-layout.js?v=314";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=316";
+import { printCodeLayout } from "../services/print-code-layout.js?v=316";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -70,12 +71,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=314";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=316";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=314";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=316";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -577,7 +578,12 @@ function put(storeName, value) {
       }
     } catch (error) { notify(error.message); return Promise.reject(error); }
   }
-  return withDatabaseReconnect(() => recordSync.put(storeName,value,state.data[storeName]?.find(row=>row.id===value.id)));
+  return withDatabaseReconnect(async () => {
+    if(['finalWorks','media'].includes(storeName))value=await stampPortraitInput(value,storeName);
+    const saved=await recordSync.put(storeName,value,state.data[storeName]?.find(row=>row.id===value.id));
+    if(['finalWorks','media'].includes(storeName))setTimeout(async()=>{await refreshData();scheduleRosterPortraitChecks([value.studentId]);},0);
+    return saved;
+  });
 }
 
 function del(storeName, id) {
@@ -611,7 +617,14 @@ async function refreshData() {
   STORE_NAMES.forEach((name, index) => {
     state.data[name] = entries[index];
   });
+  const portraitMeta=new Map((await getAll('syncMeta')).filter(m=>m.id?.startsWith('entity:')).map(m=>[m.id,m.record]));
+  const pendingPortraitInputs=new Set((await getAll('syncQueue')).map(q=>q.store+':'+q.rid));
+  for(const kind of ['media','finalWorks'])for(const row of state.data[kind]){const wireKey=portraitWireKey(portraitMeta.get('entity:'+kind+':'+row.id),kind);if(wireKey&&!pendingPortraitInputs.has(kind+':'+row.id))row.portraitInputHash=wireKey;else row.portraitInputHash ||= wireKey;}
   workflowTasksWorkspace().refresh();
+  const nextInputs=new Map(),changedPortraitStudents=new Set();
+  for(const work of state.data.finalWorks){const originals=state.data.media.filter(m=>m.studentId===work.studentId&&!isFinalResultMedia(m)&&['photo','image'].includes(m.type));const signature=portraitScoreRevision(work,originals);nextInputs.set(work.id,signature);if(portraitInputsSeen&&portraitInputsSeen.get(work.id)!==signature)changedPortraitStudents.add(work.studentId);}
+  portraitInputsSeen=nextInputs;
+  if(changedPortraitStudents.size)setTimeout(()=>scheduleRosterPortraitChecks([...changedPortraitStudents]),0);
 }
 
 function normalizeCurrentOperator() {
@@ -4759,11 +4772,12 @@ function assignOperatorFields(record, operatorId, media = false) {
   return next;
 }
 
+let portraitInputsSeen=null;
 const portraitRosterQueue=createPortraitCheckQueue();
-function scheduleRosterPortraitChecks(){
+function scheduleRosterPortraitChecks(requestedIds=[]){
  const nodes=[...view.querySelectorAll('[data-portrait-score]')],account=cloudAccount()?.id||'local';
- if(!nodes.length){portraitRosterQueue.stop();return;}
- const ids=nodes.map(n=>n.dataset.portraitScore),scope=account+':'+ids.join(',');
+ const ids=[...new Set([...requestedIds,...nodes.map(n=>n.dataset.portraitScore)].filter(Boolean))],scope=account;
+ if(!ids.length)return;
  const paint=(id,text)=>view.querySelectorAll('[data-portrait-score]').forEach(n=>{if(n.dataset.portraitScore===id)n.textContent=text||childPortraitScoreLabel(id);});
  const jobs=[];
  for(const id of ids){
@@ -4772,7 +4786,7 @@ function scheduleRosterPortraitChecks(){
   const latest=new Map();for(const work of works){const prev=latest.get(work.serviceId||work.id);if(!prev||String(work.updatedAt||work.createdAt||'')>String(prev.updatedAt||prev.createdAt||''))latest.set(work.serviceId||work.id,work);}
   for(const work of latest.values()){
    const cached=readPortraitScoreEntry(localStorage,account,work,originals);
-   if(cached&&(Number.isFinite(cached.similarity)||Date.now()-Date.parse(cached.checkedAt)<600000)){if(cached.similarity===null)paint(id,cached.explanation?'Не удалось сравнить':'Нет оригиналов');continue;}
+   if(cached){if(cached.similarity===null)paint(id,cached.explanation?'Не удалось сравнить':'Нет оригиналов');continue;}
    paint(id,'Сходство: в очереди');
    jobs.push({key:portraitScoreRevision(work,originals),onError:error=>paint(id,navigator.onLine?'Проверка: повтор позже':'Проверка: нет сети'),run:async signal=>{
     if(signal.aborted||account!==(cloudAccount()?.id||'local'))return;
@@ -8051,7 +8065,7 @@ async function showFinalWorkViewer(workId, { initialView = "result", trigger = d
   });
   document.body.append(panel);
   disposeHistory = mountDialogHistory({ id: `final-work-${actualWork.id}`, panel, restore: removePanel });
-  disposeIdentity=mountPortraitIdentityPanel({host:panel,
+  disposeIdentity=mountPortraitIdentityPanel({host:panel,cachedResult:readPortraitScoreEntry(localStorage,cloudAccount()?.id||'local',actualWork,mediaByStudent(actualWork.studentId).filter(m=>!isFinalResultMedia(m)&&['photo','image'].includes(m.type))),
     onResult:value=>{
       const originals=mediaByStudent(actualWork.studentId).filter(item=>!isFinalResultMedia(item)&&['photo','image'].includes(item.type));
       savePortraitScore(localStorage,cloudAccount()?.id||'local',finalWorkById(actualWork.id)||actualWork,originals,value);

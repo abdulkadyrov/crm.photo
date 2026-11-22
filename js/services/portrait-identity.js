@@ -36,6 +36,7 @@ async function face(blob,signal,multiple=false){
   const scale=Math.min(1,1400/Math.max(image.naturalWidth,image.naturalHeight));
   const canvas=document.createElement('canvas');canvas.width=Math.round(image.naturalWidth*scale);canvas.height=Math.round(image.naturalHeight*scale);
   canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);await pause();abort(signal);
+  // withFaceLandmarks aligns each detected face; withFaceDescriptors extracts the aligned face crop, not the scene.
   const found=await api.detectAllFaces(canvas,new api.TinyFaceDetectorOptions({inputSize:608,scoreThreshold:.6})).withFaceLandmarks(true).withFaceDescriptors();
   abort(signal);
   if(!found.length)throw new Error('Лицо не найдено: нужен чёткий снимок анфас');
