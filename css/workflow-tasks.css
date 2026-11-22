@@ -98,3 +98,5 @@
 .wt-row-portrait .wt-row-status{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;min-width:0;grid-column:auto;grid-row:auto}.wt-row-portrait .wt-row-status small{width:100%;max-width:none;margin:0}.wt-row-portrait .wt-badge{order:0}.wt-row-portrait .wt-row-status small{order:1}
 
 .wt-task-photo{position:relative}.wt-task-photo img.wt-service-inset{position:absolute;right:3px;bottom:3px;width:30px;height:40px;border:2px solid var(--card,#fff);border-radius:5px;object-fit:cover;box-shadow:0 2px 5px #0003}
+
+.wt-row-portrait .wt-row-status{padding:0;max-width:none}.wt-row-portrait .wt-row-tools{max-width:none;width:100%;padding:0;align-self:stretch;min-height:32px}.wt-row-portrait .wt-row-buttons{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}.wt-row-portrait .wt-row-buttons .wt-badge{margin:0;max-width:none;order:0}.wt-row-portrait .wt-task-content{width:100%;max-width:none}.wt-row-portrait .wt-row-status small{overflow:visible}
