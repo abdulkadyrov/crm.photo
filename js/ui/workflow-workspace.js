@@ -1,9 +1,9 @@
-import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=292';
-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=292';
-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=292';
-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=292';
-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=292';
-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=292';
+import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=293';
+import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=293';
+import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=293';
+import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=293';
+import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=293';
+import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=293';
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
 export function createWorkflowWorkspace({getData,account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
@@ -92,8 +92,9 @@ export function createWorkflowWorkspace({getData,account,enabled,getRoute,naviga
   for(const [selector,kind,attr]of [['article[data-open-project]','project','openProject'],['article[data-open-class]','class','openClass'],['article[data-open-student]','student','openStudent']]){
    for(const card of document.querySelectorAll('#view '+selector)){
     const id=card.dataset[attr],scope={[kind+'Id']:id};const rows=cached.filter(t=>kind==='project'?t.projectId===id:kind==='class'?t.classId===id:t.studentId===id);
-    const existing=card.querySelector('[data-workflow-scope]');if(existing){const counter=existing.querySelector('[data-scope-tasks]'),label=`Задачи · ${rows.length}`;if(counter.textContent!==label)counter.textContent=label;if(!canManage)existing.querySelector('[data-scope-add]')?.remove();continue;}
+    const existing=card.querySelector('[data-workflow-scope]');if(existing){const counter=existing.querySelector('[data-scope-tasks]'),label=`Задачи · ${rows.length}`;if(kind==='student'){counter.textContent=String(rows.length);counter.hidden=!rows.length;counter.setAttribute('aria-label',label);}else if(counter.textContent!==label)counter.textContent=label;if(!canManage)existing.querySelector('[data-scope-add]')?.remove();continue;}
     const tools=document.createElement('div');tools.className='workflow-scope-actions';tools.dataset.workflowScope='';tools.innerHTML=`<button type="button" class="workflow-scope-link" data-scope-tasks>Задачи · ${rows.length}</button>${canManage?'<button type="button" class="workflow-scope-add" data-scope-add>+ Задача</button>':''}`;
+    if(kind==='student'){const counter=tools.querySelector('[data-scope-tasks]');counter.textContent=String(rows.length);counter.hidden=!rows.length;counter.setAttribute('aria-label',`Задачи · ${rows.length}`);}
     tools.querySelector('[data-scope-tasks]').onclick=e=>{e.stopPropagation();openScopeTasks(scope);};tools.querySelector('[data-scope-add]')?.addEventListener('click',e=>{e.stopPropagation();void assignScope(scope);});
     const target=card.querySelector(kind==='project'?'.list-copy':kind==='class'?'.class-main':'.student-identity')||card;target.append(tools);
    }

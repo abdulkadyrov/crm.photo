@@ -60,3 +60,25 @@
 .wt-action-picker .wt-choice-option input:checked+span::after{content:'';width:6px;height:11px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg);margin-right:4px;flex:none}
 .wt-action-picker .wt-choice-option:hover span{background:var(--primary-soft,#eaf0ff)}
 .wt-action-picker summary:focus-visible{outline:2px solid var(--primary,#245ee9);outline-offset:-3px}
+
+
+/* Compact child cards keep every action in place. */
+.class-roster .student-card{min-height:0;padding:12px 8px 5px;border-radius:12px}
+.class-roster .student-card .student-card-grid{grid-template-columns:28px minmax(0,1fr) 26px;gap:6px;align-items:start}
+.class-roster .student-card .student-thumb{width:28px;height:28px;min-width:28px;min-height:28px;max-width:28px;max-height:28px}
+.class-roster .student-card .student-copy h3{font-size:13px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.class-roster .student-card .card-counts{font-size:10px;line-height:12px;gap:6px;margin:0}
+.class-roster .student-card .student-inline-note{display:block;min-height:0;height:16px;max-width:100%;width:100%;padding:1px 0;margin:0;font-size:11px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.class-roster .student-card .student-menu>summary{width:26px;height:28px;min-height:28px;padding:0;display:grid;place-items:center}
+.class-roster .student-card .compact-card-details>summary{min-height:20px;font-size:10px;line-height:16px;gap:3px;max-width:calc(100% - 64px)}
+.class-roster .student-card .compact-card-details>summary::after{width:6px;height:6px}
+.class-roster .student-card .workflow-scope-actions{position:absolute;right:7px;bottom:4px;display:flex;flex-direction:row-reverse;gap:5px;margin:0;align-items:center}
+.class-roster .student-card .workflow-scope-add{min-height:24px;padding:3px 5px;font-size:10px;line-height:16px;border-radius:7px}
+.class-roster .student-card .workflow-scope-link{width:24px;height:24px;min-height:24px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:var(--primary,#245ee9);color:#fff;font-size:11px;font-weight:700;line-height:1}
+.class-roster .student-card .workflow-scope-link[hidden]{display:none!important}
+.class-roster .student-card:has(.compact-card-details[open]){padding-bottom:32px}
+.class-roster .student-card .student-identity{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:5px;row-gap:0;min-width:0}
+.class-roster .student-card .student-copy{grid-column:1/-1}
+.class-roster .student-card .card-counts{grid-column:1;font-size:9px;line-height:16px;gap:5px}
+.class-roster .student-card .student-inline-note{grid-column:2;font-size:10px}
+.class-roster .student-card .compact-card-details{grid-column:1/-1}
