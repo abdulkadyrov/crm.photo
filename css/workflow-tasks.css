@@ -73,7 +73,7 @@
 .class-roster .student-card .compact-card-details>summary{min-height:20px;font-size:10px;line-height:16px;gap:3px;max-width:calc(100% - 64px)}
 .class-roster .student-card .compact-card-details>summary::after{width:6px;height:6px}
 .class-roster .student-card .workflow-scope-actions{position:absolute;right:7px;bottom:4px;display:flex;flex-direction:row-reverse;gap:5px;margin:0;align-items:center}
-.class-roster .student-card .workflow-scope-add{min-height:24px;padding:3px 5px;font-size:10px;line-height:16px;border-radius:7px}
+.class-roster .student-card .workflow-scope-actions .workflow-scope-add{min-height:24px;padding:3px 5px;font-size:10px;line-height:16px;border-radius:7px}
 .class-roster .student-card .workflow-scope-link{width:24px;height:24px;min-height:24px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:var(--primary,#245ee9);color:#fff;font-size:11px;font-weight:700;line-height:1}
 .class-roster .student-card .workflow-scope-link[hidden]{display:none!important}
 .class-roster .student-card:has(.compact-card-details[open]){padding-bottom:32px}

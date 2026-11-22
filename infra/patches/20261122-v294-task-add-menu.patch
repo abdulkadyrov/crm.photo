@@ -1,0 +1,388 @@
+--- a/index.html
++++ b/index.html
+@@ -6,8 +6,8 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=293" />
+-    <link rel="stylesheet" href="./css/workflow-tasks.css?v=293" />
++    <link rel="stylesheet" href="./styles.css?v=294" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css?v=294" />
+   </head>
+   <body>
+     <div id="app" class="app-shell">
+@@ -68,6 +68,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=293"></script>
++    <script type="module" src="./js/core/app.js?v=294"></script>
+   </body>
+ </html>
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v293";
++const CACHE_VERSION = "v294";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -74,48 +74,48 @@
+   "./assets/reference-poses/girl-interview-desk.jpg"
+ ];
+ const APP_SHELL = [
+-  "./js/services/student-view-stability.js?v=293",
+-  "./js/services/workflow-task-target.js?v=293",
+-  "./js/ui/workflow-task-create.js?v=293",
+-  "./js/ui/task-photo-period.js?v=293",
+-  "./js/ui/workflow-scope-panel.js?v=293",
+-  "./js/ui/workflow-choice.js?v=293",
+-  "./css/workflow-tasks.css?v=293",
+-  "./js/ui/workflow-workspace.js?v=293",
+-  "./js/ui/workflow-tasks.js?v=293",
+-  "./js/services/workflow-task-store.js?v=293",
+-  "./js/services/workflow-tasks.js?v=293",
+-  "./js/ui/scan-photo-viewer.js?v=293",
+-  "./js/ui/group-scan-panel.js?v=293",
++  "./js/services/student-view-stability.js?v=294",
++  "./js/services/workflow-task-target.js?v=294",
++  "./js/ui/workflow-task-create.js?v=294",
++  "./js/ui/task-photo-period.js?v=294",
++  "./js/ui/workflow-scope-panel.js?v=294",
++  "./js/ui/workflow-choice.js?v=294",
++  "./css/workflow-tasks.css?v=294",
++  "./js/ui/workflow-workspace.js?v=294",
++  "./js/ui/workflow-tasks.js?v=294",
++  "./js/services/workflow-task-store.js?v=294",
++  "./js/services/workflow-tasks.js?v=294",
++  "./js/ui/scan-photo-viewer.js?v=294",
++  "./js/ui/group-scan-panel.js?v=294",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+   "./js/services/camera-capture.js",
+   "./js/services/ar-publication-state.js",
+-  "./js/services/service-positions.js?v=293",
+-  "./js/services/individual-order.js?v=293",
++  "./js/services/service-positions.js?v=294",
++  "./js/services/individual-order.js?v=294",
+   "./js/services/sequence-navigation.js",
+-  "./js/services/sequence-navigation.js?v=293",
++  "./js/services/sequence-navigation.js?v=294",
+   "./js/services/card-summary.js",
+-  "./js/services/card-summary.js?v=293",
++  "./js/services/card-summary.js?v=294",
+   "./js/services/blob-zip.js",
+   "./js/services/student-directory.js",
+   "./js/services/camera-options.js",
+-  "./js/services/camera-options.js?v=293",
++  "./js/services/camera-options.js?v=294",
+   "./assets/ui/student-avatar.svg",
+   "./js/services/school-demo.js",
+   "./js/services/local-portraits.js",
+   "./js/ui/local-portraits-panel.js",
+   "./js/services/record-sync.js",
+-  "./js/services/record-sync.js?v=293",
+-  "./js/services/deferred-final-work.js?v=293",
++  "./js/services/record-sync.js?v=294",
++  "./js/services/deferred-final-work.js?v=294",
+   "./js/services/sync-panel-state.js",
+   "./js/services/sync-contents.js",
+   "./js/services/sync-project-progress.js",
+   "./js/services/storage-browser.js",
+   "./js/services/sync-blob-cache.js",
+   "./js/services/sync-codec.js",
+-  "./js/services/sync-codec.js?v=293",
++  "./js/services/sync-codec.js?v=294",
+   "./vendor/noble-hashes/sha2.js",
+   "./vendor/noble-hashes/_md.js",
+   "./vendor/noble-hashes/_u64.js",
+@@ -123,35 +123,35 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=293",
++  "./styles.css?v=294",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=293",
+-  "./js/core/bootstrap.js",
+-  "./js/services/card-selection.js?v=293",
+-  "./js/services/navigation-history.js?v=293",
++  "./js/core/app.js?v=294",
++  "./js/core/bootstrap.js",
++  "./js/services/card-selection.js?v=294",
++  "./js/services/navigation-history.js?v=294",
+   "./js/services/roster-filters.js",
+-  "./js/services/roster-filters.js?v=293",
+-  "./js/ui/scan-work-picker.js?v=293",
++  "./js/services/roster-filters.js?v=294",
++  "./js/ui/scan-work-picker.js?v=294",
+   "./js/services/student-comments.js",
+-  "./js/services/student-comments.js?v=293",
++  "./js/services/student-comments.js?v=294",
+   "./js/core/legacy-app.js",
+   "./js/services/image-delivery.js",
+-  "./js/services/image-delivery.js?v=293",
++  "./js/services/image-delivery.js?v=294",
+   "./js/ui/student-quick-actions.js",
+-  "./js/ui/student-quick-actions.js?v=293",
+-  "./js/services/group-scan.js?v=293",
++  "./js/ui/student-quick-actions.js?v=294",
++  "./js/services/group-scan.js?v=294",
+
+   "./js/services/print-selection.js",
+-  "./js/services/print-selection.js?v=293",
+-  "./js/ui/project-print-picker.js?v=293",
++  "./js/services/print-selection.js?v=294",
++  "./js/ui/project-print-picker.js?v=294",
+   "./js/services/student-stage-icons.js",
+-  "./js/services/student-stage-icons.js?v=293",
++  "./js/services/student-stage-icons.js?v=294",
+   "./js/ui/scan-work-picker.js",
+   "./js/services/fulfillment-sorting.js",
+-  "./js/ui/fulfillment-panel.js?v=293",
++  "./js/ui/fulfillment-panel.js?v=294",
+   "./js/services/print-order.js",
+-  "./js/services/print-order.js?v=293",
++  "./js/services/print-order.js?v=294",
+
+   "./js/services/fulfillment-cards.js",
+   "./js/services/group-scan.js",
+@@ -167,11 +167,11 @@
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/services/fulfillment.js?v=293",
++  "./js/services/fulfillment.js?v=294",
+
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=293",
++  "./js/core/legacy-app.js?v=294",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
+@@ -194,10 +194,10 @@
+   "./js/services/catalog-themes.js",
+   "./js/services/shooting-roster.js",
+   "./js/ui/photo-camera.js",
+-  "./js/ui/photo-camera.js?v=293",
++  "./js/ui/photo-camera.js?v=294",
+   "./js/services/camera-framing.js",
+   "./js/services/teacher-broadcast.js",
+-  "./js/services/teacher-broadcast.js?v=293",
++  "./js/services/teacher-broadcast.js?v=294",
+   "./js/services/class-links-transfer.js",
+   "./js/services/class-link-cache.js",
+   "./assets/class-photo/class-photo-a4.png",
+@@ -239,7 +239,7 @@
+   "./js/modules/checklist.js",
+   "./js/modules/public-catalog.js",
+   "./js/services/cloud-workspace.js",
+-  "./js/services/parent-orders.js?v=293",
++  "./js/services/parent-orders.js?v=294",
+   "./js/services/parent-order-model.js",
+   "./js/services/dialog-return.js",
+   "./js/services/qr-service.js",
+@@ -251,12 +251,12 @@
+   "./js/services/export-service.js",
+   "./js/services/album-service.js",
+   "./js/services/finalwork-service.js",
+-  "./js/services/finalwork-service.js?v=293",
++  "./js/services/finalwork-service.js?v=294",
+   "./js/services/archive-service.js",
+   "./js/services/backup-service.js",
+   "./js/services/conflict-service.js",
+   "./js/services/export-filter-service.js",
+-  "./js/services/export-filter-service.js?v=293",
++  "./js/services/export-filter-service.js?v=294",
+   "./js/services/file-system-service.js",
+   "./js/services/integrity-service.js",
+   "./js/services/import-preflight-service.js",
+@@ -287,7 +287,7 @@
+   "./vendor/jsQR.js",
+   "./vendor/zxing.min.js",
+   "./js/services/barcode-reader.js",
+-  "./js/services/barcode-reader.js?v=293",
++  "./js/services/barcode-reader.js?v=294",
+   "./vendor/JsBarcode.code128.min.js",
+   "./js/services/print-code-layout.js",
+   "./js/services/portrait-identity-policy.js",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+
+-  await import("./legacy-app.js?v=293");
++  await import("./legacy-app.js?v=294");
+ }
+
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,42 +1,42 @@
+-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=293';
+-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=293';
++import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=294';
++import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=294';
+ let workflowWorkspace=null;
+ import {fulfillmentUnitPrice} from '../services/fulfillment-pricing.js';
+ import {serviceFilterChoices} from '../services/service-filter.js';
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=293';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=293';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=293';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=294';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=294';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=294';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=293";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=293";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=293";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=293";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=293";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=293";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=293";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=293";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=293";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=293";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=293";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=293";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=294";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=294";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=294";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=294";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=294";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=294";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=294";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=294";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=294";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=294";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=294";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=294";
+ import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
+ let printAssetCache, printAssetCacheKey;
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=293";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=293";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=294";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=294";
+ import { groupedPrintPages } from "../services/print-group-pages.js";
+ import { arPublicationState } from "../services/ar-publication-state.js";
+-import {createNavigationHistory} from "../services/navigation-history.js?v=293";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=293";
++import {createNavigationHistory} from "../services/navigation-history.js?v=294";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=294";
+ const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=293";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=294";
+ import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
+ let classLinkCache;
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=293";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=293";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=293";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=294";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=294";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=294";
+ const scopeFoldState = new Map();
+-import { nextInSequence } from "../services/sequence-navigation.js?v=293";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=293";
++import { nextInSequence } from "../services/sequence-navigation.js?v=294";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=294";
+ import { createBlobZip } from "../services/blob-zip.js";
+ import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
+ const studentDirectoryQueries = new Map();
+@@ -44,24 +44,24 @@
+ import { localDemoMode } from "../services/cloud-workspace.js";
+ import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
+ import { createPortraitPanel } from "../ui/local-portraits-panel.js";
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=293";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=294";
+ import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
+ import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=293";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=293";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=294";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=294";
+ import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=293";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=294";
+ import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
+ import { appendPhotoNames } from "../services/roster-photo-parser.js";
+ import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
+ import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=293";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=294";
+ import { captureDialogReturn } from "../services/dialog-return.js";
+ import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=293";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=294";
+ import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=293";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=293";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=294";
++import { printCodeLayout } from "../services/print-code-layout.js?v=294";
+ import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
+ import {
+   DIRECTORY_ACCESS_STATUS,
+@@ -84,12 +84,12 @@
+ } from "../data/kindergarten-ai-video-services.js";
+ import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
+ import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=293";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=294";
+ import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
+ import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
+ import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
+ import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=293";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=294";
+ import {
+   defaultBulkTransferResolution,
+   defaultTransferResolution,
+--- a/js/ui/workflow-workspace.js
++++ b/js/ui/workflow-workspace.js
+@@ -1,10 +1,10 @@
+-import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=293';
+-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=293';
+-import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=293';
+-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=293';
+-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=293';
+-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=293';
+-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=293';
++import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=294';
++import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=294';
++import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=294';
++import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=294';
++import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=294';
++import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=294';
++import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=294';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ const bellIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
+ export function createWorkflowWorkspace({getData,account,enabled,getRoute,navigate,setShell,openTask,notify,mountHistory,readSessions=()=>[]}) {
+@@ -95,11 +95,11 @@
+   for(const [selector,kind,attr]of [['article[data-open-project]','project','openProject'],['article[data-open-class]','class','openClass'],['article[data-open-student]','student','openStudent']]){
+    for(const card of document.querySelectorAll('#view '+selector)){
+     const id=card.dataset[attr],scope={[kind+'Id']:id};const rows=cached.filter(t=>kind==='project'?t.projectId===id:kind==='class'?t.classId===id:t.studentId===id);
+-    const existing=card.querySelector('[data-workflow-scope]');if(existing){const counter=existing.querySelector('[data-scope-tasks]'),label=`Задачи · ${rows.length}`;if(kind==='student'){counter.textContent=String(rows.length);counter.hidden=!rows.length;counter.setAttribute('aria-label',label);}else if(counter.textContent!==label)counter.textContent=label;if(!canManage)existing.querySelector('[data-scope-add]')?.remove();continue;}
++    const existing=card.querySelector('[data-workflow-scope]');if(existing){const counter=existing.querySelector('[data-scope-tasks]'),label=`Задачи · ${rows.length}`;if(kind==='student'){counter.textContent=String(rows.length);counter.hidden=!rows.length;counter.setAttribute('aria-label',label);}else if(counter.textContent!==label)counter.textContent=label;if(!canManage)card.querySelector('[data-scope-add]')?.remove();continue;}
+     const tools=document.createElement('div');tools.className='workflow-scope-actions';tools.dataset.workflowScope='';tools.innerHTML=`<button type="button" class="workflow-scope-link" data-scope-tasks>Задачи · ${rows.length}</button>${canManage?'<button type="button" class="workflow-scope-add" data-scope-add>+ Задача</button>':''}`;
+     if(kind==='student'){const counter=tools.querySelector('[data-scope-tasks]');counter.textContent=String(rows.length);counter.hidden=!rows.length;counter.setAttribute('aria-label',`Задачи · ${rows.length}`);}
+     tools.querySelector('[data-scope-tasks]').onclick=e=>{e.stopPropagation();openScopeTasks(scope);};tools.querySelector('[data-scope-add]')?.addEventListener('click',e=>{e.stopPropagation();void assignScope(scope);});
+-    const target=card.querySelector(kind==='project'?'.list-copy':kind==='class'?'.class-main':'.student-identity')||card;target.append(tools);
++    const target=card.querySelector(kind==='project'?'.list-copy':kind==='class'?'.class-main':'.student-identity')||card;target.append(tools);if(kind==='student'){const menu=card.querySelector('.student-menu .menu-panel'),add=tools.querySelector('[data-scope-add]');if(menu&&add)menu.prepend(add);}
+    }
+   }
+  }
+--- a/css/workflow-tasks.css
++++ b/css/workflow-tasks.css
+@@ -73,7 +73,7 @@
+ .class-roster .student-card .compact-card-details>summary{min-height:20px;font-size:10px;line-height:16px;gap:3px;max-width:calc(100% - 64px)}
+ .class-roster .student-card .compact-card-details>summary::after{width:6px;height:6px}
+ .class-roster .student-card .workflow-scope-actions{position:absolute;right:7px;bottom:4px;display:flex;flex-direction:row-reverse;gap:5px;margin:0;align-items:center}
+-.class-roster .student-card .workflow-scope-add{min-height:24px;padding:3px 5px;font-size:10px;line-height:16px;border-radius:7px}
++.class-roster .student-card .workflow-scope-actions .workflow-scope-add{min-height:24px;padding:3px 5px;font-size:10px;line-height:16px;border-radius:7px}
+ .class-roster .student-card .workflow-scope-link{width:24px;height:24px;min-height:24px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:var(--primary,#245ee9);color:#fff;font-size:11px;font-weight:700;line-height:1}
+ .class-roster .student-card .workflow-scope-link[hidden]{display:none!important}
+ .class-roster .student-card:has(.compact-card-details[open]){padding-bottom:32px}
