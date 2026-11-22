@@ -15,7 +15,7 @@ test('task targets open the exact project, group or child without leaking anothe
 });
 test('target navigation has its own explicit control and does not open task editing',()=>{
  const tasks=[{id:'t',entityKind:'student',projectId:'p',studentId:'s',classId:'g',projectName:'Школа',className:'3а',studentName:'Ребёнок',serviceName:'Напомнить',action:'reminder',title:'Уточнить имя'}];
- const html=renderWorkflowTasks({tasks});assert.match(html,/data-wt-target="t"/);assert.match(html,/Открыть ребёнка/);assert.match(html,/data-wt-open="t"/);
+ const html=renderWorkflowTasks({tasks});assert.match(html,/data-wt-target="t"/);assert.match(html,/Открыть ребёнка/);assert.doesNotMatch(html,/data-wt-open="t"/);
  let click;const calls=[];const root={contains:()=>true,addEventListener:(name,fn)=>{if(name==='click')click=fn;},removeEventListener(){}};
  bindWorkflowTasks(root,{onTarget:id=>calls.push(['target',id]),onOpen:id=>calls.push(['task',id]),onEdit:id=>calls.push(['edit',id])});
  const button={dataset:{wtTarget:'t'},hasAttribute:key=>key==='data-wt-target'};click({target:{closest:()=>button}});assert.deepEqual(calls,[['target','t']]);
