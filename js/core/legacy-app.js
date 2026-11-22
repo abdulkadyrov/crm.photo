@@ -1,23 +1,24 @@
-import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=307';
-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=307';
+import {renderStudentStageIcons} from '../services/student-stage-icons.js?v=308';
+import {studentViewRevision,captureStudentView,restoreStudentView} from '../services/student-view-stability.js?v=308';
+import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=308';
 let workflowWorkspace=null;
 import { createPrintAssetCache, printAssetSignature } from "../services/print-asset-cache.js";
 let printAssetCache, printAssetCacheKey;
-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=307";
+import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=308";
 import { groupedPrintPages } from "../services/print-group-pages.js";
 import { arPublicationState } from "../services/ar-publication-state.js";
-import {createNavigationHistory} from "../services/navigation-history.js?v=307";
-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=307";
+import {createNavigationHistory} from "../services/navigation-history.js?v=308";
+import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=308";
 const lastCardSelection=createCardSelection({storage:()=>localStorage,account:()=>cloudAccount()?.id||state.currentOperatorId||"local"});
-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=307";
+import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=308";
 import {createClassLinkCache,currentClassLink} from '../services/class-link-cache.js';
 let classLinkCache;
-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=307";
-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=307";
-import { normalizeStudentName } from "../services/shooting-roster.js?v=307";
+import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=308";
+import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=308";
+import { normalizeStudentName } from "../services/shooting-roster.js?v=308";
 const scopeFoldState = new Map();
-import { nextInSequence } from "../services/sequence-navigation.js?v=307";
-import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=307";
+import { nextInSequence } from "../services/sequence-navigation.js?v=308";
+import { cardSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=308";
 import { createBlobZip } from "../services/blob-zip.js";
 import { searchStudentDirectory, resetDirectoryScroll } from "../services/student-directory.js";
 const studentDirectoryQueries = new Map();
@@ -25,24 +26,24 @@ import { addSchoolDemo } from "../services/school-demo.js";
 import { localDemoMode } from "../services/cloud-workspace.js";
 import { LOCAL_ONLY, mutatePortraitDraft } from "../services/local-portraits.js";
 import { createPortraitPanel } from "../ui/local-portraits-panel.js";
-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=307";
+import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=308";
 import { parseClassLinksTransfer, planClassLinksImport } from "../services/class-links-transfer.js";
 import { CATALOG_THEMES, catalogServiceGender, groupPickerServices, matchesCatalogTheme } from "../services/catalog-themes.js";
-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=307";
-import { openPhotoCamera } from "../ui/photo-camera.js?v=307";
+import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=308";
+import { openPhotoCamera } from "../ui/photo-camera.js?v=308";
 import { createTransferAssetLoader } from "../services/transfer-asset-loader.js";
-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=307";
+import { buildSectionExportSelection } from "../services/export-filter-service.js?v=308";
 import { mountRosterPhotoImport } from "../services/roster-photo-import.js";
 import { appendPhotoNames } from "../services/roster-photo-parser.js";
 import { rosterName, parseRoster, planRoster } from "../services/class-roster.js";
 import { CLASS_PHOTO_SERVICE } from "../data/class-photo-service.js";
-import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=307";
+import { createRecordSync, SYNC_LOCAL_STORES } from "../services/record-sync.js?v=308";
 import { captureDialogReturn } from "../services/dialog-return.js";
 import { incomingOrderState, parentUnitPrice } from "../services/parent-order-model.js";
 import { mountParentOrders, showParentOrders } from "../services/parent-orders.js";
 import { initializeCloud, mountCloud, cloudRequired, cloudAccount, cloudDatabase, canSeeMoney, assertCloudWrite, enqueueCloud, showAdmin, showAccount, showCloud } from "../services/cloud-workspace.js";
-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=307";
-import { printCodeLayout } from "../services/print-code-layout.js?v=307";
+import { decodeCode128ImageData } from "../services/barcode-reader.js?v=308";
+import { printCodeLayout } from "../services/print-code-layout.js?v=308";
 import { withPortraitIdentityPolicy } from "../services/portrait-identity-policy.js";
 import {
   DIRECTORY_ACCESS_STATUS,
@@ -65,12 +66,12 @@ import {
 } from "../data/kindergarten-ai-video-services.js";
 import { GAME_PHOTO_SERVICES } from "../data/game-photo-services.js";
 import { backupWarnings, calculateDataCounts } from "../services/backup-service.js";
-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=307";
+import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=308";
 import { calculatePhotographerWorkOverview } from "../services/photographer-analytics-service.js";
 import { buildCatalogPresentation, normalizeParentPreviewMode } from "../services/catalog-presentation-service.js";
 import { catalogVideoFormat, normalizeServicePrintOrientation } from "../services/catalog-media-service.js";
 import { clampImageZoom, runWithMediaFallback } from "../services/final-work-media-service.js";
-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=307";
+import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=308";
 import {
   defaultBulkTransferResolution,
   defaultTransferResolution,
@@ -1200,6 +1201,7 @@ function navigateContextBack() {
 }
 
 function setShell({ heading, context = APP_NAME, summary = "" }) {
+  document.querySelector('.student-header-stages')?.remove();
   title.textContent = heading;
   screenContext.textContent = context;
   screenSummary.textContent = summary;
@@ -2297,6 +2299,15 @@ function compactStudentMediaSections(){
  });
 }
 
+function mountStudentHeaderStages(student,services,photoCount){
+ document.querySelector('.student-header-stages')?.remove();
+ view.querySelector('.student-overview-card > .card-header')?.remove();
+ const host=document.createElement('div');host.className='student-header-stages';host.setAttribute('aria-label','Статусы ребёнка');
+ host.innerHTML=renderStudentStageIcons({student,services,works:finalWorksForStudent(student.id),photoCount,manualStatus:manualStudentStatus(student)});
+ host.querySelectorAll('[data-student-quick]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();if(typeof showStudentQuickActions==='function')showStudentQuickActions(student.id,button.dataset.quickAction,button);}));
+ document.querySelector('.topbar')?.append(host);
+}
+
 function renderStudent() {
   const previousShell = view.querySelector('.student-detail-shell');
   const preserveServiceState = previousShell?.dataset.studentState === state.studentId;
@@ -2467,6 +2478,7 @@ function renderStudent() {
     </div>
     <button class="fab-back" data-back-from-student type="button" aria-label="Назад" title="Назад"><span data-icon="back"></span></button>
   `;
+  mountStudentHeaderStages(student,selectedCatalogItems,media.length);
   bindViewActions();
   workflowTasksWorkspace().mountCard(student.id);
   compactStudentMediaSections();
