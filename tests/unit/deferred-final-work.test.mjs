@@ -47,7 +47,7 @@ test('ready result cards render authenticated server images and hydrate files wi
  const {readFileSync}=await import('node:fs');const vm=await import('node:vm');const source=readFileSync(new URL('../../js/core/legacy-app.js',import.meta.url),'utf8');
  const hash='a'.repeat(64),ref={$syncBlob:hash},wire={id:'w',projectId:'p',image:ref,status:'ready'},blob=new Blob(['approved']);
  const context=vm.createContext({Blob,URL,hasDeferredBlobs,deferredFinalImageUrl,finalWorkById:()=>wire,classById:()=>null,document:{querySelector:()=>null},withBusy:async(_,action)=>action(),recordSync:{loadRecord:async()=>({wire:{...wire,image:ref},record:{...wire,image:blob}})},finalWorkTitle:()=> 'Princess',finalWorkImageBlob:()=>null,escapeAttr:x=>String(x),escapeHtml:x=>String(x),finalWorkStatusClass:()=> 'ready',finalWorkStatusLabel:()=> 'Готов'});
- const helperStart=source.indexOf('async function ensureFinalWorkLoaded('),helperEnd=source.indexOf('\nfunction finalWorkImageBlob(',helperStart);vm.runInContext(source.slice(helperStart,helperEnd),context);
+ const helperStart=source.indexOf('const finalWorkLoads=new Map();'),helperEnd=source.indexOf('\nfunction finalWorkImageBlob(',helperStart);vm.runInContext(source.slice(helperStart,helperEnd),context);
  const cardStart=source.indexOf('function finalResultCard('),cardEnd=source.indexOf('\nfunction finalPrintA4Card(',cardStart);vm.runInContext(source.slice(cardStart,cardEnd),context);
  assert.match(context.finalResultCard(wire),new RegExp('src="/api/v1/sync/blob/p/'+hash+'"'));assert.doesNotMatch(context.finalResultCard(wire),/Нет preview/);
  const loaded=await context.ensureFinalWorkLoaded('w');assert.equal(loaded.image,blob);assert.equal(loaded.status,'ready');
