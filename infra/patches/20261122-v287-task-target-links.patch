@@ -1,0 +1,289 @@
+--- a/index.html
++++ b/index.html
+@@ -9,2 +9,2 @@
+-    <link rel="stylesheet" href="./styles.css?v=286" />
+-    <link rel="stylesheet" href="./css/workflow-tasks.css?v=286" />
++    <link rel="stylesheet" href="./styles.css?v=287" />
++    <link rel="stylesheet" href="./css/workflow-tasks.css?v=287" />
+@@ -71 +71 @@
+-    <script type="module" src="./js/core/app.js?v=286"></script>
++    <script type="module" src="./js/core/app.js?v=287"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v286";
++const CACHE_VERSION = "v287";
+@@ -77,10 +77,11 @@
+-  "./js/ui/workflow-task-create.js?v=286",
+-  "./js/ui/task-photo-period.js?v=286",
+-  "./js/ui/workflow-scope-panel.js?v=286",
+-  "./css/workflow-tasks.css?v=286",
+-  "./js/ui/workflow-workspace.js?v=286",
+-  "./js/ui/workflow-tasks.js?v=286",
+-  "./js/services/workflow-task-store.js?v=286",
+-  "./js/services/workflow-tasks.js?v=286",
+-  "./js/ui/scan-photo-viewer.js?v=286",
+-  "./js/ui/group-scan-panel.js?v=286",
++  "./js/services/workflow-task-target.js?v=287",
++  "./js/ui/workflow-task-create.js?v=287",
++  "./js/ui/task-photo-period.js?v=287",
++  "./js/ui/workflow-scope-panel.js?v=287",
++  "./css/workflow-tasks.css?v=287",
++  "./js/ui/workflow-workspace.js?v=287",
++  "./js/ui/workflow-tasks.js?v=287",
++  "./js/services/workflow-task-store.js?v=287",
++  "./js/services/workflow-tasks.js?v=287",
++  "./js/ui/scan-photo-viewer.js?v=287",
++  "./js/ui/group-scan-panel.js?v=287",
+@@ -92,2 +93,2 @@
+-  "./js/services/service-positions.js?v=286",
+-  "./js/services/individual-order.js?v=286",
++  "./js/services/service-positions.js?v=287",
++  "./js/services/individual-order.js?v=287",
+@@ -95 +96 @@
+-  "./js/services/sequence-navigation.js?v=286",
++  "./js/services/sequence-navigation.js?v=287",
+@@ -97 +98 @@
+-  "./js/services/card-summary.js?v=286",
++  "./js/services/card-summary.js?v=287",
+@@ -101 +102 @@
+-  "./js/services/camera-options.js?v=286",
++  "./js/services/camera-options.js?v=287",
+@@ -107,2 +108,2 @@
+-  "./js/services/record-sync.js?v=286",
+-  "./js/services/deferred-final-work.js?v=286",
++  "./js/services/record-sync.js?v=287",
++  "./js/services/deferred-final-work.js?v=287",
+@@ -115 +116 @@
+-  "./js/services/sync-codec.js?v=286",
++  "./js/services/sync-codec.js?v=287",
+@@ -123 +124 @@
+-  "./styles.css?v=286",
++  "./styles.css?v=287",
+@@ -126 +127 @@
+-  "./js/core/app.js?v=286",
++  "./js/core/app.js?v=287",
+@@ -128,2 +129,2 @@
+-  "./js/services/card-selection.js?v=286",
+-  "./js/services/navigation-history.js?v=286",
++  "./js/services/card-selection.js?v=287",
++  "./js/services/navigation-history.js?v=287",
+@@ -131,2 +132,2 @@
+-  "./js/services/roster-filters.js?v=286",
+-  "./js/ui/scan-work-picker.js?v=286",
++  "./js/services/roster-filters.js?v=287",
++  "./js/ui/scan-work-picker.js?v=287",
+@@ -134 +135 @@
+-  "./js/services/student-comments.js?v=286",
++  "./js/services/student-comments.js?v=287",
+@@ -137 +138 @@
+-  "./js/services/image-delivery.js?v=286",
++  "./js/services/image-delivery.js?v=287",
+@@ -139,2 +140,2 @@
+-  "./js/ui/student-quick-actions.js?v=286",
+-  "./js/services/group-scan.js?v=286",
++  "./js/ui/student-quick-actions.js?v=287",
++  "./js/services/group-scan.js?v=287",
+@@ -143,2 +144,2 @@
+-  "./js/services/print-selection.js?v=286",
+-  "./js/ui/project-print-picker.js?v=286",
++  "./js/services/print-selection.js?v=287",
++  "./js/ui/project-print-picker.js?v=287",
+@@ -146 +147 @@
+-  "./js/services/student-stage-icons.js?v=286",
++  "./js/services/student-stage-icons.js?v=287",
+@@ -149 +150 @@
+-  "./js/ui/fulfillment-panel.js?v=286",
++  "./js/ui/fulfillment-panel.js?v=287",
+@@ -151 +152 @@
+-  "./js/services/print-order.js?v=286",
++  "./js/services/print-order.js?v=287",
+@@ -167 +168 @@
+-  "./js/services/fulfillment.js?v=286",
++  "./js/services/fulfillment.js?v=287",
+@@ -171 +172 @@
+-  "./js/core/legacy-app.js?v=286",
++  "./js/core/legacy-app.js?v=287",
+@@ -194 +195 @@
+-  "./js/ui/photo-camera.js?v=286",
++  "./js/ui/photo-camera.js?v=287",
+@@ -197 +198 @@
+-  "./js/services/teacher-broadcast.js?v=286",
++  "./js/services/teacher-broadcast.js?v=287",
+@@ -239 +240 @@
+-  "./js/services/parent-orders.js?v=286",
++  "./js/services/parent-orders.js?v=287",
+@@ -251 +252 @@
+-  "./js/services/finalwork-service.js?v=286",
++  "./js/services/finalwork-service.js?v=287",
+@@ -256 +257 @@
+-  "./js/services/export-filter-service.js?v=286",
++  "./js/services/export-filter-service.js?v=287",
+@@ -287 +288 @@
+-  "./js/services/barcode-reader.js?v=286",
++  "./js/services/barcode-reader.js?v=287",
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=286");
++  await import("./legacy-app.js?v=287");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1 +1 @@
+-import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=286';
++import {createWorkflowWorkspace} from '../ui/workflow-workspace.js?v=287';
+@@ -5,3 +5,3 @@
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=286';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=286';
+-import { createCloudScanStore } from '../services/scan-cloud.js?v=286';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=287';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=287';
++import { createCloudScanStore } from '../services/scan-cloud.js?v=287';
+@@ -9,12 +9,12 @@
+-import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=286";
+-import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=286";
+-import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=286";
+-import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=286";
+-import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=286";
+-import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=286";
+-import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=286";
+-import { chooseScanWorks } from "../ui/scan-work-picker.js?v=286";
+-import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=286";
+-import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=286";
+-import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=286";
+-import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=286";
++import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=287";
++import { enhanceScanPhotoPair, openScanPhotoViewer } from "../ui/scan-photo-viewer.js?v=287";
++import { appendStudentComment, studentCommentPreview } from "../services/student-comments.js?v=287";
++import { rosterFilterFields, rosterFilterOptions, matchesRosterFilters } from "../services/roster-filters.js?v=287";
++import { openStudentQuickActions } from "../ui/student-quick-actions.js?v=287";
++import { isPrintSelectedByDefault, printStatusLabel, applyPrintScanRejections } from "../services/print-selection.js?v=287";
++import { renderStudentStageIcons } from "../services/student-stage-icons.js?v=287";
++import { chooseScanWorks } from "../ui/scan-work-picker.js?v=287";
++import { openGroupScanPanel } from "../ui/group-scan-panel.js?v=287";
++import { resolveScanTarget, validatedScannedWorks } from "../services/group-scan.js?v=287";
++import { openFulfillmentPanel } from "../ui/fulfillment-panel.js?v=287";
++import { paymentUpdate, deliveryUpdate, printedUpdate, correctionUpdate, needsCorrection, isDelivered } from "../services/fulfillment.js?v=287";
+@@ -23,2 +23,2 @@
+-import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=286";
+-import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=286";
++import { openProjectPrintPicker } from "../ui/project-print-picker.js?v=287";
++import { orderedPrintStudents, orderFinalWorksForPrint } from "../services/print-order.js?v=287";
+@@ -27,2 +27,2 @@
+-import {createNavigationHistory} from "../services/navigation-history.js?v=286";
+-import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=286";
++import {createNavigationHistory} from "../services/navigation-history.js?v=287";
++import {createCardSelection,bindCardSelection} from "../services/card-selection.js?v=287";
+@@ -30 +30 @@
+-import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=286";
++import {hasDeferredBlobs, deferredFinalImageUrl} from "../services/deferred-final-work.js?v=287";
+@@ -33,3 +33,3 @@
+-import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=286";
+-import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=286";
+-import { normalizeStudentName } from "../services/shooting-roster.js?v=286";
++import { servicePositions, duplicatePosition } from "../services/service-positions.js?v=287";
++import { isIndividualOrderItem, retainedIndividualItems } from "../services/individual-order.js?v=287";
++import { normalizeStudentName } from "../services/shooting-roster.js?v=287";
+@@ -37,2 +37,2 @@
+-import { nextInSequence } from "../services/sequence-navigation.js?v=286";
+-import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=286";
++import { nextInSequence } from "../services/sequence-navigation.js?v=287";
++import { cardSummary, readyWorkSummary, selectedServiceEntries, projectArchiveName } from "../services/card-summary.js?v=287";
+@@ -46 +46 @@
+-import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=286";
++import { openTeacherBroadcast } from "../services/teacher-broadcast.js?v=287";
+@@ -49,2 +49,2 @@
+-import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=286";
+-import { openPhotoCamera } from "../ui/photo-camera.js?v=286";
++import { classServiceCounts, shootingRoster, splitPopularServices } from "../services/shooting-roster.js?v=287";
++import { openPhotoCamera } from "../ui/photo-camera.js?v=287";
+@@ -52 +52 @@
+-import { buildSectionExportSelection } from "../services/export-filter-service.js?v=286";
++import { buildSectionExportSelection } from "../services/export-filter-service.js?v=287";
+@@ -57 +57 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=286";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=287";
+@@ -60 +60 @@
+-import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=286";
++import { mountParentOrders, showParentOrders } from "../services/parent-orders.js?v=287";
+@@ -62,2 +62,2 @@
+-import { decodeCode128ImageData } from "../services/barcode-reader.js?v=286";
+-import { printCodeLayout } from "../services/print-code-layout.js?v=286";
++import { decodeCode128ImageData } from "../services/barcode-reader.js?v=287";
++import { printCodeLayout } from "../services/print-code-layout.js?v=287";
+@@ -86 +86 @@
+-import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=286";
++import { hydrateImportedFinalWorkImage, prepareTransferRecordForStorage } from "../services/finalwork-service.js?v=287";
+@@ -91 +91 @@
+-import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=286";
++import { coverImageRect, createPhotoPagesPdf } from "../services/photo-pdf-service.js?v=287";
+--- a/js/ui/workflow-workspace.js
++++ b/js/ui/workflow-workspace.js
+@@ -1,6 +1,7 @@
+-import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=286';
+-import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=286';
+-import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=286';
+-import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=286';
+-import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=286';
+-import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=286';
++import {resolveWorkflowTaskTarget} from '../services/workflow-task-target.js?v=287';
++import {openWorkflowTaskCreate,workflowCreationTarget} from './workflow-task-create.js?v=287';
++import {mountPhotoPeriod,periodBounds} from './task-photo-period.js?v=287';
++import {openWorkflowScopePanel} from './workflow-scope-panel.js?v=287';
++import {deriveWorkflowTasks,workflowTaskScopeKey,workflowWorkRevision,workflowServiceScopes} from '../services/workflow-tasks.js?v=287';
++import {createWorkflowTaskStore} from '../services/workflow-task-store.js?v=287';
++import {renderWorkflowTasks,bindWorkflowTasks,renderWorkflowBell,bindWorkflowBell,renderWorkflowTaskEditor,bindWorkflowTaskEditor} from './workflow-tasks.js?v=287';
+@@ -37 +38,7 @@
+- function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');const existingPeriod=root.querySelector('.photo-period');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());if(existingPeriod)root.prepend(existingPeriod);else periodCleanup=mountPhotoPeriod(root,{getData,state:photoPeriod,onOpen:task=>open(task),projectOptions:options().projectOptions});if(options().canManage){const bar=document.createElement('div');bar.className='wt-page-create';bar.innerHTML='<button type="button" class="wt-button wt-button--primary" data-wt-create><svg class="wt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Создать задачу</button>';bar.querySelector('button').onclick=createTask;root.prepend(bar);}if(filters.classId||filters.studentId){const student=getData().students.find(s=>s.id===filters.studentId),group=getData().classes.find(c=>c.id===filters.classId);const chip=document.createElement('div');chip.className='workflow-scope-chip';chip.innerHTML=`<span>Только: ${esc(student?[student.lastName,student.firstName].join(' '):group?.name||'выбранная группа')}</span><button type="button">Все задачи проекта</button>`;chip.querySelector('button').onclick=()=>{filters={...filters,classId:'',studentId:''};renderPage();};root.prepend(chip);}const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.error?snapshot.error:snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';if(snapshot.status!=='online'||!document.querySelector('.topbar .sync-status-button'))root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
++ function renderPage(){refreshing=true;try{setShell({heading:'Задачи',context:new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}),summary:''});const root=document.querySelector('#view');const existingPeriod=root.querySelector('.photo-period');pageCleanup?.();root.innerHTML=renderWorkflowTasks(options());if(existingPeriod)root.prepend(existingPeriod);else periodCleanup=mountPhotoPeriod(root,{getData,state:photoPeriod,onOpen:task=>open(task),projectOptions:options().projectOptions});if(options().canManage){const bar=document.createElement('div');bar.className='wt-page-create';bar.innerHTML='<button type="button" class="wt-button wt-button--primary" data-wt-create><svg class="wt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Создать задачу</button>';bar.querySelector('button').onclick=createTask;root.prepend(bar);}if(filters.classId||filters.studentId){const student=getData().students.find(s=>s.id===filters.studentId),group=getData().classes.find(c=>c.id===filters.classId);const chip=document.createElement('div');chip.className='workflow-scope-chip';chip.innerHTML=`<span>Только: ${esc(student?[student.lastName,student.firstName].join(' '):group?.name||'выбранная группа')}</span><button type="button">Все задачи проекта</button>`;chip.querySelector('button').onclick=()=>{filters={...filters,classId:'',studentId:''};renderPage();};root.prepend(chip);}const freshness=document.createElement('p');freshness.className='wt-sync-status';freshness.textContent=snapshot.status==='online'?'Сохранено онлайн':snapshot.status==='local'?'Сохранено на устройстве':snapshot.error?snapshot.error:snapshot.pending?'На устройстве · '+snapshot.pending+' изменений ожидают облака':snapshot.error?snapshot.error:snapshot.lastSyncedAt?'Данные на '+new Date(snapshot.lastSyncedAt).toLocaleString('ru-RU'):'Подключение к облаку…';if(snapshot.status!=='online'||!document.querySelector('.topbar .sync-status-button'))root.prepend(freshness);if(snapshot.status==='conflict'){const notice=document.createElement('div');notice.className='wt-sync-conflict';notice.setAttribute('role','status');notice.innerHTML='<strong>Задачи изменены на другом устройстве</strong><p>Ваши изменения сохранены. Выберите, какую версию использовать.</p><button type="button" data-use-cloud>Получить с сервера</button><button type="button" data-use-local>Сохранить мои изменения</button>';root.prepend(notice);for(const [selector,local]of [['[data-use-cloud]',false],['[data-use-local]',true]])notice.querySelector(selector).onclick=async()=>{for(const conflict of snapshot.conflicts||[])await store.resolveConflict(conflict.scopeKey,local);};}pageCleanup=bindWorkflowTasks(root,{onOpen:task=>open(task),onTarget:task=>openLinkedTarget(task),onEdit:task=>edit(task),onSources:task=>edit(task),onFilter:next=>{filters={...filters,...next};renderPage();}});}finally{refreshing=false;}}
++ function openLinkedTarget(value){
++  const task=typeof value==='string'?cached.find(t=>t.id===value):value;if(!task)return;
++  const target=resolveWorkflowTaskTarget(task,getData());
++  if(!target||enabled&&!options().projectOptions.some(p=>p.id===target.params.projectId))return notify('Связанная карточка недоступна. Возможно, она перемещена или удалена.');
++  navigate(target.route,target.params);
++ }
+@@ -92 +99 @@
+- return {createTask,assignScope,openScopeTasks,captureMetadata,approveWork:async work=>{const klass=getData().classes.find(c=>c.id===(work.groupId||getData().students.find(s=>s.id===work.studentId)?.classId));await ensureStore().update({studentId:work.studentId,serviceId:work.serviceId,projectId:work.projectId||klass?.projectId},{approvedRevision:workflowWorkRevision(work),approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},refresh(){ensureStore();snapshot=store.snapshot();updateProjection();},mountShell,renderPage,mountCard,edit,approve:async task=>{await ensureStore().update(task,{approvedRevision:task.version,approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},snapshot:()=>snapshot,filters:()=>({...filters}),restoreFilters:value=>{filters={...filters,...value};},stop(){store?.destroy();}};
++ return {openLinkedTarget,createTask,assignScope,openScopeTasks,captureMetadata,approveWork:async work=>{const klass=getData().classes.find(c=>c.id===(work.groupId||getData().students.find(s=>s.id===work.studentId)?.classId));await ensureStore().update({studentId:work.studentId,serviceId:work.serviceId,projectId:work.projectId||klass?.projectId},{approvedRevision:workflowWorkRevision(work),approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},refresh(){ensureStore();snapshot=store.snapshot();updateProjection();},mountShell,renderPage,mountCard,edit,approve:async task=>{await ensureStore().update(task,{approvedRevision:task.version,approvedAt:new Date().toISOString()});snapshot=store.snapshot();updateProjection();},snapshot:()=>snapshot,filters:()=>({...filters}),restoreFilters:value=>{filters={...filters,...value};},stop(){store?.destroy();}};
+--- a/js/ui/workflow-tasks.js
++++ b/js/ui/workflow-tasks.js
+@@ -1 +1,2 @@
+-import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=286';
++import {workflowTaskTargetLabel} from '../services/workflow-task-target.js?v=287';
++import { WORKFLOW_TASK_ACTIONS } from '../services/workflow-tasks.js?v=287';
+@@ -35 +36 @@
+-function row(task,now,canManage=true) {return `<article class="wt-row"><span class="wt-avatar" aria-hidden="true">${esc(initials(task.studentName))}</span><div class="wt-row-person"><strong>${esc(task.studentName)}</strong><span>${esc(task.serviceName)}</span></div><div class="wt-row-status">${badge(task)}<small>${esc(task.reason || 'Следующий этап работы')}</small>${task.capturedAt?`<small>Съёмка ${esc(formatDate(task.capturedAt))} · ${esc(task.operatorName || 'оператор не указан')}</small>`:''}</div><div class="wt-row-tools">${due(task,now)}<div class="wt-row-buttons"><button type="button" class="wt-button wt-button--outline" data-wt-open="${esc(task.id)}">${actionName(task)}</button>${canManage?`<button type="button" class="wt-icon-button" data-wt-edit="${esc(task.id)}" aria-label="Срок и параметры: ${esc(task.studentName)}, ${esc(task.serviceName)}">${workflowTaskIcon('edit')}</button>`:''}</div></div></article>`;}
++function row(task,now,canManage=true) {return `<article class="wt-row"><span class="wt-avatar" aria-hidden="true">${esc(initials(task.studentName))}</span><div class="wt-row-person"><strong>${esc(task.studentName)}</strong><span>${esc(task.serviceName)}</span><button type="button" class="wt-target-link" data-wt-target="${esc(task.id)}">${esc(workflowTaskTargetLabel(task))}${workflowTaskIcon('arrow')}</button></div><div class="wt-row-status">${badge(task)}<small>${esc(task.reason || 'Следующий этап работы')}</small>${task.capturedAt?`<small>Съёмка ${esc(formatDate(task.capturedAt))} · ${esc(task.operatorName || 'оператор не указан')}</small>`:''}</div><div class="wt-row-tools">${due(task,now)}<div class="wt-row-buttons"><button type="button" class="wt-button wt-button--outline" data-wt-open="${esc(task.id)}">${actionName(task)}</button>${canManage?`<button type="button" class="wt-icon-button" data-wt-edit="${esc(task.id)}" aria-label="Срок и параметры: ${esc(task.studentName)}, ${esc(task.serviceName)}">${workflowTaskIcon('edit')}</button>`:''}</div></div></article>`;}
+@@ -42,2 +43,2 @@
+-export function bindWorkflowTasks(root,{onOpen=()=>{},onEdit=()=>{},onFilter=()=>{}}={}) {
+- const click=event=>{const button=event.target.closest('button');if(!button || !root.contains(button))return;if(button.hasAttribute('data-wt-open'))onOpen(button.dataset.wtOpen);if(button.hasAttribute('data-wt-edit'))onEdit(button.dataset.wtEdit);if(button.hasAttribute('data-wt-period'))onFilter({period:button.dataset.wtPeriod});if(button.hasAttribute('data-wt-action'))onFilter({action:button.dataset.wtAction});};
++export function bindWorkflowTasks(root,{onOpen=()=>{},onEdit=()=>{},onTarget=()=>{},onFilter=()=>{}}={}) {
++ const click=event=>{const button=event.target.closest('button');if(!button || !root.contains(button))return;if(button.hasAttribute('data-wt-open'))onOpen(button.dataset.wtOpen);if(button.hasAttribute('data-wt-edit'))onEdit(button.dataset.wtEdit);if(button.hasAttribute('data-wt-target'))onTarget(button.dataset.wtTarget);if(button.hasAttribute('data-wt-period'))onFilter({period:button.dataset.wtPeriod});if(button.hasAttribute('data-wt-action'))onFilter({action:button.dataset.wtAction});};
+--- a/css/workflow-tasks.css
++++ b/css/workflow-tasks.css
+@@ -32,0 +33,2 @@
++
++.wt-row-person .wt-target-link{display:inline-flex;align-items:center;gap:3px;max-width:100%;min-height:28px;margin:2px 0 0;padding:3px 0;border:0;border-radius:4px;background:transparent;color:var(--primary,#245ee9);font:inherit;font-size:11px;line-height:1.3;text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:normal}.wt-target-link .wt-icon{width:12px;height:12px}.wt-target-link:hover{text-decoration-thickness:2px}@media(max-width:600px){.wt-row-person .wt-target-link{font-size:10px;min-height:28px}}
+--- /dev/null
++++ b/js/services/workflow-task-target.js
+@@ -0,0 +1,20 @@
++const visible=record=>record&&!record.deletedAt&&!record.archivedAt&&!record.archived;
++export function workflowTaskTargetKind(task={}){
++ if(task.entityKind==='student'||task.entityKind!=='project'&&task.studentId&&!task.studentId.startsWith('project_'))return 'student';
++ return task.classId&&!task.classId.startsWith('project-notes:')?'group':'project';
++}
++export function workflowTaskTargetLabel(task){return {student:'Открыть ребёнка',group:'Открыть группу',project:'Открыть проект'}[workflowTaskTargetKind(task)];}
++export function resolveWorkflowTaskTarget(task={},data={}){
++ const project=(data.projects||[]).find(p=>p.id===task.projectId&&visible(p));if(!project)return null;
++ const kind=workflowTaskTargetKind(task),params={projectId:project.id,classId:null,studentId:null,studentFormClassId:null,query:'',filter:'all'};
++ if(kind==='student'){
++  const student=(data.students||[]).find(s=>s.id===task.studentId&&visible(s));if(!student)return null;
++  const group=(data.classes||[]).find(g=>g.id===student.classId&&g.projectId===project.id&&visible(g));if(!group)return null;
++  return {route:'student',params:{...params,classId:group.id,studentId:student.id},kind,label:workflowTaskTargetLabel(task)};
++ }
++ if(kind==='group'){
++  const group=(data.classes||[]).find(g=>g.id===task.classId&&g.projectId===project.id&&visible(g));if(!group)return null;
++  params.classId=group.id;
++ }
++ return {route:'classes',params,kind,label:workflowTaskTargetLabel(task)};
++}
