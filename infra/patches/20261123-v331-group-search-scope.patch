@@ -1,0 +1,23 @@
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v330";
++const CACHE_VERSION = "v331";
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=329");
++  await import("./legacy-app.js?v=331");
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -14043,8 +14043,2 @@
+-  const query = state.query.trim().toLowerCase();
+-  return state.data.students.filter((student) => {
+-    if (student.classId !== classId) return false;
+-    if (!query) return true;
+-    const klass = classById(student.classId);
+-    const project = projectById(klass?.projectId);
+-    return [student.firstName, student.lastName, student.qrId, klass?.name, project?.name].join(" ").toLowerCase().includes(query);
+-  });
++  // Global search belongs to Home/Search. Group search and roster filters own their scope.
++  return state.data.students.filter(student => student.classId === classId);

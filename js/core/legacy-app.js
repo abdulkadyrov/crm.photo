@@ -12995,14 +12995,8 @@ function studentsByClass(classId) {
 }
 
 function studentsForClassView(classId) {
-  const query = state.query.trim().toLowerCase();
-  return state.data.students.filter((student) => {
-    if (student.classId !== classId) return false;
-    if (!query) return true;
-    const klass = classById(student.classId);
-    const project = projectById(klass?.projectId);
-    return [student.firstName, student.lastName, student.qrId, klass?.name, project?.name].join(" ").toLowerCase().includes(query);
-  });
+  // Global search belongs to Home/Search. Group search and roster filters own their scope.
+  return state.data.students.filter(student => student.classId === classId);
 }
 
 function filteredStudents() {
