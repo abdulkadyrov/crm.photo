@@ -1,0 +1,19 @@
+--- a/styles.css
++++ b/styles.css
+@@ -7690,0 +7691,11 @@
++
++/* Search uses the same compact density as the class roster. */
++.student-search-cards .student-card { padding:17px 8px 6px; border-radius:12px; }
++.student-search-cards .student-card .student-card-grid { grid-template-columns:30px minmax(0,1fr) 34px; gap:6px; }
++.student-search-cards .student-card .student-thumb { width:30px; height:30px; min-width:30px; max-width:30px; min-height:30px; max-height:30px; inline-size:30px; block-size:30px; }
++.student-search-cards .student-card .student-copy h3 { font-size:.94rem; line-height:1.25; }
++.student-search-cards .student-card .student-copy>p { margin:1px 0 0; font-size:11px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
++.student-search-cards .student-card .student-inline-note { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:1px 0; font-size:11px; line-height:1.35; }
++.student-search-cards .student-card .item-menu>summary { width:34px; height:34px; min-height:34px; }
++.student-search-cards .student-card .workflow-scope-actions { position:absolute; right:8px; bottom:6px; margin:0; }
++.student-search-cards .student-card .compact-card-details { margin:0; }
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v329";
++const CACHE_VERSION = "v330";
