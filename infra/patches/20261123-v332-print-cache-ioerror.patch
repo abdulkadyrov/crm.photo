@@ -1,0 +1,44 @@
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v331";
++const CACHE_VERSION = "v332";
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -65 +65 @@
+-import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=321";
++import { createRecordSync, SYNC_LOCAL_STORES, canApplyRemoteChanges } from "../services/record-sync.js?v=332";
+@@ -8396 +8396 @@
+-    try {const original=(await recordSync.loadRecord('media',work.sourceMediaId))?.record?.blob;return original instanceof Blob ? original : null;}
++    try {const original=(await recordSync.loadRecord('media',work.sourceMediaId,{fields:['blob'],cache:false}))?.record?.blob;return original instanceof Blob ? original : null;}
+@@ -8478 +8478 @@
+-        const loaded=await recordSync.loadRecord('finalWorks',work.id,{fields:[field]});
++        const loaded=await recordSync.loadRecord('finalWorks',work.id,{fields:[field],cache:false});
+@@ -8481 +8481 @@
+-      }else if (["mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = await ensureFinalWorkLoaded(work.id);
++      }else if (["mergedPrintImage","originalFinalImage","blob"].some(key=>work[key]?.$syncBlob)) work = {...work,...(await recordSync.loadRecord('finalWorks',work.id,{fields:['image','mergedPrintImage','originalFinalImage','blob'],cache:false}))?.record};
+@@ -8488 +8488 @@
+-      try{await printAssetCache.put(work.id,signature,assets,original);}catch{cacheFailures++;}
++      if(!cacheFailures){try{await printAssetCache.put(work.id,signature,assets,original);}catch{cacheFailures++;}}else cacheFailures++;
+@@ -8493 +8493 @@
+-  if(cacheFailures)notify(`Не удалось сохранить на устройстве ${cacheFailures} макетов. Освободите место, прежде чем работать без интернета.`);
++  if(cacheFailures)notify(`Печать готова. ${cacheFailures} макетов доступны в этой сессии без сохранения на устройстве.`);
+--- a/js/services/record-sync.js
++++ b/js/services/record-sync.js
+@@ -0,0 +1 @@
++import {loadTransientSyncBlob} from './transient-sync-blob.js?v=332';
+@@ -140 +141 @@
+-  if(!cache)return decodeRecord(value,async hash=>{const cached=await blobCache.get(hash);if(cached)return cached;const blob=await(await api(`/sync/blob/${scope}/${hash}`)).blob();if(await sha256(blob)!==hash)throw new Error('Контрольная сумма файла не совпала');return blob;});
++  if(!cache)return decodeRecord(value,hash=>loadTransientSyncBlob(hash,{readCached:h=>blobCache.get(h),fetchBlob:async h=>(await api(`/sync/blob/${scope}/${h}`)).blob(),sha256}));
+--- a/js/services/transient-sync-blob.js
++++ b/js/services/transient-sync-blob.js
+@@ -0,0 +1,9 @@
++// Read a verified server blob without requiring local persistent storage.
++export async function loadTransientSyncBlob(hash,{readCached,fetchBlob,sha256}) {
++  let cached;
++  try { cached=await readCached(hash); } catch { /* A broken local cache must not block online printing. */ }
++  if(cached)return cached;
++  const blob=await fetchBlob(hash);
++  if(await sha256(blob)!==hash)throw new Error('Контрольная сумма файла не совпала');
++  return blob;
++}
