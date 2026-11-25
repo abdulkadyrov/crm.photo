@@ -1,0 +1,108 @@
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1971 +1971 @@
+-  view.innerHTML=`<section class="panel"><h2 class="card-title">QR и штрихкод</h2><p>Сверка фото, комментарии, оплата, печать и выдача.</p><button class="primary-button" type="button" data-group-scan="">Открыть сканер</button><details><summary>Импорт съёмки</summary><div class="toolbar"><button class="secondary-button" data-import-shoot type="button">Фото</button><button class="secondary-button" data-import-shoot-folder type="button">Папка</button><button class="secondary-button" data-import-shoot-zip type="button">ZIP</button></div></details></section>`;
++  view.innerHTML=`<section class="panel"><h2 class="card-title">QR-код</h2><p>Сверка фото, комментарии, оплата, печать и выдача.</p><button class="primary-button" type="button" data-group-scan="">Открыть сканер</button><details><summary>Импорт съёмки</summary><div class="toolbar"><button class="secondary-button" data-import-shoot type="button">Фото</button><button class="secondary-button" data-import-shoot-folder type="button">Папка</button><button class="secondary-button" data-import-shoot-zip type="button">ZIP</button></div></details></section>`;
+@@ -2554 +2554 @@
+-          <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать штрихкод</button>
++          <button class="secondary-button" data-generate-qr="${student.id}" type="button">Показать QR-код</button>
+@@ -4323 +4323 @@
+-<details class="settings-section"><summary>Печать и оформление<small>Отчёты, QR, штрихкод и защита фото</small></summary>      <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>Отчёт по заказам</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>A4 · QR и штрихкод · размер и прозрачность</small></div><b>›</b></button>      <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button></details>
++<details class="settings-section"><summary>Печать и оформление<small>Отчёты, QR и защита фото</small></summary>      <button class="settings-row" data-settings-detail="pdf" type="button"><span>📄</span><div><strong>Отчёт по заказам</strong><small>Колонки и заголовок отчета</small></div><b>›</b></button>      <button class="settings-row" data-settings-detail="finalPrint" type="button"><span>🖨</span><div><strong>Печать готовых работ</strong><small>A4 · QR-код · размер и прозрачность</small></div><b>›</b></button>      <button class="settings-row" data-settings-detail="watermark" type="button"><span>©</span><div><strong>Водяной знак</strong><small>Защита фото в публичном каталоге</small></div><b>›</b></button></details>
+@@ -4605 +4604,0 @@
+-        <label class="field-label"><span>Тип кода</span><select class="select" data-final-print-code-type><option value="qr" ${finalPrint.codeType === "qr" ? "selected" : ""}>QR-код</option><option value="barcode" ${finalPrint.codeType === "barcode" ? "selected" : ""}>Штрихкод Code 128</option></select></label>
+@@ -4610,2 +4608,0 @@
+-        <label class="field-label"><span>Ширина штрихкода, px A4</span><input class="input" data-final-print-barcode-width type="number" min="400" max="1800" step="10" value="${finalPrint.barcodeWidth}" /></label>
+-        <label class="field-label"><span>Высота штрихкода, px A4</span><input class="input" data-final-print-barcode-height type="number" min="40" max="300" step="5" value="${finalPrint.barcodeHeight}" /></label>
+@@ -4616 +4613 @@
+-        </div><figure class="print-settings-preview"><canvas data-print-settings-preview width="2480" height="3508" aria-label="Живой пример фотографии A4 с кодом"></canvas><figcaption class="muted" data-print-preview-caption>Пример A4 · 2480 × 3508 px</figcaption></figure></div><p class="muted">Для надёжного сканирования минимальный размер ограничен 160 px. Белый фон считывается стабильнее на фотографии. Штрихкод и QR содержат ID ученика.</p>
++        </div><figure class="print-settings-preview"><canvas data-print-settings-preview width="2480" height="3508" aria-label="Живой пример фотографии A4 с кодом"></canvas><figcaption class="muted" data-print-preview-caption>Пример A4 · 2480 × 3508 px</figcaption></figure></div><p class="muted">Белый фон считывается стабильнее на фотографии. QR-код содержит ID ученика.</p>
+@@ -8207 +8204 @@
+-            <p class="muted">${escapeHtml(finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(actualWork)))} · ${escapeHtml(finalWorkPrintSettings().codeType === "barcode" ? "Code 128" : "QR-код")} · ${escapeHtml(formatActivityDate(actualWork?.a4PreparedAt || actualWork?.updatedAt || actualWork?.createdAt))}</p>
++            <p class="muted">${escapeHtml(finalWorkA4OrientationLabel(finalWorkA4ResolvedOrientation(actualWork)))} · ${escapeHtml("QR-код")} · ${escapeHtml(formatActivityDate(actualWork?.a4PreparedAt || actualWork?.updatedAt || actualWork?.createdAt))}</p>
+@@ -8460 +8457 @@
+-  const exportLabel = finalWorkPrintSettings().codeType === "barcode" ? "Скачать PDF со штрихкодом" : "Скачать PDF с QR";
++  const exportLabel = "Скачать PDF с QR";
+@@ -8571 +8568 @@
+-      downloadBlob(pdf, safeFileName(`print_${scope.name}_A4_${finalWorkPrintSettings().codeType === "barcode" ? "Code128" : "QR"}.pdf`));
++      downloadBlob(pdf, safeFileName(`print_${scope.name}_A4_${"QR"}.pdf`));
+@@ -8755 +8752 @@
+-    codeType: saved.codeLayoutVersion === 2 ? (saved.codeType === "qr" ? "qr" : "barcode") : "barcode",
++    codeType: "qr",
+@@ -8761,2 +8757,0 @@
+-    barcodeWidth: clampNumber(saved.barcodeWidth, 400, 1800, 600),
+-    barcodeHeight: clampNumber(saved.barcodeHeight, 40, 300, 100)
+@@ -8772,2 +8766,0 @@
+-    barcodeWidth: clampNumber(view.querySelector("[data-final-print-barcode-width]")?.value, 400, 1800, 600),
+-    barcodeHeight: clampNumber(view.querySelector("[data-final-print-barcode-height]")?.value, 40, 300, 100),
+@@ -8775 +8768 @@
+-    codeType: view.querySelector("[data-final-print-code-type]")?.value === "barcode" ? "barcode" : "qr",
++    codeType: "qr",
+@@ -8811 +8804 @@
+-  view.querySelectorAll("[data-final-print-qr-enabled], [data-final-print-qr-position], [data-final-print-qr-px], [data-final-print-qr-margin], [data-final-print-opacity], [data-final-print-code-type], [data-final-print-code-color], [data-final-print-code-background], [data-final-print-barcode-width], [data-final-print-barcode-height]").forEach(input => input.addEventListener("input", update));
++  view.querySelectorAll("[data-final-print-qr-enabled], [data-final-print-qr-position], [data-final-print-qr-px], [data-final-print-qr-margin], [data-final-print-opacity], [data-final-print-code-color], [data-final-print-code-background]").forEach(input => input.addEventListener("input", update));
+@@ -9322 +9314,0 @@
+-  const barcode = settings.codeType === "barcode";
+@@ -9324,8 +9316,2 @@
+-  const codeColor = /^#[0-9a-f]{6}$/i.test(settings.codeColor || "") ? settings.codeColor : "#000000";
+-  let codeImage;
+-  if (barcode) {
+-    codeImage = document.createElement("canvas");
+-    if (typeof window.JsBarcode !== "function") throw new Error("Штрихкод недоступен");
+-    window.JsBarcode(codeImage, String(payload).replace(/[^\x20-\x7E]/g, "").slice(0, 100) || "DEMO-001", { format: "CODE128", width: 3, height: 180, displayValue: false, margin: 24, lineColor: codeColor, background: whiteBackground ? "#ffffff" : "transparent" });
+-  } else codeImage = await finalWorkQrOverlayImage(payload, qrOverlayFile, whiteBackground, codeColor);
+-  const layout = printCodeLayout(width, height, settings);
++  const codeImage = await finalWorkQrOverlayImage(payload, qrOverlayFile, whiteBackground);
++  const layout = printCodeLayout(width, height, { ...settings, codeType: "qr" });
+@@ -14953,2 +14939,2 @@
+-    title: "Штрихкод ребёнка",
+-    codeType: "barcode",
++    title: "QR-код ребёнка",
++    codeType: "qr",
+@@ -14972,3 +14958,2 @@
+-function showQrPanel({ value, title: panelTitle, subtitle = "", codeLabel = value, codeType = "qr" }) {
+-  const barcode = codeType === "barcode";
+-  const svg = barcode ? '<svg data-child-barcode role="img" aria-label="Штрихкод ребёнка" style="opacity:0.8"></svg>' : createQrSvg(value, 7);
++function showQrPanel({ value, title: panelTitle, subtitle = "", codeLabel = value }) {
++  const svg = createQrSvg(value, 7);
+@@ -14987 +14972 @@
+-      <div class="qr-panel-code" ${barcode ? 'style="background:transparent;border:0"' : ""}>${svg}</div>
++      <div class="qr-panel-code" >${svg}</div>
+@@ -14995 +14979,0 @@
+-  if (barcode) window.JsBarcode(panel.querySelector("[data-child-barcode]"), value, {format:"CODE128",width:2,height:70,displayValue:false,margin:16,background:"transparent"});
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -11 +11 @@
+-  await import("./legacy-app.js?v=334");
++  await import("./legacy-app.js?v=336");
+--- a/index.html
++++ b/index.html
+@@ -9 +9 @@
+-    <link rel="stylesheet" href="./styles.css?v=334" />
++    <link rel="stylesheet" href="./styles.css?v=336" />
+@@ -70,2 +70 @@
+-    <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=334"></script>
++    <script type="module" src="./js/core/app.js?v=336"></script>
+--- a/sw.js
++++ b/sw.js
+@@ -2 +2 @@
+-const CACHE_VERSION = "v334";
++const CACHE_VERSION = "v336";
+@@ -98 +98 @@
+-  "./js/ui/group-scan-panel.js?v=334",
++  "./js/ui/group-scan-panel.js?v=336",
+@@ -135 +135 @@
+-  "./styles.css?v=334",
++  "./styles.css?v=336",
+@@ -138 +138 @@
+-  "./js/core/app.js?v=334",
++  "./js/core/app.js?v=336",
+@@ -179 +179 @@
+-  "./js/ui/scan-destination.js?v=334",
++  "./js/ui/scan-destination.js?v=336",
+@@ -184 +184 @@
+-  "./js/core/legacy-app.js?v=334",
++  "./js/core/legacy-app.js?v=336",
+@@ -301 +300,0 @@
+-  "./vendor/JsBarcode.code128.min.js",
