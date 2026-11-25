@@ -1,0 +1,191 @@
+--- a/index.html
++++ b/index.html
+@@ -6,7 +6,7 @@
+     <meta name="theme-color" content="#2563EB" />
+     <title>Vakha Studio</title>
+     <link rel="manifest" href="./manifest.webmanifest" />
+-    <link rel="stylesheet" href="./styles.css?v=333" />
++    <link rel="stylesheet" href="./styles.css?v=334" />
+     <link rel="stylesheet" href="./css/workflow-tasks.css?v=329" />
+   </head>
+   <body>
+@@ -68,6 +68,6 @@
+     <script src="./vendor/jsQR.js"></script>
+     <script src="./vendor/zxing.min.js"></script>
+     <script src="./vendor/JsBarcode.code128.min.js"></script>
+-    <script type="module" src="./js/core/app.js?v=333"></script>
++    <script type="module" src="./js/core/app.js?v=334"></script>
+   </body>
+ </html>
+--- a/js/core/app.js
++++ b/js/core/app.js
+@@ -8,7 +8,7 @@
+   state.appVersion = APP_VERSION;
+   state.router = router;
+ 
+-  await import("./legacy-app.js?v=333");
++  await import("./legacy-app.js?v=334");
+ }
+ 
+ bootstrap();
+--- a/js/core/legacy-app.js
++++ b/js/core/legacy-app.js
+@@ -1,3 +1,4 @@
++import {createMultiProjectPrintRequest} from '../services/multi-project-print.js?v=334';
+ import {openScanDestination} from '../ui/scan-destination.js?v=333';
+ import {createOnlinePortraitBatch} from '../services/portrait-online-batch.js?v=329';
+ import {openPortraitBatchPanel} from '../ui/portrait-batch-panel.js?v=319';
+@@ -11,8 +12,8 @@
+ let workflowWorkspace=null;
+ import {fulfillmentUnitPrice} from '../services/fulfillment-pricing.js';
+ import {serviceFilterChoices} from '../services/service-filter.js';
+-import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=319';
+-import { loadSelectivePrintAssets } from '../services/selective-print.js?v=319';
++import { openSelectivePrintPanel } from '../ui/selective-print-panel.js?v=334';
++import { loadSelectivePrintAssets } from '../services/selective-print.js?v=334';
+ import { createCloudScanStore } from '../services/scan-cloud.js?v=319';
+ let groupScanCloudStore=null,groupScanCloudScope='';
+ import { viewerImageSources, bindReliableImage } from "../services/image-delivery.js?v=319";
+@@ -521,7 +522,7 @@
+   registerServiceWorker();
+   recordSync.start().catch(error=>notify(`Синхронизация: ${error.message}. Локальные данные сохранены.`));
+   const printSelectionId=new URLSearchParams(location.search).get('printSelection');
+-  if(printSelectionId&&/^[A-Za-z0-9_-]{1,160}$/.test(printSelectionId))void showSelectivePrint({sessionId:printSelectionId,companion:true});
++  if(printSelectionId&&/^[A-Za-z0-9_-]{1,2048}$/.test(printSelectionId))void showSelectivePrint({sessionId:printSelectionId,companion:!new URLSearchParams(location.search).has('printReview')});
+ }
+ 
+ function lockGestures() {
+@@ -1583,7 +1584,7 @@
+         <button class="secondary-button equal-button" data-teacher-broadcast="${activeProject}" type="button">Рассылка учителям</button>
+         <button class="secondary-button equal-button" data-export-vakha="${activeProject}" type="button">Экспорт в Vakha Studio</button>
+         <button class="secondary-button equal-button" data-export-status-project="${activeProject}" type="button"><span data-icon="catalog"></span>PDF статусов</button>
+-        <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button><button class="secondary-button equal-button" data-selective-print-project="${activeProject}" type="button">Выборочная печать</button>
++        <button class="secondary-button equal-button" data-print-final-project="${activeProject}" type="button">Печать проекта с QR</button><button class="secondary-button equal-button" data-selective-print-project="${activeProject}" type="button">Выборочная печать</button><button class="secondary-button equal-button" data-selective-print-project="all" type="button">Печать из всех проектов</button>
+ 
+       </div>
+       ${documentsSection("project", activeProject)}
+@@ -8422,36 +8423,36 @@
+ async function showSelectivePrint({projectId='',classId='',sessionId='',companion=false}={},trigger=document.activeElement) {
+   if(!cloudRequired||!cloudAccount())return notify('Для подключения телефона войдите в облачную CRM.');
+   const accountId=cloudAccount().id,origin=captureDialogReturn(document,window,trigger);
+-  const request=async(method,id,body,revision)=>{
++  const request=createMultiProjectPrintRequest(async(method,id,body,revision)=>{
+     if(cloudAccount()?.id!==accountId){const error=new Error('Войдите в тот же аккаунт CRM');error.status=401;throw error;}
+     const suffix=id?'/'+encodeURIComponent(id):'';
+     const response=await fetch('/api/v1/sync/print-selections'+suffix+(method==='GET'&&revision!==undefined?'?revision='+revision:''),{method,credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(20000),headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+     if(!response.ok){const error=new Error((await response.json().catch(()=>({}))).error||'Не удалось открыть список печати');error.status=response.status;throw error;}
+     return response.json();
+-  };
++  });
+   if(trigger?.disabled)return;if(trigger)trigger.disabled=true;
+   try{
+-    if(!sessionId){const group=classById(classId);projectId=projectId||group?.projectId;if(!projectId)throw new Error('Проект не найден');const snapshot=await request('POST','',{projectId,groupId:classId});sessionId=snapshot.id;localStorage.setItem(`crm-print-selection-v1:${accountId}:${sessionId}`,JSON.stringify({snapshot,pending:[]}));}
++    if(!sessionId){const group=classById(classId);projectId=projectId||group?.projectId;if(!projectId)throw new Error('Проект не найден');const snapshot=await request('POST','',projectId==='all'?{projectIds:state.data.projects.map(project=>project.id)}:{projectId,groupId:classId});sessionId=snapshot.id;localStorage.setItem(`crm-print-selection-v1:${accountId}:${sessionId}`,JSON.stringify({snapshot,pending:[]}));}
+     openSelectivePrintPanel({id:sessionId,companion,request,storageKey:`crm-print-selection-v1:${accountId}:${sessionId}`,qrImage:url=>`data:image/svg+xml;charset=utf-8,${encodeURIComponent(createQrSvg(url))}`,parseWork:parseFinalWorkPrintQr,studentTokens:qrPayloadCandidates,createDetector:createQrDetector,detectFrame:detectQrFromVideo,decodeFile:detectQrFromImageFile,
+       mountHistory:finish=>mountDialogHistory({id:'selective-print-'+crypto.randomUUID(),restore:finish}),restore:origin,
+       onReview:async(snapshot,isOpen)=>{
+         const selectedWorks=await loadSelectivePrintAssets(snapshot,{fetcher:(url,options)=>{if(cloudAccount()?.id!==accountId)throw new Error('Аккаунт изменился. Откройте список заново.');return fetch(url,options);}});
+         if(!isOpen())return;
+-        return reviewFinalWorksForPrint({projectId:snapshot.projectId,classId:snapshot.groupId,selectedWorks,selectedStudents:snapshot.students,copyCounts:new Map(snapshot.items.map(i=>[i.workId,i.copies])),separators:false,selectionHistory:true,canOpen:isOpen});
++        return reviewFinalWorksForPrint({allProjects:snapshot.allProjects,projectId:snapshot.projectId,classId:snapshot.groupId,selectedWorks,selectedStudents:snapshot.students,copyCounts:new Map(snapshot.items.map(i=>[i.workId,i.copies])),separators:false,selectionHistory:true,canOpen:isOpen});
+       }});
+   }catch(error){notify(error.message);}finally{if(trigger?.isConnected)trigger.disabled=false;}
+ }
+ 
+-async function reviewFinalWorksForPrint({ classId = "", projectId = "", studentIds = null, separators = true, selectedWorks = null, selectedStudents = null, copyCounts = null, selectionHistory = false, canOpen = ()=>true } = {}) {
++async function reviewFinalWorksForPrint({ allProjects = false, classId = "", projectId = "", studentIds = null, separators = true, selectedWorks = null, selectedStudents = null, copyCounts = null, selectionHistory = false, canOpen = ()=>true } = {}) {
+   const printStudentById=id=>selectedStudents?.find(student=>student.id===id)||studentById(id);
+-  const scope = classId ? classById(classId) : projectById(projectId);
++  const scope = allProjects ? {id:"",name:"Все проекты"} : classId ? classById(classId) : projectById(projectId);
+   if (!scope) return notify("Проект или группа не найдены.");
+   const works = orderFinalWorksForPrint((selectedWorks||printWorksForSelection()).filter(work => {
+     const groupId = work.groupId || printStudentById(work.studentId)?.classId;
+     if(studentIds && !studentIds.has(work.studentId))return false;
+-    return (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId) && (finalWorkImageBlob(work) || finalWorkRemoteImageUrl(work));
++    return (allProjects || (classId ? groupId === classId : (work.projectId || classById(groupId)?.projectId) === projectId)) && (finalWorkImageBlob(work) || finalWorkRemoteImageUrl(work));
+   }), {
+-    groups: classId ? [scope] : classesByProject(projectId),
++    groups: allProjects ? state.data.classes : classId ? [scope] : classesByProject(projectId),
+     students: selectedStudents||state.data.students,
+     audiencesForStudent: printStudentAudiences
+   });
+--- a/js/services/selective-print.js
++++ b/js/services/selective-print.js
+@@ -25,9 +25,9 @@
+ export async function loadSelectivePrintAssets(snapshot,{fetcher=fetch}={}){
+  const chosen=selectedPrintWorks(snapshot),cache=new Map();
+  const json=async path=>{const response=await fetcher('/api/v1'+path,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(20000)});if(!response.ok)throw new Error('Не удалось загрузить сведения о выбранном фото');return response.json();};
+- const blob=async ref=>{
++ const blob=async (ref,scope=snapshot.projectId)=>{
+   const hash=ref?.$syncBlob;if(!/^[a-f0-9]{64}$/.test(hash||''))throw new Error('Отсутствует файл выбранной работы');
+-  if(!cache.has(hash))cache.set(hash,(async()=>{const response=await fetcher(`/api/v1/sync/blob/${encodeURIComponent(snapshot.projectId)}/${hash}`,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(120000)});if(!response.ok)throw new Error('Не удалось загрузить выбранное фото. Повторите подготовку.');const bytes=await response.arrayBuffer(),digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');if(digest!==hash)throw new Error('Контрольная сумма фото не совпала');return new Blob([bytes],{type:ref.mime||'image/jpeg'});})());
++  if(!cache.has(hash))cache.set(hash,(async()=>{const response=await fetcher(`/api/v1/sync/blob/${encodeURIComponent(scope)}/${hash}`,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(120000)});if(!response.ok)throw new Error('Не удалось загрузить выбранное фото. Повторите подготовку.');const bytes=await response.arrayBuffer(),digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');if(digest!==hash)throw new Error('Контрольная сумма фото не совпала');return new Blob([bytes],{type:ref.mime||'image/jpeg'});})());
+   return cache.get(hash);
+  };
+  const works=[];
+@@ -36,7 +36,7 @@
+   if(record.studentId!==selected.studentId||record.image?.$syncBlob!==selected.image.$syncBlob||record.correction?.status==='open')throw new Error('Фотография изменилась после выбора. Обновите список и выберите её заново.');
+   let source=null;try{if(record.sourceMediaId)source=(await json('/sync/record/media/'+encodeURIComponent(record.sourceMediaId))).record;}catch{}
+   const original=record.originalFinalImage?.$syncBlob&&record.originalFinalImage.$syncBlob!==source?.blob?.$syncBlob?record.originalFinalImage:record.image;
+-  const file=await blob(original);let printOriginalBlob=null;try{if(source?.blob)printOriginalBlob=await blob(source.blob);}catch{}
++  const file=await blob(original,selected.projectId||snapshot.projectId);let printOriginalBlob=null;try{if(source?.blob)printOriginalBlob=await blob(source.blob,selected.projectId||snapshot.projectId);}catch{}
+   works.push({...record,title:selected.title,image:file,originalFinalImage:file,mergedPrintImage:file,blob:file,_selectedImageHash:selected.image.$syncBlob,printOriginalBlob});
+  }
+  return works;
+--- a/js/ui/selective-print-panel.js
++++ b/js/ui/selective-print-panel.js
+@@ -22,7 +22,7 @@
+   if(snapshot&&pending===0){const ids=new Set(snapshot.items.map(i=>i.workId+':'+i.imageHash));if(acknowledged&&[...ids].some(id=>!acknowledged.has(id)))feedback.play('saved');acknowledged=ids;}
+   if(snapshot){if(!companion&&snapshot.items.length&&!paired){paired=true;panel.querySelector('.sp-connection').open=false;}panel.querySelector('[data-title]').textContent=snapshot.title+' · '+(snapshot.groups.find(g=>g.id===snapshot.groupId)?.name||'Все группы');panel.querySelector('[data-tab=selected]').textContent=`Выбрано · ${snapshot.items.length}`;panel.querySelector('[data-review]').disabled=busy||!!pending||!snapshot.items.length||snapshot.items.some(i=>i.stale||i.blocked);const signature=JSON.stringify(snapshot);if(signature!==lastSignature){lastSignature=signature;render();}}
+  }});
+- function preview(work){return work.image?.$syncBlob?`/api/v1/sync/blob/${encodeURIComponent(store.snapshot.projectId)}/${work.image.$syncBlob}?preview=800`:'';}
++ function preview(work){return work.image?.$syncBlob?`/api/v1/sync/blob/${encodeURIComponent(work.projectId||store.snapshot.projectId)}/${work.image.$syncBlob}?preview=800`:'';}
+  function render(){
+   const snapshot=store.snapshot;if(!snapshot){body.innerHTML='<p class="sp-empty">Загружаем список проекта…</p>';return;}
+   const scroll=body.scrollTop;
+--- a/sw.js
++++ b/sw.js
+@@ -1,5 +1,5 @@
+ const CACHE_PREFIX = "vakha-studio-cache-";
+-const CACHE_VERSION = "v333";
++const CACHE_VERSION = "v334";
+ const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+ const CHILD_TEMPLATE_PREVIEWS = [
+   "child-boy-mma-tank", "child-boy-mma-shirt", "child-boy-boxing-tank", "child-boy-boxing-shirt",
+@@ -95,7 +95,7 @@
+   "./js/services/workflow-task-store.js?v=329",
+   "./js/services/workflow-tasks.js?v=329",
+   "./js/ui/scan-photo-viewer.js?v=329",
+-  "./js/ui/group-scan-panel.js?v=333",
++  "./js/ui/group-scan-panel.js?v=334",
+  "./js/services/print-asset-cache.js",
+  "./js/ui/project-print-picker.js",
+  "./js/services/print-group-pages.js",
+@@ -132,10 +132,10 @@
+   "./",
+   "./index.html",
+   "./styles.css",
+-  "./styles.css?v=333",
++  "./styles.css?v=334",
+   "./app.js",
+   "./js/core/app.js",
+-  "./js/core/app.js?v=333",
++  "./js/core/app.js?v=334",
+   "./js/core/bootstrap.js",
+   "./js/services/card-selection.js?v=329",
+   "./js/services/navigation-history.js?v=329",
+@@ -176,12 +176,12 @@
+   "./js/ui/phone-camera-sender.js",
+   "./camera/index.html",
+   "./js/ui/group-scan-panel.js",
+-  "./js/ui/scan-destination.js?v=333",
++  "./js/ui/scan-destination.js?v=334",
+   "./js/services/fulfillment.js?v=329",
+ 
+   "./js/services/fulfillment.js",
+   "./js/ui/fulfillment-panel.js",
+-  "./js/core/legacy-app.js?v=333",
++  "./js/core/legacy-app.js?v=334",
+   "./js/core/router.js",
+   "./js/core/state.js",
+   "./js/core/events.js",
